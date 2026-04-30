@@ -3,15 +3,9 @@ import * as SecureStore from 'expo-secure-store'
 // Storage keys — single source of truth for all SecureStore entries.
 const KEYS = {
   ACCESS_TOKEN: 'storix.accessToken',
-  // TODO(Phase 3B — backend contract required):
-  //   The 2.0 backend delivers refreshToken as an HTTP-only cookie (withCredentials).
-  //   In RN there is no cookie jar, so refreshToken must be stored explicitly.
-  //   Before wiring the axios refresh interceptor, confirm with backend that:
-  //     - POST /api/v1/auth/oauth/kakao-native/login  returns { refreshToken } in body
-  //     - POST /api/v1/auth/oauth/naver-native/login  returns { refreshToken } in body
-  //     - POST /api/v1/auth/tokens/refresh            accepts Authorization: Bearer <refreshToken>
-  //       OR returns refreshToken in body so the client can rotate it.
-  //   Until confirmed, setRefreshToken / getRefreshToken are ready but unused.
+  // Contract confirmed (Phase 3B):
+  //   POST /api/v1/auth/tokens/refresh accepts { refreshToken } in JSON body
+  //   and returns result.accessToken + result.refreshToken (token rotation).
   REFRESH_TOKEN: 'storix.refreshToken',
   ONBOARDING_TOKEN: 'storix.onboardingToken',
 } as const
