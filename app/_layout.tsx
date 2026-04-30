@@ -16,7 +16,7 @@ import 'react-native-reanimated'
 // ─── Navigation ───────────────────────────────────────────────────────────────
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
-import { Stack } from 'expo-router'
+import { Stack, useRouter, useSegments } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useFonts } from 'expo-font'
 
@@ -33,6 +33,8 @@ export {
 } from 'expo-router'
 
 export const unstable_settings = {
+  // '(tabs)' keeps the main app as the back-stack base for authenticated users.
+  // The auth gate handles redirecting unauthenticated users to (auth)/login.
   initialRouteName: '(tabs)',
 }
 
@@ -91,30 +93,53 @@ export default function RootLayout() {
   )
 }
 
+// ─── Auth gate ────────────────────────────────────────────────────────────────
+// Renders nothing — only drives navigation side-effects.
+// Lives inside RootLayoutNav so useSegments/useRouter have navigation context.
+//
+// Loop prevention:
+//   !auth + !inAuth → replace to (auth)/login          [stops: now inAuth = true]
+//   auth  + inAuth  → replace to (tabs)                [stops: now inAuth = false]
+//   !auth + inAuth  → no-op  (let auth screens handle) [stops]
+//   auth  + !inAuth → no-op  (already in main app)     [stops]
+
+function AuthGate() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  // Cast to string[] — the typed-routes generated .d.ts only knows about routes
+  // that existed when `expo start` last ran. New (auth) routes are not in that
+  // union yet; they will be included after the next `expo start` regeneration.
+  const segments = useSegments() as unknown as string[]
+  const router = useRouter()
+
+  useEffect(() => {
+    // Guard: segments are empty on the very first frame before navigation settles.
+    if (segments.length === 0) return
+
+    const inAuthGroup = segments[0] === '(auth)'
+
+    if (!isAuthenticated && !inAuthGroup) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace('/(auth)/login' as any)
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)')
+    }
+  }, [isAuthenticated, segments, router])
+
+  return null
+}
+
+// ─── Root navigation ──────────────────────────────────────────────────────────
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme()
 
-  // TODO(Phase auth screens): Add auth-based redirect here once login/home screens exist.
-  //   const { isAuthenticated } = useAuthStore()
-  //   useEffect(() => {
-  //     if (isAuthenticated) router.replace('/(tabs)')
-  //     else router.replace('/(auth)/login')
-  //   }, [isAuthenticated])
-
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <AuthGate />
       <Stack>
-        {/* Main app — visible once auth is confirmed */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-        {/* Auth flow — login, agreement, onboarding */}
-        {/* TODO(Phase auth screens): add animation/gesture options once screens exist */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-
-        {/* Deep-link screen for TopicRoom chat */}
         <Stack.Screen name="topicroom" options={{ headerShown: false }} />
-
-        {/* Existing modal */}
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

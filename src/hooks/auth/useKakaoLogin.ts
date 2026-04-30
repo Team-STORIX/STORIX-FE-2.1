@@ -39,7 +39,7 @@ export const useKakaoLogin = () => {
       // New user — store the onboarding token and start the signup flow.
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
         await setOnboardingToken(readerPreLoginResponse.onboardingToken)
-        // TODO(Phase auth screens): route name '/(auth)/agreement' — screen not yet built.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         router.replace('/(auth)/agreement' as any)
         return
       }

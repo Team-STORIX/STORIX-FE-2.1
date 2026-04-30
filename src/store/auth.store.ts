@@ -11,6 +11,7 @@ import {
 } from '../lib/storage/secure'
 import { getItem, setItem } from '../lib/storage/async'
 import { useProfileStore } from './profile.store'
+import { resetToLogin } from '../lib/navigation/navigationRef'
 
 // AsyncStorage key for the non-sensitive marketing consent flag.
 const MARKETING_AGREE_KEY = 'marketingAgree'
@@ -139,17 +140,15 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     // Clear cached profile so stale data is not shown after re-login.
     useProfileStore.getState().clearMe()
 
-    // TODO(Phase navigation): Add navigation reset here once navigationRef
-    //   is exported from app/_layout.tsx, e.g.:
-    //     import { navigationRef } from '@/app/_layout'
-    //     navigationRef.current?.reset({ index: 0, routes: [{ name: '(auth)/login' }] })
-
     set({
       accessToken: null,
       onboardingToken: null,
       isAuthenticated: false,
       marketingAgree: false,
     })
+
+    // Navigate to login after state is reset.
+    resetToLogin()
   },
 
   setLoading: (loading) => set({ isLoading: loading }),

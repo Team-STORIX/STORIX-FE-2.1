@@ -2,17 +2,22 @@
 // Used by: auth.store.ts clearAuth(), axios-instance.ts refresh failure handler.
 //
 // expo-router's `router` is a module-level singleton safe to call from
-// non-component code, as long as the navigation tree has already mounted.
+// non-component code once the navigation tree has mounted.
+// In practice this is always the case by the time clearAuth() or the
+// refresh-failure interceptor runs.
 
 import { router } from 'expo-router'
 
 /**
  * Resets the navigation stack to the login screen.
- *
- * TODO(Phase auth screens): Uncomment the call once app/(auth)/login.tsx exists.
- *   Until then this is a safe no-op so callers can be wired without crashing.
+ * Safe to call from store actions and axios interceptors.
+ * Silently no-ops if navigation is not yet ready (e.g. tests, early init).
  */
 export const resetToLogin = (): void => {
-  // router.replace('/(auth)/login')
-  void router // reference kept so the import is not tree-shaken before wiring
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.replace('/(auth)/login' as any)
+  } catch {
+    // Navigation container not yet mounted — ignore.
+  }
 }

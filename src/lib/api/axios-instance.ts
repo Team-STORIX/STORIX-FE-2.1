@@ -8,8 +8,10 @@ import {
   getRefreshToken,
   setAccessToken,
   setRefreshToken,
-  clearAuthTokens,
 } from '../storage/secure'
+// useAuthStore is imported here (not in component context) to call clearAuth()
+// on token refresh failure. No circular dependency: auth.store never imports axios-instance.
+import { useAuthStore } from '../../store/auth.store'
 
 // ---------- header helpers ----------
 // AxiosHeaders (Axios v1) exposes .get()/.set(); plain objects do not.
@@ -152,9 +154,10 @@ apiClient.interceptors.response.use(
 
       if (!storedRefreshToken) {
         // No refresh token stored — session is unrecoverable.
-        await clearAuthTokens()
         isRefreshing = false
         clearQueue()
+        // clearAuth() wipes SecureStore + Zustand state + navigates to login.
+        useAuthStore.getState().clearAuth().catch(() => {})
         return Promise.reject(error)
       }
 
@@ -190,14 +193,9 @@ apiClient.interceptors.response.use(
       }
       return apiClient(original)
     } catch (refreshError) {
-      await clearAuthTokens()
       clearQueue()
-
-      // TODO(Phase 3D — after auth store + navigation are wired):
-      //   Reset the navigation stack to the login screen.
-      //   e.g.: navigationRef.current?.reset({ index: 0, routes: [{ name: '(auth)/login' }] })
-      //   Do NOT use window.location — this is React Native.
-
+      // clearAuth() wipes SecureStore + Zustand state + navigates to login.
+      useAuthStore.getState().clearAuth().catch(() => {})
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false
