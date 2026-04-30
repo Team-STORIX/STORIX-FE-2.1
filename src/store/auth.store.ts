@@ -1,0 +1,151 @@
+import { create } from 'zustand'
+import {
+  getAccessToken,
+  setAccessToken as persistAccessToken,
+  getRefreshToken,
+  setRefreshToken as persistRefreshToken,
+  getOnboardingToken,
+  setOnboardingToken as persistOnboardingToken,
+  removeOnboardingToken,
+  clearAuthTokens,
+} from '../lib/storage/secure'
+import { getItem, setItem } from '../lib/storage/async'
+import { useProfileStore } from './profile.store'
+
+// AsyncStorage key for the non-sensitive marketing consent flag.
+const MARKETING_AGREE_KEY = 'marketingAgree'
+
+// ---------- types ----------
+
+type AuthState = {
+  // In-memory mirrors of SecureStore values.
+  // Source of truth is always SecureStore; these are seeded by hydrateAuth().
+  accessToken: string | null
+  onboardingToken: string | null
+
+  // Derived state.
+  isAuthenticated: boolean
+
+  // UI / UX.
+  isLoading: boolean
+  marketingAgree: boolean
+}
+
+type AuthActions = {
+  /**
+   * Call once at app startup (app/_layout.tsx).
+   * Reads tokens from SecureStore and seeds in-memory state.
+   * Does not call any API.
+   */
+  hydrateAuth: () => Promise<void>
+
+  /**
+   * Called after a successful native login or token refresh that returns both tokens.
+   * Writes both tokens to SecureStore, mirrors accessToken in memory,
+   * clears any onboarding token, and marks isAuthenticated = true.
+   */
+  setLoginTokens: (tokens: {
+    accessToken: string
+    refreshToken: string
+  }) => Promise<void>
+
+  /**
+   * Called after a social login where the user is new (pre-signup).
+   * Stores the short-lived onboarding token; access token stays null.
+   */
+  setOnboardingToken: (token: string) => Promise<void>
+
+  /** Persists the marketing consent flag to AsyncStorage. */
+  setMarketingAgree: (agree: boolean) => Promise<void>
+
+  /**
+   * Full sign-out.
+   * Wipes SecureStore, resets in-memory state, and clears the profile cache.
+   *
+   * TODO(Phase navigation): Reset the navigation stack to the login screen here.
+   *   Example once navigationRef is wired:
+   *     navigationRef.current?.reset({ index: 0, routes: [{ name: '(auth)/login' }] })
+   */
+  clearAuth: () => Promise<void>
+
+  /** Toggle a loading spinner (e.g. during splash hydration). */
+  setLoading: (loading: boolean) => void
+}
+
+// ---------- store ----------
+
+export const useAuthStore = create<AuthState & AuthActions>((set) => ({
+  accessToken: null,
+  onboardingToken: null,
+  isAuthenticated: false,
+  isLoading: false,
+  marketingAgree: false,
+
+  hydrateAuth: async () => {
+    // Run SecureStore reads in parallel to minimise splash delay.
+    const [accessToken, onboardingToken, marketingAgree] = await Promise.all([
+      getAccessToken(),
+      getOnboardingToken(),
+      getItem<boolean>(MARKETING_AGREE_KEY),
+    ])
+
+    set({
+      accessToken,
+      onboardingToken,
+      isAuthenticated: !!accessToken,
+      marketingAgree: marketingAgree ?? false,
+    })
+  },
+
+  setLoginTokens: async ({ accessToken, refreshToken }) => {
+    // Write tokens to SecureStore first so the axios interceptor can read them
+    // immediately if a request fires before the next render cycle.
+    await Promise.all([
+      persistAccessToken(accessToken),
+      persistRefreshToken(refreshToken),
+      removeOnboardingToken(),
+    ])
+
+    set({
+      accessToken,
+      onboardingToken: null,
+      isAuthenticated: true,
+    })
+  },
+
+  setOnboardingToken: async (token) => {
+    await persistOnboardingToken(token)
+
+    set({
+      onboardingToken: token,
+      accessToken: null,
+      isAuthenticated: false,
+    })
+  },
+
+  setMarketingAgree: async (agree) => {
+    await setItem(MARKETING_AGREE_KEY, agree)
+    set({ marketingAgree: agree })
+  },
+
+  clearAuth: async () => {
+    await clearAuthTokens()
+
+    // Clear cached profile so stale data is not shown after re-login.
+    useProfileStore.getState().clearMe()
+
+    // TODO(Phase navigation): Add navigation reset here once navigationRef
+    //   is exported from app/_layout.tsx, e.g.:
+    //     import { navigationRef } from '@/app/_layout'
+    //     navigationRef.current?.reset({ index: 0, routes: [{ name: '(auth)/login' }] })
+
+    set({
+      accessToken: null,
+      onboardingToken: null,
+      isAuthenticated: false,
+      marketingAgree: false,
+    })
+  },
+
+  setLoading: (loading) => set({ isLoading: loading }),
+}))
