@@ -40,13 +40,17 @@ type AuthActions = {
   hydrateAuth: () => Promise<void>
 
   /**
-   * Called after a successful native login or token refresh that returns both tokens.
-   * Writes both tokens to SecureStore, mirrors accessToken in memory,
-   * clears any onboarding token, and marks isAuthenticated = true.
+   * Called after a successful login or signup.
+   * Writes accessToken (and optionally refreshToken) to SecureStore, mirrors
+   * accessToken in memory, clears any onboarding token, and marks isAuthenticated = true.
+   *
+   * refreshToken is optional because the signup endpoint may not return it until
+   * the backend is updated. When absent, the user will need to re-login after
+   * the access token expires.
    */
   setLoginTokens: (tokens: {
     accessToken: string
-    refreshToken: string
+    refreshToken?: string
   }) => Promise<void>
 
   /**
@@ -100,11 +104,12 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   setLoginTokens: async ({ accessToken, refreshToken }) => {
     // Write tokens to SecureStore first so the axios interceptor can read them
     // immediately if a request fires before the next render cycle.
-    await Promise.all([
+    const ops: Promise<void>[] = [
       persistAccessToken(accessToken),
-      persistRefreshToken(refreshToken),
       removeOnboardingToken(),
-    ])
+    ]
+    if (refreshToken) ops.push(persistRefreshToken(refreshToken))
+    await Promise.all(ops)
 
     set({
       accessToken,

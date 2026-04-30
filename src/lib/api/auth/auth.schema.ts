@@ -88,23 +88,23 @@ export const KakaoLoginResponseSchema = SocialLoginResponseSchema
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
- * Extracts { accessToken, refreshToken | null } from a social login result,
+ * Extracts { accessToken, refreshToken? } from a social login result,
  * checking regularLoginResponse first (new contract) then readerLoginResponse
- * (legacy fallback). Returns null if the user is not yet registered.
+ * (legacy fallback). Returns undefined if the user is not yet registered.
  */
 export const extractLoginTokens = (
   result: SocialLoginResult,
-): { accessToken: string; refreshToken: string | null } | null => {
+): { accessToken: string; refreshToken?: string } | undefined => {
   if (result.regularLoginResponse?.accessToken) {
     return {
       accessToken: result.regularLoginResponse.accessToken,
-      refreshToken: result.regularLoginResponse.refreshToken ?? null,
+      refreshToken: result.regularLoginResponse.refreshToken,
     }
   }
   if (result.readerLoginResponse?.accessToken) {
-    return { accessToken: result.readerLoginResponse.accessToken, refreshToken: null }
+    return { accessToken: result.readerLoginResponse.accessToken }
   }
-  return null
+  return undefined
 }
 
 // ─── Signup ───────────────────────────────────────────────────────────────────
