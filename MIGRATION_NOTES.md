@@ -111,15 +111,60 @@ Steps once confirmed:
 
 ---
 
-## Phase 4 — Social login + STOMP (planned)
+## Phase 4 — Auth foundation (done)
 
-- Rewrite `src/lib/auth/social/platform.ts` → `Platform.OS`
-- Rewrite `src/lib/auth/social/native.ts` → RN SDKs:
-  - Kakao: `@react-native-kakao/core` + `@react-native-kakao/user`
-  - Naver: `@react-native-seoul/naver-login`
-  - Apple: `@invertase/react-native-apple-authentication`
-- Copy `src/hooks/topicroom/useTopicRoomStomp.ts` (remove `window` guards)
-- Add `text-encoding` polyfill import at app entry
+Completed sub-phases:
+- 4A-1: Auth API layer (`src/lib/api/auth/`)
+- 4B:   Auth hooks (`src/hooks/auth/`)
+- 4C:   Typed route casts cleaned up (after `expo start` regenerated router.d.ts)
+- 4D:   Minimal auth screens + auth routing wired end-to-end
+- 4F-1: Native social SDK packages installed (see below)
+
+### Phase 4F-1 — Native social SDK packages (done)
+
+**Kakao SDK choice:** `@react-native-seoul/kakao-login` (not `@react-native-kakao/core + user`).
+Reason: single-package API, same maintainer as the Naver package, Expo config plugin included.
+
+| Package | Version | Role |
+|---|---|---|
+| `@react-native-seoul/kakao-login` | `^5.4.2` | Kakao OAuth (iOS + Android) |
+| `@react-native-seoul/naver-login` | `^4.2.4` | Naver OAuth (iOS + Android) |
+| `@invertase/react-native-apple-authentication` | `^2.5.1` | Apple Sign In (iOS only; Android uses web flow) |
+
+### ⚠️ Expo Go is NOT supported
+
+All three packages contain **native code** and will crash in Expo Go.
+A **Development Build** is required:
+1. Add the plugins to `app.json` (see `src/lib/auth/social/native.ts` for config)
+2. Run `npx expo prebuild` to generate `ios/` and `android/` directories
+3. Run `npx expo run:ios` or `npx expo run:android` to build the custom dev client
+
+### app.json plugins required (not yet added — need real keys)
+
+```jsonc
+"plugins": [
+  "expo-router",
+  "expo-secure-store",
+  ["@react-native-seoul/kakao-login", { "kakaoAppKey": "<KAKAO_NATIVE_APP_KEY>" }],
+  ["@react-native-seoul/naver-login", { "urlScheme": "storixfe21" }],
+  "@invertase/react-native-apple-authentication"
+]
+```
+
+### New Architecture compatibility note
+
+`app.json` has `"newArchEnabled": true` (React Native New Architecture / TurboModules).
+`@react-native-seoul/kakao-login` and `@react-native-seoul/naver-login` v5/v4 use the legacy bridge.
+RN 0.81 includes a backwards-compatible interop layer so they **will work**, but monitor for
+deprecation warnings after `expo prebuild`. If issues arise, consider disabling New Architecture
+for these modules or waiting for upstream New Architecture support.
+
+---
+
+## Phase 4F-2 — Implement native.ts (next)
+
+Replace the three throwing stubs in `src/lib/auth/social/native.ts` with real SDK calls.
+API signatures are documented in that file. Prerequisites: app.json plugins added + prebuild run.
 
 ---
 
