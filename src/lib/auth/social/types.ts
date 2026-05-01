@@ -10,7 +10,10 @@ export type SocialProviderId = 'kakao' | 'naver'
 
 export interface KakaoNativeTokens {
   accessToken: string
-  idToken: string
+  // idToken is present only when "OpenID Connect" is enabled in the Kakao
+  // Developer Console. The SDK always returns a string but it will be empty
+  // when OIDC is off. We normalise to undefined so callers can safely omit it.
+  idToken?: string
 }
 
 export interface NaverNativeTokens {
