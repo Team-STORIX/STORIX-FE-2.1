@@ -11,8 +11,7 @@ export default function AgreementScreen() {
   const handleConfirm = async () => {
     await setMarketingAgree(marketingChecked)
     // Navigate to the onboarding flow.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace('/(auth)/onboarding' as any)
+    router.replace('/(auth)/onboarding')
   }
 
   return (

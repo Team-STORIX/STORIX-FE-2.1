@@ -63,8 +63,7 @@ export const useNativeSocialLogin = () => {
       // New user — store the onboarding token and start the signup flow.
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
         await setOnboardingToken(readerPreLoginResponse.onboardingToken)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        router.replace('/(auth)/agreement' as any)
+        router.replace('/(auth)/agreement')
         return
       }
 

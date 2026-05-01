@@ -15,8 +15,7 @@ import { router } from 'expo-router'
  */
 export const resetToLogin = (): void => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace('/(auth)/login' as any)
+    router.replace('/(auth)/login')
   } catch {
     // Navigation container not yet mounted — ignore.
   }

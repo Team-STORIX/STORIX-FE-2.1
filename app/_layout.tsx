@@ -105,21 +105,19 @@ export default function RootLayout() {
 
 function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  // Cast to string[] — the typed-routes generated .d.ts only knows about routes
-  // that existed when `expo start` last ran. New (auth) routes are not in that
-  // union yet; they will be included after the next `expo start` regeneration.
-  const segments = useSegments() as unknown as string[]
+  const segments = useSegments()
   const router = useRouter()
 
   useEffect(() => {
-    // Guard: segments are empty on the very first frame before navigation settles.
+    // The typed-routes union guarantees length ≥ 1, but Expo Router can briefly
+    // return an empty array on the very first render before navigation settles.
+    // @ts-expect-error — TS2367: runtime guard, not needed per the type system.
     if (segments.length === 0) return
 
     const inAuthGroup = segments[0] === '(auth)'
 
     if (!isAuthenticated && !inAuthGroup) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      router.replace('/(auth)/login' as any)
+      router.replace('/(auth)/login')
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)')
     }
