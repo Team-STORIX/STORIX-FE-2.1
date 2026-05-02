@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useFavoriteWork } from '../../src/hooks/favorite/useFavoriteWork'
+import { useFavoriteWork } from '../../src/features/favorite'
 import {
   useLikeWorksReview,
   useWorksDetail,

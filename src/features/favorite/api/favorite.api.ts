@@ -1,4 +1,5 @@
-import { apiClient } from '../axios-instance'
+// src/features/favorite/api/favorite.api.ts
+import { apiClient } from '../../../lib/api/axios-instance'
 import { FavoriteWorkStatusEnvelopeSchema } from './favorite.schema'
 
 export async function getFavoriteWorkStatus(worksId: number) {

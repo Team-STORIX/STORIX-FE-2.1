@@ -1,4 +1,4 @@
-// src/lib/api/favorite/favorite.schema.ts
+// src/features/favorite/api/favorite.schema.ts
 import { z } from 'zod'
 
 export const ApiEnvelopeSchema = <T extends z.ZodTypeAny>(result: T) =>

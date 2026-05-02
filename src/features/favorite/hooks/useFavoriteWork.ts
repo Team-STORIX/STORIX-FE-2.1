@@ -4,8 +4,8 @@ import {
   favoriteWork,
   getFavoriteWorkStatus,
   unfavoriteWork,
-} from '../../lib/api/favorite/favorite.api'
-import { useFavoritesStore } from '../../store/favorites.store'
+} from '../api/favorite.api'
+import { useFavoritesStore } from '../../../store/favorites.store'
 
 type UseFavoriteWorkOptions = {
   onAdded?: (worksId: number) => void

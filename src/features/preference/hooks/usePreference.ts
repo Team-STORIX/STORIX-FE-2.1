@@ -4,8 +4,8 @@ import {
   getPreferenceResults,
   getPreferenceStats,
   postPreferenceAnalyze,
-} from '../../lib/api/preference/preference.api'
-import type { PreferenceAnalyzeRequest } from '../../lib/api/preference/preference.schema'
+} from '../api/preference.api'
+import type { PreferenceAnalyzeRequest } from '../api/preference.schema'
 
 export const usePreferenceExploration = (enabled = true) =>
   useQuery({

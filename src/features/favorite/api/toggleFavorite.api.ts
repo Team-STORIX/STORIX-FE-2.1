@@ -1,5 +1,6 @@
-import { apiClient } from '../axios-instance'
-import type { ApiResponse } from '../types'
+// src/features/favorite/api/toggleFavorite.api.ts
+import { apiClient } from '../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../lib/api/types'
 
 type ToggleWorkResult = { isFavoriteWorks: boolean }
 type ToggleArtistResult = { isFavoriteArtist: boolean }

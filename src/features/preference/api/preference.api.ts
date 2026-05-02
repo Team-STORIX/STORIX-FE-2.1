@@ -1,4 +1,5 @@
-import { apiClient } from '../axios-instance'
+// src/features/preference/api/preference.api.ts
+import { apiClient } from '../../../lib/api/axios-instance'
 import {
   PreferenceAnalyzeResponseSchema,
   PreferenceExplorationResponseSchema,
