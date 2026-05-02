@@ -138,6 +138,8 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="topicroom" options={{ headerShown: false }} />
+        {/* Works detail screen — header managed by Stack.Screen inside the screen */}
+        <Stack.Screen name="works" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
