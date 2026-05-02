@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useChatRoomMessagesInfinite } from '../../src/features/topicroom/hooks/useChatRoomMessagesInfinite'
-import { useTopicRoomStomp } from '../../src/hooks/topicroom/useTopicRoomStomp'
+import { useTopicRoomStomp } from '../../src/features/topicroom'
 import { useLeaveTopicRoom } from '../../src/features/topicroom/hooks/useLeaveTopicRoom'
 import { useTopicRoomMembers } from '../../src/features/topicroom/hooks/useTopicRoomMembers'
 import { useProfileStore } from '../../src/features/profile/store/profile.store'

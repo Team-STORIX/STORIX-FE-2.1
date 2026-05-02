@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Client, type IFrame, type StompSubscription } from '@stomp/stompjs'
-import { useAuthStore } from '../../store/auth.store'
-import { useProfileStore } from '../../features/profile/store/profile.store'
+import { useAuthStore } from '../../../store/auth.store'
+import { useProfileStore } from '../../profile/store/profile.store'
 import {
   STORIX_STOMP_BROKER_URL,
   makeSubscriptionId,
   normalizeTopicRoomStompMessage,
   topicRoomPubPath,
   topicRoomSubPath,
-} from '../../lib/api/topicroom'
-import type { TopicRoomUiMsg } from '../../lib/api/topicroom'
+} from '../stomp'
+import type { TopicRoomUiMsg } from '../stomp'
 
 // text-encoding polyfill for @stomp/stompjs is imported in app/_layout.tsx.
 // @stomp/stompjs v7 uses native WebSocket via brokerURL — SockJS is not used.

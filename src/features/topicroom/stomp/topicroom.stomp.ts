@@ -1,4 +1,4 @@
-// src/lib/api/topicroom/topicroom.stomp.ts
+// src/features/topicroom/stomp/topicroom.stomp.ts
 import {
   TopicRoomStompMessageSchema,
   type TopicRoomUiMsg,

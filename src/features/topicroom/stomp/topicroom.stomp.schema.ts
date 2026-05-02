@@ -1,4 +1,4 @@
-// src/lib/api/topicroom/topicroom.stomp.schema.ts
+// src/features/topicroom/stomp/topicroom.stomp.schema.ts
 import { z } from 'zod'
 
 //   STOMP로 내려오는 채팅 메시지(필요 필드만 정확히 정의 + 나머지는 passthrough)
