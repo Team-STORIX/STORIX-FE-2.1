@@ -33,8 +33,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          title: '탐색',
-          tabBarIcon: ({ color }) => <TabBarIcon name="search" color={color} />,
+          title: '토픽룸',
+          tabBarIcon: ({ color }) => <TabBarIcon name="comments" color={color} />,
         }}
       />
       <Tabs.Screen
