@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getWorksSearch } from '../../lib/api/search/search.api'
+import { getWorksSearch } from '../api/search.api'
 import type {
   SearchGenre,
   SearchWorksType,
   WorksSort,
-} from '../../lib/api/search/search.schema'
+} from '../api/search.schema'
 
 export function useWorksSearch(params: {
   keyword: string

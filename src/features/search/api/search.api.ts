@@ -1,4 +1,5 @@
-import { apiClient } from '../axios-instance'
+// src/features/search/api/search.api.ts
+import { apiClient } from '../../../lib/api/axios-instance'
 import {
   DeleteRecentResponseSchema,
   RecentResponseSchema,

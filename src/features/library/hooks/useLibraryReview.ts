@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import {
   getLibraryReview,
   type LibraryReviewSort,
-} from '../../lib/api/library/library.api'
+} from '../api/library.api'
 
 type Params = { sort?: LibraryReviewSort }
 

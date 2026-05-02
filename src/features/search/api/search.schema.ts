@@ -1,4 +1,4 @@
-// src/api/search/search.schema.ts
+// src/features/search/api/search.schema.ts
 import { z } from 'zod'
 
 // 공통 응답 래퍼

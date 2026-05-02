@@ -7,7 +7,7 @@ import {
   getTopicRoomSearch,
   getTrendingKeywords,
   getWorksSearch,
-} from '../../lib/api/search/search.api'
+} from '../api/search.api'
 import type {
   SearchGenre,
   SearchWorksType,
@@ -15,7 +15,7 @@ import type {
   TopicRoomSort,
   WorksSearchItem,
   WorksSort,
-} from '../../lib/api/search/search.schema'
+} from '../api/search.schema'
 
 // ─── Shared pagination types ─────────────────────────────────────────────────
 

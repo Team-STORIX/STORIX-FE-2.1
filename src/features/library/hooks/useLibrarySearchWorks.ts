@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { getLibrarySearchWorks } from '../../lib/api/library/library.api'
+import { getLibrarySearchWorks } from '../api/library.api'
 
 export const useLibrarySearchWorksInfinite = (keyword: string) =>
   useInfiniteQuery({

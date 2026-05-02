@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteLibraryRecentKeyword,
   getLibraryRecentKeywords,
-} from '../../lib/api/library/library.api'
+} from '../api/library.api'
 
 export const useLibraryRecentKeywords = () =>
   useQuery({

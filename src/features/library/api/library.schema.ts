@@ -1,4 +1,4 @@
-// src/lib/api/library/library.schema.ts
+// src/features/library/api/library.schema.ts
 import { z } from 'zod'
 
 /** 공통 API 래퍼(서버가 isSuccess/code/message/result/timestamp 형태로 주는 경우) */
