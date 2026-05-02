@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPopularTopicRooms } from '../../lib/api/topicroom/topicroom.api'
+import { getPopularTopicRooms } from '../api/topicroom.api'
 
 export const usePopularTopicRooms = () =>
   useQuery({

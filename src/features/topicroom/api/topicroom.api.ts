@@ -1,5 +1,6 @@
+// src/features/topicroom/api/topicroom.api.ts
 import { z } from 'zod'
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../lib/api/axios-instance'
 import {
   ApiEnvelopeSchema,
   MyTopicRoomSliceSchema,

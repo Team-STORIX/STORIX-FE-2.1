@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { leaveTopicRoom } from '../../lib/api/topicroom/topicroom.api'
+import { leaveTopicRoom } from '../api/topicroom.api'
 
 export const useLeaveTopicRoom = () => {
   const qc = useQueryClient()

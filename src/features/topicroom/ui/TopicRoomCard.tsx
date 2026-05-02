@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { TopicRoomItem } from '../../lib/api/topicroom/topicroom.api'
-import { C } from '../../theme/colors'
+import type { TopicRoomItem } from '../api/topicroom.api'
+import { C } from '../../../theme/colors'
 
 function worksTypeLabel(type?: string | null): string | null {
   if (type === 'WEBTOON') return '웹툰'

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { reportTopicRoomUser } from '../../lib/api/topicroom/topicroom.api'
+import { reportTopicRoomUser } from '../api/topicroom.api'
 
 type Vars = {
   roomId: number

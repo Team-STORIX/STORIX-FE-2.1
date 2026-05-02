@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C } from '../../theme/colors'
+import { C } from '../../../theme/colors'
 
 type Props = {
   value: string

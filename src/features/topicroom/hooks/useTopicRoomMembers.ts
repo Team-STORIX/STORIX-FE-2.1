@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getTopicRoomMembers } from '../../lib/api/topicroom/topicroom.api'
+import { getTopicRoomMembers } from '../api/topicroom.api'
 
 export const useTopicRoomMembers = (roomId: number) =>
   useQuery({

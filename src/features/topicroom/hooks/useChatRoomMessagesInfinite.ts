@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { getChatRoomMessages } from '../../lib/api/chat/chat.api'
+import { getChatRoomMessages } from '../api/chat.api'
 
 export const useChatRoomMessagesInfinite = (params: {
   roomId: number

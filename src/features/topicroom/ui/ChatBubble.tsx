@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { C } from '../../theme/colors'
+import { C } from '../../../theme/colors'
 
 export type DisplayMsg = {
   key: string

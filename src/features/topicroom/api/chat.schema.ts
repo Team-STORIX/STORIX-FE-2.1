@@ -1,4 +1,4 @@
-// src/lib/api/chat/chat.schema.ts
+// src/features/topicroom/api/chat.schema.ts
 import { z } from 'zod'
 
 /** 공통 API 래퍼(isSuccess/code/message/result/timestamp) */

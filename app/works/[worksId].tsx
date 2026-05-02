@@ -18,8 +18,7 @@ import {
   ReviewCard,
   type WorksReviewItem,
 } from '../../src/features/works'
-import { useJoinTopicRoom } from '../../src/hooks/topicroom/useJoinTopicRoom'
-import { findTopicRoomIdByWorksName } from '../../src/lib/api/topicroom/topicroom.api'
+import { useJoinTopicRoom, findTopicRoomIdByWorksName } from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
 
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'

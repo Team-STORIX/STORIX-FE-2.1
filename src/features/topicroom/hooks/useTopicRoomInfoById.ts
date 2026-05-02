@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { findTopicRoomInfoById } from '../../lib/api/topicroom/topicroom.api'
+import { findTopicRoomInfoById } from '../api/topicroom.api'
 
 export const useTopicRoomInfoById = (params: {
   keyword: string

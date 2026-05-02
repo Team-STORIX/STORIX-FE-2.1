@@ -1,4 +1,4 @@
-// src/lib/topicroom/formatTopicRoomSubtitle.ts
+// src/features/topicroom/api/formatTopicRoomSubtitle.ts
 export const formatTopicRoomSubtitle = (
   worksType?: string | null,
   worksName?: string | null,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getMyTopicRooms } from '../../lib/api/topicroom/topicroom.api'
+import { getMyTopicRooms } from '../api/topicroom.api'
 
 type Params = {
   size?: number

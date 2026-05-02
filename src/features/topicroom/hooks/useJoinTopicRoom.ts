@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { joinTopicRoom } from '../../lib/api/topicroom/topicroom.api'
+import { joinTopicRoom } from '../api/topicroom.api'
 
 type JoinResult =
   | { joined: true; alreadyJoined?: false }

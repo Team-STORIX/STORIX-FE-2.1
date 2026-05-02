@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getTodayTopicRooms } from '../../lib/api/topicroom/topicroom.api'
+import { getTodayTopicRooms } from '../api/topicroom.api'
 
 export const useTodayTopicRooms = () =>
   useQuery({

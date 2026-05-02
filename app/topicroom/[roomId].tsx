@@ -11,16 +11,16 @@ import {
   View,
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useChatRoomMessagesInfinite } from '../../src/hooks/topicroom/useChatRoomMessagesInfinite'
+import { useChatRoomMessagesInfinite } from '../../src/features/topicroom/hooks/useChatRoomMessagesInfinite'
 import { useTopicRoomStomp } from '../../src/hooks/topicroom/useTopicRoomStomp'
-import { useLeaveTopicRoom } from '../../src/hooks/topicroom/useLeaveTopicRoom'
-import { useTopicRoomMembers } from '../../src/hooks/topicroom/useTopicRoomMembers'
+import { useLeaveTopicRoom } from '../../src/features/topicroom/hooks/useLeaveTopicRoom'
+import { useTopicRoomMembers } from '../../src/features/topicroom/hooks/useTopicRoomMembers'
 import { useProfileStore } from '../../src/features/profile/store/profile.store'
-import { ChatBubble } from '../../src/components/topicroom/ChatBubble'
-import { ChatInput } from '../../src/components/topicroom/ChatInput'
-import { ConnectionStatusPill } from '../../src/components/topicroom/ConnectionStatusPill'
+import { ChatBubble } from '../../src/features/topicroom/ui/ChatBubble'
+import { ChatInput } from '../../src/features/topicroom/ui/ChatInput'
+import { ConnectionStatusPill } from '../../src/features/topicroom/ui/ConnectionStatusPill'
 import { C } from '../../src/theme/colors'
-import type { DisplayMsg } from '../../src/components/topicroom/ChatBubble'
+import type { DisplayMsg } from '../../src/features/topicroom/ui/ChatBubble'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

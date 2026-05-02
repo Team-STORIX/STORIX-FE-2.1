@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createTopicRoom } from '../../lib/api/topicroom/topicroom.api'
+import { createTopicRoom } from '../api/topicroom.api'
 
 type Vars = { worksId: number; topicRoomName: string }
 

@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { searchTopicRoomsSlice } from '../../lib/api/topicroom/topicroom.api'
+import { searchTopicRoomsSlice } from '../api/topicroom.api'
 
 export const useTopicRoomSearchInfinite = (
   keyword: string,

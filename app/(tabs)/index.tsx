@@ -12,12 +12,14 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useMe } from '../../src/features/profile'
 import { useTodayHomeFeeds } from '../../src/features/home'
-import { useTodayTopicRooms } from '../../src/hooks/topicroom/useTodayTopicRooms'
-import { usePopularTopicRooms } from '../../src/hooks/topicroom/usePopularTopicRooms'
-import { formatTopicRoomSubtitle } from '../../src/lib/api/topicroom'
+import {
+  useTodayTopicRooms,
+  usePopularTopicRooms,
+  formatTopicRoomSubtitle,
+} from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
 import type { TodayFeedItem } from '../../src/lib/api/homeFeed/homeFeed.schema'
-import type { TopicRoomItem } from '../../src/lib/api/topicroom/topicroom.schema'
+import type { TopicRoomItem } from '../../src/features/topicroom'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

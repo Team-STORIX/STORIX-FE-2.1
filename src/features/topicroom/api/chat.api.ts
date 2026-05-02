@@ -1,4 +1,5 @@
-import { apiClient } from '../axios-instance'
+// src/features/topicroom/api/chat.api.ts
+import { apiClient } from '../../../lib/api/axios-instance'
 import { ApiEnvelopeSchema, ChatRoomMessagePageSchema } from './chat.schema'
 
 const MessagesEnvelopeSchema = ApiEnvelopeSchema(ChatRoomMessagePageSchema)

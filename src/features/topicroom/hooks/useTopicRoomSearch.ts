@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { searchTopicRooms } from '../../lib/api/topicroom/topicroom.api'
+import { searchTopicRooms } from '../api/topicroom.api'
 
 export const useTopicRoomSearch = (keyword: string) => {
   const k = keyword.trim()

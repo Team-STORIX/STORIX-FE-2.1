@@ -11,14 +11,16 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useTodayTopicRooms } from '../../src/hooks/topicroom/useTodayTopicRooms'
-import { usePopularTopicRooms } from '../../src/hooks/topicroom/usePopularTopicRooms'
-import { useMyTopicRoomsAll } from '../../src/hooks/topicroom/useMyTopicRoomsAll'
-import { useTopicRoomSearchInfinite } from '../../src/hooks/topicroom/useTopicRoomSearchInfinite'
-import { useJoinTopicRoom } from '../../src/hooks/topicroom/useJoinTopicRoom'
-import { TopicRoomCard } from '../../src/components/topicroom/TopicRoomCard'
+import {
+  useTodayTopicRooms,
+  usePopularTopicRooms,
+  useMyTopicRoomsAll,
+  useTopicRoomSearchInfinite,
+  useJoinTopicRoom,
+  TopicRoomCard,
+} from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
-import type { TopicRoomItem } from '../../src/lib/api/topicroom/topicroom.api'
+import type { TopicRoomItem } from '../../src/features/topicroom'
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
