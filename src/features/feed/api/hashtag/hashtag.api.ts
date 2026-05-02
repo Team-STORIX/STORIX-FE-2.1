@@ -1,4 +1,4 @@
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../../lib/api/axios-instance'
 import { RecommendedHashtagEnvelopeSchema } from './hashtag.schema'
 
 /** GET /api/v1/hashtags/recommendations — 사용자 맞춤 해시태그 추천 */

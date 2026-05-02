@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPlusReviewDuplicate } from '../../lib/api/plus/plus.api'
+import { getPlusReviewDuplicate } from '../../api/plus/plus.api'
 
 export function usePlusReviewDuplicateCheck(worksId?: number) {
   return useQuery({

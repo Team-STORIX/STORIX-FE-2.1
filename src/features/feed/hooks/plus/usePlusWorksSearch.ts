@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { getPlusWorksSearch } from '../../lib/api/plus/plus.api'
+import { getPlusWorksSearch } from '../../api/plus/plus.api'
 
 type Params = { keyword: string; size?: number }
 

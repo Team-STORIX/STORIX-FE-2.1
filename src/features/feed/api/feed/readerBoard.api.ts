@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../../lib/api/axios-instance'
 
 export type FeedSort = 'LATEST'
 

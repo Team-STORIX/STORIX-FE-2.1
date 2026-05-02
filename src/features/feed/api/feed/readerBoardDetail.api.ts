@@ -1,4 +1,4 @@
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../../lib/api/axios-instance'
 import type { FeedBoardItem, FeedSort, PageResult } from './readerBoard.api'
 
 type ApiResponse<T> = {
