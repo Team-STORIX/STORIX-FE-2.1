@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getTodayHomeFeeds } from '../../lib/api/homeFeed/homeFeed.api'
+import { getTodayHomeFeeds } from '../api/home.api'
 
 export const useTodayHomeFeeds = () =>
   useQuery({
