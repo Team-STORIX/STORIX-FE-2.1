@@ -31,24 +31,24 @@ import { useAuthStore } from '../../src/store/auth.store'
 import { C, Radius, S, Typography } from '../../src/theme'
 
 const ONBOARDING_STEPS = [
-  { key: 'nickname', title: 'Nickname' },
-  { key: 'genres', title: 'Genres' },
-  { key: 'review', title: 'Finish' },
+  { key: 'nickname', title: '닉네임' },
+  { key: 'genres', title: '장르' },
+  { key: 'review', title: '완료' },
 ] as const
 
 const GENRE_OPTIONS = GenreKeySchema.options
 
 const GENRE_LABELS: Record<GenreKey, string> = {
-  ROMANCE: 'Romance',
-  FANTASY: 'Fantasy',
-  ROFAN: 'Romance Fantasy',
-  HISTORICAL: 'Historical',
-  DRAMA: 'Drama',
-  THRILLER: 'Thriller',
-  ACTION: 'Action',
+  ROMANCE: '로맨스',
+  FANTASY: '판타지',
+  ROFAN: '로판',
+  HISTORICAL: '시대물',
+  DRAMA: '드라마',
+  THRILLER: '스릴러',
+  ACTION: '액션',
   BL: 'BL',
-  MODERN_FANTASY: 'Modern Fantasy',
-  DAILY: 'Daily',
+  MODERN_FANTASY: '현대 판타지',
+  DAILY: '일상',
 }
 
 const MAX_NICKNAME_LENGTH = 12
@@ -57,18 +57,18 @@ const MIN_NICKNAME_LENGTH = 2
 const validateNickname = (nickname: string): string | null => {
   const length = Array.from(nickname).length
 
-  if (!nickname) return 'Enter a nickname to continue.'
+  if (!nickname) return '닉네임을 입력해 주세요.'
   if (nickname !== nickname.trim()) {
-    return 'Nickname cannot start or end with spaces.'
+    return '닉네임 앞뒤에는 공백을 넣을 수 없어요.'
   }
   if (/\s/.test(nickname)) {
-    return 'Nickname cannot include spaces.'
+    return '닉네임에는 공백을 사용할 수 없어요.'
   }
   if (length < MIN_NICKNAME_LENGTH) {
-    return `Nickname must be at least ${MIN_NICKNAME_LENGTH} characters.`
+    return `닉네임은 ${MIN_NICKNAME_LENGTH}자 이상이어야 해요.`
   }
   if (length > MAX_NICKNAME_LENGTH) {
-    return `Nickname must be ${MAX_NICKNAME_LENGTH} characters or fewer.`
+    return `닉네임은 ${MAX_NICKNAME_LENGTH}자 이하로 입력해 주세요.`
   }
   return null
 }
@@ -146,21 +146,21 @@ export default function OnboardingScreen() {
 
       if (extractIsAvailableFromValidResponse(response)) {
         setVerifiedNickname(trimmedNickname)
-        setNicknameMessage('This nickname is available.')
+        setNicknameMessage('사용할 수 있는 닉네임이에요.')
         setNicknameMessageTone('success')
         return true
       }
 
       if (extractIsDuplicatedFromValidResponse(response)) {
         setVerifiedNickname(null)
-        setNicknameMessage('This nickname is already in use.')
+        setNicknameMessage('이미 사용 중인 닉네임이에요.')
         setNicknameMessageTone('error')
         return false
       }
 
       if (extractIsForbiddenFromValidResponse(response)) {
         setVerifiedNickname(null)
-        setNicknameMessage('This nickname cannot be used.')
+        setNicknameMessage('사용할 수 없는 닉네임이에요.')
         setNicknameMessageTone('error')
         return false
       }
@@ -169,14 +169,14 @@ export default function OnboardingScreen() {
       setNicknameMessage(
         typeof response.message === 'string' && response.message.trim().length > 0
           ? response.message
-          : 'Nickname validation failed. Try again.',
+          : '닉네임 확인에 실패했어요. 다시 시도해 주세요.',
       )
       setNicknameMessageTone('error')
       return false
     } catch (error) {
       setVerifiedNickname(null)
       setNicknameMessage(
-        getErrorMessage(error, 'Nickname validation failed. Try again.'),
+        getErrorMessage(error, '닉네임 확인에 실패했어요. 다시 시도해 주세요.'),
       )
       setNicknameMessageTone('error')
       return false
@@ -196,7 +196,7 @@ export default function OnboardingScreen() {
 
     if (step === 1) {
       if (selectedGenres.length === 0) {
-        setScreenError('Select at least one genre to continue.')
+        setScreenError('계속하려면 장르를 하나 이상 선택해 주세요.')
         return
       }
       setStep(2)
@@ -214,19 +214,19 @@ export default function OnboardingScreen() {
 
   const handleSubmit = async () => {
     if (!onboardingToken) {
-      setScreenError('Onboarding token is missing. Return to login and try again.')
+      setScreenError('온보딩 토큰이 없어요. 로그인부터 다시 진행해 주세요.')
       return
     }
 
     if (!isNicknameVerified) {
       setStep(0)
-      setScreenError('Verify your nickname before signing up.')
+      setScreenError('회원가입 전에 닉네임 확인을 완료해 주세요.')
       return
     }
 
     if (selectedGenres.length === 0) {
       setStep(1)
-      setScreenError('Select at least one genre before signing up.')
+      setScreenError('회원가입 전에 장르를 하나 이상 선택해 주세요.')
       return
     }
 
@@ -243,7 +243,7 @@ export default function OnboardingScreen() {
       await signupMutation.mutateAsync(payload)
       router.replace('/(tabs)')
     } catch (error) {
-      setScreenError(getErrorMessage(error, 'Signup failed. Try again.'))
+      setScreenError(getErrorMessage(error, '회원가입에 실패했어요. 다시 시도해 주세요.'))
     }
   }
 
@@ -251,17 +251,17 @@ export default function OnboardingScreen() {
     if (step === 0) {
       return (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose your nickname</Text>
+          <Text style={styles.sectionTitle}>닉네임을 설정해 주세요</Text>
           <Text style={styles.sectionBody}>
-            This nickname is shown in feeds, topic rooms, and your profile.
+            피드, 톡방, 프로필에 표시될 닉네임이에요.
           </Text>
 
           <View style={styles.inputWrap}>
-            <Text style={styles.fieldLabel}>Nickname</Text>
+            <Text style={styles.fieldLabel}>닉네임</Text>
             <TextInput
               value={nickname}
               onChangeText={handleNicknameChange}
-              placeholder="Enter nickname"
+              placeholder="닉네임 입력"
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               autoCorrect={false}
@@ -270,7 +270,7 @@ export default function OnboardingScreen() {
               returnKeyType="done"
             />
             <Text style={styles.helperText}>
-              {MIN_NICKNAME_LENGTH}-{MAX_NICKNAME_LENGTH} characters, no spaces.
+              {MIN_NICKNAME_LENGTH}~{MAX_NICKNAME_LENGTH}자, 공백 없이 입력해 주세요.
             </Text>
           </View>
 
@@ -287,7 +287,7 @@ export default function OnboardingScreen() {
             {nicknameCheckMutation.isPending ? (
               <ActivityIndicator color={C.primary} size="small" />
             ) : (
-              <Text style={styles.secondaryButtonText}>Check availability</Text>
+              <Text style={styles.secondaryButtonText}>중복 확인</Text>
             )}
           </Pressable>
 
@@ -319,9 +319,9 @@ export default function OnboardingScreen() {
     if (step === 1) {
       return (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pick your favorite genres</Text>
+          <Text style={styles.sectionTitle}>좋아하는 장르를 골라 주세요</Text>
           <Text style={styles.sectionBody}>
-            Select one or more genres for your initial reader profile.
+            독자 프로필을 위한 선호 장르를 하나 이상 선택해 주세요.
           </Text>
 
           <View style={styles.genreGrid}>
@@ -354,11 +354,11 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.noteCard}>
-            <Text style={styles.noteTitle}>Preference scope for Phase 8B</Text>
+            <Text style={styles.noteTitle}>현재 단계 안내</Text>
             <Text style={styles.noteBody}>
-              This phase captures genre preferences only. Work-level preference
-              selection and swipe onboarding remain a later phase, so signup is
-              submitted with an empty favorite works list for now.
+              이번 단계에서는 장르 취향만 먼저 받아요. 작품 단위 취향 선택과
+              스와이프 온보딩은 다음 단계에서 추가될 예정이라, 지금은 선호 작품
+              목록 없이 회원가입이 진행돼요.
             </Text>
           </View>
         </View>
@@ -367,26 +367,26 @@ export default function OnboardingScreen() {
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Review and finish</Text>
+        <Text style={styles.sectionTitle}>입력 내용을 확인해 주세요</Text>
         <Text style={styles.sectionBody}>
-          Confirm the signup data, then complete onboarding.
+          회원가입 정보를 확인한 뒤 온보딩을 완료해 주세요.
         </Text>
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Nickname</Text>
+            <Text style={styles.summaryLabel}>닉네임</Text>
             <Text style={styles.summaryValue}>{trimmedNickname}</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Marketing consent</Text>
+            <Text style={styles.summaryLabel}>마케팅 수신 동의</Text>
             <Text style={styles.summaryValue}>
-              {marketingAgree ? 'Agreed' : 'Not agreed'}
+              {marketingAgree ? '동의함' : '동의 안 함'}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryBlock}>
-            <Text style={styles.summaryLabel}>Genres</Text>
+            <Text style={styles.summaryLabel}>장르</Text>
             <View style={styles.summaryGenreWrap}>
               {selectedGenres.map((genre) => (
                 <View key={genre} style={styles.summaryChip}>
@@ -412,10 +412,10 @@ export default function OnboardingScreen() {
         ]}
       >
         <View style={styles.missingTokenCard}>
-          <Text style={styles.missingTokenTitle}>Onboarding session missing</Text>
+          <Text style={styles.missingTokenTitle}>온보딩 정보가 없어요</Text>
           <Text style={styles.missingTokenBody}>
-            No onboarding token was found in the auth store. Return to login and
-            start the social login flow again.
+            인증 정보에서 온보딩 토큰을 찾지 못했어요. 로그인 화면으로 돌아가
+            소셜 로그인을 다시 진행해 주세요.
           </Text>
           <Pressable
             style={({ pressed }) => [
@@ -426,7 +426,7 @@ export default function OnboardingScreen() {
             onPress={handleBackToLogin}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryButtonText}>Back to login</Text>
+            <Text style={styles.primaryButtonText}>로그인으로 돌아가기</Text>
           </Pressable>
         </View>
       </View>
@@ -440,10 +440,10 @@ export default function OnboardingScreen() {
     >
       <View style={[styles.container, { paddingTop: insets.top + S.cardPad }]}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>New user onboarding</Text>
-          <Text style={styles.title}>Finish your STORIX signup</Text>
+          <Text style={styles.eyebrow}>신규 회원 온보딩</Text>
+          <Text style={styles.title}>STORIX 회원가입을 마무리해 주세요</Text>
           <Text style={styles.subtitle}>
-            One short flow and you will land in the main tabs.
+            몇 단계만 완료하면 바로 메인 화면으로 이동할 수 있어요.
           </Text>
         </View>
 
@@ -492,7 +492,7 @@ export default function OnboardingScreen() {
         >
           <View style={styles.card}>
             <Text style={styles.cardStepLabel}>
-              Step {step + 1} of {ONBOARDING_STEPS.length}
+              {ONBOARDING_STEPS.length}단계 중 {step + 1}단계
             </Text>
             <Text style={styles.cardTitle}>{currentStep.title}</Text>
             {renderStepContent()}
@@ -525,7 +525,7 @@ export default function OnboardingScreen() {
               }}
               accessibilityRole="button"
             >
-              <Text style={styles.footerSecondaryButtonText}>Back</Text>
+              <Text style={styles.footerSecondaryButtonText}>이전</Text>
             </Pressable>
           ) : (
             <View style={styles.footerSpacer} />
@@ -546,7 +546,7 @@ export default function OnboardingScreen() {
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {step === 2 ? 'Complete signup' : 'Next'}
+                {step === 2 ? '회원가입 완료' : '다음'}
               </Text>
             )}
           </Pressable>
