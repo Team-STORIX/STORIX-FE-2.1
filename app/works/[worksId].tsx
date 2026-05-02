@@ -1,43 +1,50 @@
 import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
-import { Image } from 'expo-image'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorksDetail } from '../../src/hooks/works/useWorksDetail'
 import { useFavoriteWork } from '../../src/hooks/favorite/useFavoriteWork'
+import {
+  useWorksReviewsInfinite,
+  useLikeWorksReview,
+} from '../../src/hooks/works/useWorksReviews'
 import { useJoinTopicRoom } from '../../src/hooks/topicroom/useJoinTopicRoom'
 import { findTopicRoomIdByWorksName } from '../../src/lib/api/topicroom/topicroom.api'
-
-// TODO(Phase works-ui): Replace with the final works detail design.
+import { WorksHero } from '../../src/components/works/WorksHero'
+import { ReviewCard } from '../../src/components/works/ReviewCard'
+import { C } from '../../src/theme/colors'
+import type { WorksReviewItem } from '../../src/lib/api/works/worksReview.schema'
 
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
 
 export default function WorksDetailScreen() {
   const { worksId: worksIdParam } = useLocalSearchParams<{ worksId: string }>()
   const worksId = typeof worksIdParam === 'string' ? Number(worksIdParam) : 0
-
+  const insets = useSafeAreaInsets()
   const router = useRouter()
 
-  // ── Data ─────────────────────────────────────────────────────────────────
-  const {
-    data: works,
-    isLoading: worksLoading,
-    isError: worksError,
-  } = useWorksDetail(worksId)
+  // ── Data hooks ────────────────────────────────────────────────────────────
+  const worksQuery = useWorksDetail(worksId)
+  const works = worksQuery.data
 
   const { isFavorite, isMutating, toggleFavorite, isLoading: favLoading } =
     useFavoriteWork(worksId)
 
+  const reviewsQuery = useWorksReviewsInfinite(worksId)
+  const reviews: WorksReviewItem[] =
+    reviewsQuery.data?.pages.flatMap((p) => p.content ?? []) ?? []
+
+  const likeMutation = useLikeWorksReview({ worksId })
   const joinMutation = useJoinTopicRoom()
 
-  // ── TopicRoom entry state ─────────────────────────────────────────────
+  // ── TopicRoom entry ───────────────────────────────────────────────────────
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
   const [entryError, setEntryError] = useState<string | null>(null)
 
@@ -45,22 +52,15 @@ export default function WorksDetailScreen() {
     if (!works?.worksName) return
     setEntryPhase('searching')
     setEntryError(null)
-
     try {
-      // Step 1: find a topicroom that matches this works title exactly.
       const roomId = await findTopicRoomIdByWorksName(works.worksName)
-
       if (!roomId) {
         setEntryPhase('error')
         setEntryError('이 작품의 토픽룸이 없습니다.')
         return
       }
-
-      // Step 2: join (409 = already a member, handled as success by the hook).
       setEntryPhase('joining')
       await joinMutation.mutateAsync(roomId)
-
-      // Step 3: navigate to chat.
       router.push(`/topicroom/${roomId}`)
       setEntryPhase('idle')
     } catch {
@@ -71,90 +71,66 @@ export default function WorksDetailScreen() {
 
   const isEntering = entryPhase === 'searching' || entryPhase === 'joining'
 
-  // ── Loading / error states ────────────────────────────────────────────
-  if (worksLoading) {
+  // ── Full-screen loading / error ───────────────────────────────────────────
+  if (worksQuery.isLoading) {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: '작품 상세' }} />
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={C.primary} />
       </View>
     )
   }
 
-  if (worksError || !works) {
+  if (worksQuery.isError || !works) {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: '작품 상세' }} />
-        <Text style={styles.errorText}>작품 정보를 불러오지 못했습니다.</Text>
+        <Text style={styles.fullErrorText}>작품 정보를 불러오지 못했습니다.</Text>
       </View>
     )
   }
 
-  // ── Main render ───────────────────────────────────────────────────────
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Stack.Screen
-        options={{
-          title: works.worksName,
-          headerBackTitle: '뒤로',
-        }}
-      />
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Stack.Screen options={{ title: works.worksName, headerBackTitle: '뒤로' }} />
 
-      {/* Thumbnail */}
-      {works.thumbnailUrl ? (
-        <Image
-          source={{ uri: works.thumbnailUrl }}
-          style={styles.thumbnail}
-          contentFit="cover"
-        />
-      ) : (
-        <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-          <Text style={styles.thumbnailPlaceholderText}>이미지 없음</Text>
-        </View>
-      )}
+      {/* ── Hero: thumbnail + title + meta ─────────────────────────────── */}
+      <WorksHero works={works} />
 
-      {/* Title + metadata */}
-      <View style={styles.meta}>
-        <Text style={styles.title}>{works.worksName}</Text>
-
-        <View style={styles.tags}>
-          {works.worksType ? (
-            <Tag label={works.worksType} />
-          ) : null}
-          {works.genre ? (
-            <Tag label={works.genre} />
-          ) : null}
-        </View>
-
-        {works.author ? (
-          <Text style={styles.author}>{works.author}</Text>
-        ) : null}
-
-        {works.avgRating != null ? (
-          <Text style={styles.rating}>⭐ {works.avgRating.toFixed(1)}</Text>
-        ) : null}
-      </View>
-
-      {/* Description */}
+      {/* ── Description ────────────────────────────────────────────────── */}
       {works.description ? (
-        <View style={styles.descSection}>
+        <View style={styles.section}>
           <Text style={styles.sectionLabel}>작품 소개</Text>
           <Text style={styles.description}>{works.description}</Text>
         </View>
       ) : null}
 
-      {/* Actions */}
-      <View style={styles.actions}>
+      {/* ── Actions ────────────────────────────────────────────────────── */}
+      <View style={styles.actionsSection}>
         {/* Favorite toggle */}
         <Pressable
-          style={[styles.actionBtn, styles.favoriteBtn]}
-          onPress={() => toggleFavorite()}
+          style={({ pressed }) => [
+            styles.btn,
+            isFavorite ? styles.favBtnActive : styles.favBtnDefault,
+            pressed && styles.btnPressed,
+          ]}
+          onPress={() => void toggleFavorite()}
           disabled={favLoading || isMutating}
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
         >
           {favLoading || isMutating ? (
-            <ActivityIndicator color="#333" size="small" />
+            <ActivityIndicator
+              size="small"
+              color={isFavorite ? C.primary : C.text}
+            />
           ) : (
-            <Text style={styles.favoriteBtnText}>
+            <Text style={[styles.btnText, isFavorite && styles.favBtnActiveText]}>
               {isFavorite ? '♥ 즐겨찾기 해제' : '♡ 즐겨찾기 추가'}
             </Text>
           )}
@@ -162,13 +138,18 @@ export default function WorksDetailScreen() {
 
         {/* TopicRoom entry */}
         <Pressable
-          style={[styles.actionBtn, styles.topicRoomBtn, isEntering && styles.btnDisabled]}
+          style={({ pressed }) => [
+            styles.btn,
+            styles.topicRoomBtn,
+            (isEntering || pressed) && styles.btnPressed,
+          ]}
           onPress={enterTopicRoom}
           disabled={isEntering}
+          accessibilityRole="button"
         >
           {isEntering ? (
-            <View style={styles.entryLoading}>
-              <ActivityIndicator color="#fff" size="small" />
+            <View style={styles.rowCenter}>
+              <ActivityIndicator size="small" color="#fff" />
               <Text style={styles.topicRoomBtnText}>
                 {entryPhase === 'searching' ? '토픽룸 검색 중…' : '입장 중…'}
               </Text>
@@ -177,89 +158,197 @@ export default function WorksDetailScreen() {
             <Text style={styles.topicRoomBtnText}>💬 토픽룸 입장</Text>
           )}
         </Pressable>
+
+        {/* Entry error inline */}
+        {entryPhase === 'error' && entryError ? (
+          <View style={styles.entryErrorBox}>
+            <Text style={styles.entryErrorText}>{entryError}</Text>
+            <Pressable onPress={() => setEntryPhase('idle')}>
+              <Text style={styles.entryErrorDismiss}>닫기</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
-      {/* Entry error */}
-      {entryPhase === 'error' && entryError && (
-        <View style={styles.entryErrorBox}>
-          <Text style={styles.entryErrorText}>{entryError}</Text>
-          <Pressable onPress={() => setEntryPhase('idle')}>
-            <Text style={styles.entryErrorDismiss}>닫기</Text>
+      {/* ── Reviews ────────────────────────────────────────────────────── */}
+      <View style={styles.reviewsSection}>
+        <Text style={styles.reviewsSectionTitle}>
+          리뷰{works.reviewCount != null ? ` ${works.reviewCount}개` : ''}
+        </Text>
+
+        {/* Loading */}
+        {reviewsQuery.isLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={C.primary}
+            style={styles.reviewsLoader}
+          />
+        ) : null}
+
+        {/* Error */}
+        {!reviewsQuery.isLoading && reviewsQuery.isError ? (
+          <Text style={styles.reviewsErrorText}>리뷰를 불러오지 못했습니다.</Text>
+        ) : null}
+
+        {/* Empty */}
+        {!reviewsQuery.isLoading &&
+          !reviewsQuery.isError &&
+          reviews.length === 0 ? (
+          <Text style={styles.reviewsEmptyText}>
+            아직 리뷰가 없습니다. 첫 번째 리뷰를 남겨보세요!
+          </Text>
+        ) : null}
+
+        {/* Review cards */}
+        {reviews.map((item) => (
+          <ReviewCard
+            key={String(item.reviewId)}
+            item={item}
+            onLike={(reviewId) => likeMutation.mutate(reviewId)}
+            isLiking={
+              likeMutation.isPending &&
+              likeMutation.variables === item.reviewId
+            }
+          />
+        ))}
+
+        {/* Load more */}
+        {reviewsQuery.hasNextPage ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.loadMoreBtn,
+              pressed && styles.btnPressed,
+            ]}
+            onPress={() => void reviewsQuery.fetchNextPage()}
+            disabled={reviewsQuery.isFetchingNextPage}
+          >
+            {reviewsQuery.isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={C.primary} />
+            ) : (
+              <Text style={styles.loadMoreText}>리뷰 더 보기</Text>
+            )}
           </Pressable>
-        </View>
-      )}
+        ) : null}
+      </View>
     </ScrollView>
-  )
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function Tag({ label }: { label: string }) {
-  return (
-    <View style={styles.tag}>
-      <Text style={styles.tagText}>{label}</Text>
-    </View>
   )
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+const BTN_RADIUS = 12
+
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#fff' },
-  content: { paddingBottom: 40 },
+  scroll: { flex: 1, backgroundColor: C.bg },
 
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  errorText: { color: '#c00', fontSize: 14 },
-
-  thumbnail: { width: '100%', height: 220, backgroundColor: '#f0f0f0' },
-  thumbnailPlaceholder: { justifyContent: 'center', alignItems: 'center' },
-  thumbnailPlaceholderText: { color: '#bbb', fontSize: 13 },
-
-  meta: { padding: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#eee' },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#111', marginBottom: 10 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  tag: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: C.bg,
   },
-  tagText: { fontSize: 12, color: '#555' },
-  author: { fontSize: 13, color: '#777', marginBottom: 4 },
-  rating: { fontSize: 13, color: '#555' },
+  fullErrorText: { fontSize: 14, color: C.error },
 
-  descSection: { padding: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#eee' },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#888', marginBottom: 8 },
-  description: { fontSize: 14, color: '#333', lineHeight: 22 },
+  // Description section
+  section: {
+    backgroundColor: C.card,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.textMuted,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  description: {
+    fontSize: 14,
+    color: C.textSecondary,
+    lineHeight: 22,
+  },
 
-  actions: { padding: 20, gap: 12 },
-  actionBtn: {
-    borderRadius: 10,
+  // Actions section
+  actionsSection: {
+    backgroundColor: C.card,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+
+  btn: {
+    borderRadius: BTN_RADIUS,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 50,
   },
-  favoriteBtn: {
+  btnText: { fontSize: 15, fontWeight: '600', color: C.text },
+  btnPressed: { opacity: 0.7 },
+
+  favBtnDefault: {
     borderWidth: 1.5,
-    borderColor: '#222',
-    backgroundColor: '#fff',
+    borderColor: C.border,
+    backgroundColor: C.card,
   },
-  favoriteBtnText: { fontSize: 15, fontWeight: '600', color: '#222' },
-  topicRoomBtn: { backgroundColor: '#222' },
+  favBtnActive: {
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    backgroundColor: C.primaryLight,
+  },
+  favBtnActiveText: { color: C.primary },
+
+  topicRoomBtn: { backgroundColor: C.primary },
   topicRoomBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  btnDisabled: { opacity: 0.5 },
-  entryLoading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+  rowCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
   entryErrorBox: {
-    marginHorizontal: 20,
-    marginTop: 4,
-    backgroundColor: '#fff3f3',
-    borderRadius: 8,
+    backgroundColor: '#FFF3F3',
+    borderRadius: 10,
     padding: 14,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  entryErrorText: { fontSize: 13, color: '#c00', flex: 1 },
-  entryErrorDismiss: { fontSize: 13, color: '#888', marginLeft: 12 },
+  entryErrorText: { fontSize: 13, color: C.error, flex: 1 },
+  entryErrorDismiss: { fontSize: 13, color: C.textMuted, marginLeft: 12 },
+
+  // Reviews section
+  reviewsSection: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+  },
+  reviewsSectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: C.text,
+    marginBottom: 14,
+  },
+  reviewsLoader: { marginVertical: 12, alignSelf: 'flex-start' },
+  reviewsErrorText: { fontSize: 13, color: C.error, paddingVertical: 8 },
+  reviewsEmptyText: {
+    fontSize: 13,
+    color: C.textMuted,
+    paddingVertical: 12,
+    textAlign: 'center',
+  },
+
+  // Load more
+  loadMoreBtn: {
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: BTN_RADIUS,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    minHeight: 44,
+  },
+  loadMoreText: { fontSize: 14, fontWeight: '600', color: C.primary },
 })

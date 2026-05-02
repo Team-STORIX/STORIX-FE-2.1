@@ -1,0 +1,18 @@
+export const C = {
+  bg: '#FAFAFA',
+  card: '#FFFFFF',
+  primary: '#5B4CF5',
+  primaryLight: '#EDE9FE',
+  text: '#111111',
+  textSecondary: '#555555',
+  textMuted: '#999999',
+  border: '#EEEEEE',
+  divider: '#F0F0F0',
+  spoilerBg: '#F3F0FF',
+  activeDot: '#22C55E',
+  badgeBg: '#EDE9FE',
+  badgeText: '#5B4CF5',
+  liked: '#EF4444',
+  error: '#CC0000',
+  star: '#F59E0B',
+} as const
