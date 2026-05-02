@@ -26,6 +26,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
 import { useAuthStore } from '../src/store/auth.store'
+import { useLikesStore } from '../src/store/likes.store'
+import { useFavoritesStore } from '../src/store/favorites.store'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -64,14 +66,14 @@ export default function RootLayout() {
     if (fontError) throw fontError
   }, [fontError])
 
-  // Hydrate auth state from SecureStore as early as possible.
-  // Does not call any API — only reads local storage.
+  // Hydrate all local stores in parallel as early as possible.
+  // Promise.allSettled ensures a single failure never blocks app startup.
   useEffect(() => {
-    useAuthStore
-      .getState()
-      .hydrateAuth()
-      .then(() => setAuthReady(true))
-      .catch(() => setAuthReady(true)) // still unblock on failure; state stays unauthenticated
+    Promise.allSettled([
+      useAuthStore.getState().hydrateAuth(),
+      useLikesStore.getState().hydrateLikes(),
+      useFavoritesStore.getState().hydrateFavorites(),
+    ]).then(() => setAuthReady(true))
   }, [])
 
   // Hide the splash screen only after both async gates pass.
