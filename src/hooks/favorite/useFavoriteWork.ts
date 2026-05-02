@@ -5,6 +5,7 @@ import {
   getFavoriteWorkStatus,
   unfavoriteWork,
 } from '../../lib/api/favorite/favorite.api'
+import { useFavoritesStore } from '../../store/favorites.store'
 
 type UseFavoriteWorkOptions = {
   onAdded?: (worksId: number) => void
@@ -59,11 +60,25 @@ export function useFavoriteWork(
   ])
 
   const toggleFavorite = async () => {
-    if (!enabled) return
-    if (statusQuery.data ?? false) {
-      await removeMutation.mutateAsync()
-    } else {
-      await addMutation.mutateAsync()
+    // Guard: do not toggle before the server state is known.
+    if (!enabled || !statusQuery.isSuccess) return
+
+    const id = String(worksId!)
+    const currentIsFav = statusQuery.data
+
+    // Optimistic: flip the store immediately so any screen reading
+    // useFavoritesStore.isFavorited() reflects the change before the API responds.
+    void useFavoritesStore.getState().toggleFavorite(id)
+
+    try {
+      if (currentIsFav) {
+        await removeMutation.mutateAsync()
+      } else {
+        await addMutation.mutateAsync()
+      }
+    } catch {
+      // Revert the store so it stays in sync with the server truth.
+      void useFavoritesStore.getState().toggleFavorite(id)
     }
   }
 

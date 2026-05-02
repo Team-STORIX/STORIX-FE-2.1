@@ -15,6 +15,7 @@ import {
   postWorksReviewReport,
   type UpdateMyReviewPayload,
 } from '../../lib/api/works/worksReview.api'
+import { useLikesStore } from '../../store/likes.store'
 
 export const useWorksMyReview = (worksId: number) =>
   useQuery({
@@ -45,15 +46,25 @@ export const useWorksReviewDetail = (reviewId: number) =>
 
 export const useLikeWorksReview = (params: { worksId: number }) => {
   const qc = useQueryClient()
-  const m = useMutation({
+  return useMutation({
     mutationFn: (reviewId: number) => postWorksReviewLike(reviewId),
+    onMutate: (reviewId) => {
+      // Optimistic: flip store immediately before the API responds.
+      void useLikesStore.getState().toggleLike(String(reviewId))
+      return { reviewId }
+    },
+    onError: (_err, _reviewId, context) => {
+      // Revert store so it stays consistent with server truth.
+      if (context) {
+        void useLikesStore.getState().toggleLike(String(context.reviewId))
+      }
+    },
+    onSettled: () => {
+      // Invalidate on both success and error so the list re-fetches server state.
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
+    },
   })
-  useEffect(() => {
-    if (!m.isSuccess) return
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
-  }, [m.isSuccess, qc, params.worksId])
-  return m
 }
 
 export const useReportWorksReview = () =>
