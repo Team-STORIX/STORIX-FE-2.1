@@ -11,6 +11,7 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import 'react-native-reanimated'
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ import { useColorScheme } from '@/components/useColorScheme'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
+import { C } from '../src/theme/colors'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -83,9 +85,10 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, authReady])
 
-  // Render nothing while splash is visible — the native splash covers the screen.
+  // Show a branded screen while the native splash is visible (or as a JS-side
+  // fallback on Expo Go / warm starts where the native splash may not appear).
   if (!fontsLoaded || !authReady) {
-    return null
+    return <BrandedSplash />
   }
 
   return (
@@ -127,6 +130,47 @@ function AuthGate() {
 
   return null
 }
+
+// ─── Branded splash / hydration loading screen ────────────────────────────────
+// Shown while fonts are loading OR store hydration (auth/likes/favorites) is
+// pending. On a normal native launch the native splash covers this entirely;
+// it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
+
+function BrandedSplash() {
+  return (
+    <View style={splashStyles.container}>
+      <Text style={splashStyles.logo}>STORIX</Text>
+      <Text style={splashStyles.tagline}>웹툰과 웹소설의 이야기 공간</Text>
+      <ActivityIndicator
+        size="small"
+        color={C.primary}
+        style={splashStyles.spinner}
+      />
+    </View>
+  )
+}
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: C.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  logo: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: C.primary,
+    letterSpacing: 4,
+  },
+  tagline: {
+    fontSize: 14,
+    color: C.textMuted,
+    letterSpacing: 0.3,
+  },
+  spinner: { marginTop: 24 },
+})
 
 // ─── Root navigation ──────────────────────────────────────────────────────────
 
