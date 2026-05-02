@@ -1,8 +1,11 @@
-// Minimal profile shape used by the store layer.
-// Expand this as profile.api.ts is ported in Phase 4.
+// Full profile shape returned by GET /api/v1/profile/me
+// Sourced from storix-fe/src/lib/api/profile/profile.api.ts in STORIX-FE-2.0.
 export type MeProfileResult = {
   userId: number
+  role: string
+  profileImageUrl: string | null
   nickName: string
-  profileImageUrl?: string | null
-  profileDescription?: string | null
+  level: number
+  point: number
+  profileDescription: string
 }
