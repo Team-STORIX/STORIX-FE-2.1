@@ -15,6 +15,7 @@ import { useTodayHomeFeeds } from '../../src/hooks/homeFeed/useTodayHomeFeeds'
 import { useTodayTopicRooms } from '../../src/hooks/topicroom/useTodayTopicRooms'
 import { usePopularTopicRooms } from '../../src/hooks/topicroom/usePopularTopicRooms'
 import { formatTopicRoomSubtitle } from '../../src/lib/api/topicroom'
+import { C } from '../../src/theme/colors'
 import type { TodayFeedItem } from '../../src/lib/api/homeFeed/homeFeed.schema'
 import type { TopicRoomItem } from '../../src/lib/api/topicroom/topicroom.schema'
 
@@ -370,25 +371,6 @@ function EmptyNote({
 }) {
   return <Text style={[styles.emptyNote, style]}>{text}</Text>
 }
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
-const C = {
-  bg: '#FAFAFA',
-  card: '#FFFFFF',
-  primary: '#5B4CF5',
-  primaryLight: '#EDE9FE',
-  text: '#111111',
-  textSecondary: '#555555',
-  textMuted: '#999999',
-  border: '#EEEEEE',
-  spoilerBg: '#F3F0FF',
-  activeDot: '#22C55E',
-  badgeBg: '#EDE9FE',
-  badgeText: '#5B4CF5',
-  liked: '#EF4444',
-  error: '#CC0000',
-} as const
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

@@ -1,175 +1,106 @@
 # STORIX-FE-2.1 Migration Notes
 
-Source: `Team-STORIX/STORIX-FE-2.0` · branch `develop` · app root `storix-fe/`
-Target: `Team-STORIX/STORIX-FE-2.1` · branch `chore/2.1/SPRINT-1-migration`
+## Phase 7DS — Design System Extraction (2025-05)
+
+### Source Inspected
+- Repo: Team-STORIX/STORIX-FE-2.0, branch: `develop`, root: `storix-fe`
+- `src/styles/globals.css` — color scale, typography utilities, font-weight variables
+- `tailwind.config.ts` — semantic color variable references
 
 ---
 
-## Phase 1 — Analysis (done)
+### What Was Extracted
 
-Full migration map produced. See conversation history for the complete breakdown of reusable vs. rewrite-required files.
+#### Colors (`src/theme/colors.ts`)
+Full magenta and gray scales extracted verbatim from `globals.css`:
 
----
+| 2.0 CSS variable      | Hex       | 2.1 token (`C.*`)                      |
+|-----------------------|-----------|----------------------------------------|
+| `--color-magenta-300` | `#ff4093` | `primary`                              |
+| `--color-magenta-20`  | `#ffeef6` | `primaryLight`, `badgeBg`, `spoilerBg` |
+| `--color-magenta-100` | `#fdbcd9` | `primaryMid`                           |
+| `--color-gray-900`    | `#131112` | `text`                                 |
+| `--color-gray-600`    | `#645c5f` | `textSecondary`                        |
+| `--color-gray-500`    | `#847b7f` | `textMuted`                            |
+| `--color-gray-200`    | `#e3dcdf` | `border`                               |
+| `--color-gray-100`    | `#f2edef` | `divider`                              |
+| `--color-gray-50`     | `#f9f6f7` | `bg`                                   |
+| `--color-success`     | `#009126` | `activeDot`                            |
+| `--color-warning`     | `#ef433e` | `error`, `liked`                       |
 
-## Phase 2 — Base scaffold (done)
+Named raw scales also exported: `Magenta`, `Gray`.
 
-### Packages added
+#### Typography (`src/theme/typography.ts`)
+All 13 text utility classes mapped to RN `TextStyle` objects:
+`heading1`–`heading4`, `body1Medium/Semibold/Bold`, `body2Medium/Bold`,
+`caption1Medium/Extrabold`, `caption2Medium/Extrabold`, `dateText`.
+Line heights: `round(fontSize × 1.4)` = `--line-height-tight: 140%`.
 
-| Package | Version | Why |
-|---|---|---|
-| `zod` | latest | Used by every `*.schema.ts` file in 2.0; absent from 2.1 |
-| `@stomp/stompjs` | ^7 | TopicRoom WebSocket/STOMP chat |
-| `text-encoding` | ^0.7 | Hermes lacks `TextEncoder`; required by `@stomp/stompjs` at runtime |
+#### Spacing (`src/theme/spacing.ts`)
+Tailwind 4px-base scale (steps 1–12) + semantic aliases (`S.screenH=20`, `S.cardPad=16`, etc.).
 
-### Folder structure created
+#### Radius (`src/theme/radius.ts`)
+`xs=4`, `sm=8`, `md=12`, `lg=16`, `xl=20`, `full=9999` — mirrors Tailwind defaults.
 
-```
-src/
-  lib/
-    api/           ← API functions + schemas (migrated per-domain in Phase 3)
-    auth/
-      social/      ← platform.ts / native.ts / types.ts (Phase 3)
-    utils/         ← formatTimeAgo.ts, jwt.ts (Phase 3)
-  store/           ← Zustand stores (Phase 3 — storage layer rewrite first)
-  hooks/
-    auth/
-    topicroom/
-    works/
-    search/
-    library/
-    feed/
-    homeFeed/
-    preference/
-    favorite/
-  components/
-    common/
-    topicroom/
-    feed/
-    library/
-    home/
-  theme/           ← design tokens, colors (new in 2.1)
-  types/           ← shared TypeScript types (new in 2.1)
+#### Shadows (`src/theme/shadows.ts`)
+`Shadow.sm/md/lg` with iOS (`shadow*`) / Android (`elevation`) platform split.
 
-app/
-  (auth)/          ← login, agreement, onboarding screens
-  (tabs)/          ← existing Expo boilerplate tabs (to be replaced in Phase 4+)
-  topicroom/       ← [roomId].tsx deep-link screen
-```
+#### Barrel export (`src/theme/index.ts`)
+Re-exports all tokens from a single entry point.
 
 ---
 
-## What must NOT be migrated directly
+### Values That Could NOT Be Mapped Exactly
 
-| Category | Reason |
-|---|---|
-| `src/app/**/*.tsx` (all Next.js pages) | Next.js App Router, not Expo Router |
-| `src/components/**/*.tsx` (all 2.0 UI) | `div`/CSS/Tailwind — no React Native primitives |
-| `src/styles/globals.css` | Web CSS, no RN equivalent |
-| `src/app/fonts/SUIT-Variable.css` | Web font loader |
-| `src/components/common/GAListener.tsx` | Google Analytics — browser-only |
-| `src/lib/ga.ts` | Google Analytics — browser-only |
-| `src/hooks/useInfiniteScroll.ts` | Uses `IntersectionObserver` — must rewrite with FlatList `onEndReached` |
-| `src/lib/auth/social/web.ts` | `window.location` redirect — not valid in RN |
-| `src/lib/auth/social/platform.ts` | Uses `@capacitor/core` — rewrite with `Platform.OS` |
-| `src/lib/auth/social/native.ts` | Uses Capacitor plugins — rewrite with RN-native SDKs |
-| `src/app/pending/PendingClient.tsx` | OAuth redirect callback page — web-only flow |
+| Item | Reason |
+|------|--------|
+| `--color-main` / `--color-main-light` / `--color-main-dark` | In `tailwind.config.ts` but **never defined** in any CSS file — dead config, ignored. |
+| `C.star` (`#f59e0b` amber) | Not present in 2.0 palette. Kept as-is. **Needs designer confirmation.** |
+| SUIT Variable font | 2.0 loads `SUIT-Variable.woff2`. RN falls back to system font until asset is registered. |
+| Card shadow | 2.0 uses Tailwind `shadow-sm`. `Shadow.sm` now available but not yet applied to any screen. |
+| Dark mode | 2.0 has a `prefers-color-scheme: dark` block. Not implemented in 2.1 RN yet. |
 
 ---
 
-## Env vars
+### Biggest Visual Change — Designer Confirmation Required
 
-All `NEXT_PUBLIC_*` keys in `.env` must be renamed to `EXPO_PUBLIC_*` before any API call will work.
+**`C.primary` changed from `#5B4CF5` (placeholder purple) → `#ff4093` (2.0 magenta-300).**
 
----
-
-## Phase 3 — Storage + API client (next)
-
-Prerequisite: **confirm with backend** whether the native login endpoints
-(`/oauth/kakao-native/login`, `/oauth/naver-native/login`) and the refresh
-endpoint (`/auth/tokens/refresh`) return `refreshToken` in the response body
-(not only as an HTTP-only cookie). This decision controls the entire
-`axios-instance.ts` rewrite strategy.
-
-Steps once confirmed:
-
-1. **`src/lib/api/axios-instance.ts`** — rewrite:
-   - Remove `withCredentials`
-   - Replace `window.location.href` with expo-router singleton
-   - `NEXT_PUBLIC_API_URL` → `EXPO_PUBLIC_API_URL`
-   - Token refresh using `expo-secure-store` instead of cookies
-
-2. **Zustand stores** — swap storage layer:
-   - `auth.store.ts`: `sessionStorage` → `expo-secure-store`
-   - `profile.store.ts`: `sessionStorage` → `AsyncStorage`
-   - `likes.store.ts` / `favorites.store.ts`: remove `'use client'`; add `AsyncStorage`
-
-3. **`app/_layout.tsx`** — add `QueryClientProvider` + `text-encoding` polyfill bootstrap
-
-4. Copy all `*.schema.ts` files from 2.0 (pure Zod, zero changes needed)
-
-5. Copy all `*.api.ts` files from 2.0 with only env-var and `withCredentials` changes
+All 14 Phase 7 screens/components that import `C.primary` from `src/theme/colors` will render brand magenta instead of placeholder purple. Affected elements:
+- Primary buttons, chips, badges
+- Avatar initials and spinner tint
+- Chat bubble background
+- STORIX logo text in home header
+- Active/joined state indicators
 
 ---
 
-## Phase 4 — Auth foundation (done)
+### Phase 7 Screen Audit
 
-Completed sub-phases:
-- 4A-1: Auth API layer (`src/lib/api/auth/`)
-- 4B:   Auth hooks (`src/hooks/auth/`)
-- 4C:   Typed route casts cleaned up (after `expo start` regenerated router.d.ts)
-- 4D:   Minimal auth screens + auth routing wired end-to-end
-- 4F-1: Native social SDK packages installed (see below)
+| File | Was using shared theme? | Action |
+|------|------------------------|--------|
+| `app/(tabs)/index.tsx` | ❌ Had its own local `C` object | **Fixed** — removed local `C`, now imports from `src/theme/colors` |
+| `app/works/[worksId].tsx` | ✅ | Tokens updated via colors.ts |
+| `app/topicroom/[roomId].tsx` | ✅ | Tokens updated via colors.ts |
+| `app/(tabs)/profile.tsx` | ✅ | Tokens updated via colors.ts |
+| `app/(tabs)/two.tsx` | ✅ | Tokens updated via colors.ts |
+| `src/components/works/WorksHero.tsx` | ✅ | Tokens updated |
+| `src/components/works/ReviewCard.tsx` | ✅ | Tokens updated |
+| `src/components/topicroom/ChatBubble.tsx` | ✅ | Tokens updated |
+| `src/components/topicroom/ChatInput.tsx` | ✅ | Tokens updated |
+| `src/components/topicroom/ConnectionStatusPill.tsx` | ✅ | Tokens updated |
+| `src/components/topicroom/TopicRoomCard.tsx` | ✅ | Tokens updated |
+| `src/components/profile/ProfileHeader.tsx` | ✅ | Tokens updated |
+| `src/components/profile/ProfileStatCard.tsx` | ✅ | Tokens updated |
+| `src/components/profile/ProfileMenuItem.tsx` | ✅ | Tokens updated |
 
-### Phase 4F-1 — Native social SDK packages (done)
-
-**Kakao SDK choice:** `@react-native-seoul/kakao-login` (not `@react-native-kakao/core + user`).
-Reason: single-package API, same maintainer as the Naver package, Expo config plugin included.
-
-| Package | Version | Role |
-|---|---|---|
-| `@react-native-seoul/kakao-login` | `^5.4.2` | Kakao OAuth (iOS + Android) |
-| `@react-native-seoul/naver-login` | `^4.2.4` | Naver OAuth (iOS + Android) |
-| `@invertase/react-native-apple-authentication` | `^2.5.1` | Apple Sign In (iOS only; Android uses web flow) |
-
-### ⚠️ Expo Go is NOT supported
-
-All three packages contain **native code** and will crash in Expo Go.
-A **Development Build** is required:
-1. Add the plugins to `app.json` (see `src/lib/auth/social/native.ts` for config)
-2. Run `npx expo prebuild` to generate `ios/` and `android/` directories
-3. Run `npx expo run:ios` or `npx expo run:android` to build the custom dev client
-
-### app.json plugins required (not yet added — need real keys)
-
-```jsonc
-"plugins": [
-  "expo-router",
-  "expo-secure-store",
-  ["@react-native-seoul/kakao-login", { "kakaoAppKey": "<KAKAO_NATIVE_APP_KEY>" }],
-  ["@react-native-seoul/naver-login", { "urlScheme": "storixfe21" }],
-  "@invertase/react-native-apple-authentication"
-]
-```
-
-### New Architecture compatibility note
-
-`app.json` has `"newArchEnabled": true` (React Native New Architecture / TurboModules).
-`@react-native-seoul/kakao-login` and `@react-native-seoul/naver-login` v5/v4 use the legacy bridge.
-RN 0.81 includes a backwards-compatible interop layer so they **will work**, but monitor for
-deprecation warnings after `expo prebuild`. If issues arise, consider disabling New Architecture
-for these modules or waiting for upstream New Architecture support.
+No screen logic, data flow, or navigation was changed. The only structural code change was removing the duplicate local `C` in the home screen.
 
 ---
 
-## Phase 4F-2 — Implement native.ts (next)
+### Future Notes
 
-Replace the three throwing stubs in `src/lib/auth/social/native.ts` with real SDK calls.
-API signatures are documented in that file. Prerequisites: app.json plugins added + prebuild run.
-
----
-
-## Phase 5+ — Screen implementation (planned)
-
-Implement Expo Router screens in `app/` using React Native primitives.
-Port data-fetching hooks from 2.0 (replace `next/navigation` → `expo-router`).
-Do NOT copy JSX from 2.0 — rebuild all UI from scratch with RN components.
+- **Font**: Register `SUIT-Variable.woff2` via Expo's `useFonts` / `expo-font` to match 2.0 typography.
+- **Shadows**: Apply `Shadow.sm` to cards in a dedicated polish pass once designer confirms.
+- **Dark mode**: Track as a separate task — requires a second token set and a theme context provider.
+- **`src/features/{domain}/`**: Migrate domain code (api/hooks/store) into `src/features/{domain}/` after MVP screens are QA-stable. Do NOT do this before the auth flow is finalized.
