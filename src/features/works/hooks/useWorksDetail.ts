@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getWorksDetail } from '../../lib/api/works/works.api'
+import { getWorksDetail } from '../api/works.api'
 
 export const useWorksDetail = (worksId: number) =>
   useQuery({

@@ -9,12 +9,14 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack } from 'expo-router'
-import { useMe } from '../../src/hooks/profile/useMe'
 import { logoutUser } from '../../src/lib/api/auth/logout.api'
 import { useAuthStore } from '../../src/store/auth.store'
-import { ProfileHeader } from '../../src/components/profile/ProfileHeader'
-import { ProfileStatCard } from '../../src/components/profile/ProfileStatCard'
-import { ProfileMenuItem } from '../../src/components/profile/ProfileMenuItem'
+import {
+  useMe,
+  ProfileHeader,
+  ProfileStatCard,
+  ProfileMenuItem,
+} from '../../src/features/profile'
 import { C } from '../../src/theme/colors'
 
 export default function ProfileScreen() {

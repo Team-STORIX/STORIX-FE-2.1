@@ -1,5 +1,5 @@
-import { apiClient } from '../axios-instance'
-import type { ApiResponse } from '../types'
+import { apiClient } from '../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../lib/api/types'
 import type { MeProfileResult } from '../../../types/profile'
 
 export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {

@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { MeProfileResult } from '../../types/profile'
-import { C } from '../../theme/colors'
+import type { MeProfileResult } from '../../../types/profile'
+import { C } from '../../../theme/colors'
 
 function roleLabel(role: string): string {
-  if (role === 'ADMIN') return '관리자'
-  if (role === 'READER') return '독자'
-  if (role === 'AUTHOR') return '작가'
+  if (role === 'ADMIN') return '愿由ъ옄'
+  if (role === 'READER') return '?낆옄'
+  if (role === 'AUTHOR') return '?묎?'
   return role
 }
 
@@ -15,7 +15,6 @@ export function ProfileHeader({ me }: { me: MeProfileResult }) {
 
   return (
     <View style={styles.container}>
-      {/* Avatar */}
       <View style={styles.avatarWrap}>
         {me.profileImageUrl ? (
           <Image
@@ -28,13 +27,11 @@ export function ProfileHeader({ me }: { me: MeProfileResult }) {
         )}
       </View>
 
-      {/* Name + role */}
       <Text style={styles.nickName}>{me.nickName}</Text>
       <View style={styles.roleBadge}>
         <Text style={styles.roleBadgeText}>{roleLabel(me.role)}</Text>
       </View>
 
-      {/* Description */}
       {me.profileDescription ? (
         <Text style={styles.description} numberOfLines={2}>
           {me.profileDescription}

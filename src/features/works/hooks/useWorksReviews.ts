@@ -14,8 +14,8 @@ import {
   postWorksReviewLike,
   postWorksReviewReport,
   type UpdateMyReviewPayload,
-} from '../../lib/api/works/worksReview.api'
-import { useLikesStore } from '../../store/likes.store'
+} from '../api/worksReview.api'
+import { useLikesStore } from '../../../store/likes.store'
 
 export const useWorksMyReview = (worksId: number) =>
   useQuery({

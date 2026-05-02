@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { C } from '../../theme/colors'
+import { C } from '../../../theme/colors'
 
 type Props = {
   label: string
@@ -33,12 +33,18 @@ export function ProfileMenuItem({
       disabled={disabled}
       accessibilityRole="button"
     >
-      <Text style={[styles.label, destructive && styles.labelDestructive, disabled && styles.labelDisabled]}>
+      <Text
+        style={[
+          styles.label,
+          destructive && styles.labelDestructive,
+          disabled && styles.labelDisabled,
+        ]}
+      >
         {label}
       </Text>
       <View style={styles.right}>
         {sublabel ? <Text style={styles.sublabel}>{sublabel}</Text> : null}
-        <Text style={[styles.chevron, disabled && styles.chevronDisabled]}>›</Text>
+        <Text style={[styles.chevron, disabled && styles.chevronDisabled]}>??</Text>
       </View>
     </Pressable>
   )

@@ -9,18 +9,18 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useWorksDetail } from '../../src/hooks/works/useWorksDetail'
 import { useFavoriteWork } from '../../src/hooks/favorite/useFavoriteWork'
 import {
-  useWorksReviewsInfinite,
   useLikeWorksReview,
-} from '../../src/hooks/works/useWorksReviews'
+  useWorksDetail,
+  useWorksReviewsInfinite,
+  WorksHero,
+  ReviewCard,
+  type WorksReviewItem,
+} from '../../src/features/works'
 import { useJoinTopicRoom } from '../../src/hooks/topicroom/useJoinTopicRoom'
 import { findTopicRoomIdByWorksName } from '../../src/lib/api/topicroom/topicroom.api'
-import { WorksHero } from '../../src/components/works/WorksHero'
-import { ReviewCard } from '../../src/components/works/ReviewCard'
 import { C } from '../../src/theme/colors'
-import type { WorksReviewItem } from '../../src/lib/api/works/worksReview.schema'
 
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
 

@@ -15,7 +15,7 @@ import { useChatRoomMessagesInfinite } from '../../src/hooks/topicroom/useChatRo
 import { useTopicRoomStomp } from '../../src/hooks/topicroom/useTopicRoomStomp'
 import { useLeaveTopicRoom } from '../../src/hooks/topicroom/useLeaveTopicRoom'
 import { useTopicRoomMembers } from '../../src/hooks/topicroom/useTopicRoomMembers'
-import { useProfileStore } from '../../src/store/profile.store'
+import { useProfileStore } from '../../src/features/profile/store/profile.store'
 import { ChatBubble } from '../../src/components/topicroom/ChatBubble'
 import { ChatInput } from '../../src/components/topicroom/ChatInput'
 import { ConnectionStatusPill } from '../../src/components/topicroom/ConnectionStatusPill'

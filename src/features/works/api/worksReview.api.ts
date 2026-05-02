@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../lib/api/axios-instance'
 import { ApiEnvelopeSchema } from './works.schema'
 import {
   WorksMyReviewSchema,

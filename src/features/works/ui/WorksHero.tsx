@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { WorksDetail } from '../../lib/api/works/works.api'
-import { C } from '../../theme/colors'
+import type { WorksDetail } from '../api/works.api'
+import { C } from '../../../theme/colors'
 
 function worksTypeLabel(type: string): string {
-  if (type === 'WEBTOON') return '웹툰'
-  if (type === 'WEBNOVEL') return '웹소설'
+  if (type === 'WEBTOON') return '?뱁댆'
+  if (type === 'WEBNOVEL') return '?뱀냼??'
   return type
 }
 
@@ -45,23 +45,23 @@ export function WorksHero({ works }: { works: WorksDetail }) {
 
         {/* Authors */}
         {works.author ? (
-          <Text style={styles.author}>글 {works.author}</Text>
+          <Text style={styles.author}>湲 {works.author}</Text>
         ) : null}
         {works.illustrator ? (
-          <Text style={styles.authorSub}>그림 {works.illustrator}</Text>
+          <Text style={styles.authorSub}>洹몃┝ {works.illustrator}</Text>
         ) : null}
         {works.originalAuthor ? (
-          <Text style={styles.authorSub}>원작 {works.originalAuthor}</Text>
+          <Text style={styles.authorSub}>?먯옉 {works.originalAuthor}</Text>
         ) : null}
 
         {/* Rating + review count */}
-        {(works.avgRating != null || works.reviewCount != null) ? (
+        {works.avgRating != null || works.reviewCount != null ? (
           <View style={styles.ratingRow}>
             {works.avgRating != null ? (
-              <Text style={styles.ratingText}>★ {works.avgRating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>??{works.avgRating.toFixed(1)}</Text>
             ) : null}
             {works.reviewCount != null ? (
-              <Text style={styles.reviewCountText}>리뷰 {works.reviewCount}개</Text>
+              <Text style={styles.reviewCountText}>由щ럭 {works.reviewCount}媛?</Text>
             ) : null}
           </View>
         ) : null}
@@ -88,8 +88,6 @@ export function WorksHero({ works }: { works: WorksDetail }) {
   )
 }
 
-// ─── Chip ─────────────────────────────────────────────────────────────────────
-
 type ChipVariant = 'default' | 'primary' | 'outline'
 
 function Chip({ label, variant = 'default' }: { label: string; variant?: ChipVariant }) {
@@ -113,8 +111,6 @@ function Chip({ label, variant = 'default' }: { label: string; variant?: ChipVar
     </View>
   )
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const THUMB_H = 260
 const CHIP_RADIUS = 6

@@ -10,7 +10,7 @@ import {
   clearAuthTokens,
 } from '../lib/storage/secure'
 import { getItem, setItem } from '../lib/storage/async'
-import { useProfileStore } from './profile.store'
+import { useProfileStore } from '../features/profile/store/profile.store'
 import { useLikesStore } from './likes.store'
 import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'

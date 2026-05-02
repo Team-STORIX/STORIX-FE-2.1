@@ -1,9 +1,5 @@
 import { create } from 'zustand'
-import type { MeProfileResult } from '../types/profile'
-
-// In-memory only — no persistence middleware.
-// Profile data is fetched fresh from the API on each app start.
-// Cached here for the lifetime of the process so screens don't re-fetch unnecessarily.
+import type { MeProfileResult } from '../../../types/profile'
 
 type ProfileState = {
   me: MeProfileResult | null
