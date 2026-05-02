@@ -14,7 +14,7 @@ const LABEL: Record<Exclude<Status, 'open'>, string> = {
 
 const DOT_COLOR: Record<Exclude<Status, 'open'>, string> = {
   idle: C.textMuted,
-  connecting: '#F59E0B',
+  connecting: C.star,
   closed: C.textMuted,
   error: C.error,
 }
