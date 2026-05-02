@@ -38,9 +38,7 @@ export default function HomeScreen() {
   } = usePopularTopicRooms()
 
   const goToRoom = (roomId: number) => {
-    // TODO(Phase typed-routes): Remove `as any` after `expo start` regenerates
-    // .expo/types/router.d.ts to include app/topicroom/[roomId].tsx.
-    router.push(`/topicroom/${roomId}` as any)
+    router.push(`/topicroom/${roomId}`)
   }
 
   return (
