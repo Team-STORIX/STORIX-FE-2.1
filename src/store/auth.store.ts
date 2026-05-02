@@ -11,6 +11,8 @@ import {
 } from '../lib/storage/secure'
 import { getItem, setItem } from '../lib/storage/async'
 import { useProfileStore } from './profile.store'
+import { useLikesStore } from './likes.store'
+import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
 
 // AsyncStorage key for the non-sensitive marketing consent flag.
@@ -137,7 +139,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   clearAuth: async () => {
     await clearAuthTokens()
 
-    // Clear cached profile so stale data is not shown after re-login.
+    // Clear all per-user caches so stale data is not shown after re-login.
+    await Promise.all([
+      useLikesStore.getState().clearLikes(),
+      useFavoritesStore.getState().clearFavorites(),
+    ])
     useProfileStore.getState().clearMe()
 
     set({
