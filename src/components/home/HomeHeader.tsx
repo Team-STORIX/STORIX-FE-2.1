@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
@@ -12,9 +12,14 @@ const notificationIcon = require('../../../assets/icons/common/notification.svg'
 type HomeHeaderProps = {
   nickName?: string | null
   isLoading?: boolean
+  onSearchPress?: () => void
 }
 
-export function HomeHeader({ nickName, isLoading = false }: HomeHeaderProps) {
+export function HomeHeader({
+  nickName,
+  isLoading = false,
+  onSearchPress,
+}: HomeHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
@@ -34,13 +39,21 @@ export function HomeHeader({ nickName, isLoading = false }: HomeHeaderProps) {
       </View>
 
       <View style={styles.actionRow}>
-        <View style={styles.actionButton}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionButton,
+            pressed && styles.actionButtonPressed,
+          ]}
+          onPress={onSearchPress}
+          accessibilityRole="button"
+          accessibilityLabel="검색"
+        >
           <Image
             source={searchIcon}
             style={styles.actionIcon}
             contentFit="contain"
           />
-        </View>
+        </Pressable>
         <View style={styles.actionButton}>
           <Image
             source={notificationIcon}
@@ -110,5 +123,8 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 24,
     height: 24,
+  },
+  actionButtonPressed: {
+    opacity: 0.75,
   },
 })

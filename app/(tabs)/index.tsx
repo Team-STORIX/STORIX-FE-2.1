@@ -46,7 +46,11 @@ export default function HomeScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <HomeHeader nickName={me?.nickName} isLoading={meLoading} />
+      <HomeHeader
+        nickName={me?.nickName}
+        isLoading={meLoading}
+        onSearchPress={() => router.push('/search' as never)}
+      />
 
       <View style={styles.sectionStack}>
         <HomeSection title="실시간 작품 이야기!">
