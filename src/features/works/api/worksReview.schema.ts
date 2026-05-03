@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { SliceSchema } from './works.schema'
 
 export const WorksMyReviewSchema = z.object({
-  reviewId: z.number(),
+  reviewId: z.preprocess((v) => (v == null ? v : Number(v)), z.number()),
   content: z.string().optional(),
   isSpoiler: z.boolean().optional(),
   rating: z
@@ -17,7 +17,7 @@ export const WorksMyReviewSchema = z.object({
 })
 
 const WorksReviewItemOutputSchema = z.object({
-  reviewId: z.number(),
+  reviewId: z.preprocess((v) => (v == null ? v : Number(v)), z.number()),
   userName: z.string().optional(),
   content: z.string().optional(),
   isSpoiler: z.boolean().optional(),

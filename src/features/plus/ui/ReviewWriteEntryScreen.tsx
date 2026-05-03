@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ActivityIndicator,
   Alert,
@@ -89,6 +90,7 @@ export function ReviewWriteEntryScreen() {
   const [isSpoiler, setIsSpoiler] = useState(false)
   const [spoilerScript, setSpoilerScript] = useState('')
 
+  const qc = useQueryClient()
   const submitMutation = useCreateReaderReview()
   const canSubmit =
     !!worksId &&
@@ -111,6 +113,9 @@ export function ReviewWriteEntryScreen() {
         spoilerScript: isSpoiler ? spoilerScript.trim() : '',
         content: content.trim(),
       })
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] })
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] })
+      qc.invalidateQueries({ queryKey: ['works', 'detail', worksId] })
       router.replace(`/works/${worksId}` as never)
     } catch {
       Alert.alert('오류', '리뷰 등록에 실패했어요. 잠시 후 다시 시도해 주세요.')

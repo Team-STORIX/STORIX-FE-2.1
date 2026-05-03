@@ -16,7 +16,18 @@ export const getWorksMyReview = async (worksId: number) => {
 }
 
 // GET /api/v1/works/{worksId}/review?page=
-const WorksReviewsResponseSchema = ApiEnvelopeSchema(WorksReviewSliceSchema)
+// Some backend endpoints wrap the Slice inside a second result field:
+//   { result: { result: { content: [...] } } }
+// The preprocess normalises both single and double-nested shapes before parsing.
+const WorksReviewsResponseSchema = z.preprocess((raw) => {
+  if (raw && typeof raw === 'object') {
+    const r = (raw as any).result
+    if (r && typeof r === 'object' && 'result' in r) {
+      return { ...(raw as any), result: r.result }
+    }
+  }
+  return raw
+}, ApiEnvelopeSchema(WorksReviewSliceSchema))
 
 export const getWorksReviews = async (params: {
   worksId: number
