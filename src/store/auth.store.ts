@@ -2,14 +2,15 @@ import { create } from 'zustand'
 import {
   getAccessToken,
   setAccessToken as persistAccessToken,
-  getRefreshToken,
   setRefreshToken as persistRefreshToken,
   getOnboardingToken,
   setOnboardingToken as persistOnboardingToken,
   removeOnboardingToken,
+  removeRefreshToken,
   clearAuthTokens,
 } from '../lib/storage/secure'
 import { getItem, setItem } from '../lib/storage/async'
+import { queryClient } from '../lib/query/queryClient'
 import { useProfileStore } from '../features/profile/store/profile.store'
 import { useLikesStore } from './likes.store'
 import { useFavoritesStore } from './favorites.store'
@@ -111,7 +112,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       persistAccessToken(accessToken),
       removeOnboardingToken(),
     ]
-    if (refreshToken) ops.push(persistRefreshToken(refreshToken))
+    if (refreshToken) {
+      ops.push(persistRefreshToken(refreshToken))
+    } else {
+      ops.push(removeRefreshToken())
+    }
     await Promise.all(ops)
 
     set({
@@ -145,6 +150,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       useFavoritesStore.getState().clearFavorites(),
     ])
     useProfileStore.getState().clearMe()
+    queryClient.clear()
 
     set({
       accessToken: null,

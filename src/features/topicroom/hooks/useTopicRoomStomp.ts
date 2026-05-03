@@ -20,6 +20,7 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
   const { roomId } = params
   const { accessToken } = useAuthStore()
   const myUserId = useProfileStore((s) => s.me?.userId ?? null)
+  const myUserIdRef = useRef<number | null>(myUserId)
 
   const clientRef = useRef<Client | null>(null)
   const subRef = useRef<StompSubscription | null>(null)
@@ -35,6 +36,10 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
   const [messages, setMessages] = useState<TopicRoomUiMsg[]>([])
 
   const canConnect = useMemo(() => !!roomId && !!accessToken, [roomId, accessToken])
+
+  useEffect(() => {
+    myUserIdRef.current = myUserId
+  }, [myUserId])
 
   const unsubscribe = useCallback(() => {
     try {
@@ -79,14 +84,14 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
         {
           id: tempId,
           type: 'me',
-          senderId: myUserId ?? undefined,
+          senderId: myUserIdRef.current ?? undefined,
           text,
           time,
           createdAt: now.toISOString(),
         },
       ])
     },
-    [myUserId],
+    [],
   )
 
   useEffect(() => {
@@ -132,7 +137,9 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
           subRef.current = client.subscribe(
             topicRoomSubPath(roomId),
             (frame) => {
-              const uiMsg = normalizeTopicRoomStompMessage(frame.body, { myUserId })
+              const uiMsg = normalizeTopicRoomStompMessage(frame.body, {
+                myUserId: myUserIdRef.current,
+              })
               if (!uiMsg) return
 
               // If this is an echo of a message I just sent, replace the optimistic
@@ -210,7 +217,7 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
     }
     // disconnect/unsubscribe are stable callbacks — intentionally omitted from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canConnect, roomId, accessToken, myUserId])
+  }, [canConnect, roomId, accessToken])
 
   const sendMessage = useCallback(
     (text: string): boolean => {

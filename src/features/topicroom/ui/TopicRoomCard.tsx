@@ -1,153 +1,178 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { TopicRoomItem } from '../api/topicroom.api'
+import type { TopicRoomItem } from '../api/topicroom.schema'
+import { formatTopicRoomSubtitle } from '../api/formatTopicRoomSubtitle'
 import { C } from '../../../theme/colors'
+import { Radius } from '../../../theme/radius'
+import { Typography } from '../../../theme/typography'
 
-function worksTypeLabel(type?: string | null): string | null {
-  if (type === 'WEBTOON') return '웹툰'
-  if (type === 'WEBNOVEL') return '웹소설'
-  return null
-}
-
-function formatSubtitle(item: TopicRoomItem): string {
-  const typeLabel = worksTypeLabel(item.worksType)
-  return typeLabel ? `${typeLabel} · ${item.worksName}` : item.worksName
-}
+const fireIcon = require('../../../../assets/icons/common/fire.svg')
+const peopleIcon = require('../../../../assets/icons/common/icon-topicroom-people.svg')
+const arrowIcon = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
 
 type Props = {
   item: TopicRoomItem
   onPress: () => void
   isJoining?: boolean
+  hotLabel?: string
 }
 
-export function TopicRoomCard({ item, onPress, isJoining }: Props) {
-  const initial = (item.worksName || item.topicRoomName || '?')[0].toUpperCase()
+export function TopicRoomCard({
+  item,
+  onPress,
+  isJoining = false,
+  hotLabel = 'HOT',
+}: Props) {
+  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
+  const initial = (item.worksName || item.topicRoomName || '?').slice(0, 1).toUpperCase()
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}
       disabled={isJoining}
       accessibilityRole="button"
     >
-      {/* Thumbnail */}
-      <View style={styles.thumb}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.thumbImg}
-            contentFit="cover"
-          />
-        ) : (
-          <Text style={styles.thumbInitial}>{initial}</Text>
-        )}
-      </View>
+      {item.thumbnailUrl ? (
+        <Image
+          source={{ uri: item.thumbnailUrl }}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFillObject, styles.fallbackBg]}>
+          <Text style={styles.fallbackText}>{initial}</Text>
+        </View>
+      )}
 
-      {/* Body */}
-      <View style={styles.body}>
-        <Text style={styles.roomName} numberOfLines={1}>
-          {item.topicRoomName}
-        </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {formatSubtitle(item)}
-        </Text>
+      <View style={styles.overlay} />
 
-        {/* Badges row */}
-        <View style={styles.badgeRow}>
-          {item.isJoined ? (
-            <View style={styles.joinedBadge}>
-              <Text style={styles.joinedBadgeText}>참여 중</Text>
-            </View>
-          ) : null}
-          {item.activeUserNumber != null && item.activeUserNumber > 0 ? (
-            <View style={styles.activeBadge}>
-              <View style={styles.activeDot} />
-              <Text style={styles.activeBadgeText}>{item.activeUserNumber}명</Text>
-            </View>
-          ) : null}
+      <View style={styles.content}>
+        <View style={styles.chipRow}>
+          <View style={styles.hotChip}>
+            <Image source={fireIcon} style={styles.icon12} contentFit="contain" />
+            <Text style={styles.hotChipText}>{hotLabel}</Text>
+          </View>
+          <View style={styles.peopleChip}>
+            <Image source={peopleIcon} style={styles.icon12} contentFit="contain" />
+            <Text style={styles.peopleChipText}>{item.activeUserNumber ?? 0}</Text>
+          </View>
+        </View>
+
+        <View style={styles.textBlock}>
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.topicRoomName}
+          </Text>
         </View>
       </View>
 
-      {/* Right: join indicator */}
-      <View style={styles.right}>
+      <View style={styles.entryButton}>
         {isJoining ? (
-          <ActivityIndicator size="small" color={C.primary} />
-        ) : item.isJoined ? (
-          <Text style={styles.chevron}>›</Text>
+          <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <View style={styles.joinBtn}>
-            <Text style={styles.joinBtnText}>입장</Text>
-          </View>
+          <Image source={arrowIcon} style={styles.entryIcon} contentFit="contain" />
         )}
       </View>
     </Pressable>
   )
 }
 
-const THUMB_SIZE = 54
-
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 12,
-    marginBottom: 8,
-    gap: 12,
+    width: '100%',
+    height: 204,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    backgroundColor: C.divider,
   },
-  cardPressed: { opacity: 0.75 },
-
-  thumb: {
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    borderRadius: 10,
-    backgroundColor: C.primaryLight,
+  fallbackBg: {
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    flexShrink: 0,
+    backgroundColor: C.primaryMid,
   },
-  thumbImg: { width: THUMB_SIZE, height: THUMB_SIZE },
-  thumbInitial: { fontSize: 22, fontWeight: '800', color: C.primary },
-
-  body: { flex: 1, gap: 3 },
-  roomName: { fontSize: 14, fontWeight: '700', color: C.text },
-  subtitle: { fontSize: 12, color: C.textMuted },
-
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-
-  joinedBadge: {
-    backgroundColor: C.primaryLight,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  fallbackText: {
+    ...Typography.heading2,
+    fontSize: 42,
+    color: C.card,
   },
-  joinedBadgeText: { fontSize: 10, fontWeight: '700', color: C.primary },
-
-  activeBadge: {
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.30)',
+  },
+  content: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 16,
+  },
+  chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    marginBottom: 8,
   },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: C.activeDot,
-  },
-  activeBadgeText: { fontSize: 11, color: C.textMuted },
-
-  right: { flexShrink: 0, alignItems: 'center', justifyContent: 'center' },
-  chevron: { fontSize: 22, color: C.textMuted, lineHeight: 24 },
-
-  joinBtn: {
+  hotChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Radius.full,
     backgroundColor: C.primary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
-  joinBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  peopleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Radius.full,
+    backgroundColor: C.card,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  icon12: {
+    width: 12,
+    height: 12,
+  },
+  hotChipText: {
+    ...Typography.caption2Extrabold,
+    color: C.card,
+    marginLeft: 2,
+  },
+  peopleChipText: {
+    ...Typography.caption2Extrabold,
+    color: C.primary,
+    marginLeft: 2,
+  },
+  textBlock: {
+    maxWidth: '84%',
+  },
+  subtitle: {
+    ...Typography.heading2,
+    color: C.card,
+    marginBottom: 2,
+  },
+  title: {
+    ...Typography.body1Medium,
+    color: C.card,
+  },
+  entryButton: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  entryIcon: {
+    width: 18,
+    height: 18,
+  },
+  pressed: {
+    opacity: 0.88,
+  },
 })

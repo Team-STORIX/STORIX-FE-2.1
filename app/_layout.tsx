@@ -22,10 +22,12 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useFonts } from 'expo-font'
 
 // ─── React Query ──────────────────────────────────────────────────────────────
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
+import { useMe } from '../src/features/profile'
+import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
@@ -41,16 +43,6 @@ export const unstable_settings = {
   // The auth gate handles redirecting unauthenticated users to (auth)/login.
   initialRouteName: '(tabs)',
 }
-
-// QueryClient is created once at module level — one instance for the app's lifetime.
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1_000, // 1 minute
-      retry: 1,
-    },
-  },
-})
 
 // Keep the splash screen up until fonts AND auth hydration are both done.
 SplashScreen.preventAutoHideAsync()
@@ -179,6 +171,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ProfileBootstrap />
       <AuthGate />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -190,4 +183,9 @@ function RootLayoutNav() {
       </Stack>
     </ThemeProvider>
   )
+}
+
+function ProfileBootstrap() {
+  useMe()
+  return null
 }
