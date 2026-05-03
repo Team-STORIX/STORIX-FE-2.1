@@ -1,6 +1,4 @@
-// Auth API barrel — does NOT re-export auth.schema.ts to avoid naming
-// conflicts with domain-specific schemas in individual API files.
-// Import from './auth.schema' directly when you need schema/type definitions.
+export * from './auth.schema'
 export * from './kakao.api'
 export * from './naver.api'
 export * from './apple.api'

@@ -1,10 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useNativeSocialLogin } from '../../src/hooks/auth/useNativeSocialLogin'
+import {
+  useNativeSocialLogin,
+  developerLogin,
+  AuthHeader,
+  SocialLoginButton,
+} from '../../src/features/auth'
 import { useAuthStore } from '../../src/store/auth.store'
-import { developerLogin } from '../../src/lib/api/auth/developer-login.api'
-import { AuthHeader } from '../../src/components/auth/AuthHeader'
-import { SocialLoginButton } from '../../src/components/auth/SocialLoginButton'
 import { C } from '../../src/theme/colors'
 
 export default function LoginScreen() {

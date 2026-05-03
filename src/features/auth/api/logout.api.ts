@@ -1,5 +1,5 @@
-import { apiClient } from '../axios-instance'
-import type { ApiResponse } from '../types'
+import { apiClient } from '../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../lib/api/types'
 
 /**
  * Signs the current user out server-side.

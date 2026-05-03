@@ -1,7 +1,7 @@
 // src/features/preference/api/preference.schema.ts
 import { z } from 'zod'
 // Relative path: @/ alias differs between 2.0 (./src/*) and 2.1 (./*).
-import { GenreKeySchema } from '../../../lib/api/auth/auth.schema'
+import { GenreKeySchema } from '../../auth/api/auth.schema'
 
 const ApiEnvelopeSchema = <T extends z.ZodTypeAny>(result: T) =>
   z.object({

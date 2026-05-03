@@ -10,12 +10,12 @@ import { useRouter } from 'expo-router'
 import { Alert } from 'react-native'
 import { AxiosError } from 'axios'
 
-import { kakaoLogin } from '../../lib/api/auth/kakao.api'
+import { kakaoLogin } from '../api/kakao.api'
 import {
   extractLoginTokens,
   type KakaoLoginResponse,
-} from '../../lib/api/auth/auth.schema'
-import { useAuthStore } from '../../store/auth.store'
+} from '../api/auth.schema'
+import { useAuthStore } from '../../../store/auth.store'
 
 export const useKakaoLogin = () => {
   const router = useRouter()

@@ -8,9 +8,9 @@
 import { useMutation } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 
-import { signup } from '../../lib/api/auth/signup.api'
-import { type SignupRequest } from '../../lib/api/auth/auth.schema'
-import { useAuthStore } from '../../store/auth.store'
+import { signup } from '../api/signup.api'
+import { type SignupRequest } from '../api/auth.schema'
+import { useAuthStore } from '../../../store/auth.store'
 
 export const useSignup = () => {
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens)

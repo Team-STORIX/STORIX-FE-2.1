@@ -15,18 +15,16 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { useSignup } from '../../src/hooks/auth/useSignup'
 import {
+  useSignup,
   GenreKeySchema,
-  type GenreKey,
-  type SignupRequest,
-} from '../../src/lib/api/auth/auth.schema'
-import {
   checkNicknameValid,
   extractIsAvailableFromValidResponse,
   extractIsDuplicatedFromValidResponse,
   extractIsForbiddenFromValidResponse,
-} from '../../src/lib/api/auth/nickname.api'
+  type GenreKey,
+  type SignupRequest,
+} from '../../src/features/auth'
 import { useAuthStore } from '../../src/store/auth.store'
 import { C, Radius, S, Typography } from '../../src/theme'
 

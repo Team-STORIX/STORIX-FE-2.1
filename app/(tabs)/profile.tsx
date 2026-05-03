@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack } from 'expo-router'
-import { logoutUser } from '../../src/lib/api/auth/logout.api'
+import { logoutUser } from '../../src/features/auth'
 import { useAuthStore } from '../../src/store/auth.store'
 import {
   useMe,

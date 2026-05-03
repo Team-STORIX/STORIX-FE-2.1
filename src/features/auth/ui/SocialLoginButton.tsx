@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Radius } from '../../theme/radius'
+import { Radius } from '../../../theme/radius'
 
 type Props = {
   label: string

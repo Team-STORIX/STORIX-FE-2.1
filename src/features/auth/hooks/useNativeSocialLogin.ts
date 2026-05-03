@@ -11,17 +11,17 @@ import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { AxiosError } from 'axios'
 
-import { kakaoNativeLogin } from '../../lib/api/auth/kakao.api'
-import { naverNativeLogin } from '../../lib/api/auth/naver.api'
+import { kakaoNativeLogin } from '../api/kakao.api'
+import { naverNativeLogin } from '../api/naver.api'
 import {
   extractLoginTokens,
   type SocialLoginResponse,
-} from '../../lib/api/auth/auth.schema'
+} from '../api/auth.schema'
 import {
   nativeSocialAuthProvider,
   type SocialProviderId,
-} from '../../lib/auth/social'
-import { useAuthStore } from '../../store/auth.store'
+} from '../../../lib/auth/social'
+import { useAuthStore } from '../../../store/auth.store'
 
 // ─── internal helper ──────────────────────────────────────────────────────────
 

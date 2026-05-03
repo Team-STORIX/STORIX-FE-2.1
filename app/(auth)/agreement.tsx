@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../src/store/auth.store'
-import { AuthHeader } from '../../src/components/auth/AuthHeader'
+import { AuthHeader } from '../../src/features/auth'
 import { C } from '../../src/theme/colors'
 import { Radius } from '../../src/theme/radius'
 

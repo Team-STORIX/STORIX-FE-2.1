@@ -1,4 +1,4 @@
-import { apiClient } from '../axios-instance'
+import { apiClient } from '../../../lib/api/axios-instance'
 import { WithdrawResponseSchema, type WithdrawResponse } from './auth.schema'
 
 /**
