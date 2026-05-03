@@ -5,9 +5,9 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Typography } from '../../../theme'
+import { ReviewWriteBottomSheet } from '../../plus'
 import { PlusActionButton } from './PlusActionButton'
 import { PlusActionMenu } from './PlusActionMenu'
-import { ReviewWriteBottomSheet } from './ReviewWriteBottomSheet'
 
 const navBackground = require('../../../../assets/icons/navbar/navigationbar-background.svg')
 const homeActiveIcon = require('../../../../assets/icons/navbar/home-active.svg')
