@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useFavoriteWork } from '../../src/features/favorite'
@@ -14,340 +15,380 @@ import {
   useLikeWorksReview,
   useWorksDetail,
   useWorksReviewsInfinite,
-  WorksHero,
-  ReviewCard,
   type WorksReviewItem,
 } from '../../src/features/works'
-import { useJoinTopicRoom, findTopicRoomIdByWorksName } from '../../src/features/topicroom'
+import {
+  findTopicRoomIdByWorksName,
+  useJoinTopicRoom,
+} from '../../src/features/topicroom'
+import { PostCard } from '../../src/components/works/PostCard'
+import { TopicRoomEntryButton } from '../../src/components/works/TopicRoomEntryButton'
+import { WorksCoverHeader } from '../../src/components/works/WorksCoverHeader'
+import { WorksInfoSection } from '../../src/components/works/WorksInfoSection'
+import { WorksTopBar } from '../../src/components/works/WorksTopBar'
 import { C } from '../../src/theme/colors'
+import { Radius } from '../../src/theme/radius'
+import { S } from '../../src/theme/spacing'
+import { Typography } from '../../src/theme/typography'
 
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
+type TabKey = 'info' | 'review'
+
+const arrowForward = require('../../assets/icons/common/icon-arrow-forward.svg')
 
 export default function WorksDetailScreen() {
   const { worksId: worksIdParam } = useLocalSearchParams<{ worksId: string }>()
   const worksId = typeof worksIdParam === 'string' ? Number(worksIdParam) : 0
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const [tab, setTab] = useState<TabKey>('info')
 
-  // ── Data hooks ────────────────────────────────────────────────────────────
   const worksQuery = useWorksDetail(worksId)
   const works = worksQuery.data
 
-  const { isFavorite, isMutating, toggleFavorite, isLoading: favLoading } =
+  const { isFavorite, isMutating, toggleFavorite, isLoading: favoriteLoading } =
     useFavoriteWork(worksId)
 
   const reviewsQuery = useWorksReviewsInfinite(worksId)
   const reviews: WorksReviewItem[] =
-    reviewsQuery.data?.pages.flatMap((p) => p.content ?? []) ?? []
+    reviewsQuery.data?.pages.flatMap((page) => page.content ?? []) ?? []
 
   const likeMutation = useLikeWorksReview({ worksId })
   const joinMutation = useJoinTopicRoom()
 
-  // ── TopicRoom entry ───────────────────────────────────────────────────────
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
   const [entryError, setEntryError] = useState<string | null>(null)
 
+  const isEntering = entryPhase === 'searching' || entryPhase === 'joining'
+
   const enterTopicRoom = useCallback(async () => {
     if (!works?.worksName) return
+
     setEntryPhase('searching')
     setEntryError(null)
+
     try {
       const roomId = await findTopicRoomIdByWorksName(works.worksName)
       if (!roomId) {
         setEntryPhase('error')
-        setEntryError('이 작품의 토픽룸이 없습니다.')
+        setEntryError('이 작품의 토픽룸이 아직 없어요.')
         return
       }
+
       setEntryPhase('joining')
       await joinMutation.mutateAsync(roomId)
-      router.push(`/topicroom/${roomId}`)
+      router.push(`/topicroom/${roomId}` as const)
       setEntryPhase('idle')
     } catch {
       setEntryPhase('error')
-      setEntryError('토픽룸 입장에 실패했습니다. 다시 시도해주세요.')
+      setEntryError('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
-  }, [works?.worksName, joinMutation, router])
+  }, [joinMutation, router, works?.worksName])
 
-  const isEntering = entryPhase === 'searching' || entryPhase === 'joining'
+  const backToPrevious = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+    router.replace('/(tabs)' as const)
+  }, [router])
 
-  // ── Full-screen loading / error ───────────────────────────────────────────
-  if (worksQuery.isLoading) {
-    return (
-      <View style={styles.centered}>
-        <Stack.Screen options={{ title: '작품 상세' }} />
-        <ActivityIndicator size="large" color={C.primary} />
-      </View>
-    )
-  }
+  const reviewTabLabel = useMemo(() => {
+    const count = works?.reviewCount ?? reviews.length
+    return `리뷰(${count})`
+  }, [reviews.length, works?.reviewCount])
 
-  if (worksQuery.isError || !works) {
-    return (
-      <View style={styles.centered}>
-        <Stack.Screen options={{ title: '작품 상세' }} />
-        <Text style={styles.fullErrorText}>작품 정보를 불러오지 못했습니다.</Text>
-      </View>
-    )
-  }
-
-  // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <Stack.Screen options={{ title: works.worksName, headerBackTitle: '뒤로' }} />
+    <View style={styles.screen}>
+      <Stack.Screen options={{ headerShown: false }} />
 
-      {/* ── Hero: thumbnail + title + meta ─────────────────────────────── */}
-      <WorksHero works={works} />
+      <WorksTopBar
+        topInset={insets.top}
+        isFavorite={isFavorite}
+        isBusy={favoriteLoading || isMutating}
+        onBack={backToPrevious}
+        onToggleFavorite={() => void toggleFavorite()}
+      />
 
-      {/* ── Description ────────────────────────────────────────────────── */}
-      {works.description ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>작품 소개</Text>
-          <Text style={styles.description}>{works.description}</Text>
-        </View>
-      ) : null}
-
-      {/* ── Actions ────────────────────────────────────────────────────── */}
-      <View style={styles.actionsSection}>
-        {/* Favorite toggle */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.btn,
-            isFavorite ? styles.favBtnActive : styles.favBtnDefault,
-            pressed && styles.btnPressed,
-          ]}
-          onPress={() => void toggleFavorite()}
-          disabled={favLoading || isMutating}
-          accessibilityRole="button"
-          accessibilityLabel={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-        >
-          {favLoading || isMutating ? (
-            <ActivityIndicator
-              size="small"
-              color={isFavorite ? C.primary : C.text}
-            />
-          ) : (
-            <Text style={[styles.btnText, isFavorite && styles.favBtnActiveText]}>
-              {isFavorite ? '♥ 즐겨찾기 해제' : '♡ 즐겨찾기 추가'}
-            </Text>
-          )}
-        </Pressable>
-
-        {/* TopicRoom entry */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.btn,
-            styles.topicRoomBtn,
-            (isEntering || pressed) && styles.btnPressed,
-          ]}
-          onPress={enterTopicRoom}
-          disabled={isEntering}
-          accessibilityRole="button"
-        >
-          {isEntering ? (
-            <View style={styles.rowCenter}>
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.topicRoomBtnText}>
-                {entryPhase === 'searching' ? '토픽룸 검색 중…' : '입장 중…'}
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.topicRoomBtnText}>💬 토픽룸 입장</Text>
-          )}
-        </Pressable>
-
-        {/* Entry error inline */}
-        {entryPhase === 'error' && entryError ? (
-          <View style={styles.entryErrorBox}>
-            <Text style={styles.entryErrorText}>{entryError}</Text>
-            <Pressable onPress={() => setEntryPhase('idle')}>
-              <Text style={styles.entryErrorDismiss}>닫기</Text>
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
-
-      {/* ── Reviews ────────────────────────────────────────────────────── */}
-      <View style={styles.reviewsSection}>
-        <Text style={styles.reviewsSectionTitle}>
-          리뷰{works.reviewCount != null ? ` ${works.reviewCount}개` : ''}
-        </Text>
-
-        {/* Loading */}
-        {reviewsQuery.isLoading ? (
-          <ActivityIndicator
-            size="small"
-            color={C.primary}
-            style={styles.reviewsLoader}
-          />
-        ) : null}
-
-        {/* Error */}
-        {!reviewsQuery.isLoading && reviewsQuery.isError ? (
-          <Text style={styles.reviewsErrorText}>리뷰를 불러오지 못했습니다.</Text>
-        ) : null}
-
-        {/* Empty */}
-        {!reviewsQuery.isLoading &&
-          !reviewsQuery.isError &&
-          reviews.length === 0 ? (
-          <Text style={styles.reviewsEmptyText}>
-            아직 리뷰가 없습니다. 첫 번째 리뷰를 남겨보세요!
-          </Text>
-        ) : null}
-
-        {/* Review cards */}
-        {reviews.map((item) => (
-          <ReviewCard
-            key={String(item.reviewId)}
-            item={item}
-            onLike={(reviewId) => likeMutation.mutate(reviewId)}
-            isLiking={
-              likeMutation.isPending &&
-              likeMutation.variables === item.reviewId
-            }
-          />
-        ))}
-
-        {/* Load more */}
-        {reviewsQuery.hasNextPage ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.loadMoreBtn,
-              pressed && styles.btnPressed,
-            ]}
-            onPress={() => void reviewsQuery.fetchNextPage()}
-            disabled={reviewsQuery.isFetchingNextPage}
+      {worksQuery.isLoading ? (
+        <CenteredState text="작품 정보를 불러오는 중이에요.">
+          <ActivityIndicator size="large" color={C.primary} />
+        </CenteredState>
+      ) : worksQuery.isError || !works ? (
+        <CenteredState text="작품 정보를 불러오지 못했어요." />
+      ) : (
+        <>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 116 }}
+            showsVerticalScrollIndicator={false}
           >
-            {reviewsQuery.isFetchingNextPage ? (
-              <ActivityIndicator size="small" color={C.primary} />
+            <WorksCoverHeader works={works} />
+
+            <View style={styles.tabBar}>
+              <TabButton
+                label="정보"
+                active={tab === 'info'}
+                onPress={() => setTab('info')}
+              />
+              <TabButton
+                label={reviewTabLabel}
+                active={tab === 'review'}
+                onPress={() => setTab('review')}
+              />
+            </View>
+
+            {entryPhase === 'error' && entryError ? (
+              <View style={styles.entryErrorBox}>
+                <Text style={styles.entryErrorText}>{entryError}</Text>
+                <Pressable onPress={() => setEntryPhase('idle')}>
+                  <Text style={styles.entryErrorDismiss}>닫기</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {tab === 'info' ? (
+              <WorksInfoSection works={works} />
             ) : (
-              <Text style={styles.loadMoreText}>리뷰 더 보기</Text>
+              <View style={styles.reviewSection}>
+                <Text style={styles.reviewSectionTitle}>다른 유저들의 리뷰</Text>
+
+                {reviewsQuery.isLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={C.primary}
+                    style={styles.reviewLoader}
+                  />
+                ) : null}
+
+                {!reviewsQuery.isLoading && reviewsQuery.isError ? (
+                  <Text style={styles.messageText}>리뷰를 불러오지 못했어요.</Text>
+                ) : null}
+
+                {!reviewsQuery.isLoading &&
+                !reviewsQuery.isError &&
+                reviews.length === 0 ? (
+                  <View style={styles.emptyReviewCard}>
+                    <Text style={styles.emptyReviewTitle}>아직 리뷰가 없어요.</Text>
+                    <Text style={styles.emptyReviewBody}>
+                      첫 번째 감상을 남길 차례예요.
+                    </Text>
+                  </View>
+                ) : null}
+
+                {reviews.map((item) => (
+                  <PostCard
+                    key={String(item.reviewId)}
+                    item={item}
+                    onLike={(reviewId) => likeMutation.mutate(reviewId)}
+                    isLiking={
+                      likeMutation.isPending &&
+                      likeMutation.variables === item.reviewId
+                    }
+                  />
+                ))}
+
+                {reviewsQuery.hasNextPage ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.loadMoreButton,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => void reviewsQuery.fetchNextPage()}
+                    disabled={reviewsQuery.isFetchingNextPage}
+                  >
+                    {reviewsQuery.isFetchingNextPage ? (
+                      <ActivityIndicator size="small" color={C.primary} />
+                    ) : (
+                      <>
+                        <Text style={styles.loadMoreText}>리뷰 더보기</Text>
+                        <Image
+                          source={arrowForward}
+                          style={styles.loadMoreIcon}
+                          contentFit="contain"
+                        />
+                      </>
+                    )}
+                  </Pressable>
+                ) : null}
+              </View>
             )}
-          </Pressable>
-        ) : null}
-      </View>
-    </ScrollView>
+          </ScrollView>
+
+          <TopicRoomEntryButton
+            bottomInset={insets.bottom}
+            hasTopicRoom={works.hasTopicRoom ?? false}
+            isCheckingRoom={isEntering}
+            onPress={() => void enterTopicRoom()}
+          />
+        </>
+      )}
+    </View>
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+function TabButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string
+  active: boolean
+  onPress: () => void
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+      <View style={[styles.tabUnderline, active && styles.tabUnderlineActive]} />
+    </Pressable>
+  )
+}
 
-const BTN_RADIUS = 12
+function CenteredState({
+  children,
+  text,
+}: {
+  children?: ReactNode
+  text: string
+}) {
+  return (
+    <View style={styles.centeredState}>
+      {children}
+      <Text style={styles.centeredText}>{text}</Text>
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: C.bg },
-
-  centered: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: C.bg,
-  },
-  fullErrorText: { fontSize: 14, color: C.error },
-
-  // Description section
-  section: {
     backgroundColor: C.card,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
   },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: C.textMuted,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-  },
-  description: {
-    fontSize: 14,
-    color: C.textSecondary,
-    lineHeight: 22,
-  },
-
-  // Actions section
-  actionsSection: {
+  scroll: {
+    flex: 1,
     backgroundColor: C.card,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
   },
-
-  btn: {
-    borderRadius: BTN_RADIUS,
-    paddingVertical: 14,
+  centeredState: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
-  },
-  btnText: { fontSize: 15, fontWeight: '600', color: C.text },
-  btnPressed: { opacity: 0.7 },
-
-  favBtnDefault: {
-    borderWidth: 1.5,
-    borderColor: C.border,
+    paddingHorizontal: 24,
+    gap: 12,
     backgroundColor: C.card,
   },
-  favBtnActive: {
-    borderWidth: 1.5,
-    borderColor: C.primary,
-    backgroundColor: C.primaryLight,
-  },
-  favBtnActiveText: { color: C.primary },
-
-  topicRoomBtn: { backgroundColor: C.primary },
-  topicRoomBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
-
-  rowCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-
-  entryErrorBox: {
-    backgroundColor: '#FFF3F3',
-    borderRadius: 10,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  entryErrorText: { fontSize: 13, color: C.error, flex: 1 },
-  entryErrorDismiss: { fontSize: 13, color: C.textMuted, marginLeft: 12 },
-
-  // Reviews section
-  reviewsSection: {
-    paddingHorizontal: 20,
-    paddingTop: 22,
-  },
-  reviewsSectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: C.text,
-    marginBottom: 14,
-  },
-  reviewsLoader: { marginVertical: 12, alignSelf: 'flex-start' },
-  reviewsErrorText: { fontSize: 13, color: C.error, paddingVertical: 8 },
-  reviewsEmptyText: {
-    fontSize: 13,
+  centeredText: {
+    ...Typography.body2Medium,
     color: C.textMuted,
-    paddingVertical: 12,
     textAlign: 'center',
   },
-
-  // Load more
-  loadMoreBtn: {
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: BTN_RADIUS,
+  tabBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+    backgroundColor: C.card,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 14,
+  },
+  tabLabel: {
+    ...Typography.body1Semibold,
+    color: C.textMuted,
+    marginBottom: 10,
+  },
+  tabLabelActive: {
+    color: C.text,
+  },
+  tabUnderline: {
+    width: '100%',
+    height: 2,
+    backgroundColor: 'transparent',
+  },
+  tabUnderlineActive: {
+    backgroundColor: C.primary,
+  },
+  entryErrorBox: {
+    marginHorizontal: S.screenH,
+    marginTop: 16,
+    borderRadius: Radius.md,
+    backgroundColor: '#FFF3F3',
+    paddingHorizontal: 14,
     paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  entryErrorText: {
+    ...Typography.body2Medium,
+    color: C.error,
+    flex: 1,
+  },
+  entryErrorDismiss: {
+    ...Typography.body2Medium,
+    color: C.textMuted,
+    marginLeft: 12,
+  },
+  reviewSection: {
+    paddingHorizontal: S.screenH,
+    paddingTop: 24,
+  },
+  reviewSectionTitle: {
+    ...Typography.heading2,
+    color: C.text,
+    marginBottom: 8,
+  },
+  reviewLoader: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  messageText: {
+    ...Typography.body2Medium,
+    color: C.textMuted,
+    marginTop: 12,
+  },
+  emptyReviewCard: {
+    borderRadius: Radius.md,
+    backgroundColor: C.bg,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  emptyReviewTitle: {
+    ...Typography.body1Semibold,
+    color: C.textSecondary,
+  },
+  emptyReviewBody: {
+    ...Typography.body2Medium,
+    color: C.textMuted,
+    marginTop: 4,
+  },
+  loadMoreButton: {
+    marginTop: 16,
+    marginBottom: 8,
+    minHeight: 48,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: C.divider,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
-    minHeight: 44,
+    flexDirection: 'row',
+    gap: 8,
   },
-  loadMoreText: { fontSize: 14, fontWeight: '600', color: C.primary },
+  loadMoreText: {
+    ...Typography.body2Bold,
+    color: C.primary,
+  },
+  loadMoreIcon: {
+    width: 16,
+    height: 16,
+    tintColor: C.primary,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
 })
