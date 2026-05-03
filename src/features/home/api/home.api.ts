@@ -1,5 +1,5 @@
 import { apiClient } from '../../../lib/api/axios-instance'
-import { TodayFeedEnvelopeSchema } from '../../../lib/api/homeFeed/homeFeed.schema'
+import { TodayFeedEnvelopeSchema } from './home.schema'
 
 /** GET /api/v1/home/feeds/today */
 export async function getTodayHomeFeeds() {

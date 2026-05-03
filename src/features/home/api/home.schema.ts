@@ -1,4 +1,3 @@
-// src/lib/api/homeFeed/homeFeed.schema.ts
 import { z } from 'zod'
 
 /**   공통 Envelope (isSuccess/code/message/result) */

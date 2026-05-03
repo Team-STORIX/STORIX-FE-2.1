@@ -18,7 +18,7 @@ import {
   formatTopicRoomSubtitle,
 } from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
-import type { TodayFeedItem } from '../../src/lib/api/homeFeed/homeFeed.schema'
+import type { TodayFeedItem } from '../../src/features/home'
 import type { TopicRoomItem } from '../../src/features/topicroom'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
