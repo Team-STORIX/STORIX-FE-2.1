@@ -11,16 +11,18 @@ import {
   View,
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useChatRoomMessagesInfinite } from '../../src/features/topicroom/hooks/useChatRoomMessagesInfinite'
-import { useTopicRoomStomp } from '../../src/features/topicroom'
-import { useLeaveTopicRoom } from '../../src/features/topicroom/hooks/useLeaveTopicRoom'
-import { useTopicRoomMembers } from '../../src/features/topicroom/hooks/useTopicRoomMembers'
-import { useProfileStore } from '../../src/features/profile/store/profile.store'
-import { ChatBubble } from '../../src/features/topicroom/ui/ChatBubble'
-import { ChatInput } from '../../src/features/topicroom/ui/ChatInput'
-import { ConnectionStatusPill } from '../../src/features/topicroom/ui/ConnectionStatusPill'
+import { useProfileStore } from '../../src/features/profile'
+import {
+  ChatBubble,
+  ChatInput,
+  ConnectionStatusPill,
+  useChatRoomMessagesInfinite,
+  useLeaveTopicRoom,
+  useTopicRoomMembers,
+  useTopicRoomStomp,
+  type DisplayMsg,
+} from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
-import type { DisplayMsg } from '../../src/features/topicroom/ui/ChatBubble'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

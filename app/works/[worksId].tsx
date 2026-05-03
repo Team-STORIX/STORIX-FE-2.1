@@ -12,20 +12,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useFavoriteWork } from '../../src/features/favorite'
 import {
+  PostCard,
+  TopicRoomEntryButton,
   useLikeWorksReview,
   useWorksDetail,
   useWorksReviewsInfinite,
+  WorksCoverHeader,
+  WorksInfoSection,
+  WorksTopBar,
   type WorksReviewItem,
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
-import { PostCard } from '../../src/components/works/PostCard'
-import { TopicRoomEntryButton } from '../../src/components/works/TopicRoomEntryButton'
-import { WorksCoverHeader } from '../../src/components/works/WorksCoverHeader'
-import { WorksInfoSection } from '../../src/components/works/WorksInfoSection'
-import { WorksTopBar } from '../../src/components/works/WorksTopBar'
 import { C } from '../../src/theme/colors'
 import { Radius } from '../../src/theme/radius'
 import { S } from '../../src/theme/spacing'

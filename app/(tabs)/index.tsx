@@ -2,13 +2,15 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useMe } from '../../src/features/profile'
-import { useTodayHomeFeeds } from '../../src/features/home'
+import {
+  HomeHeader,
+  HomeSection,
+  HotFeedSlider,
+  MyTasteCard,
+  TopicRoomCoverCarousel,
+  useTodayHomeFeeds,
+} from '../../src/features/home'
 import { usePopularTopicRooms, useTodayTopicRooms } from '../../src/features/topicroom'
-import { HomeHeader } from '../../src/components/home/HomeHeader'
-import { HomeSection } from '../../src/components/home/HomeSection'
-import { HotFeedSlider } from '../../src/components/home/HotFeedSlider'
-import { MyTasteCard } from '../../src/components/home/MyTasteCard'
-import { TopicRoomCoverCarousel } from '../../src/components/home/TopicRoomCoverCarousel'
 import { C } from '../../src/theme/colors'
 import { Radius } from '../../src/theme/radius'
 import { S } from '../../src/theme/spacing'
