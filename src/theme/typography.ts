@@ -1,3 +1,5 @@
+// TODO(Phase 10B): add  fontFamily: 'SUIT'  to every entry once assets/fonts/SUIT-Variable.ttf
+// is present and registered in app/_layout.tsx. See MIGRATION_NOTES.md § Phase 10B.
 import type { TextStyle } from 'react-native'
 
 // ─── Font weights (from 2.0 globals.css CSS variables) ───────────────────────

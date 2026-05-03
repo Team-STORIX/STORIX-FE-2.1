@@ -100,7 +100,98 @@ No screen logic, data flow, or navigation was changed. The only structural code 
 
 ### Future Notes
 
-- **Font**: Register `SUIT-Variable.woff2` via Expo's `useFonts` / `expo-font` to match 2.0 typography.
+- **Font**: See Phase 10B below — SUIT font asset is missing. Blocked until `assets/fonts/SUIT-Variable.ttf` is placed manually.
 - **Shadows**: Apply `Shadow.sm` to cards in a dedicated polish pass once designer confirms.
 - **Dark mode**: Track as a separate task — requires a second token set and a theme context provider.
-- **`src/features/{domain}/`**: Migrate domain code (api/hooks/store) into `src/features/{domain}/` after MVP screens are QA-stable. Do NOT do this before the auth flow is finalized.
+
+---
+
+## Phase 10B — SUIT Font Registration (blocked — asset missing)
+
+### Status: BLOCKED
+
+`assets/fonts/` contains only `SpaceMono-Regular.ttf`. No SUIT font file found.
+`typography.ts` and `_layout.tsx` are unchanged. The app continues to render with the system font.
+
+### What is needed
+
+Download **`SUIT-Variable.ttf`** (the single variable-font file that covers weights 100–900) from:
+
+```
+https://github.com/sunn-us/SUIT/releases
+```
+
+Place it at:
+
+```
+assets/fonts/SUIT-Variable.ttf
+```
+
+Do **not** use the `.woff2` file — React Native / Metro requires `.ttf` or `.otf`.
+
+### Step 1 — Register the font in `app/_layout.tsx`
+
+Inside `useFonts({...})`, add one entry alongside the existing `SpaceMono` and `FontAwesome.font`:
+
+```ts
+const [fontsLoaded, fontError] = useFonts({
+  SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  SUIT: require('../assets/fonts/SUIT-Variable.ttf'),
+  ...FontAwesome.font,
+})
+```
+
+No other changes to `_layout.tsx` are required. The existing splash/hydration gate already waits for `fontsLoaded`.
+
+### Step 2 — Add `fontFamily` to `src/theme/typography.ts`
+
+Add a `FontFamily` constant and spread it into every style in `Typography`:
+
+```ts
+export const FontFamily = {
+  suit: 'SUIT',
+} as const
+
+export const Typography = {
+  heading1: { fontSize: 24, fontWeight: FontWeight.bold,     lineHeight: 34, fontFamily: FontFamily.suit } as TextStyle,
+  heading2: { fontSize: 20, fontWeight: FontWeight.bold,     lineHeight: 28, fontFamily: FontFamily.suit } as TextStyle,
+  heading3: { fontSize: 18, fontWeight: FontWeight.bold,     lineHeight: 26, fontFamily: FontFamily.suit } as TextStyle,
+  heading4: { fontSize: 16, fontWeight: FontWeight.semibold, lineHeight: 22, fontFamily: FontFamily.suit } as TextStyle,
+  // ... repeat for all 14 entries: add  fontFamily: FontFamily.suit  to each
+} as const
+```
+
+### Step 3 — Apply `fontFamily` to standalone `Text` nodes not using `Typography`
+
+A global search for `fontWeight:` in `app/` and `src/features/` will surface inline `StyleSheet.create` entries that bypass the `Typography` token. Each of those must also get `fontFamily: 'SUIT'` added, or be refactored to use the corresponding `Typography.*` token instead.
+
+Quick scan command:
+```sh
+grep -rn "fontWeight" app/ src/features/ src/lib/ --include="*.tsx" --include="*.ts"
+```
+
+### Step 4 — Verify
+
+```sh
+npx tsc --noEmit
+npx expo export --platform android
+npx expo export --platform ios
+```
+
+Then run `npx expo start` on a physical device and confirm Korean characters render in SUIT weight variants.
+
+### Known caveat — variable font + Android
+
+React Native on Android resolves `fontWeight` from a variable font via the `wght` axis.
+This works on Android 8+ (API 26+) with a properly compiled variable font.
+If a weight renders as system fallback on older Android, fall back to individual weight files:
+
+```
+SUIT-Regular.ttf   → register as 'SUIT_400Regular'
+SUIT-Medium.ttf    → register as 'SUIT_500Medium'
+SUIT-SemiBold.ttf  → register as 'SUIT_600SemiBold'
+SUIT-Bold.ttf      → register as 'SUIT_700Bold'
+SUIT-ExtraBold.ttf → register as 'SUIT_800ExtraBold'
+```
+
+And update `FontFamily` and `Typography` accordingly.
