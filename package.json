@@ -5,8 +5,8 @@
   "scripts": {
     "start": "expo start",
     "prebuild:android": "expo prebuild --platform android",
-    "android:open": "open android",
-    "android": "npm run prebuild:android && npm run android:open",
+    "android:open": "start android",
+    "android": "npm run prebuild:android",
     "prebuild:ios": "expo prebuild --platform ios",
     "ios:open": "open ios/*.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",
