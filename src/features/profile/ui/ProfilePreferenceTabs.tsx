@@ -4,36 +4,70 @@ import { usePathname, useRouter } from 'expo-router'
 const PROFILE_TAB_ACTIVE = '#100F0F'
 const PROFILE_TAB_INACTIVE = '#A9A8A8'
 
-export function ProfilePreferenceTabs() {
+export type ProfilePreferenceTab = 'analysis' | 'activity'
+
+type Props = {
+  activeTab?: ProfilePreferenceTab
+  onChangeTab?: (tab: ProfilePreferenceTab) => void
+}
+
+export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
   const pathname = usePathname()
   const router = useRouter()
-  const isAnalysisTab = pathname === '/profile' || pathname === '/(tabs)/profile'
-  const isActivityTab = pathname.startsWith('/profile/my-activity')
+  const derivedTab: ProfilePreferenceTab =
+    pathname.startsWith('/profile/my-activity') ? 'activity' : 'analysis'
+  const currentTab = activeTab ?? derivedTab
+
+  const handlePress = (nextTab: ProfilePreferenceTab) => {
+    if (currentTab === nextTab) return
+
+    if (onChangeTab) {
+      onChangeTab(nextTab)
+      return
+    }
+
+    if (nextTab === 'analysis') {
+      router.push('/(tabs)/profile')
+      return
+    }
+
+    router.push('/profile/my-activity')
+  }
 
   return (
     <View style={styles.container}>
-      <Pressable
-        onPress={() => {
-          if (!isAnalysisTab) router.push('/(tabs)/profile')
-        }}
-        style={styles.tab}
-      >
-        <Text style={[styles.tabLabel, isAnalysisTab ? styles.tabLabelActive : styles.tabLabelInactive]}>
-          취향 분석
+      <Pressable onPress={() => handlePress('analysis')} style={styles.tab}>
+        <Text
+          style={[
+            styles.tabLabel,
+            currentTab === 'analysis' ? styles.tabLabelActive : styles.tabLabelInactive,
+          ]}
+        >
+          痍⑦뼢 遺꾩꽍
         </Text>
-        <View style={[styles.tabIndicator, isAnalysisTab ? styles.tabIndicatorActive : styles.tabIndicatorInactive]} />
+        <View
+          style={[
+            styles.tabIndicator,
+            currentTab === 'analysis' ? styles.tabIndicatorActive : styles.tabIndicatorInactive,
+          ]}
+        />
       </Pressable>
 
-      <Pressable
-        onPress={() => {
-          if (!isActivityTab) router.push('/profile/my-activity')
-        }}
-        style={styles.tab}
-      >
-        <Text style={[styles.tabLabel, isActivityTab ? styles.tabLabelActive : styles.tabLabelInactive]}>
-          내 활동
+      <Pressable onPress={() => handlePress('activity')} style={styles.tab}>
+        <Text
+          style={[
+            styles.tabLabel,
+            currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive,
+          ]}
+        >
+          ???쒕룞
         </Text>
-        <View style={[styles.tabIndicator, isActivityTab ? styles.tabIndicatorActive : styles.tabIndicatorInactive]} />
+        <View
+          style={[
+            styles.tabIndicator,
+            currentTab === 'activity' ? styles.tabIndicatorActive : styles.tabIndicatorInactive,
+          ]}
+        />
       </Pressable>
     </View>
   )

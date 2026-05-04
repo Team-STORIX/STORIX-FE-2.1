@@ -93,9 +93,10 @@ export function SearchScreen() {
   const params = useLocalSearchParams<{ keyword?: string; tab?: string }>()
 
   const submittedKeyword = normalizeKeyword(params.keyword)
-  const initialTab: SearchTab = params.tab === 'topicroom' ? 'topicroom' : 'works'
   const [inputValue, setInputValue] = useState(submittedKeyword)
-  const [activeTab, setActiveTab] = useState<SearchTab>(initialTab)
+  const [activeTab, setActiveTab] = useState<SearchTab>(() =>
+    params.tab === 'topicroom' ? 'topicroom' : 'works',
+  )
   const [worksSort, setWorksSort] = useState<WorksSort>('NAME')
   const [topicRoomSort, setTopicRoomSort] = useState<TopicRoomSort>('DEFAULT')
   const [selectedTypes, setSelectedTypes] = useState<SearchWorksType[]>([])
@@ -124,12 +125,6 @@ export function SearchScreen() {
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
-
-  useEffect(() => {
-    if (initialTab !== activeTab) {
-      setActiveTab(initialTab)
-    }
-  }, [activeTab, initialTab])
 
   useEffect(() => {
     setSelectedTypes([])
@@ -187,11 +182,13 @@ export function SearchScreen() {
     Keyboard.dismiss()
 
     if (!keyword) {
+      setActiveTab('works')
       router.replace('/search' as never)
       void recentKeywordsQuery.refetch()
       return
     }
 
+    setActiveTab('works')
     router.replace(buildSearchHref(keyword) as never)
   }
 
@@ -219,6 +216,7 @@ export function SearchScreen() {
         onClearPress={() => {
           setInputValue('')
           if (submittedKeyword) {
+            setActiveTab('works')
             router.replace('/search' as never)
             void recentKeywordsQuery.refetch()
           }

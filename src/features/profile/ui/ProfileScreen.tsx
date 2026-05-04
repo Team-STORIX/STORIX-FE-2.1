@@ -1,19 +1,24 @@
+import { useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Gray } from '../../../theme'
 import { useMe } from '../hooks'
+import { ProfileActivityContent } from './ProfileActivityContent'
 import { ProfileHashtagSection } from './ProfileHashtagSection'
 import { ProfilePreferenceSection } from './ProfilePreferenceSection'
-import { ProfilePreferenceTabs } from './ProfilePreferenceTabs'
+import { ProfilePreferenceTabs, type ProfilePreferenceTab } from './ProfilePreferenceTabs'
 import { ProfileRatingSection } from './ProfileRatingSection'
 import { ProfileTopBar } from './ProfileTopBar'
 import { ProfileUserSummary } from './ProfileUserSummary'
+import type { ProfileActivityTab } from './ProfileActivityTabs'
 
 export function ProfileScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { data: me, isLoading, isError } = useMe()
+  const [activeTab, setActiveTab] = useState<ProfilePreferenceTab>('analysis')
+  const [activeActivityTab, setActiveActivityTab] = useState<ProfileActivityTab>('posts')
 
   if (isLoading) {
     return (
@@ -28,9 +33,30 @@ export function ProfileScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.errorText}>프로필을 불러오지 못했어요.</Text>
-        <Text style={styles.errorHint}>잠시 후 다시 시도해주세요.</Text>
+        <Text style={styles.errorText}>?꾨줈?꾩쓣 遺덈윭?ㅼ? 紐삵뻽?댁슂.</Text>
+        <Text style={styles.errorHint}>?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.</Text>
       </View>
+    )
+  }
+
+  if (activeTab === 'activity') {
+    return (
+      <ProfileActivityContent
+        activeTab={activeActivityTab}
+        onChangeTab={setActiveActivityTab}
+        currentUserId={me.userId}
+        bottomInset={insets.bottom}
+        header={
+          <>
+            <Stack.Screen options={{ headerShown: false }} />
+            <View style={{ paddingTop: insets.top }}>
+              <ProfileTopBar onPressSettings={() => router.push('/profile/settings')} />
+            </View>
+            <ProfileUserSummary me={me} />
+            <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
+          </>
+        }
+      />
     )
   }
 
@@ -47,7 +73,7 @@ export function ProfileScreen() {
       </View>
 
       <ProfileUserSummary me={me} />
-      <ProfilePreferenceTabs />
+      <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <ProfilePreferenceSection />
       <ProfileRatingSection />
       <ProfileHashtagSection />
