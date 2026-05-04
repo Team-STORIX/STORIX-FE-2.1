@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
 import { C, Gray, Magenta, Radius } from '../../../theme'
 
@@ -7,6 +8,7 @@ const defaultProfileImage = require('../../../../assets/placeholders/profile-def
 const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
 
 export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
+  const router = useRouter()
   const hasBio = me.profileDescription.trim().length > 0
 
   return (
@@ -32,7 +34,12 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         </View>
       </View>
 
-      <Pressable disabled style={styles.editButton} accessibilityRole="button">
+      <Pressable
+        onPress={() => router.push('/profile/fix')}
+        style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={'\ud504\ub85c\ud544 \uc218\uc815'}
+      >
         <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" />
       </Pressable>
     </View>
@@ -111,5 +118,8 @@ const styles = StyleSheet.create({
   editIcon: {
     width: 16,
     height: 16,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 })
