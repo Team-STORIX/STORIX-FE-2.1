@@ -137,6 +137,7 @@ export function FeedScreen() {
 
       return (
         <FeedPostCard
+          variant="list"
           boardId={board.boardId}
           writerUserId={profile.userId}
           currentUserId={currentUserId}
@@ -180,6 +181,7 @@ export function FeedScreen() {
           onOpenDelete={
             isMine ? () => handleDelete(board.boardId) : undefined
           }
+          onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
         />
       )
     },

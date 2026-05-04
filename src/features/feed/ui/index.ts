@@ -1,4 +1,7 @@
 export * from './FeedPostCard'
+export * from './FeedCommentInput'
+export * from './FeedCommentItem'
+export * from './FeedDetailScreen'
 export * from './FeedTopbar'
 export * from './FeedWorksPicker'
 export * from './FeedScreen'

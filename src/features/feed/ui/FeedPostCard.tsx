@@ -31,7 +31,10 @@ export type PostCardWorks = {
   hashtags: string[]
 }
 
+type FeedPostCardVariant = 'list' | 'detail'
+
 type FeedPostCardProps = {
+  variant?: FeedPostCardVariant
   boardId: number
   writerUserId: number
   currentUserId?: number
@@ -75,6 +78,7 @@ function HashtagRow({ tags }: { tags: string[] }) {
 // ─── FeedPostCard ─────────────────────────────────────────────────────────────
 
 export function FeedPostCard({
+  variant = 'list',
   boardId,
   writerUserId,
   currentUserId,
@@ -246,7 +250,7 @@ export function FeedPostCard({
               styles.contentText,
               isSpoilerHidden && styles.contentSpoilerHidden,
             ]}
-            numberOfLines={isSpoilerHidden ? undefined : 3}
+            numberOfLines={isSpoilerHidden || variant === 'detail' ? undefined : 3}
           >
             {content}
           </Text>
@@ -298,7 +302,7 @@ export function FeedPostCard({
     </View>
   )
 
-  if (onPressCard) {
+  if (variant === 'list' && onPressCard) {
     return (
       <Pressable
         onPress={onPressCard}
