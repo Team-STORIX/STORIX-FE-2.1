@@ -24,7 +24,8 @@ export function ProfileLikesScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const params = useLocalSearchParams<{ tab?: string }>()
-  const activeTab: ProfileLikesTab = isLikesTab(params.tab) ? params.tab : 'works'
+  const initialTab: ProfileLikesTab = isLikesTab(params.tab) ? params.tab : 'works'
+  const [activeTab, setActiveTab] = useState<ProfileLikesTab>(initialTab)
   const worksQuery = useProfileFavoriteWorks(activeTab === 'works')
   const writersQuery = useProfileFavoriteArtists(activeTab === 'writers')
   const [pendingWorkRemoved, setPendingWorkRemoved] = useState<Set<number>>(new Set())
@@ -36,6 +37,12 @@ export function ProfileLikesScreen() {
   const prevTabRef = useRef<ProfileLikesTab>(activeTab)
   const commitWorksLockRef = useRef(false)
   const commitArtistsLockRef = useRef(false)
+
+  useEffect(() => {
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab)
+    }
+  }, [activeTab, initialTab])
 
   useEffect(() => {
     pendingRef.current = {
@@ -133,7 +140,7 @@ export function ProfileLikesScreen() {
 
   const handleChangeTab = (tab: ProfileLikesTab) => {
     if (tab === activeTab) return
-    router.replace(`/profile/likes?tab=${tab}` as const)
+    setActiveTab(tab)
   }
 
   const renderHeader = () => (

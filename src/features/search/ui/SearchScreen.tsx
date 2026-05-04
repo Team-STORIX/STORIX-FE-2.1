@@ -83,8 +83,8 @@ function summarizeSelected(
   return `${first} +${values.length - 1}`
 }
 
-function buildSearchHref(keyword: string, tab: SearchTab) {
-  return `/search?keyword=${encodeURIComponent(keyword)}&tab=${encodeURIComponent(tab)}`
+function buildSearchHref(keyword: string) {
+  return `/search?keyword=${encodeURIComponent(keyword)}`
 }
 
 export function SearchScreen() {
@@ -93,8 +93,9 @@ export function SearchScreen() {
   const params = useLocalSearchParams<{ keyword?: string; tab?: string }>()
 
   const submittedKeyword = normalizeKeyword(params.keyword)
-  const activeTab: SearchTab = params.tab === 'topicroom' ? 'topicroom' : 'works'
+  const initialTab: SearchTab = params.tab === 'topicroom' ? 'topicroom' : 'works'
   const [inputValue, setInputValue] = useState(submittedKeyword)
+  const [activeTab, setActiveTab] = useState<SearchTab>(initialTab)
   const [worksSort, setWorksSort] = useState<WorksSort>('NAME')
   const [topicRoomSort, setTopicRoomSort] = useState<TopicRoomSort>('DEFAULT')
   const [selectedTypes, setSelectedTypes] = useState<SearchWorksType[]>([])
@@ -123,6 +124,12 @@ export function SearchScreen() {
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
+
+  useEffect(() => {
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab)
+    }
+  }, [activeTab, initialTab])
 
   useEffect(() => {
     setSelectedTypes([])
@@ -175,7 +182,7 @@ export function SearchScreen() {
     [],
   )
 
-  const submitKeyword = (raw: string, nextTab: SearchTab = activeTab) => {
+  const submitKeyword = (raw: string) => {
     const keyword = normalizeKeyword(raw)
     Keyboard.dismiss()
 
@@ -185,7 +192,7 @@ export function SearchScreen() {
       return
     }
 
-    router.replace(buildSearchHref(keyword, nextTab) as never)
+    router.replace(buildSearchHref(keyword) as never)
   }
 
   const handlePressWorks = (item: WorksSearchItem) => {
@@ -223,9 +230,7 @@ export function SearchScreen() {
           <SearchResultTabs
             activeTab={activeTab}
             onChangeTab={(tab) => {
-              if (submittedKeyword) {
-                router.replace(buildSearchHref(submittedKeyword, tab) as never)
-              }
+              setActiveTab(tab)
             }}
           />
 

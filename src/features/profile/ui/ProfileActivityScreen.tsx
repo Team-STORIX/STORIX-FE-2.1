@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -36,13 +36,20 @@ export function ProfileActivityScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const params = useLocalSearchParams<{ tab?: string }>()
-  const activeTab: ProfileActivityTab = isActivityTab(params.tab) ? params.tab : 'posts'
+  const initialTab: ProfileActivityTab = isActivityTab(params.tab) ? params.tab : 'posts'
+  const [activeTab, setActiveTab] = useState<ProfileActivityTab>(initialTab)
 
   const { data: me, isLoading: meLoading, isError: meError } = useMe()
   const boardsQuery = useProfileActivityBoards(activeTab === 'posts')
   const repliesQuery = useProfileActivityReplies(activeTab === 'comments')
   const likesQuery = useProfileActivityLikes(activeTab === 'likes')
   const [openCommentMenuId, setOpenCommentMenuId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab)
+    }
+  }, [activeTab, initialTab])
 
   const query =
     activeTab === 'posts'
@@ -63,7 +70,8 @@ export function ProfileActivityScreen() {
 
   const handleChangeTopTab = (next: ProfileActivityTab) => {
     if (next === activeTab) return
-    router.replace(`/profile/my-activity?tab=${next}` as const)
+    setOpenCommentMenuId(null)
+    setActiveTab(next)
   }
 
   const renderHeader = () => (
