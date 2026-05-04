@@ -26,6 +26,9 @@ const ensureNaverInitialized = (): void => {
   const consumerKey = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID
   const consumerSecret = process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET
   const appName = process.env.EXPO_PUBLIC_NAVER_APP_NAME ?? 'STORIX'
+  // serviceUrlSchemeIOS MUST equal EXPO_PUBLIC_NAVER_URL_SCHEME, which is also
+  // passed to the @react-native-seoul/naver-login config plugin in app.config.ts.
+  // If they diverge, iOS callbacks will fail silently and login will hang.
   const serviceUrlSchemeIOS =
     process.env.EXPO_PUBLIC_NAVER_URL_SCHEME ?? 'storixfe21'
 
@@ -78,9 +81,11 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
   logoutKakao: async (): Promise<void> => {
     try {
       await kakaoLogout()
-    } catch {
-      // The SDK throws if no session exists — absorb silently.
-      // The local STORIX token is cleared by clearAuth() separately.
+    } catch (err) {
+      // Tolerated: the SDK throws if no session exists, and the local STORIX
+      // token is cleared by clearAuth() separately. Surface the failure as a
+      // warning rather than swallowing silently so it shows up in logs.
+      console.warn('[KakaoLogin] logout SDK error (non-fatal):', err)
     }
   },
 
@@ -118,8 +123,10 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
 
     try {
       await NaverLogin.logout()
-    } catch {
-      // Absorb SDK errors on logout — local tokens are cleared by clearAuth().
+    } catch (err) {
+      // Tolerated: local tokens are cleared by clearAuth() regardless. Surface
+      // the failure as a warning rather than swallowing silently.
+      console.warn('[NaverLogin] logout SDK error (non-fatal):', err)
     }
   },
 }

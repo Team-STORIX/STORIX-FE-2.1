@@ -24,8 +24,6 @@ import {
 } from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 const formatTime = (iso?: string | null): string => {
   if (!iso) return ''
   const d = new Date(iso)
@@ -37,8 +35,6 @@ const formatTime = (iso?: string | null): string => {
   }).format(d)
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function TopicRoomScreen() {
   const { roomId: roomIdParam } = useLocalSearchParams<{ roomId: string }>()
   const roomId = typeof roomIdParam === 'string' ? Number(roomIdParam) : 0
@@ -47,7 +43,6 @@ export default function TopicRoomScreen() {
   const router = useRouter()
   const [inputText, setInputText] = useState('')
 
-  // ── History (REST, paginated, createdAt DESC) ──────────────────────────
   const {
     data: historyData,
     isLoading: historyLoading,
@@ -57,14 +52,9 @@ export default function TopicRoomScreen() {
     isFetchingNextPage,
   } = useChatRoomMessagesInfinite({ roomId })
 
-  // ── Realtime (STOMP WebSocket) ─────────────────────────────────────────
   const { status, messages: realtimeMsgs, sendMessage } = useTopicRoomStomp({ roomId })
-
-  // ── Members ────────────────────────────────────────────────────────────
   const membersQuery = useTopicRoomMembers(roomId)
   const memberCount = membersQuery.data?.length ?? 0
-
-  // ── Leave ──────────────────────────────────────────────────────────────
   const leaveMutation = useLeaveTopicRoom()
 
   const handleLeave = useCallback(() => {
@@ -85,7 +75,6 @@ export default function TopicRoomScreen() {
     )
   }, [leaveMutation, roomId, router])
 
-  // ── Normalise history pages → DisplayMsg[] ─────────────────────────────
   const historyDisplay: DisplayMsg[] = useMemo(() => {
     if (!historyData?.pages) return []
     return historyData.pages.flatMap((page) =>
@@ -99,7 +88,6 @@ export default function TopicRoomScreen() {
     )
   }, [historyData, myUserId])
 
-  // ── Normalise STOMP messages → DisplayMsg[] ────────────────────────────
   const realtimeDisplay: DisplayMsg[] = useMemo(
     () =>
       realtimeMsgs.map((m) => ({
@@ -112,14 +100,11 @@ export default function TopicRoomScreen() {
     [realtimeMsgs],
   )
 
-  // ── Combined data for inverted FlatList ───────────────────────────────
-  // data[0] = newest (visual bottom); data[n] = oldest (visual top)
   const allMessages: DisplayMsg[] = useMemo(
     () => [...realtimeDisplay.slice().reverse(), ...historyDisplay],
     [realtimeDisplay, historyDisplay],
   )
 
-  // ── Send ──────────────────────────────────────────────────────────────
   const handleSend = useCallback(() => {
     const sent = sendMessage(inputText.trim())
     if (sent) setInputText('')
@@ -127,12 +112,8 @@ export default function TopicRoomScreen() {
 
   const canSend = status === 'open' && !!inputText.trim()
 
-  // ─── Header title: room id + member count ─────────────────────────────
-  const headerTitle = memberCount > 0
-    ? `채팅방 #${roomId} · ${memberCount}명`
-    : `채팅방 #${roomId}`
-
-  // ─── Render ───────────────────────────────────────────────────────────
+  const headerTitle =
+    memberCount > 0 ? `채팅방 #${roomId} · ${memberCount}명` : `채팅방 #${roomId}`
 
   return (
     <KeyboardAvoidingView
@@ -140,42 +121,18 @@ export default function TopicRoomScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <Stack.Screen
-        options={{
-          title: headerTitle,
-          headerBackTitle: '뒤로',
-          headerRight: () => (
-            <Pressable
-              onPress={handleLeave}
-              disabled={leaveMutation.isPending}
-              style={({ pressed }) => [styles.leaveBtn, pressed && styles.leaveBtnPressed]}
-              accessibilityRole="button"
-              accessibilityLabel="채팅방 나가기"
-            >
-              {leaveMutation.isPending ? (
-                <ActivityIndicator size="small" color={C.error} />
-              ) : (
-                <Text style={styles.leaveBtnText}>나가기</Text>
-              )}
-            </Pressable>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Connection status — hidden when open */}
       <ConnectionStatusPill status={status} />
 
-      {/* Initial history load spinner */}
       {historyLoading && !historyData ? (
         <ActivityIndicator style={styles.centeredLoader} size="large" color={C.primary} />
       ) : null}
 
-      {/* History fetch error */}
       {!historyLoading && historyError ? (
         <Text style={styles.errorText}>메시지 기록을 불러오지 못했습니다.</Text>
       ) : null}
 
-      {/* Message list */}
       <FlatList
         inverted
         data={allMessages}
@@ -194,13 +151,14 @@ export default function TopicRoomScreen() {
         ListEmptyComponent={
           !historyLoading && !historyError ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>아직 메시지가 없습니다. 첫 메시지를 보내보세요!</Text>
+              <Text style={styles.emptyText}>
+                아직 메시지가 없습니다. 첫 메시지를 보내보세요.
+              </Text>
             </View>
           ) : null
         }
       />
 
-      {/* Chat input */}
       <ChatInput
         value={inputText}
         onChangeText={setInputText}
@@ -210,8 +168,6 @@ export default function TopicRoomScreen() {
     </KeyboardAvoidingView>
   )
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },

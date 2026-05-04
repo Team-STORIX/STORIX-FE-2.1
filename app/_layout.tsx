@@ -102,6 +102,7 @@ export default function RootLayout() {
 
 function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const segments = useSegments()
   const router = useRouter()
 
@@ -111,14 +112,41 @@ function AuthGate() {
     // @ts-expect-error — TS2367: runtime guard, not needed per the type system.
     if (segments.length === 0) return
 
-    const inAuthGroup = segments[0] === '(auth)'
+    const segmentList = segments as readonly string[]
+    const group = segmentList[0]
+    const screen = segmentList[1]
+    const inAuthGroup = group === '(auth)'
+    const hasOnboardingToken =
+      typeof onboardingToken === 'string' && onboardingToken.trim().length > 0
+    const isLoginRoute = inAuthGroup && screen === 'login'
+    const isAgreementRoute = inAuthGroup && screen === 'agreement'
+    const isOnboardingRoute = inAuthGroup && screen === 'onboarding'
+    const isMidSignupRoute = isAgreementRoute || isOnboardingRoute
 
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login')
-    } else if (isAuthenticated && inAuthGroup) {
+    if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)')
+      return
     }
-  }, [isAuthenticated, segments, router])
+
+    if (!isAuthenticated && hasOnboardingToken) {
+      if (isMidSignupRoute) {
+        return
+      }
+
+      if (isLoginRoute || !inAuthGroup) {
+        router.replace('/(auth)/agreement')
+        return
+      }
+
+      router.replace('/(auth)/agreement')
+      return
+    }
+
+    if (!isAuthenticated && (isMidSignupRoute || !inAuthGroup)) {
+      router.replace('/(auth)/login')
+      return
+    }
+  }, [isAuthenticated, onboardingToken, segments, router])
 
   return null
 }
@@ -173,7 +201,7 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileBootstrap />
       <AuthGate />
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="feed" options={{ headerShown: false }} />
@@ -182,8 +210,8 @@ function RootLayoutNav() {
         <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen name="topicroom" options={{ headerShown: false }} />
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
-        <Stack.Screen name="works" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="works" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
     </ThemeProvider>
   )

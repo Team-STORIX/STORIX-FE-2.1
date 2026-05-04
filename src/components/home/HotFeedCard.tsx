@@ -1,9 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { TodayFeedItem } from '../../features/home'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
+import { Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
 const likeIcon = require('../../../assets/icons/common/icon-like.svg')
@@ -12,45 +10,55 @@ const commentIcon = require('../../../assets/icons/common/icon-comment.svg')
 
 type HotFeedCardProps = {
   item?: TodayFeedItem
-  width: number
   loading?: boolean
   onPress?: () => void
 }
 
-export function HotFeedCard({
-  item,
-  width,
-  loading = false,
-  onPress,
-}: HotFeedCardProps) {
+const CARD_W = 353
+const CARD_H = 164
+
+export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps) {
   if (loading || !item) {
     return (
-      <View style={[styles.card, styles.placeholderCard, { width }]}>
-        <View style={styles.placeholderAuthorRow}>
-          <View style={styles.placeholderAvatar} />
-          <View style={styles.placeholderName} />
+      <View style={[styles.card, styles.placeholderCard]}>
+        <View style={styles.authorRow}>
+          <View style={[styles.avatarWrap, styles.placeholderBlock]} />
+          <View style={[styles.placeholderText, { width: 88 }]} />
         </View>
-        <View style={styles.placeholderTitle} />
-        <View style={styles.placeholderBody} />
-        <View style={styles.placeholderFooter}>
-          <View style={styles.placeholderCount} />
-          <View style={styles.placeholderCount} />
+        <View style={styles.copy}>
+          <View style={[styles.placeholderText, { width: '64%', height: 16 }]} />
+          <View style={[styles.placeholderText, { width: '92%', height: 14, marginTop: 6 }]} />
+        </View>
+        <View style={styles.reactionRow}>
+          <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
+          <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
         </View>
       </View>
     )
   }
 
   const { board, profile } = item
-  const rawContent = board.content.trim()
-  const title = rawContent.slice(0, 18) + (rawContent.length > 18 ? '...' : '')
+  const raw = board.content ?? ''
+  const title = raw.slice(0, 18) + (raw.length > 18 ? '...' : '')
   const preview =
-    rawContent.length > 18
-      ? rawContent.slice(18, 88) + (rawContent.length > 88 ? '...' : '')
+    raw.length > 18
+      ? raw.slice(18, 18 + 70) + (raw.length > 18 + 70 ? '...' : '')
       : ''
-  const initial = (profile.nickName || '?').slice(0, 1).toUpperCase()
 
-  const cardContent = (
-    <>
+  const Wrapper: any = onPress ? Pressable : View
+  const wrapperProps = onPress
+    ? {
+        onPress,
+        accessibilityRole: 'button' as const,
+        style: ({ pressed }: { pressed: boolean }) => [
+          styles.card,
+          pressed && styles.cardPressed,
+        ],
+      }
+    : { style: styles.card }
+
+  return (
+    <Wrapper {...wrapperProps}>
       <View style={styles.authorRow}>
         <View style={styles.avatarWrap}>
           {profile.profileImageUrl ? (
@@ -59,29 +67,19 @@ export function HotFeedCard({
               style={styles.avatar}
               contentFit="cover"
             />
-          ) : (
-            <Text style={styles.avatarInitial}>{initial}</Text>
-          )}
+          ) : null}
         </View>
         <Text style={styles.authorName} numberOfLines={1}>
-          {profile.nickName}
+          {profile.nickName ?? ''}
         </Text>
       </View>
 
-      <View style={styles.copyWrap}>
+      <View style={styles.copy}>
         <Text style={styles.title} numberOfLines={1}>
-          {board.isSpoiler ? '스포일러가 포함된 피드예요' : title || '오늘의 피드'}
+          {title}
         </Text>
-        <Text
-          style={[
-            styles.preview,
-            board.isSpoiler && styles.previewSpoiler,
-          ]}
-          numberOfLines={2}
-        >
-          {board.isSpoiler
-            ? '작품 페이지에서 자세한 내용을 확인해 주세요.'
-            : preview || rawContent}
+        <Text style={styles.preview} numberOfLines={2}>
+          {preview}
         </Text>
       </View>
 
@@ -92,7 +90,7 @@ export function HotFeedCard({
             style={styles.reactionIcon}
             contentFit="contain"
           />
-          <Text style={styles.reactionCount}>{board.likeCount}</Text>
+          <Text style={styles.reactionCount}>{board.likeCount ?? 0}</Text>
         </View>
         <View style={styles.reactionItem}>
           <Image
@@ -100,86 +98,39 @@ export function HotFeedCard({
             style={styles.reactionIcon}
             contentFit="contain"
           />
-          <Text style={styles.reactionCount}>{board.replyCount}</Text>
+          <Text style={styles.reactionCount}>{board.replyCount ?? 0}</Text>
         </View>
       </View>
-    </>
-  )
-
-  if (!onPress) {
-    return <View style={[styles.card, { width }]}>{cardContent}</View>
-  }
-
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { width },
-        pressed && styles.cardPressed,
-      ]}
-      onPress={onPress}
-      accessibilityRole="button"
-    >
-      {cardContent}
-    </Pressable>
+    </Wrapper>
   )
 }
 
 const styles = StyleSheet.create({
   card: {
-    height: 164,
-    borderRadius: Radius.md,
+    width: CARD_W,
+    height: CARD_H,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: C.divider,
-    backgroundColor: C.card,
+    borderColor: Gray[100],
+    backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 16,
     gap: 12,
   },
   cardPressed: {
-    opacity: 0.82,
+    opacity: 0.85,
   },
   placeholderCard: {
-    justifyContent: 'space-between',
+    backgroundColor: Gray[100],
+    borderColor: Gray[100],
   },
-  placeholderAuthorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  placeholderBlock: {
+    backgroundColor: Gray[200],
   },
-  placeholderAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.full,
-    backgroundColor: C.divider,
-  },
-  placeholderName: {
-    width: 88,
-    height: 14,
-    borderRadius: Radius.full,
-    backgroundColor: C.divider,
-  },
-  placeholderTitle: {
-    width: '70%',
-    height: 18,
-    borderRadius: Radius.full,
-    backgroundColor: C.divider,
-  },
-  placeholderBody: {
-    width: '92%',
-    height: 34,
-    borderRadius: Radius.sm,
-    backgroundColor: C.bg,
-  },
-  placeholderFooter: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  placeholderCount: {
-    width: 42,
-    height: 16,
-    borderRadius: Radius.full,
-    backgroundColor: C.divider,
+  placeholderText: {
+    height: 12,
+    borderRadius: 4,
+    backgroundColor: Gray[200],
   },
   authorRow: {
     flexDirection: 'row',
@@ -189,40 +140,29 @@ const styles = StyleSheet.create({
   avatarWrap: {
     width: 32,
     height: 32,
-    borderRadius: Radius.full,
+    borderRadius: 9999,
     overflow: 'hidden',
-    backgroundColor: C.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Gray[200],
   },
   avatar: {
     width: 32,
     height: 32,
   },
-  avatarInitial: {
-    ...Typography.caption1Extrabold,
-    color: C.primary,
-  },
   authorName: {
     ...Typography.body2Medium,
-    color: C.text,
-    flex: 1,
+    color: '#000000',
+    flexShrink: 1,
   },
-  copyWrap: {
-    gap: 4,
-    minHeight: 54,
-  },
+  copy: {},
   title: {
-    ...Typography.body1Bold,
-    color: C.text,
+    ...Typography.body1Medium,
+    color: '#000000',
   },
   preview: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
-    minHeight: 34,
-  },
-  previewSpoiler: {
-    color: C.primary,
+    color: Gray[500],
+    minHeight: 32,
+    marginTop: 4,
   },
   reactionRow: {
     flexDirection: 'row',
@@ -240,7 +180,8 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
     marginLeft: 4,
   },
 })
+

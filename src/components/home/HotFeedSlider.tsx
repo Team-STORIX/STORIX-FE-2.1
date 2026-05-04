@@ -1,19 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import type { ListRenderItemInfo } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { TodayFeedItem } from '../../features/home'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
+import { Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 import { HotFeedCard } from './HotFeedCard'
 
-type PlaceholderItem = {
-  id: string
-  kind: 'placeholder'
-}
-
-type SliderItem = TodayFeedItem | PlaceholderItem
+const HOME_PAD = 16
+const ITEM_GAP = 8
+const SKELETON_COUNT = 5
 
 type HotFeedSliderProps = {
   data?: TodayFeedItem[]
@@ -21,70 +14,11 @@ type HotFeedSliderProps = {
   onPressItem: (item: TodayFeedItem) => void
 }
 
-const PLACEHOLDERS: PlaceholderItem[] = Array.from({ length: 3 }, (_, index) => ({
-  id: `feed-placeholder-${index}`,
-  kind: 'placeholder',
-}))
-
-function isPlaceholder(item: SliderItem): item is PlaceholderItem {
-  return 'kind' in item
-}
-
 export function HotFeedSlider({
   data,
   isLoading = false,
   onPressItem,
 }: HotFeedSliderProps) {
-  const listRef = useRef<FlatList<SliderItem>>(null)
-  const { width: screenWidth } = useWindowDimensions()
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  const cardWidth = Math.min(353, Math.max(280, screenWidth - S.screenH * 2))
-  const snapInterval = cardWidth + S.itemGap
-  const items = useMemo<SliderItem[]>(
-    () => (isLoading ? PLACEHOLDERS : (data ?? [])),
-    [data, isLoading],
-  )
-
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [isLoading, data?.length])
-
-  useEffect(() => {
-    if (isLoading || !data || data.length <= 1) {
-      return
-    }
-
-    const timer = setInterval(() => {
-      setActiveIndex((current) => {
-        const next = current >= data.length - 1 ? 0 : current + 1
-        listRef.current?.scrollToOffset({
-          offset: next * snapInterval,
-          animated: true,
-        })
-        return next
-      })
-    }, 3500)
-
-    return () => clearInterval(timer)
-  }, [cardWidth, data, isLoading, snapInterval])
-
-  const renderItem = ({ item, index }: ListRenderItemInfo<SliderItem>) => {
-    if (isPlaceholder(item)) {
-      return <HotFeedCard width={cardWidth} loading />
-    }
-
-    return (
-      <View style={index === activeIndex ? undefined : styles.inactiveCard}>
-        <HotFeedCard
-          item={item}
-          width={cardWidth}
-          onPress={() => onPressItem(item)}
-        />
-      </View>
-    )
-  }
-
   if (!isLoading && (!data || data.length === 0)) {
     return (
       <View style={styles.messageCard}>
@@ -94,57 +28,53 @@ export function HotFeedSlider({
   }
 
   return (
-    <FlatList
-      ref={listRef}
-      data={items}
+    <ScrollView
       horizontal
-      keyExtractor={(item) =>
-        isPlaceholder(item) ? item.id : `feed-${item.board.boardId}`
-      }
-      renderItem={renderItem}
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.contentContainer}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      snapToInterval={snapInterval}
-      decelerationRate="fast"
-      snapToAlignment="start"
-      disableIntervalMomentum
-      onMomentumScrollEnd={(event) => {
-        const nextIndex = Math.round(
-          event.nativeEvent.contentOffset.x / snapInterval,
-        )
-        setActiveIndex(nextIndex)
-      }}
-      getItemLayout={(_, index) => ({
-        length: snapInterval,
-        offset: snapInterval * index,
-        index,
-      })}
-    />
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+    >
+      {isLoading
+        ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <View
+              key={`skeleton-${i}`}
+              style={i === 0 ? undefined : styles.gap}
+            >
+              <HotFeedCard loading />
+            </View>
+          ))
+        : (data ?? []).map((item, i) => (
+            <View
+              key={`feed-${item.board.boardId}`}
+              style={i === 0 ? undefined : styles.gap}
+            >
+              <HotFeedCard item={item} onPress={() => onPressItem(item)} />
+            </View>
+          ))}
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    paddingHorizontal: S.screenH,
+  scroll: {
+    marginHorizontal: -HOME_PAD,
   },
-  separator: {
-    width: S.itemGap,
+  content: {
+    paddingHorizontal: HOME_PAD,
   },
-  inactiveCard: {
-    opacity: 0.58,
+  gap: {
+    marginLeft: ITEM_GAP,
   },
   messageCard: {
-    marginHorizontal: S.screenH,
-    borderRadius: Radius.md,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: C.divider,
-    backgroundColor: C.card,
+    borderColor: Gray[100],
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
   messageText: {
     ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
 })

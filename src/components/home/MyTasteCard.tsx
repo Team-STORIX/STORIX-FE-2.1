@@ -1,39 +1,54 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
+import { Gray, Magenta } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
 const tasteImage = require('../../../assets/preference/tasteImage.webp')
 
-export function MyTasteCard() {
+type MyTasteCardProps = {
+  onPress?: () => void
+}
+
+export function MyTasteCard({ onPress }: MyTasteCardProps) {
+  const Wrapper: any = onPress ? Pressable : View
+  const wrapperProps = onPress
+    ? {
+        onPress,
+        accessibilityRole: 'button' as const,
+        style: ({ pressed }: { pressed: boolean }) => [
+          styles.container,
+          pressed && styles.containerPressed,
+        ],
+      }
+    : { style: styles.container }
+
   return (
-    <View style={styles.container}>
-      <Image source={tasteImage} style={StyleSheet.absoluteFillObject} contentFit="cover" />
-      <View style={styles.overlay} />
+    <Wrapper {...wrapperProps}>
+      <Image
+        source={tasteImage}
+        style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+        contentPosition="top"
+      />
       <Text style={styles.copy}>슥 - 넘기기만 해도 취향이 보여요</Text>
-    </View>
+    </Wrapper>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: S.screenH,
     height: 204,
-    borderRadius: Radius.lg,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: C.divider,
-    justifyContent: 'flex-end',
+    backgroundColor: Gray[100],
     padding: 16,
+    justifyContent: 'flex-end',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  containerPressed: {
+    opacity: 0.92,
   },
   copy: {
     ...Typography.heading2,
-    color: '#ffe1ed',
-    maxWidth: '68%',
+    color: Magenta[50],
   },
 })
