@@ -43,7 +43,7 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
             currentTab === 'analysis' ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
-          痍⑦뼢 遺꾩꽍
+          취향 분석
         </Text>
         <View
           style={[
@@ -60,7 +60,7 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
             currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
-          ???쒕룞
+          나의 활동
         </Text>
         <View
           style={[

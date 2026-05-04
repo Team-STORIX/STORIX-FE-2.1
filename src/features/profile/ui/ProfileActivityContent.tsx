@@ -69,10 +69,10 @@ export function ProfileActivityContent({
     return (
       <View style={styles.footer}>
         {query.isFetchingNextPage ? (
-          <Text style={styles.footerText}>遺덈윭?ㅻ뒗 以?..</Text>
+          <Text style={styles.footerText}>불러오는 중...</Text>
         ) : (
           <Pressable onPress={() => void query.fetchNextPage()}>
-            <Text style={styles.footerText}>??蹂닿린</Text>
+            <Text style={styles.footerText}>더 보기</Text>
           </Pressable>
         )}
       </View>
@@ -112,9 +112,9 @@ export function ProfileActivityContent({
       }
       ListEmptyComponent={
         query.isLoading ? (
-          <ProfileActivityEmptyState message="遺덈윭?ㅻ뒗 以?.." />
+          <ProfileActivityEmptyState message="불러오는 중..." />
         ) : query.isError ? (
-          <ProfileActivityEmptyState message="?쒕룞 ?댁뿭??遺덈윭?ㅼ? 紐삵뻽?댁슂." />
+          <ProfileActivityEmptyState message="활동 내역을 불러오지 못했습니다." />
         ) : (
           <ProfileActivityEmptyState message={getEmptyMessage(activeTab)} />
         )
@@ -165,13 +165,13 @@ function renderActivityItem(
 function getEmptyMessage(tab: ProfileActivityTab) {
   switch (tab) {
     case 'posts':
-      return '?꾩쭅 ?묒꽦??湲???놁뼱??'
+      return '아직 작성한 글이 없어요.'
     case 'comments':
-      return '?꾩쭅 ?묒꽦???볤????놁뼱??'
+      return '아직 작성한 댓글이 없어요.'
     case 'likes':
-      return '?꾩쭅 醫뗭븘?뷀븳 湲???놁뼱??'
+      return '아직 좋아한 글이 없어요.'
     default:
-      return '?쒕룞 ?댁뿭???놁뼱??'
+      return '활동 내역이 없어요.'
   }
 }
 
