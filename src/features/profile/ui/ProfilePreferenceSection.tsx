@@ -40,7 +40,10 @@ export function ProfilePreferenceSection() {
             <Text style={styles.count}>{writersQuery.data?.count ?? 0}</Text>
           </View>
 
-          <Pressable disabled accessibilityRole="button">
+          <Pressable
+            onPress={() => router.push('/profile/likes?tab=writers')}
+            accessibilityRole="button"
+          >
             <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
           </Pressable>
         </View>
@@ -88,7 +91,10 @@ export function ProfilePreferenceSection() {
             <Text style={styles.count}>{worksQuery.data?.count ?? 0}</Text>
           </View>
 
-          <Pressable disabled accessibilityRole="button">
+          <Pressable
+            onPress={() => router.push('/profile/likes?tab=works')}
+            accessibilityRole="button"
+          >
             <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
           </Pressable>
         </View>
