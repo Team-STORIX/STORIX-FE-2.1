@@ -1,5 +1,4 @@
 import { Tabs } from 'expo-router'
-import { useClientOnlyValue } from '../../../../components/useClientOnlyValue'
 import { BottomNavBar } from './BottomNavBar'
 
 export function TabsLayout() {
@@ -7,7 +6,7 @@ export function TabsLayout() {
     <Tabs
       tabBar={(props) => <BottomNavBar {...props} />}
       screenOptions={{
-        headerShown: useClientOnlyValue(false, true),
+        headerShown: false,
       }}
     >
       <Tabs.Screen name="index" options={{ title: '홈' }} />
