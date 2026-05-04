@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { PreferenceExplorationWork } from '../../preference/api/preference.schema'
+import type { OnboardingWork } from '../api/onboarding.api'
 
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 
@@ -10,7 +10,7 @@ export function FavoriteStep({
   onToggle,
   loading,
 }: {
-  works: PreferenceExplorationWork[]
+  works: OnboardingWork[]
   selectedIds: number[]
   onToggle: (id: number) => void
   loading: boolean

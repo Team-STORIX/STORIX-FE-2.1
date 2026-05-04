@@ -19,6 +19,7 @@ export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
+  const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const [agreement1, setAgreement1] = useState(false)
   const [agreement2, setAgreement2] = useState(false)
   const [agreement3, setAgreement3] = useState(false)
@@ -33,9 +34,24 @@ export function AgreementScreen() {
   }
 
   const handleNext = async () => {
-    if (!allAgreed) return
+    if (!allAgreed || !onboardingToken) return
     await setMarketingAgree(true)
-    router.push('/(auth)/onboarding')
+    router.replace('/(auth)/onboarding')
+  }
+
+  if (!onboardingToken) {
+    return (
+      <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
+        <Text style={styles.missingTitle}>회원가입 정보가 없어요.</Text>
+        <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
+        <Pressable
+          onPress={() => router.replace('/(auth)/login')}
+          style={styles.resetButton}
+        >
+          <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
+        </Pressable>
+      </View>
+    )
   }
 
   return (
@@ -146,6 +162,42 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  missingScreen: {
+    flex: 1,
+    paddingHorizontal: 24,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  missingTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 34,
+    color: '#000000',
+  },
+  missingBody: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
+    color: '#847B7F',
+    textAlign: 'center',
+  },
+  resetButton: {
+    marginTop: 20,
+    width: 200,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#FF4093',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+    color: '#ffffff',
   },
   topBar: {
     height: 56,

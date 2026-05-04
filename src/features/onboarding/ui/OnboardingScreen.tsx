@@ -3,10 +3,11 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSignup } from '../../auth/hooks/useSignup'
 import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
-import { usePreferenceExploration } from '../../preference/hooks/usePreference'
+import { getOnboardingWorks } from '../api/onboarding.api'
 import { NicknameStep } from './NicknameStep'
 import { BioStep } from './BioStep'
 import { GenreStep } from './GenreStep'
@@ -27,9 +28,15 @@ const genreOptions = GenreKeySchema.options
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const { onboardingToken, marketingAgree, clearAuth } = useAuthStore()
+  const onboardingToken = useAuthStore((s) => s.onboardingToken)
+  const marketingAgree = useAuthStore((s) => s.marketingAgree)
   const signupMutation = useSignup()
-  const preferenceQuery = usePreferenceExploration(true)
+  const onboardingWorksQuery = useQuery({
+    queryKey: ['onboarding', 'works'],
+    queryFn: getOnboardingWorks,
+    enabled: !!onboardingToken,
+    staleTime: 0,
+  })
 
   const [step, setStep] = useState(1)
   const [nickname, setNickname] = useState('')
@@ -109,7 +116,10 @@ export function OnboardingScreen() {
       <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
         <Text style={styles.missingTitle}>온보딩 정보가 없어요.</Text>
         <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
-        <Pressable onPress={() => void clearAuth()} style={styles.resetButton}>
+        <Pressable
+          onPress={() => router.replace('/(auth)/login')}
+          style={styles.resetButton}
+        >
           <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
         </Pressable>
       </View>
@@ -153,14 +163,14 @@ export function OnboardingScreen() {
           {step === 3 ? <GenreStep value={genres} onChange={setGenres} /> : null}
           {step === 4 ? (
             <FavoriteStep
-              works={preferenceQuery.data?.result ?? []}
+              works={onboardingWorksQuery.data ?? []}
               selectedIds={favoriteIds}
               onToggle={(id) =>
                 setFavoriteIds((current) =>
                   current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
                 )
               }
-              loading={preferenceQuery.isLoading}
+              loading={onboardingWorksQuery.isLoading}
             />
           ) : null}
           {step === 5 ? <FinalStep /> : null}
