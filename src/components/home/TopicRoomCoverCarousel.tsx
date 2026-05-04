@@ -1,57 +1,40 @@
-import { useMemo, useState } from 'react'
-import { FlatList, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import type { ListRenderItemInfo } from 'react-native'
+import { useState } from 'react'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native'
 import type { TopicRoomItem } from '../../features/topicroom'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
+import { Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
-import { TopicRoomCoverCard } from './TopicRoomCoverCard'
+import {
+  TOPICROOM_CARD_W,
+  TopicRoomCoverCard,
+} from './TopicRoomCoverCard'
 
-type PlaceholderItem = {
-  id: string
-  kind: 'placeholder'
-}
-
-type CarouselItem = TopicRoomItem | PlaceholderItem
+const HOME_PAD = 16
+const ITEM_GAP = 12
+const SKELETON_COUNT = 3
 
 type TopicRoomCoverCarouselProps = {
   data?: TopicRoomItem[]
   isLoading?: boolean
-  badgeLabel: string
+  badgeLabel?: string
   emptyText: string
   onPressItem: (room: TopicRoomItem) => void
-}
-
-const PLACEHOLDERS: PlaceholderItem[] = Array.from({ length: 3 }, (_, index) => ({
-  id: `topicroom-placeholder-${index}`,
-  kind: 'placeholder',
-}))
-
-function isPlaceholder(item: CarouselItem): item is PlaceholderItem {
-  return 'kind' in item
 }
 
 export function TopicRoomCoverCarousel({
   data,
   isLoading = false,
-  badgeLabel,
+  badgeLabel = 'HOT',
   emptyText,
   onPressItem,
 }: TopicRoomCoverCarouselProps) {
-  const { width: screenWidth } = useWindowDimensions()
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  const cardWidth = Math.min(
-    266,
-    Math.max(220, screenWidth - S.screenH * 2 - 64),
-  )
-  const snapInterval = cardWidth + 12
-
-  const items = useMemo<CarouselItem[]>(
-    () => (isLoading ? PLACEHOLDERS : (data ?? [])),
-    [data, isLoading],
-  )
+  const [activeIdx, setActiveIdx] = useState(0)
 
   if (!isLoading && (!data || data.length === 0)) {
     return (
@@ -61,69 +44,76 @@ export function TopicRoomCoverCarousel({
     )
   }
 
-  const renderItem = ({ item, index }: ListRenderItemInfo<CarouselItem>) => {
-    if (isPlaceholder(item)) {
-      return <TopicRoomCoverCard width={cardWidth} badgeLabel={badgeLabel} loading />
-    }
-
-    return (
-      <View style={index === activeIndex ? undefined : styles.inactiveCard}>
-        <TopicRoomCoverCard
-          room={item}
-          width={cardWidth}
-          badgeLabel={badgeLabel}
-          onPress={() => onPressItem(item)}
-        />
-      </View>
-    )
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x
+    const idx = Math.round(x / (TOPICROOM_CARD_W + ITEM_GAP))
+    if (idx !== activeIdx) setActiveIdx(idx)
   }
 
   return (
-    <FlatList
-      data={items}
+    <ScrollView
       horizontal
-      keyExtractor={(item) =>
-        isPlaceholder(item) ? item.id : `topicroom-${item.topicRoomId}`
-      }
-      renderItem={renderItem}
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.contentContainer}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      snapToInterval={snapInterval}
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
       decelerationRate="fast"
+      snapToInterval={TOPICROOM_CARD_W + ITEM_GAP}
       snapToAlignment="start"
       disableIntervalMomentum
-      onMomentumScrollEnd={(event) => {
-        const nextIndex = Math.round(
-          event.nativeEvent.contentOffset.x / snapInterval,
-        )
-        setActiveIndex(nextIndex)
-      }}
-    />
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+    >
+      {isLoading
+        ? Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <View
+              key={`tr-skeleton-${i}`}
+              style={[i === 0 ? undefined : styles.gap]}
+            >
+              <TopicRoomCoverCard loading badgeLabel={badgeLabel} />
+            </View>
+          ))
+        : (data ?? []).map((room, i) => (
+            <View
+              key={`topicroom-${room.topicRoomId}`}
+              style={[
+                i === 0 ? undefined : styles.gap,
+                i === activeIdx ? null : styles.inactive,
+              ]}
+            >
+              <TopicRoomCoverCard
+                room={room}
+                badgeLabel={badgeLabel}
+                onPress={() => onPressItem(room)}
+              />
+            </View>
+          ))}
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    paddingHorizontal: S.screenH,
+  scroll: {
+    marginHorizontal: -HOME_PAD,
   },
-  separator: {
-    width: 12,
+  content: {
+    paddingHorizontal: HOME_PAD,
   },
-  inactiveCard: {
-    opacity: 0.56,
+  gap: {
+    marginLeft: ITEM_GAP,
+  },
+  inactive: {
+    opacity: 0.5,
   },
   messageCard: {
-    marginHorizontal: S.screenH,
-    borderRadius: Radius.md,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: C.divider,
-    backgroundColor: C.card,
+    borderColor: Gray[100],
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 18,
   },
   messageText: {
     ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
 })
