@@ -1,0 +1,232 @@
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { useAuthStore } from '../../../store/auth.store'
+import { C } from '../../../theme/colors'
+import { Typography } from '../../../theme/typography'
+
+const backIcon = require('../../../../assets/icons/common/back.svg')
+const termsPink = require('../../../../assets/icons/login/terms-pink.svg')
+const termsGray = require('../../../../assets/icons/login/terms-gray.svg')
+const checkPink = require('../../../../assets/icons/common/check-pink.svg')
+const checkGray = require('../../../../assets/icons/common/check-gray.svg')
+const nextPink = require('../../../../assets/onboarding/next.svg')
+const nextGray = require('../../../../assets/onboarding/next-gray.svg')
+
+export function AgreementScreen() {
+  const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
+  const [agreement1, setAgreement1] = useState(false)
+  const [agreement2, setAgreement2] = useState(false)
+  const [agreement3, setAgreement3] = useState(false)
+
+  const allAgreed = agreement1 && agreement2 && agreement3
+
+  const handleAllAgree = () => {
+    const next = !allAgreed
+    setAgreement1(next)
+    setAgreement2(next)
+    setAgreement3(next)
+  }
+
+  const handleNext = async () => {
+    if (!allAgreed) return
+    await setMarketingAgree(true)
+    router.push('/(auth)/onboarding')
+  }
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+        </Pressable>
+        <Text style={styles.topBarTitle}>약관동의</Text>
+        <View style={styles.backButton} />
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.heading}>
+          스토릭스 이용을 위해{'\n'}필수 약관에 동의해 주세요.
+        </Text>
+
+        <Pressable onPress={handleAllAgree} style={styles.allAgreeButton}>
+          <Image
+            source={allAgreed ? termsPink : termsGray}
+            style={styles.allAgreeImage}
+            contentFit="contain"
+          />
+        </Pressable>
+
+        <View style={styles.termsBlock}>
+          <AgreementRow
+            checked={agreement1}
+            label="(필수) 서비스 이용약관 동의"
+            onPress={() => setAgreement1((v) => !v)}
+            onOpenLink={() =>
+              void Linking.openURL(
+                'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link',
+              )
+            }
+          />
+          <AgreementRow
+            checked={agreement2}
+            label="(필수) 개인정보 수집·이용 동의"
+            onPress={() => setAgreement2((v) => !v)}
+            onOpenLink={() =>
+              void Linking.openURL(
+                'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a',
+              )
+            }
+          />
+          <AgreementAgeRow
+            checked={agreement3}
+            onPress={() => setAgreement3((v) => !v)}
+          />
+        </View>
+      </View>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
+        <Pressable onPress={handleNext} disabled={!allAgreed}>
+          <Image
+            source={allAgreed ? nextPink : nextGray}
+            style={styles.nextButtonImage}
+            contentFit="contain"
+          />
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
+function AgreementRow({
+  checked,
+  label,
+  onPress,
+  onOpenLink,
+}: {
+  checked: boolean
+  label: string
+  onPress: () => void
+  onOpenLink: () => void
+}) {
+  return (
+    <View style={styles.termRow}>
+      <Pressable onPress={onPress} style={styles.checkboxWrap}>
+        <Image source={checked ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
+      </Pressable>
+      <Pressable onPress={onOpenLink}>
+        <Text style={[styles.termLink, checked && styles.termLinkActive]}>{label}</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function AgreementAgeRow({
+  checked,
+  onPress,
+}: {
+  checked: boolean
+  onPress: () => void
+}) {
+  return (
+    <View style={styles.termRow}>
+      <Pressable onPress={onPress} style={styles.checkboxWrap}>
+        <Image source={checked ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
+      </Pressable>
+      <Text style={[styles.termAgeText, checked && styles.termLinkActive]}>(필수) 14세 이상입니다.</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  topBar: {
+    height: 56,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    width: 24,
+    height: 24,
+  },
+  topBarTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 22,
+    color: '#100F0F',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  heading: {
+    marginTop: 40,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 34,
+    color: '#000000',
+  },
+  allAgreeButton: {
+    marginTop: 32,
+  },
+  allAgreeImage: {
+    width: 361,
+    height: 56,
+  },
+  termsBlock: {
+    marginTop: 20,
+  },
+  termRow: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  checkboxWrap: {
+    marginRight: 6,
+  },
+  checkIcon: {
+    width: 20,
+    height: 20,
+  },
+  termLink: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    color: '#888787',
+    textDecorationLine: 'underline',
+  },
+  termAgeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    color: '#888787',
+  },
+  termLinkActive: {
+    color: '#FF4093',
+  },
+  footer: {
+    height: 84,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  nextButtonImage: {
+    width: 361,
+    height: 50,
+  },
+})
