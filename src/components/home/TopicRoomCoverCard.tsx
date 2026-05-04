@@ -1,61 +1,55 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import type { TopicRoomItem } from '../../features/topicroom'
 import { formatTopicRoomSubtitle } from '../../features/topicroom'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
+import { Gray, Magenta } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
 const fireIcon = require('../../../assets/icons/common/fire.svg')
 const peopleIcon = require('../../../assets/icons/common/icon-topicroom-people.svg')
-const arrowIcon = require('../../../assets/icons/common/icon-arrow-forward-small.svg')
+
+export const TOPICROOM_CARD_W = 266
+export const TOPICROOM_CARD_H = 354
 
 type TopicRoomCoverCardProps = {
   room?: TopicRoomItem
-  width: number
-  badgeLabel: string
+  badgeLabel?: string
   loading?: boolean
   onPress?: () => void
 }
 
 export function TopicRoomCoverCard({
   room,
-  width,
-  badgeLabel,
+  badgeLabel = 'HOT',
   loading = false,
   onPress,
 }: TopicRoomCoverCardProps) {
-  const height = Math.round((354 / 266) * width)
-
   if (loading || !room) {
     return (
-      <View style={[styles.card, styles.placeholderCard, { width, height }]}>
-        <View style={styles.placeholderChipRow}>
-          <View style={styles.placeholderChip} />
-          <View style={[styles.placeholderChip, styles.placeholderChipShort]} />
+      <View style={[styles.card, styles.placeholderCard]}>
+        <View style={styles.content}>
+          <View style={styles.chipRow}>
+            <View style={[styles.chip, styles.placeholderChip]} />
+            <View style={[styles.chip, styles.placeholderChip]} />
+          </View>
+          <View style={styles.textBlock}>
+            <View style={styles.placeholderTitle} />
+            <View style={styles.placeholderSubtitle} />
+          </View>
         </View>
-        <View style={styles.placeholderTextBlock}>
-          <View style={styles.placeholderTitle} />
-          <View style={styles.placeholderSubtitle} />
-        </View>
-        <View style={styles.placeholderButton} />
       </View>
     )
   }
 
   const subtitle = formatTopicRoomSubtitle(room.worksType, room.worksName)
-  const initial = (room.worksName || room.topicRoomName || '?').slice(0, 1)
   const memberCount = room.activeUserNumber ?? 0
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { width, height },
-        pressed && styles.cardPressed,
-      ]}
       onPress={onPress}
       accessibilityRole="button"
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       {room.thumbnailUrl ? (
         <Image
@@ -64,9 +58,7 @@ export function TopicRoomCoverCard({
           contentFit="cover"
         />
       ) : (
-        <View style={[StyleSheet.absoluteFillObject, styles.fallbackBg]}>
-          <Text style={styles.fallbackInitial}>{initial}</Text>
-        </View>
+        <View style={[StyleSheet.absoluteFillObject, styles.fallbackBg]} />
       )}
 
       <View style={styles.overlay} />
@@ -74,7 +66,11 @@ export function TopicRoomCoverCard({
       <View style={styles.content}>
         <View style={styles.chipRow}>
           <View style={[styles.chip, styles.hotChip]}>
-            <Image source={fireIcon} style={styles.fireIcon} contentFit="contain" />
+            <Image
+              source={fireIcon}
+              style={styles.fireIcon}
+              contentFit="contain"
+            />
             <Text style={styles.hotChipText}>{badgeLabel}</Text>
           </View>
           <View style={[styles.chip, styles.peopleChip]}>
@@ -98,7 +94,7 @@ export function TopicRoomCoverCard({
       </View>
 
       <View style={styles.enterButton}>
-        <Image source={arrowIcon} style={styles.enterIcon} contentFit="contain" />
+        <Ionicons name="enter-outline" size={22} color="#ffffff" />
       </View>
     </Pressable>
   )
@@ -106,88 +102,50 @@ export function TopicRoomCoverCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.lg,
+    width: TOPICROOM_CARD_W,
+    height: TOPICROOM_CARD_H,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: C.divider,
-    justifyContent: 'flex-end',
+    backgroundColor: Gray[100],
   },
   cardPressed: {
-    opacity: 0.9,
+    opacity: 0.92,
   },
   placeholderCard: {
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-  placeholderChipRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  placeholderChip: {
-    width: 52,
-    height: 20,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.32)',
-  },
-  placeholderChipShort: {
-    width: 40,
-  },
-  placeholderTextBlock: {
-    gap: 8,
-  },
-  placeholderTitle: {
-    width: '78%',
-    height: 24,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.32)',
-  },
-  placeholderSubtitle: {
-    width: '56%',
-    height: 18,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  placeholderButton: {
-    alignSelf: 'flex-end',
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: Gray[100],
   },
   fallbackBg: {
-    backgroundColor: C.primaryMid,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fallbackInitial: {
-    ...Typography.heading1,
-    color: C.card,
-    fontSize: 42,
+    backgroundColor: Gray[200],
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.30)',
   },
   content: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     padding: 16,
   },
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Radius.full,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    borderRadius: 9999,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   hotChip: {
-    backgroundColor: C.primary,
+    backgroundColor: Magenta[500],
   },
   peopleChip: {
-    backgroundColor: C.card,
+    backgroundColor: '#ffffff',
   },
   fireIcon: {
     width: 12,
@@ -199,25 +157,25 @@ const styles = StyleSheet.create({
   },
   hotChipText: {
     ...Typography.caption2Extrabold,
-    color: C.card,
+    color: '#ffffff',
     marginLeft: 2,
   },
   peopleChipText: {
     ...Typography.caption2Extrabold,
-    color: C.primary,
+    color: Magenta[300],
     marginLeft: 2,
   },
   textBlock: {
-    maxWidth: '82%',
-    gap: 2,
+    maxWidth: 200,
   },
   subtitle: {
     ...Typography.heading2,
-    color: C.card,
+    color: '#ffffff',
   },
   title: {
     ...Typography.body1Medium,
-    color: C.card,
+    color: '#ffffff',
+    marginTop: 2,
   },
   enterButton: {
     position: 'absolute',
@@ -225,13 +183,32 @@ const styles = StyleSheet.create({
     bottom: 12,
     width: 40,
     height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: C.primary,
+    borderRadius: 9999,
+    backgroundColor: Magenta[500],
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  enterIcon: {
-    width: 18,
+  placeholderChip: {
+    width: 40,
     height: 18,
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+  placeholderTitle: {
+    width: '78%',
+    height: 24,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+  placeholderSubtitle: {
+    width: '56%',
+    height: 18,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    marginTop: 6,
   },
 })

@@ -1,3 +1,5 @@
+export * from '../../../components/home/HashtagChip'
+export * from '../../../components/home/HashtagList'
 export * from '../../../components/home/HomeHeader'
 export * from '../../../components/home/HomeSection'
 export * from '../../../components/home/HotFeedCard'

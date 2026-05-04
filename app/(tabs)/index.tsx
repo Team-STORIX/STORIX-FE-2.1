@@ -1,8 +1,8 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useMe } from '../../src/features/profile'
 import {
+  HashtagList,
   HomeHeader,
   HomeSection,
   HotFeedSlider,
@@ -10,53 +10,48 @@ import {
   TopicRoomCoverCarousel,
   useTodayHomeFeeds,
 } from '../../src/features/home'
-import { usePopularTopicRooms, useTodayTopicRooms } from '../../src/features/topicroom'
+import { useTodayTopicRooms } from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
-import { Radius } from '../../src/theme/radius'
-import { S } from '../../src/theme/spacing'
-import { Typography } from '../../src/theme/typography'
+
+const HOME_PAD = 16
+const SECTION_GAP = 24
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
 
-  const { data: me, isLoading: meLoading } = useMe()
   const {
     data: feeds,
     isLoading: feedsLoading,
-    isError: feedsError,
   } = useTodayHomeFeeds()
   const {
     data: todayRooms,
     isLoading: todayLoading,
-    isError: todayError,
   } = useTodayTopicRooms()
-  const {
-    data: popularRooms,
-    isLoading: popularLoading,
-    isError: popularError,
-  } = usePopularTopicRooms()
+
+  const goSearchKeyword = (raw: string) => {
+    const k = raw.replace(/^#/, '').trim()
+    if (!k) return
+    router.push(`/search?keyword=${encodeURIComponent(k)}` as never)
+  }
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[
-        styles.contentContainer,
-        { paddingTop: insets.top + 4 },
+        styles.content,
+        { paddingTop: insets.top, paddingBottom: 128 },
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <HomeHeader
-        nickName={me?.nickName}
-        isLoading={meLoading}
-        onSearchPress={() => router.push('/search' as never)}
-      />
+      <HomeHeader onSearchPress={() => router.push('/search' as never)} />
 
-      <View style={styles.sectionStack}>
-        <HomeSection title="실시간 작품 이야기!">
-          {todayError ? (
-            <SectionMessage text="오늘의 토픽룸을 불러오지 못했어요." />
-          ) : (
+      <View style={styles.stack}>
+        <View>
+          <HomeSection
+            title="실시간 작품 이야기!"
+            onArrowPress={() => router.push('/topicroom' as never)}
+          >
             <TopicRoomCoverCarousel
               data={todayRooms}
               isLoading={todayLoading}
@@ -66,13 +61,14 @@ export default function HomeScreen() {
                 router.push(`/topicroom/${room.topicRoomId}` as const)
               }
             />
-          )}
-        </HomeSection>
+          </HomeSection>
+        </View>
 
-        <HomeSection title="오늘의 피드">
-          {feedsError ? (
-            <SectionMessage text="오늘의 피드를 불러오지 못했어요." />
-          ) : (
+        <View>
+          <HomeSection
+            title="오늘의 피드"
+            onArrowPress={() => router.push('/(tabs)/feed' as never)}
+          >
             <HotFeedSlider
               data={feeds}
               isLoading={feedsLoading}
@@ -83,47 +79,24 @@ export default function HomeScreen() {
                   item.board.worksId > 0
                     ? item.board.worksId
                     : null
-
-                if (worksId == null) {
-                  return
-                }
-
+                if (worksId == null) return
                 router.push(`/works/${worksId}` as const)
               }}
             />
-          )}
-        </HomeSection>
+          </HomeSection>
+        </View>
 
-        <HomeSection title="인기 토픽룸">
-          {popularError ? (
-            <SectionMessage text="인기 토픽룸을 불러오지 못했어요." />
-          ) : (
-            <TopicRoomCoverCarousel
-              data={popularRooms}
-              isLoading={popularLoading}
-              badgeLabel="LIVE"
-              emptyText="지금 인기 있는 토픽룸이 아직 없어요."
-              onPressItem={(room) =>
-                router.push(`/topicroom/${room.topicRoomId}` as const)
-              }
-            />
-          )}
-        </HomeSection>
+        <View>
+          <HomeSection title="이 작품, 내 취향일까?" withArrow={false}>
+            <MyTasteCard />
+          </HomeSection>
+        </View>
 
-        <HomeSection title="이 작품, 내 취향일까?" withArrow={false}>
-          <MyTasteCard />
-        </HomeSection>
+        <View style={styles.hashtagBlock}>
+          <HashtagList onSelect={goSearchKeyword} />
+        </View>
       </View>
     </ScrollView>
-  )
-}
-
-function SectionMessage({ text }: { text: string }) {
-  return (
-    <View style={styles.messageCard}>
-      <View style={styles.messageDot} />
-      <Text style={styles.messageText}>{text}</Text>
-    </View>
   )
 }
 
@@ -132,34 +105,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.bg,
   },
-  contentContainer: {
-    paddingBottom: 48,
+  content: {
+    paddingHorizontal: HOME_PAD,
   },
-  sectionStack: {
-    gap: 24,
-    paddingTop: 8,
+  stack: {
+    gap: SECTION_GAP,
   },
-  messageCard: {
-    marginHorizontal: S.screenH,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.divider,
-    backgroundColor: C.card,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  messageDot: {
-    width: 8,
-    height: 8,
-    borderRadius: Radius.full,
-    backgroundColor: C.primary,
-    marginRight: 10,
-  },
-  messageText: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    flex: 1,
+  hashtagBlock: {
+    marginBottom: 32,
   },
 })
