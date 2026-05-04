@@ -33,8 +33,8 @@ export function ProfileScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.errorText}>?꾨줈?꾩쓣 遺덈윭?ㅼ? 紐삵뻽?댁슂.</Text>
-        <Text style={styles.errorHint}>?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.</Text>
+        <Text style={styles.errorText}>프로필을 불러오지 못했습니다.</Text>
+        <Text style={styles.errorHint}>다시 한번 시도해주세요.</Text>
       </View>
     )
   }
