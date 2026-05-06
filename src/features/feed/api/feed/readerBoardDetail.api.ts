@@ -59,14 +59,14 @@ export const createReply = async (params: { boardId: number; comment: string }) 
   return data.result
 }
 
-// POST /api/v1/feed/reader/board/{boardId}/reply/{replyId}/sub-reply
+// POST /api/v1/feed/reader/board/{boardId}/reply/{replyId}/reply
 export const createSubReply = async (params: {
   boardId: number
   replyId: number
   comment: string
 }) => {
   const { data } = await apiClient.post(
-    `/api/v1/feed/reader/board/${params.boardId}/reply/${params.replyId}/sub-reply`,
+    `/api/v1/feed/reader/board/${params.boardId}/reply/${params.replyId}/reply`,
     { comment: params.comment },
   )
   return data.result

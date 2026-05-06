@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { C, Radius, S, Typography } from '../../../theme'
@@ -38,6 +39,7 @@ export function FeedWriteEntryScreen() {
   const [content, setContent] = useState('')
   const [isSpoiler, setIsSpoiler] = useState(false)
   const [spoilerScript, setSpoilerScript] = useState('')
+  const queryClient = useQueryClient()
   const submitMutation = useCreateReaderBoard()
   const canSubmit = content.trim().length > 0 && !submitMutation.isPending
 
@@ -55,6 +57,7 @@ export function FeedWriteEntryScreen() {
         spoilerScript: isSpoiler ? spoilerScript.trim() : '',
         content: content.trim(),
       })
+      await queryClient.invalidateQueries({ queryKey: ['feed', 'boards'] })
       router.replace('/(tabs)/feed' as never)
     } catch {
       Alert.alert('오류', '게시글 등록에 실패했어요. 잠시 후 다시 시도해 주세요.')

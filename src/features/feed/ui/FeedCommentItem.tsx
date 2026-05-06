@@ -10,7 +10,7 @@ const menuIcon = require('../../../../assets/icons/common/menu-3dots.svg')
 const commentArrowIcon = require('../../../../assets/icons/feed/comment-arrow.svg')
 const commentDropdown = require('../../../../assets/icons/common/comment-dropdown.svg')
 const deleteDropdown = require('../../../../assets/icons/common/delete-dropdown.svg')
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 type BaseProps = {
   myUserId: number | null
@@ -44,15 +44,11 @@ export function FeedCommentItem(props: Props) {
       <View style={styles.header}>
         <View style={styles.authorRow}>
           <View style={styles.avatarWrap}>
-            {item.profile.profileImageUrl ? (
-              <Image
-                source={{ uri: item.profile.profileImageUrl }}
-                style={styles.avatar}
-                contentFit="cover"
-              />
-            ) : (
-              <Image source={warningIcon} style={styles.avatar} contentFit="cover" />
-            )}
+            <Image
+              source={item.profile.profileImageUrl ? { uri: item.profile.profileImageUrl } : defaultProfileImage}
+              style={styles.avatar}
+              contentFit="cover"
+            />
           </View>
 
           <View style={styles.metaRow}>

@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
 import { C, Gray, Magenta, Radius } from '../../../theme'
 
-const defaultProfileImage = require('../../../../assets/placeholders/profile-default.svg')
 const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
   const router = useRouter()
