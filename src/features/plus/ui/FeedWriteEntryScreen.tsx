@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,116 +10,119 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useQueryClient } from '@tanstack/react-query'
-import { Stack, router, useLocalSearchParams } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
-import { useWorksDetail } from '../../works'
-import { useCreateReaderBoard } from '../hooks'
-import { FeedWritePickerBottomSheet, type PickedFeedWork } from './FeedWritePickerBottomSheet'
-import { SpoilerToggleSection } from './SpoilerToggleSection'
-import { WriteTargetWorkCard } from './WriteTargetWorkCard'
+} from "react-native";
+import { Image } from "expo-image";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
+import { useWorksDetail } from "../../works";
+import { useCreateReaderBoard } from "../hooks";
+import {
+  FeedWritePickerBottomSheet,
+  type PickedFeedWork,
+} from "./FeedWritePickerBottomSheet";
+import { SpoilerToggleSection } from "./SpoilerToggleSection";
+import { WriteTargetWorkCard } from "./WriteTargetWorkCard";
 
-const backIcon = require('../../../../assets/icons/common/back.svg')
-const searchIcon = require('../../../../assets/icons/common/search.svg')
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
-const photoIcon = require('../../../../assets/icons/feed/icon-photo.svg')
+const backIcon = require("../../../../assets/icons/common/back.svg");
+const searchIcon = require("../../../../assets/icons/common/search.svg");
+const activeIcon = require("../../../../assets/icons/common/active.svg");
+const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
+const photoIcon = require("../../../../assets/icons/feed/icon-photo.svg");
 
-const MAX_CONTENT_LENGTH = 300
-const FEED_DEFAULT_SPOILER = '스포일러가 포함된 피드 보기'
+const MAX_CONTENT_LENGTH = 300;
+const FEED_DEFAULT_SPOILER = "스포일러가 포함된 피드 보기";
 
 function parseWorksId(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  const numeric = Number(value)
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
 }
 
 export function FeedWriteEntryScreen() {
-  const insets = useSafeAreaInsets()
-  const params = useLocalSearchParams<{ worksId?: string }>()
-  const initialWorksId = parseWorksId(params.worksId)
-  const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ worksId?: string }>();
+  const initialWorksId = parseWorksId(params.worksId);
+  const queryClient = useQueryClient();
 
-  const [selectedWork, setSelectedWork] = useState<PickedFeedWork | null>(null)
-  const [isWorksNotNeeded, setIsWorksNotNeeded] = useState(false)
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [selectedWork, setSelectedWork] = useState<PickedFeedWork | null>(null);
+  const [isWorksNotNeeded, setIsWorksNotNeeded] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const [text, setText] = useState('')
-  const [spoiler, setSpoiler] = useState(false)
-  const [spoilerMessage, setSpoilerMessage] = useState('')
+  const [text, setText] = useState("");
+  const [spoiler, setSpoiler] = useState(false);
+  const [spoilerMessage, setSpoilerMessage] = useState("");
 
-  const submitMutation = useCreateReaderBoard()
+  const submitMutation = useCreateReaderBoard();
 
   // Hydrate selectedWork from worksId route param using useWorksDetail
-  const initialWorksQuery = useWorksDetail(initialWorksId ?? 0)
+  const initialWorksQuery = useWorksDetail(initialWorksId ?? 0);
   useEffect(() => {
-    if (!initialWorksId) return
-    if (selectedWork?.id === initialWorksId) return
-    const w = initialWorksQuery.data
-    if (!w) return
+    if (!initialWorksId) return;
+    if (selectedWork?.id === initialWorksId) return;
+    const w = initialWorksQuery.data;
+    if (!w) return;
     setSelectedWork({
       id: initialWorksId,
-      title: w.worksName ?? '',
-      meta: [w.author, w.worksType].filter(Boolean).join(' · '),
-      thumb: w.thumbnailUrl ?? '',
-    })
-  }, [initialWorksId, initialWorksQuery.data, selectedWork?.id])
+      title: w.worksName ?? "",
+      meta: [w.author, w.worksType].filter(Boolean).join(" · "),
+      thumb: w.thumbnailUrl ?? "",
+    });
+  }, [initialWorksId, initialWorksQuery.data, selectedWork?.id]);
 
-  const content = text.trim()
-  const contentLength = text.length
+  const content = text.trim();
+  const contentLength = text.length;
 
   const canSubmit = useMemo(() => {
-    if (content.length === 0) return false
-    if (contentLength > MAX_CONTENT_LENGTH) return false
-    if (isWorksNotNeeded) return true
-    if (!selectedWork?.id) return false
-    return true
-  }, [content.length, contentLength, isWorksNotNeeded, selectedWork?.id])
+    if (content.length === 0) return false;
+    if (contentLength > MAX_CONTENT_LENGTH) return false;
+    if (isWorksNotNeeded) return true;
+    if (!selectedWork?.id) return false;
+    return true;
+  }, [content.length, contentLength, isWorksNotNeeded, selectedWork?.id]);
 
   const handleToggleNotNeeded = () => {
     setIsWorksNotNeeded((prev) => {
-      const next = !prev
-      if (next) setSelectedWork(null)
-      return next
-    })
-  }
+      const next = !prev;
+      if (next) setSelectedWork(null);
+      return next;
+    });
+  };
 
   const onSubmit = async () => {
-    if (!canSubmit || submitMutation.isPending) return
+    if (!canSubmit || submitMutation.isPending) return;
 
-    const isWorksSelected = !isWorksNotNeeded && !!selectedWork?.id
-    const worksId = selectedWork?.id ?? 0
+    const isWorksSelected = !isWorksNotNeeded && !!selectedWork?.id;
+    const worksId = selectedWork?.id ?? 0;
 
     try {
       await submitMutation.mutateAsync({
         isWorksSelected,
         worksId,
         isSpoiler: spoiler,
-        spoilerScript: spoiler ? spoilerMessage.trim() : '',
+        spoilerScript: spoiler ? spoilerMessage.trim() : "",
         content,
-      })
+      });
 
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['plus', 'board'] })
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["plus", "board"] });
 
-      router.replace('/(tabs)/feed' as never)
+      router.replace("/(tabs)/feed" as never);
     } catch (e) {
       Alert.alert(
-        '피드 등록 실패',
-        e instanceof Error ? e.message : '잠시 후 다시 시도해 주세요.',
-      )
+        "피드 등록 실패",
+        e instanceof Error ? e.message : "잠시 후 다시 시도해 주세요.",
+      );
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView
       style={[styles.root, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -131,7 +134,11 @@ export function FeedWriteEntryScreen() {
           accessibilityRole="button"
           accessibilityLabel="뒤로가기"
         >
-          <Image source={backIcon} style={styles.headerIcon} contentFit="contain" />
+          <Image
+            source={backIcon}
+            style={styles.headerIcon}
+            contentFit="contain"
+          />
         </Pressable>
 
         <Text style={styles.headerTitle}>피드</Text>
@@ -194,7 +201,10 @@ export function FeedWriteEntryScreen() {
           <>
             <Pressable
               onPress={() => setIsPickerOpen(true)}
-              style={({ pressed }) => [styles.searchBar, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.searchBar,
+                pressed && styles.pressed,
+              ]}
               accessibilityRole="button"
               accessibilityLabel="작품 검색"
             >
@@ -265,7 +275,11 @@ export function FeedWriteEntryScreen() {
       >
         {/* TODO(image-upload): native image picking is not yet wired; affordance is visual-only. */}
         <View style={styles.imagePicker}>
-          <Image source={photoIcon} style={styles.photoIcon} contentFit="contain" />
+          <Image
+            source={photoIcon}
+            style={styles.photoIcon}
+            contentFit="contain"
+          />
           <Text style={styles.imageCount}>0/3</Text>
         </View>
 
@@ -287,12 +301,12 @@ export function FeedWriteEntryScreen() {
         visible={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
         onPick={(work) => {
-          setSelectedWork(work)
-          setIsWorksNotNeeded(false)
+          setSelectedWork(work);
+          setIsWorksNotNeeded(false);
         }}
       />
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -302,9 +316,9 @@ const styles = StyleSheet.create({
   },
   // 2.0: h-13.5 (= 54px)
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     height: 54,
     paddingHorizontal: 16,
     backgroundColor: C.card,
@@ -312,8 +326,8 @@ const styles = StyleSheet.create({
   headerBtn: {
     minWidth: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerIcon: {
     width: 24,
@@ -327,7 +341,7 @@ const styles = StyleSheet.create({
     ...Typography.body1Medium,
   },
   submitTextActive: {
-    color: '#f80078',
+    color: "#f80078",
   },
   submitTextDisabled: {
     color: C.textMuted,
@@ -343,9 +357,9 @@ const styles = StyleSheet.create({
   },
   // 2.0 “작품선택” section header — heading-2, mt-6 mb-4
   worksHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 24,
     marginBottom: 16,
   },
@@ -354,8 +368,8 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   notNeededRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   notNeededLabel: {
@@ -368,8 +382,8 @@ const styles = StyleSheet.create({
   },
   // 2.0: rounded-lg bg-gray-50 border-gray-50 px-2 py-3 body-1
   searchBar: {
-    position: 'relative',
-    width: '100%',
+    position: "relative",
+    width: "100%",
     borderRadius: Radius.sm,
     backgroundColor: Gray[50],
     borderWidth: 1,
@@ -383,9 +397,9 @@ const styles = StyleSheet.create({
     color: Gray[400],
   },
   searchIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
-    top: '50%',
+    top: "50%",
     width: 20,
     height: 20,
     marginTop: -10,
@@ -395,9 +409,9 @@ const styles = StyleSheet.create({
   },
   // 2.0: -mx-4 px-4 border-t border-gray-100 + heading-2 mt-6
   boardSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginHorizontal: -16,
     paddingHorizontal: 16,
     borderTopWidth: 1,
@@ -414,20 +428,20 @@ const styles = StyleSheet.create({
   },
   textarea: {
     height: 240,
-    width: '100%',
+    width: "100%",
     ...Typography.body1Medium,
     color: Gray[700],
     padding: 0,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   bottomBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: C.card,
     borderTopWidth: 1,
     borderTopColor: C.border,
@@ -435,8 +449,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   imagePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   photoIcon: {
@@ -454,9 +468,9 @@ const styles = StyleSheet.create({
     color: Gray[400],
   },
   contentCounterWarn: {
-    color: '#ef433e',
+    color: "#ef433e",
   },
   contentCounterTotal: {
     color: C.textMuted,
   },
-})
+});

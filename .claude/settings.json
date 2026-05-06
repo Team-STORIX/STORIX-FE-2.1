@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(java -version 2>&1)",
+      "PowerShell(javac -version 2>&1)",
+      "PowerShell($env:JAVA_HOME)",
+      "PowerShell(Test-Path \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\")",
+      "PowerShell(Get-ChildItem \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" | Select-Object FullName)",
+      "Bash(\"C:/Program Files/Android/Android Studio/jbr/bin/javac.exe\" -version)",
+      "PowerShell(Get-PSDrive C | Select-Object Used, Free, @{Name='FreeGB';Expression={[math]::Round\\($_.Free/1GB,1\\)}}, @{Name='UsedGB';Expression={[math]::Round\\($_.Used/1GB,1\\)}})",
+      "Bash(wmic logicaldisk *)",
+      "PowerShell(\"{0:N1} GB\" -f \\(\\(Get-ChildItem \"$env:USERPROFILE\\\\.gradle\" -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum\\).Sum / 1GB\\))"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\chaet\\anaconda3\\FE\\STORIX\\STORIX-FE-2.0"
+    ]
+  }
+}
