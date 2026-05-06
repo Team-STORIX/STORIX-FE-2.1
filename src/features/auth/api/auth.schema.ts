@@ -48,6 +48,11 @@ export const RegularLoginResponseSchema = z.object({
  * Legacy shape from 2.0 (cookie-based, web only).
  * Kept for backward compatibility in case some endpoints still use this key
  * during transition. accessToken-only — no refreshToken in body.
+ *
+ * Important: in 2.0 the refresh token was delivered via an httpOnly cookie that
+ * RN cannot read. If a legacy endpoint returns this shape on RN, the user will
+ * need to re-login after the access token expires (silent refresh impossible).
+ * Prefer regularLoginResponse on the server side for any RN-served endpoint.
  */
 export const ReaderLoginResponseSchema = z.object({
   accessToken: z.string(),

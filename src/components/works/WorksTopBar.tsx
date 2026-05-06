@@ -56,7 +56,7 @@ export function WorksTopBar({
                 !isFavorite && styles.favoriteLabelInactive,
               ]}
             >
-              {isFavorite ? '관심작' : '관심'}
+              {isFavorite ? '관심중' : '관심'}
             </Text>
           </>
         )}

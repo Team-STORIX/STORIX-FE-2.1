@@ -12,7 +12,7 @@ import { Gray, Radius, Typography } from '../../../theme'
 
 const commentBlackIcon = require('../../../../assets/icons/feed/comment-black.svg')
 const commentDisabledIcon = require('../../../../assets/icons/feed/upload-comment.svg')
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 type Props = {
   profileImageUrl?: string | null
@@ -42,11 +42,11 @@ export function FeedCommentInput({
   return (
     <View style={styles.container}>
       <View style={styles.avatarWrap}>
-        {profileImageUrl ? (
-          <Image source={{ uri: profileImageUrl }} style={styles.avatar} contentFit="cover" />
-        ) : (
-          <Image source={warningIcon} style={styles.avatar} contentFit="cover" />
-        )}
+        <Image
+          source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+          style={styles.avatar}
+          contentFit="cover"
+        />
       </View>
 
       <View style={styles.inputWrap}>

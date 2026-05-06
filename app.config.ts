@@ -2,17 +2,47 @@
 // Reads environment variables at build time so secrets are never committed.
 // Run `npx expo prebuild` after filling in .env (see .env.example).
 
+// Load .env eagerly so EXPO_PUBLIC_* vars are populated before requireEnv()
+// runs below. Expo CLI also loads .env, but its loader executes AFTER config
+// evaluation in some commands, which would defeat our build-time guards.
+// `override: false` keeps real environment variables (CI, shell exports)
+// taking precedence over .env values.
+require("dotenv").config({ override: false });
+
 import type { ConfigContext, ExpoConfig } from "expo/config";
 import { withEntitlementsPlist } from "@expo/config-plugins";
 
 // ─── Build-time env var helpers ───────────────────────────────────────────────
 // Variables with EXPO_PUBLIC_ prefix are also inlined into the JS bundle.
 // Variables without that prefix (EXPO_IOS_BUNDLE_ID etc.) are build-time only.
+//
+// Required-at-build-time env vars are validated below. Missing values throw
+// during config evaluation so prebuild/export fails loudly rather than producing
+// a broken native binary. Values themselves are never printed.
 
-const kakaoAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? "";
-// Naver URL scheme must match the "scheme" field in app.json and the URL type
-// registered in the Naver developer console.
-const naverUrlScheme = process.env.EXPO_PUBLIC_NAVER_URL_SCHEME ?? "storixfe21";
+const requireEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value || value.trim().length === 0) {
+    throw new Error(
+      `[app.config] Missing required env var: ${name}\n` +
+        `  Add it to .env before running prebuild/export. ` +
+        `See .env.example for the full list.`,
+    );
+  }
+  return value;
+};
+
+// Native-build-time vars (must be embedded into the binary by the config plugin).
+const kakaoAppKey = requireEnv("EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY");
+// Naver URL scheme must match:
+//   1. The "scheme" field in app.json (root deep-link scheme).
+//   2. The Naver developer console URL Scheme registration.
+//   3. The serviceUrlSchemeIOS arg in NaverLogin.initialize() — see
+//      src/lib/auth/social/native.ts ensureNaverInitialized().
+// All three reference the same EXPO_PUBLIC_NAVER_URL_SCHEME value.
+const naverUrlScheme = requireEnv("EXPO_PUBLIC_NAVER_URL_SCHEME");
+
+// Optional with sensible defaults — not validated.
 const iosBundleId = process.env.EXPO_IOS_BUNDLE_ID ?? "kr.storix.app";
 const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
 
@@ -29,7 +59,8 @@ const withAppleSignIn = (config: ExpoConfig): ExpoConfig =>
   });
 
 // ─── Exported config ─────────────────────────────────────────────────────────
-// app.json provides the base; this file overrides ios/android/plugins.
+// app.json provides the base; this file extends ios/android and APPENDS to
+// plugins so app.json plugins (expo-router, expo-secure-store) are preserved.
 // withAppleSignIn wraps the final config to set the iOS entitlement.
 
 export default ({ config }: ConfigContext): ExpoConfig =>
@@ -52,10 +83,12 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     },
 
     plugins: [
+      // Preserve plugins declared in app.json (expo-router, expo-secure-store).
+      ...(config.plugins ?? []),
       [
         "@react-native-seoul/kakao-login",
         {
-          kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
+          kakaoAppKey,
           overrideKakaoSDKVersion: "2.20.1",
           kotlinVersion: "2.1.20",
         },
@@ -63,7 +96,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       [
         "@react-native-seoul/naver-login",
         {
-          urlScheme: process.env.EXPO_PUBLIC_NAVER_URL_SCHEME,
+          urlScheme: naverUrlScheme,
         },
       ],
       [

@@ -1,8 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import { C, Gray, Typography } from '../../../theme'
-
-const settingsIcon = require('../../../../assets/icons/common/settings.svg')
 
 type Props = {
   onPressSettings: () => void
@@ -24,7 +22,7 @@ export function ProfileTopBar({ onPressSettings }: Props) {
           accessibilityRole="button"
           accessibilityLabel="설정"
         >
-          <Image source={settingsIcon} style={styles.settingsIcon} contentFit="contain" />
+          <Ionicons name="settings-outline" size={24} color={C.text} />
         </Pressable>
       </View>
     </View>
@@ -65,14 +63,10 @@ const styles = StyleSheet.create({
     color: Gray[600],
   },
   settingsButton: {
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  settingsIcon: {
-    width: 24,
-    height: 24,
   },
   pressed: {
     opacity: 0.7,

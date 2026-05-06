@@ -51,7 +51,9 @@ export const useKakaoLogin = () => {
 
     onError: (_error: AxiosError) => {
       Alert.alert('로그인 실패', '로그인에 실패했습니다. 다시 시도해주세요.')
-      // TODO(Phase auth screens): router.replace('/(auth)/login') once login screen exists.
+      // Return the user to the login screen so they can retry. The login route
+      // exists at app/(auth)/login.tsx and is registered in the typed-routes union.
+      router.replace('/(auth)/login')
     },
   })
 }

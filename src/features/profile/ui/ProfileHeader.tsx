@@ -4,9 +4,9 @@ import type { MeProfileResult } from '../../../types/profile'
 import { C } from '../../../theme/colors'
 
 function roleLabel(role: string): string {
-  if (role === 'ADMIN') return '愿由ъ옄'
-  if (role === 'READER') return '?낆옄'
-  if (role === 'AUTHOR') return '?묎?'
+  if (role === 'ADMIN') return '관리자'
+  if (role === 'READER') return '독자'
+  if (role === 'AUTHOR') return '작가'
   return role
 }
 
