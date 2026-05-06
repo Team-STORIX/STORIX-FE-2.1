@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -8,21 +7,26 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
+import { useQueryClient } from '@tanstack/react-query'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
-import { C, Radius, S, Typography } from '../../../theme'
+import { C, Gray } from '../../../theme/colors'
+import { Typography } from '../../../theme/typography'
 import { useWorksDetail } from '../../works'
-import { WriteTargetWorkCard } from './WriteTargetWorkCard'
 import { useCreateReaderReview, usePlusReviewDuplicateCheck } from '../hooks'
+import { RatingInput } from './RatingInput'
+import { SpoilerToggleSection } from './SpoilerToggleSection'
+import { WriteTargetWorkCard } from './WriteTargetWorkCard'
 
-const STAR_SIZE = 36
-const MAX_CONTENT = 1000
+const backIcon = require('../../../../assets/icons/common/back.svg')
+
+const MAX_CONTENT_LENGTH = 500
+const REVIEW_DEFAULT_SPOILER = '스포일러가 포함된 리뷰 보기'
 
 function parseWorksId(raw?: string | string[]) {
   const value = Array.isArray(raw) ? raw[0] : raw
@@ -30,97 +34,73 @@ function parseWorksId(raw?: string | string[]) {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined
 }
 
-type StarRatingInputProps = { rating: number; onChange: (v: number) => void }
-
-function StarRatingInput({ rating, onChange }: StarRatingInputProps) {
-  return (
-    <View style={starStyles.row}>
-      {[0, 1, 2, 3, 4].map((i) => {
-        const fullVal = i + 1
-        const halfVal = i + 0.5
-        const isFull = rating >= fullVal
-        const isHalf = !isFull && rating >= halfVal
-        return (
-          <View key={i} style={starStyles.slot}>
-            <Ionicons
-              name={isFull ? 'star' : isHalf ? 'star-half' : 'star-outline'}
-              size={STAR_SIZE}
-              color={rating >= halfVal ? C.primary : C.border}
-            />
-            <View style={[StyleSheet.absoluteFill, starStyles.tapRow]}>
-              <Pressable style={starStyles.tapHalf} onPress={() => onChange(halfVal)} />
-              <Pressable style={starStyles.tapHalf} onPress={() => onChange(fullVal)} />
-            </View>
-          </View>
-        )
-      })}
-    </View>
-  )
-}
-
-const starStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  slot: {
-    width: STAR_SIZE,
-    height: STAR_SIZE,
-    position: 'relative',
-  },
-  tapRow: {
-    flexDirection: 'row',
-  },
-  tapHalf: {
-    flex: 1,
-  },
-})
-
 export function ReviewWriteEntryScreen() {
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ worksId?: string }>()
   const worksId = parseWorksId(params.worksId)
+  const queryClient = useQueryClient()
+
   const worksQuery = useWorksDetail(worksId ?? 0)
   const work = worksQuery.data
   const duplicateQuery = usePlusReviewDuplicateCheck(worksId)
   const isDuplicated = duplicateQuery.data?.result?.isDuplicated === true
 
   const [rating, setRating] = useState(0)
-  const [content, setContent] = useState('')
-  const [isSpoiler, setIsSpoiler] = useState(false)
-  const [spoilerScript, setSpoilerScript] = useState('')
+  const [text, setText] = useState('')
+  const [spoiler, setSpoiler] = useState(false)
+  const [spoilerMessage, setSpoilerMessage] = useState('')
 
-  const qc = useQueryClient()
   const submitMutation = useCreateReaderReview()
-  const canSubmit =
-    !!worksId &&
-    rating > 0 &&
-    content.trim().length > 0 &&
-    !submitMutation.isPending &&
-    !isDuplicated
 
-  const workMeta = [work?.author, work?.worksType, work?.genre]
-    .filter(Boolean)
-    .join(' · ')
+  const content = text.trim()
 
-  async function handleSubmit() {
+  const canSubmit = useMemo(() => {
+    if (!worksId) return false
+    if (rating < 0.5) return false
+    if (content.length === 0) return false
+    if (content.length > MAX_CONTENT_LENGTH) return false
+    if (submitMutation.isPending) return false
+    if (isDuplicated) return false
+    return true
+  }, [
+    content.length,
+    isDuplicated,
+    rating,
+    submitMutation.isPending,
+    worksId,
+  ])
+
+  const workMeta = useMemo(
+    () =>
+      [work?.author, work?.worksType].filter(Boolean).join(' · '),
+    [work?.author, work?.worksType],
+  )
+
+  const onSubmit = async () => {
     if (!canSubmit || !worksId) return
     try {
       await submitMutation.mutateAsync({
         worksId,
-        rating: String(rating),
-        isSpoiler,
-        spoilerScript: isSpoiler ? spoilerScript.trim() : '',
-        content: content.trim(),
+        rating: rating.toFixed(1),
+        isSpoiler: spoiler,
+        spoilerScript: spoiler ? spoilerMessage.trim() : '',
+        content,
       })
-      qc.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] })
-      qc.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] })
-      qc.invalidateQueries({ queryKey: ['works', 'detail', worksId] })
+      queryClient.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] })
+      queryClient.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] })
+      queryClient.invalidateQueries({ queryKey: ['works', 'detail', worksId] })
       router.replace(`/works/${worksId}` as never)
-    } catch {
-      Alert.alert('오류', '리뷰 등록에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } catch (e) {
+      Alert.alert(
+        '리뷰 등록 실패',
+        e instanceof Error ? e.message : '잠시 후 다시 시도해 주세요.',
+      )
     }
   }
+
+  const cardLoading =
+    !!worksId && (worksQuery.isLoading || (!worksQuery.data && !worksQuery.isError))
+  const cardError = !!worksId && worksQuery.isError
 
   return (
     <KeyboardAvoidingView
@@ -134,23 +114,35 @@ export function ReviewWriteEntryScreen() {
           onPress={() => router.back()}
           hitSlop={12}
           style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로가기"
         >
-          <Ionicons name="arrow-back" size={24} color={C.text} />
+          <Image source={backIcon} style={styles.headerIcon} contentFit="contain" />
         </Pressable>
 
-        <Text style={styles.headerTitle}>리뷰 작성</Text>
+        <Text style={styles.headerTitle}>리뷰</Text>
 
         <Pressable
-          onPress={handleSubmit}
+          onPress={onSubmit}
           disabled={!canSubmit}
           hitSlop={12}
-          style={({ pressed }) => [styles.headerBtn, pressed && canSubmit && styles.pressed]}
+          style={({ pressed }) => [
+            styles.headerBtn,
+            pressed && canSubmit && styles.pressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="등록"
         >
           {submitMutation.isPending ? (
             <ActivityIndicator size="small" color={C.primary} />
           ) : (
-            <Text style={[styles.submitText, !canSubmit && styles.submitTextDisabled]}>
-              등록
+            <Text
+              style={[
+                styles.submitText,
+                canSubmit ? styles.submitTextActive : styles.submitTextDisabled,
+              ]}
+            >
+              완료
             </Text>
           )}
         </Pressable>
@@ -160,87 +152,64 @@ export function ReviewWriteEntryScreen() {
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 24 },
+          { paddingBottom: insets.bottom + 32 },
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {!worksId ? (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>선택된 작품이 없어요.</Text>
-            <Text style={styles.errorBody}>작품 선택 화면에서 작품을 먼저 골라 주세요.</Text>
-          </View>
-        ) : worksQuery.isLoading ? (
-          <View style={styles.cardLoader}>
-            <ActivityIndicator size="small" color={C.primary} />
-          </View>
-        ) : worksQuery.isError ? (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>작품 정보를 불러오지 못했어요.</Text>
-            <Text style={styles.errorBody}>잠시 후 다시 시도해 주세요.</Text>
-          </View>
-        ) : (
+        {/* Work card + rating */}
+        <View style={styles.workSection}>
           <WriteTargetWorkCard
-            title={work?.worksName ?? '선택한 작품'}
+            title={work?.worksName ?? '작품 제목'}
             meta={workMeta}
             thumbnailUrl={work?.thumbnailUrl ?? undefined}
-          />
-        )}
+            loading={cardLoading}
+          >
+            <RatingInput value={rating} onChange={setRating} size={33} />
+          </WriteTargetWorkCard>
 
-        {isDuplicated && (
-          <View style={styles.warningCard}>
-            <Ionicons name="information-circle-outline" size={18} color={C.primary} />
+          {!worksId ? (
+            <Text style={styles.warningText}>
+              선택된 작품이 없어요. 작품을 먼저 골라 주세요.
+            </Text>
+          ) : cardError ? (
+            <Text style={styles.warningText}>
+              작품 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+            </Text>
+          ) : isDuplicated ? (
             <Text style={styles.warningText}>
               이미 작성한 리뷰가 있어요. 리뷰는 작품당 하나만 작성할 수 있어요.
             </Text>
-          </View>
-        )}
-
-        <View style={styles.ratingCard}>
-          <Text style={styles.ratingCardLabel}>평점</Text>
-          <StarRatingInput rating={rating} onChange={setRating} />
-          <Text style={styles.ratingHint}>
-            {rating > 0 ? `${rating}점` : '별을 눌러 평점을 선택해주세요.'}
-          </Text>
+          ) : null}
         </View>
 
-        <View style={styles.spoilerRow}>
-          <Text style={styles.spoilerLabel}>스포일러 포함</Text>
-          <Switch
-            value={isSpoiler}
-            onValueChange={setIsSpoiler}
-            trackColor={{ true: C.primary, false: C.border }}
-            thumbColor={C.card}
-          />
-        </View>
+        <Text style={styles.sectionHeading}>리뷰 작성</Text>
 
-        {isSpoiler && (
-          <View style={styles.inputCard}>
-            <TextInput
-              style={[styles.textInput, styles.spoilerInput]}
-              placeholder="스포일러 내용을 작성해주세요."
-              placeholderTextColor={C.textMuted}
-              value={spoilerScript}
-              onChangeText={setSpoilerScript}
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
-        )}
-
-        <View style={styles.inputCard}>
+        <View style={styles.textareaWrap}>
           <TextInput
-            style={[styles.textInput, styles.contentInput]}
-            placeholder="리뷰 내용을 작성해주세요."
-            placeholderTextColor={C.textMuted}
-            value={content}
-            onChangeText={(t) => setContent(t.slice(0, MAX_CONTENT))}
+            value={text}
+            onChangeText={(next) =>
+              setText(
+                next.length > MAX_CONTENT_LENGTH
+                  ? next.slice(0, MAX_CONTENT_LENGTH)
+                  : next,
+              )
+            }
+            maxLength={MAX_CONTENT_LENGTH}
             multiline
             textAlignVertical="top"
+            placeholder="좋아하는 작품에 대해 적어보세요!"
+            placeholderTextColor={C.textMuted}
+            style={styles.textarea}
           />
-          <Text style={styles.charCount}>
-            {content.length}/{MAX_CONTENT}
-          </Text>
         </View>
+
+        <SpoilerToggleSection
+          enabled={spoiler}
+          onToggle={() => setSpoiler((prev) => !prev)}
+          message={spoilerMessage}
+          onMessageChange={setSpoilerMessage}
+          defaultMessage={REVIEW_DEFAULT_SPOILER}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -249,30 +218,35 @@ export function ReviewWriteEntryScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: C.card,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: S.screenH,
-    paddingVertical: 12,
-    backgroundColor: C.bg,
+    justifyContent: 'space-between',
+    height: 54,
+    paddingHorizontal: 16,
+    backgroundColor: C.card,
   },
   headerBtn: {
-    width: 40,
+    minWidth: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerIcon: {
+    width: 24,
+    height: 24,
+  },
   headerTitle: {
-    ...Typography.heading4,
+    ...Typography.body1Medium,
     color: C.text,
-    flex: 1,
-    textAlign: 'center',
   },
   submitText: {
-    ...Typography.body2Bold,
-    color: C.primary,
+    ...Typography.body1Medium,
+  },
+  submitTextActive: {
+    color: '#f80078',
   },
   submitTextDisabled: {
     color: C.textMuted,
@@ -284,106 +258,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: S.screenH,
+    paddingHorizontal: 16,
+  },
+  // 2.0 review write — top: -mx-4 border-bottom px-4 pb-6
+  workSection: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
     gap: 12,
-  },
-  cardLoader: {
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorCard: {
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingHorizontal: S.cardPad,
-    paddingVertical: 24,
-    gap: 6,
-  },
-  errorTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-  },
-  errorBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-  },
-  warningCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.primaryMid,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: S.cardPad,
-    paddingVertical: 12,
   },
   warningText: {
-    ...Typography.body2Medium,
+    ...Typography.caption1Medium,
+    color: '#ef433e',
+  },
+  // 2.0 “리뷰 작성” heading-2 mt-6 pl-1
+  sectionHeading: {
+    ...Typography.heading2,
     color: C.text,
-    flex: 1,
+    marginTop: 24,
+    paddingLeft: 4,
+    marginBottom: 0,
   },
-  ratingCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingHorizontal: S.inputH,
-    paddingVertical: 16,
-    gap: 12,
+  // 2.0: -mx-4 px-4 border-bottom + textarea h-60 mt-4 px-1
+  textareaWrap: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
   },
-  ratingCardLabel: {
-    ...Typography.caption1Extrabold,
-    color: C.primary,
-  },
-  ratingHint: {
+  textarea: {
+    height: 240,
+    width: '100%',
+    paddingHorizontal: 4,
+    marginTop: 16,
     ...Typography.body2Medium,
-    color: C.textMuted,
-  },
-  spoilerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingHorizontal: S.inputH,
-    paddingVertical: 14,
-  },
-  spoilerLabel: {
-    ...Typography.body2Medium,
-    color: C.text,
-  },
-  inputCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingHorizontal: S.inputH,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  textInput: {
-    ...Typography.body2Medium,
-    color: C.text,
+    color: Gray[700],
     padding: 0,
-  },
-  spoilerInput: {
-    minHeight: 80,
-  },
-  contentInput: {
-    minHeight: 120,
-  },
-  charCount: {
-    ...Typography.caption2Medium,
-    color: C.textMuted,
-    textAlign: 'right',
+    paddingTop: 16,
+    textAlignVertical: 'top',
   },
 })
