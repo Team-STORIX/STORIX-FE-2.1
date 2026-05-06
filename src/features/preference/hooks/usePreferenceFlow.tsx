@@ -13,6 +13,7 @@ import {
   usePreferenceExploration,
   usePreferenceResults,
 } from './usePreference'
+import { isPreferenceDailyLimitError } from '../api/preference.api'
 import type {
   PreferenceExplorationWork,
   PreferenceResultWork,
@@ -145,7 +146,7 @@ export function PreferenceFlowProvider({
   )
 
   const works = useMemo<PreferenceWork[]>(() => {
-    const raw = explorationQuery.data?.result ?? []
+    const raw = explorationQuery.data ?? []
     return raw.map(mapExplorationToWork)
   }, [explorationQuery.data])
 
@@ -220,11 +221,11 @@ export function PreferenceFlowProvider({
     }
   }, [])
 
-  const explorationList = explorationQuery.data?.result ?? []
+  const explorationList = explorationQuery.data ?? []
   const isLimitedDay =
-    explorationQuery.isSuccess &&
-    Array.isArray(explorationList) &&
-    explorationList.length === 0
+    (explorationQuery.isSuccess && explorationList.length === 0) ||
+    (explorationQuery.isError &&
+      isPreferenceDailyLimitError(explorationQuery.error))
 
   useEffect(() => {
     if (!isLimitedDay) return
@@ -232,10 +233,9 @@ export function PreferenceFlowProvider({
 
     limitedToastShownRef.current = true
     showToast(
-      explorationQuery.data?.message?.trim() ||
-        '오늘은 이미 취향 탐색을 완료했어요. 내일 다시 시도해 주세요.',
+      '오늘은 이미 취향 탐색을 완료했어요. 내일 다시 시도해 주세요.',
     )
-  }, [explorationQuery.data, isLimitedDay, showToast])
+  }, [isLimitedDay, showToast])
 
   const currentIndex = useMemo(() => {
     return works.findIndex((work) => state[work.id] == null)
@@ -354,7 +354,9 @@ export function PreferenceFlowProvider({
       isResultsLoading: resultsQuery.isLoading && !resultsQuery.data,
       isSubmitting: analyzeMutation.isPending,
       errorMessage: explorationQuery.isError
-        ? '요청에 실패했어요. 잠시 후 다시 시도해 주세요.'
+        ? isPreferenceDailyLimitError(explorationQuery.error)
+          ? null
+          : '취향 분석 정보를 불러오지 못했어요.'
         : null,
       toastMessage,
       hideToast,
@@ -370,6 +372,7 @@ export function PreferenceFlowProvider({
       currentWork,
       dislikedWorks,
       explorationQuery.isError,
+      explorationQuery.error,
       hideToast,
       isDone,
       isInitializing,

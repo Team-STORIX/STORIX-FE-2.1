@@ -42,6 +42,17 @@ const setAuthorizationHeader = (
   ;(headers as Record<string, unknown>)['Authorization'] = value
 }
 
+const logJwtBearerToken = (
+  config: InternalAxiosRequestConfig,
+  authorization: string,
+): void => {
+  console.log('[JWT TOKEN] http Bearer:', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    Authorization: authorization,
+  })
+}
+
 // ---------- no-refresh endpoint list ----------
 // Requests matching these paths must never trigger a token refresh:
 //   - The refresh endpoint itself (would cause an infinite loop)
@@ -103,11 +114,16 @@ apiClient.interceptors.request.use(
     if (!config.headers) return config
 
     const existing = getAuthorizationHeader(config.headers)
-    if (existing) return config // Caller-supplied header takes precedence.
+    if (existing) {
+      logJwtBearerToken(config, existing)
+      return config // Caller-supplied header takes precedence.
+    }
 
     const token = await getAccessToken()
     if (token) {
-      setAuthorizationHeader(config.headers, `Bearer ${token}`)
+      const authorization = `Bearer ${token}`
+      setAuthorizationHeader(config.headers, authorization)
+      logJwtBearerToken(config, authorization)
     }
 
     return config

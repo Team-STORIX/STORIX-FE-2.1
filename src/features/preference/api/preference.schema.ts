@@ -30,18 +30,72 @@ export const PreferenceExplorationWorkSchema = z
   })
   .passthrough()
 
-export const PreferenceExplorationResponseSchema = z.preprocess(
-  (raw) => {
-    if (raw && typeof raw === 'object') {
-      const r = (raw as any).result
-      if (r && typeof r === 'object' && (r as any).result) {
-        return { ...(raw as any), result: (r as any).result }
-      }
-    }
-    return raw
-  },
-  ApiEnvelopeSchema(z.array(PreferenceExplorationWorkSchema).default([])),
+const PreferenceExplorationItemsSchema = z.array(
+  PreferenceExplorationWorkSchema,
 )
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
+
+const pickExplorationArray = (raw: unknown): unknown[] | undefined => {
+  if (Array.isArray(raw)) return raw
+  if (!isRecord(raw)) return undefined
+
+  const result = raw.result
+  if (Array.isArray(result)) return result
+  if (isRecord(result)) {
+    if (Array.isArray(result.content)) return result.content
+    if (Array.isArray(result.result)) return result.result
+    if (Array.isArray(result.works)) return result.works
+  }
+
+  if (Array.isArray(raw.content)) return raw.content
+  if (Array.isArray(raw.works)) return raw.works
+
+  return undefined
+}
+
+export class PreferenceExplorationShapeError extends Error {
+  constructor() {
+    super('Preference exploration response did not contain a known item array.')
+    this.name = 'PreferenceExplorationShapeError'
+  }
+}
+
+export const normalizePreferenceExploration = (
+  raw: unknown,
+): PreferenceExplorationWork[] => {
+  const items = pickExplorationArray(raw)
+  if (!items) throw new PreferenceExplorationShapeError()
+  return PreferenceExplorationItemsSchema.parse(items)
+}
+
+export const PreferenceExplorationResponseSchema = z
+  .unknown()
+  .transform((raw, ctx) => {
+    try {
+      const envelope = isRecord(raw) ? raw : {}
+      return {
+        isSuccess:
+          typeof envelope.isSuccess === 'boolean' ? envelope.isSuccess : true,
+        code: typeof envelope.code === 'string' ? envelope.code : undefined,
+        message:
+          typeof envelope.message === 'string' ? envelope.message : undefined,
+        timestamp:
+          typeof envelope.timestamp === 'string'
+            ? envelope.timestamp
+            : undefined,
+        result: normalizePreferenceExploration(raw),
+      }
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Preference exploration response did not contain a known item array.',
+      })
+      return z.NEVER
+    }
+  })
 
 export type PreferenceExplorationWork = z.infer<
   typeof PreferenceExplorationWorkSchema

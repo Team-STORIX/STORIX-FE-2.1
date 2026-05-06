@@ -13,6 +13,7 @@ import {
 } from '../../src/features/home'
 import {
   PreferenceToast,
+  isPreferenceDailyLimitError,
   usePreferenceExploration,
 } from '../../src/features/preference'
 import { useTodayTopicRooms } from '../../src/features/topicroom'
@@ -61,7 +62,17 @@ export default function HomeScreen() {
 
     try {
       const result = await refetchExploration()
-      const items = result.data?.result ?? []
+
+      if (result.isError) {
+        showToast(
+          isPreferenceDailyLimitError(result.error)
+            ? '하루 한번만 가능합니다.'
+            : '취향 분석 정보를 불러오지 못했어요.',
+        )
+        return
+      }
+
+      const items = result.data ?? []
 
       if (items.length === 0) {
         showToast('하루 한번만 가능합니다.')
@@ -69,8 +80,12 @@ export default function HomeScreen() {
       }
 
       router.push('/home/preference' as never)
-    } catch {
-      showToast('요청에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } catch (error) {
+      showToast(
+        isPreferenceDailyLimitError(error)
+          ? '하루 한번만 가능합니다.'
+          : '취향 분석 정보를 불러오지 못했어요.',
+      )
     }
   }
 
