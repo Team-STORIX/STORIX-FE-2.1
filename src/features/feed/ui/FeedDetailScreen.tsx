@@ -242,45 +242,58 @@ export function FeedDetailScreen() {
     const trimmed = commentText.trim()
     if (!trimmed || !boardId || submitting) return
     setSubmitting(true)
-    try {
-      if (replyTargetId != null) {
-        const result = await createSubReply({
-          boardId,
-          replyId: replyTargetId,
+
+    if (replyTargetId != null) {
+      // 대댓글: UI를 먼저 업데이트(true optimistic)하고 API 호출 → 실패 시 rollback
+      const targetId = replyTargetId
+      const tempId = Date.now()
+      const newSubReply: ReplyItem = {
+        profile: {
+          userId: me?.userId ?? 0,
+          profileImageUrl: me?.profileImageUrl ?? null,
+          nickName: me?.nickName ?? '',
+        },
+        reply: {
+          replyId: tempId,
+          userId: me?.userId ?? 0,
           comment: trimmed,
-        })
-        const newSubReply: ReplyItem = {
-          profile: {
-            userId: result.profile.userId,
-            profileImageUrl: result.profile.profileImageUrl,
-            nickName: result.profile.nickName,
-          },
-          reply: {
-            replyId: result.content.replyId,
-            userId: result.profile.userId,
-            comment: result.content.content,
-            lastCreatedTime: '방금 전',
-            likeCount: result.content.likeCount,
-            isLiked: false,
-          },
-        }
+          lastCreatedTime: '방금 전',
+          likeCount: 0,
+          isLiked: false,
+        },
+      }
+      setSubRepliesMap((prev) => ({
+        ...prev,
+        [targetId]: [...(prev[targetId] ?? []), newSubReply],
+      }))
+      setReplyTargetId(null)
+      setCommentText('')
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
+      setSubmitting(false)
+
+      try {
+        await createSubReply({ boardId, replyId: targetId, comment: trimmed })
+      } catch {
         setSubRepliesMap((prev) => ({
           ...prev,
-          [replyTargetId]: [...(prev[replyTargetId] ?? []), newSubReply],
+          [targetId]: (prev[targetId] ?? []).filter((r) => r.reply.replyId !== tempId),
         }))
-        setReplyTargetId(null)
-      } else {
-        await createReply({ boardId, comment: trimmed })
-        await detailQuery.refetch()
+        Alert.alert('오류', '대댓글 등록에 실패했어요. 다시 시도해 주세요.')
       }
+      return
+    }
+
+    try {
+      await createReply({ boardId, comment: trimmed })
+      await detailQuery.refetch()
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
     } catch {
-      Alert.alert('오류', '등록에 실패했어요. 다시 시도해 주세요.')
+      Alert.alert('오류', '댓글 등록에 실패했어요. 다시 시도해 주세요.')
     } finally {
       setSubmitting(false)
     }
-  }, [boardId, commentText, detailQuery, replyTargetId, submitting])
+  }, [boardId, commentText, detailQuery, me, replyTargetId, submitting])
 
   const onScroll = useCallback(
     (event: any) => {
@@ -302,36 +315,35 @@ export function FeedDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={[styles.screen, { paddingTop: insets.top }]}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : insets.bottom}
+    >
       <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-        keyboardVerticalOffset={insets.top}
-      >
-        <View style={[styles.topBar, { paddingTop: insets.top }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
-          </Pressable>
-          <Text style={styles.topBarTitle}>피드</Text>
-          <View style={styles.topBarSpacer} />
-        </View>
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+        </Pressable>
+        <Text style={styles.topBarTitle}>피드</Text>
+        <View style={styles.topBarSpacer} />
+      </View>
 
-        {detailQuery.isLoading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator size="small" color={Magenta[300]} />
-          </View>
-        ) : detailQuery.isError || !boardItem || !board || !profile ? (
-          <View style={styles.centerState}>
-            <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
-            <Text style={styles.messageText}>피드를 불러오지 못했어요.</Text>
-            <Pressable onPress={() => detailQuery.refetch()} style={styles.retryButton}>
-              <Text style={styles.retryText}>다시 시도</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <ScrollView
+      {detailQuery.isLoading ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="small" color={Magenta[300]} />
+        </View>
+      ) : detailQuery.isError || !boardItem || !board || !profile ? (
+        <View style={styles.centerState}>
+          <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
+          <Text style={styles.messageText}>피드를 불러오지 못했어요.</Text>
+          <Pressable onPress={() => detailQuery.refetch()} style={styles.retryButton}>
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          <ScrollView
               ref={scrollRef}
               style={styles.flex}
               contentContainerStyle={styles.scrollContent}
@@ -472,8 +484,7 @@ export function FeedDetailScreen() {
             </View>
           </>
         )}
-      </KeyboardAvoidingView>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 

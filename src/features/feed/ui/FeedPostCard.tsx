@@ -12,13 +12,14 @@ import { Typography } from '../../../theme/typography'
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
-const likeIcon        = require('../../../../assets/icons/common/icon-like.svg')
-const likePinkIcon    = require('../../../../assets/icons/common/icon-like-pink.svg')
-const commentIcon     = require('../../../../assets/icons/common/icon-comment.svg')
-const menuIcon        = require('../../../../assets/icons/common/menu-3dots.svg')
-const arrowSmallIcon  = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
-const commentDropdown = require('../../../../assets/icons/common/comment-dropdown.svg')
-const deleteDropdown  = require('../../../../assets/icons/common/delete-dropdown.svg')
+const likeIcon           = require('../../../../assets/icons/common/icon-like.svg')
+const likePinkIcon       = require('../../../../assets/icons/common/icon-like-pink.svg')
+const commentIcon        = require('../../../../assets/icons/common/icon-comment.svg')
+const menuIcon           = require('../../../../assets/icons/common/menu-3dots.svg')
+const arrowSmallIcon     = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
+const commentDropdown    = require('../../../../assets/icons/common/comment-dropdown.svg')
+const deleteDropdown     = require('../../../../assets/icons/common/delete-dropdown.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -118,19 +119,11 @@ export function FeedPostCard({
         onPress={() => setMenuOpen(false)}
       >
         <View style={styles.avatarWrap}>
-          {profileImageUrl ? (
-            <Image
-              source={{ uri: profileImageUrl }}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarInitial}>
-                {(nickName || '?')[0].toUpperCase()}
-              </Text>
-            </View>
-          )}
+          <Image
+            source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+            style={styles.avatar}
+            contentFit="cover"
+          />
         </View>
 
         <View style={styles.authorMeta}>
@@ -217,8 +210,8 @@ export function FeedPostCard({
 
       {/* ── Body: images + text ──────────────────────────────── */}
       <View style={styles.bodySection}>
-        {/* Images */}
-        {images.length > 0 && (
+        {/* Images — 스포일러 숨김 상태에서는 이미지도 숨김 */}
+        {images.length > 0 && !isSpoilerHidden && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -228,10 +221,7 @@ export function FeedPostCard({
             {images.slice(0, 3).map((src, idx) => (
               <View
                 key={`${boardId}-img-${idx}`}
-                style={[
-                  styles.imageBox,
-                  isSpoilerHidden && styles.imageSpoilerHidden,
-                ]}
+                style={styles.imageBox}
               >
                 <Image
                   source={{ uri: src }}
@@ -243,23 +233,10 @@ export function FeedPostCard({
           </ScrollView>
         )}
 
-        {/* Text */}
-        <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-          <Text
-            style={[
-              styles.contentText,
-              isSpoilerHidden && styles.contentSpoilerHidden,
-            ]}
-            numberOfLines={isSpoilerHidden || variant === 'detail' ? undefined : 3}
-          >
-            {content}
-          </Text>
-        </View>
-
-        {/* Spoiler reveal button */}
-        {isSpoilerHidden && (
+        {/* 스포일러 숨김: 버튼만 표시 / 공개: 텍스트 표시 */}
+        {isSpoilerHidden ? (
           <Pressable
-            style={styles.spoilerReveal}
+            style={[styles.textPad, styles.spoilerReveal]}
             onPress={() => setSpoilerRevealed(true)}
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
@@ -267,6 +244,15 @@ export function FeedPostCard({
               스포일러가 포함된 피드글 보기
             </Text>
           </Pressable>
+        ) : (
+          <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
+            <Text
+              style={styles.contentText}
+              numberOfLines={variant === 'detail' ? undefined : 3}
+            >
+              {content}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -348,19 +334,9 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
     marginRight: 12,
   },
-  avatarFallback: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Gray[200],
-  },
   avatar: {
     width: 40,
     height: 40,
-  },
-  avatarInitial: {
-    ...Typography.body2Medium,
-    color: Gray[600],
   },
   authorMeta: {
     flex: 1,
@@ -506,9 +482,6 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
-  imageSpoilerHidden: {
-    opacity: 0.1,
-  },
   imageFill: {
     width: 236,
     height: 236,
@@ -526,15 +499,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: Gray[800],
   },
-  contentSpoilerHidden: {
-    opacity: 0.1,
-  },
   spoilerReveal: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    top: 12,
-    zIndex: 10,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   spoilerRevealText: {
     fontSize: 14,

@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, View, ActivityIndicator, Text, Pressable } from 'react-native'
+import { Alert, Platform, StyleSheet, View, ActivityIndicator, Text, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { developerLogin } from '../api'
@@ -53,11 +53,13 @@ export function LoginScreen() {
           onPress={() => Alert.alert('안내', '트위터 로그인은 아직 지원되지 않아요.')}
           disabled={pending}
         />
-        <LoginAssetButton
-          source={appleButton}
-          onPress={() => Alert.alert('안내', 'Apple 로그인은 아직 준비 중이에요.')}
-          disabled={pending}
-        />
+        {Platform.OS === 'ios' && (
+          <LoginAssetButton
+            source={appleButton}
+            onPress={() => Alert.alert('안내', 'Apple 로그인은 아직 준비 중이에요.')}
+            disabled={pending}
+          />
+        )}
 
         {mutation.isError ? (
           <Text style={styles.errorText}>

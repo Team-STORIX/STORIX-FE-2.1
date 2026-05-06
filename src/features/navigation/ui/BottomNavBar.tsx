@@ -4,7 +4,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
 import { PlusActionButton } from './PlusActionButton'
 import { PlusActionMenu } from './PlusActionMenu'
@@ -57,7 +57,10 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
   }, [state.index])
 
   const barHeight = 80 + insets.bottom
-  const plusBottom = 50 + insets.bottom
+  // plusNavBottom: navWrap 안에서 사용 — container의 paddingBottom이 이미 insets.bottom을 처리함
+  const plusNavBottom = 50
+  // plusModalBottom: 모달(전체화면) 안에서 사용 — 직접 device bottom 기준으로 offset 필요
+  const plusModalBottom = 50 + insets.bottom
   const menuBottom = 130 + insets.bottom
 
   const activeRouteName = state.routes[state.index]?.name
@@ -125,6 +128,8 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
     <>
       <View style={[styles.container, { height: barHeight, paddingBottom: insets.bottom }]}>
         <View style={styles.navWrap}>
+          <Image source={navBackground} style={styles.background} contentFit="fill" />
+
           <View style={styles.navContent}>
             <View style={styles.sideGroup}>
               {mappedItems.slice(0, 2).map((item) => renderTabItem(item.routeName, item.label))}
@@ -137,12 +142,10 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
             </View>
           </View>
 
-          <Image source={navBackground} style={styles.background} contentFit="fill" />
-
           <PlusActionButton
             isOpen={isPlusOpen}
             onPress={() => setIsPlusOpen((prev) => !prev)}
-            bottom={plusBottom}
+            bottom={plusNavBottom}
           />
         </View>
       </View>
@@ -168,7 +171,7 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
           <PlusActionButton
             isOpen={isPlusOpen}
             onPress={() => setIsPlusOpen(false)}
-            bottom={plusBottom}
+            bottom={plusModalBottom}
           />
         </View>
       </Modal>
@@ -185,6 +188,7 @@ const styles = StyleSheet.create({
   navWrap: {
     flex: 1,
     justifyContent: 'flex-end',
+    overflow: 'visible',
   },
   navContent: {
     zIndex: 10,
@@ -226,7 +230,7 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   tabLabelInactive: {
-    color: C.border,
+    color: Gray[300],
   },
   background: {
     position: 'absolute',

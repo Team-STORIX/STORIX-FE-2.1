@@ -7,15 +7,17 @@ import {
   Text,
   View,
 } from 'react-native'
-import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useFavoriteWork } from '../../src/features/favorite'
+import { useMe } from '../../src/features/profile'
 import {
-  PostCard,
+  MyReviewSection,
+  OtherReviewsSection,
   TopicRoomEntryButton,
   useLikeWorksReview,
   useWorksDetail,
+  useWorksMyReview,
   useWorksReviewsInfinite,
   WorksCoverHeader,
   WorksInfoSection,
@@ -34,8 +36,6 @@ import { Typography } from '../../src/theme/typography'
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
 type TabKey = 'info' | 'review'
 
-const arrowForward = require('../../assets/icons/common/icon-arrow-forward.svg')
-
 export default function WorksDetailScreen() {
   const { worksId: worksIdParam } = useLocalSearchParams<{ worksId: string }>()
   const worksId = typeof worksIdParam === 'string' ? Number(worksIdParam) : 0
@@ -46,8 +46,14 @@ export default function WorksDetailScreen() {
   const worksQuery = useWorksDetail(worksId)
   const works = worksQuery.data
 
+  const { data: meData } = useMe()
+  const myNickname = meData?.nickName
+
   const { isFavorite, isMutating, toggleFavorite, isLoading: favoriteLoading } =
     useFavoriteWork(worksId)
+
+  const myReviewQuery = useWorksMyReview(worksId)
+  const myReview = myReviewQuery.data ?? null
 
   const reviewsQuery = useWorksReviewsInfinite(worksId)
   const reviews: WorksReviewItem[] =
@@ -92,6 +98,26 @@ export default function WorksDetailScreen() {
     }
     router.replace('/(tabs)' as const)
   }, [router])
+
+  const goReviewWrite = useCallback(() => {
+    if (!worksId) return
+    router.push(`/review/write?worksId=${worksId}` as never)
+  }, [router, worksId])
+
+  const goReviewDetail = useCallback(
+    (reviewId: number) => {
+      router.push(`/works/review/${reviewId}` as never)
+    },
+    [router],
+  )
+
+  const handleLikeReview = useCallback(
+    (reviewId: number) => {
+      if (likeMutation.isPending) return
+      likeMutation.mutate(reviewId)
+    },
+    [likeMutation],
+  )
 
   const reviewTabLabel = useMemo(() => {
     const count = works?.reviewCount ?? reviews.length
@@ -150,67 +176,29 @@ export default function WorksDetailScreen() {
             {tab === 'info' ? (
               <WorksInfoSection works={works} />
             ) : (
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewSectionTitle}>다른 유저들의 리뷰</Text>
+              <View>
+                <MyReviewSection
+                  myReview={myReview}
+                  userName={myNickname}
+                  onPressWrite={goReviewWrite}
+                  onPressDetail={goReviewDetail}
+                />
 
-                {reviewsQuery.isLoading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={C.primary}
-                    style={styles.reviewLoader}
-                  />
-                ) : null}
-
-                {!reviewsQuery.isLoading && reviewsQuery.isError ? (
-                  <Text style={styles.messageText}>리뷰를 불러오지 못했어요.</Text>
-                ) : null}
-
-                {!reviewsQuery.isLoading &&
-                !reviewsQuery.isError &&
-                reviews.length === 0 ? (
-                  <View style={styles.emptyReviewCard}>
-                    <Text style={styles.emptyReviewTitle}>아직 리뷰가 없어요.</Text>
-                    <Text style={styles.emptyReviewBody}>
-                      첫 번째 감상을 남길 차례예요.
-                    </Text>
-                  </View>
-                ) : null}
-
-                {reviews.map((item) => (
-                  <PostCard
-                    key={String(item.reviewId)}
-                    item={item}
-                    onLike={(reviewId) => likeMutation.mutate(reviewId)}
-                    isLiking={
-                      likeMutation.isPending &&
-                      likeMutation.variables === item.reviewId
-                    }
-                  />
-                ))}
-
-                {reviewsQuery.hasNextPage ? (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.loadMoreButton,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => void reviewsQuery.fetchNextPage()}
-                    disabled={reviewsQuery.isFetchingNextPage}
-                  >
-                    {reviewsQuery.isFetchingNextPage ? (
-                      <ActivityIndicator size="small" color={C.primary} />
-                    ) : (
-                      <>
-                        <Text style={styles.loadMoreText}>리뷰 더보기</Text>
-                        <Image
-                          source={arrowForward}
-                          style={styles.loadMoreIcon}
-                          contentFit="contain"
-                        />
-                      </>
-                    )}
-                  </Pressable>
-                ) : null}
+                <OtherReviewsSection
+                  reviews={reviews}
+                  isLoading={reviewsQuery.isLoading}
+                  isError={reviewsQuery.isError}
+                  hasNextPage={reviewsQuery.hasNextPage}
+                  isFetchingNextPage={reviewsQuery.isFetchingNextPage}
+                  onFetchNextPage={() => void reviewsQuery.fetchNextPage()}
+                  onPressDetail={goReviewDetail}
+                  onPressLike={handleLikeReview}
+                  likingReviewId={
+                    likeMutation.isPending && typeof likeMutation.variables === 'number'
+                      ? likeMutation.variables
+                      : null
+                  }
+                />
               </View>
             )}
           </ScrollView>
@@ -331,62 +319,6 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: C.textMuted,
     marginLeft: 12,
-  },
-  reviewSection: {
-    paddingHorizontal: S.screenH,
-    paddingTop: 24,
-  },
-  reviewSectionTitle: {
-    ...Typography.heading2,
-    color: C.text,
-    marginBottom: 8,
-  },
-  reviewLoader: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  messageText: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginTop: 12,
-  },
-  emptyReviewCard: {
-    borderRadius: Radius.md,
-    backgroundColor: C.bg,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  emptyReviewTitle: {
-    ...Typography.body1Semibold,
-    color: C.textSecondary,
-  },
-  emptyReviewBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginTop: 4,
-  },
-  loadMoreButton: {
-    marginTop: 16,
-    marginBottom: 8,
-    minHeight: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  loadMoreText: {
-    ...Typography.body2Bold,
-    color: C.primary,
-  },
-  loadMoreIcon: {
-    width: 16,
-    height: 16,
-    tintColor: C.primary,
   },
   pressed: {
     opacity: 0.7,
