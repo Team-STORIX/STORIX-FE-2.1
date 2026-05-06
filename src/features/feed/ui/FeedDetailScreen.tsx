@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -208,7 +207,6 @@ export function FeedDetailScreen() {
                     (item) => item.reply.replyId !== replyId,
                   ),
                 }))
-                return
               }
               await detailQuery.refetch()
             } catch {
@@ -315,11 +313,7 @@ export function FeedDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { paddingTop: insets.top }]}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : insets.bottom}
-    >
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -342,7 +336,11 @@ export function FeedDetailScreen() {
           </Pressable>
         </View>
       ) : (
-        <>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior="padding"
+          keyboardVerticalOffset={insets.bottom}
+        >
           <ScrollView
               ref={scrollRef}
               style={styles.flex}
@@ -408,7 +406,7 @@ export function FeedDetailScreen() {
                       variant="reply"
                       myUserId={myUserId}
                       item={merged}
-                      subReplyCount={(subRepliesMap[item.reply.replyId] ?? []).length}
+                      subReplyCount={(item.childReplies ?? []).length + (subRepliesMap[item.reply.replyId] ?? []).length}
                       isMenuOpen={openReplyMenuId === item.reply.replyId}
                       onToggleMenu={() =>
                         setOpenReplyMenuId((prev) =>
@@ -430,7 +428,7 @@ export function FeedDetailScreen() {
                       onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId)}
                     />
 
-                    {(subRepliesMap[item.reply.replyId] ?? []).map((subReply) => {
+                    {[...(item.childReplies ?? []), ...(subRepliesMap[item.reply.replyId] ?? [])].map((subReply) => {
                       const subOverride =
                         subReplyLikeOverrides[item.reply.replyId]?.[subReply.reply.replyId]
                       const mergedSub = subOverride
@@ -473,18 +471,17 @@ export function FeedDetailScreen() {
               ) : null}
             </ScrollView>
 
-            <View style={{ paddingBottom: insets.bottom }}>
-              <FeedCommentInput
-                profileImageUrl={me?.profileImageUrl}
-                replyTargetActive={replyTargetId != null}
-                value={commentText}
-                onChangeText={setCommentText}
-                onSubmit={onSubmitComment}
-              />
-            </View>
-          </>
+            <FeedCommentInput
+              profileImageUrl={me?.profileImageUrl}
+              replyTargetActive={replyTargetId != null}
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmit={onSubmitComment}
+            />
+          </KeyboardAvoidingView>
         )}
-    </KeyboardAvoidingView>
+      <View style={{ height: insets.bottom, backgroundColor: '#ffffff' }} />
+    </View>
   )
 }
 
