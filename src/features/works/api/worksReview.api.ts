@@ -55,7 +55,7 @@ function normalizeReviewItem(raw: unknown): WorksReviewItem | null {
     userName:        flat.userName      != null ? String(flat.userName)      : undefined,
     content:         flat.content       != null ? String(flat.content)       : undefined,
     isSpoiler:       flat.isSpoiler === true,
-    spoilerScript:   flat.spoilerScript != null ? String(flat.spoilerScript) : undefined,
+    spoilerScript:   flat.spoilerScript != null ? String(flat.spoilerScript) : '',
     rating:          flat.rating        != null ? Number(flat.rating)        : null,
     likeCount:       flat.likeCount     != null ? Number(flat.likeCount)     : null,
     userId:          flat.userId        != null ? Number(flat.userId)        : undefined,
