@@ -4,12 +4,10 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { Gray, Magenta, Typography } from '../../../theme'
-import { deleteFavoriteArtist, deleteFavoriteWork } from '../../favorite/api/toggleFavorite.api'
-import type { FavoriteArtist, FavoriteWork } from '../types'
-import { useProfileFavoriteArtists } from '../hooks/useProfileFavoriteArtists'
+import { deleteFavoriteWork } from '../../favorite/api/toggleFavorite.api'
+import type { FavoriteWork } from '../types'
 import { useProfileFavoriteWorks } from '../hooks/useProfileFavoriteWorks'
 import { ProfileLikedWorkItem } from './ProfileLikedWorkItem'
-import { ProfileLikedWriterItem } from './ProfileLikedWriterItem'
 import { ProfileLikesEmptyState } from './ProfileLikesEmptyState'
 import { ProfileLikesTabs, type ProfileLikesTab } from './ProfileLikesTabs'
 import { ProfileLikesTopBar } from './ProfileLikesTopBar'
@@ -27,16 +25,10 @@ export function ProfileLikesScreen() {
   const initialTab: ProfileLikesTab = isLikesTab(params.tab) ? params.tab : 'works'
   const [activeTab, setActiveTab] = useState<ProfileLikesTab>(initialTab)
   const worksQuery = useProfileFavoriteWorks(activeTab === 'works')
-  const writersQuery = useProfileFavoriteArtists(activeTab === 'writers')
   const [pendingWorkRemoved, setPendingWorkRemoved] = useState<Set<number>>(new Set())
-  const [pendingArtistRemoved, setPendingArtistRemoved] = useState<Set<number>>(new Set())
-  const pendingRef = useRef({
-    pendingWorkRemoved,
-    pendingArtistRemoved,
-  })
+  const pendingRef = useRef({ pendingWorkRemoved })
   const prevTabRef = useRef<ProfileLikesTab>(activeTab)
   const commitWorksLockRef = useRef(false)
-  const commitArtistsLockRef = useRef(false)
 
   useEffect(() => {
     if (initialTab !== activeTab) {
@@ -45,11 +37,8 @@ export function ProfileLikesScreen() {
   }, [activeTab, initialTab])
 
   useEffect(() => {
-    pendingRef.current = {
-      pendingWorkRemoved,
-      pendingArtistRemoved,
-    }
-  }, [pendingArtistRemoved, pendingWorkRemoved])
+    pendingRef.current = { pendingWorkRemoved }
+  }, [pendingWorkRemoved])
 
   const commitWorks = useCallback(async () => {
     if (commitWorksLockRef.current) return
@@ -70,25 +59,6 @@ export function ProfileLikesScreen() {
     }
   }, [queryClient])
 
-  const commitArtists = useCallback(async () => {
-    if (commitArtistsLockRef.current) return
-    commitArtistsLockRef.current = true
-
-    try {
-      const targets = Array.from(pendingRef.current.pendingArtistRemoved)
-      if (targets.length === 0) return
-
-      await Promise.allSettled(targets.map((artistId) => deleteFavoriteArtist(artistId)))
-      setPendingArtistRemoved(new Set())
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-artists'] }),
-        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-artists-preview'] }),
-      ])
-    } finally {
-      commitArtistsLockRef.current = false
-    }
-  }, [queryClient])
-
   useEffect(() => {
     const previousTab = prevTabRef.current
     if (previousTab === activeTab) return
@@ -96,21 +66,18 @@ export function ProfileLikesScreen() {
     const commitPrevious = async () => {
       if (previousTab === 'works') {
         await commitWorks()
-      } else {
-        await commitArtists()
       }
       prevTabRef.current = activeTab
     }
 
     void commitPrevious()
-  }, [activeTab, commitArtists, commitWorks])
+  }, [activeTab, commitWorks])
 
   useEffect(() => {
     return () => {
       void commitWorks()
-      void commitArtists()
     }
-  }, [commitArtists, commitWorks])
+  }, [commitWorks])
 
   const works = useMemo(
     () =>
@@ -119,16 +86,11 @@ export function ProfileLikesScreen() {
       ),
     [pendingWorkRemoved, worksQuery.data?.pages],
   )
-  const writers = useMemo(
-    () =>
-      (writersQuery.data?.pages.flatMap((page) => page.result.content) ?? []).filter(
-        (item) => !pendingArtistRemoved.has(item.artistId),
-      ),
-    [pendingArtistRemoved, writersQuery.data?.pages],
-  )
 
-  const query = activeTab === 'works' ? worksQuery : writersQuery
-  const data = activeTab === 'works' ? works : writers
+  const query = activeTab === 'works'
+    ? worksQuery
+    : { hasNextPage: false, isFetchingNextPage: false, fetchNextPage: async () => {}, isLoading: false, isError: false }
+  const data: FavoriteWork[] = activeTab === 'works' ? works : []
 
   const handleBack = () => {
     if ('canGoBack' in router && router.canGoBack()) {
@@ -164,7 +126,7 @@ export function ProfileLikesScreen() {
           <ActivityIndicator size="small" color={Magenta[300]} />
         ) : (
           <Pressable onPress={() => void query.fetchNextPage()}>
-            <Text style={styles.footerText}>{'\ub354 \ubcf4\uae30'}</Text>
+            <Text style={styles.footerText}>{'더 보기'}</Text>
           </Pressable>
         )}
       </View>
@@ -172,7 +134,7 @@ export function ProfileLikesScreen() {
   }
 
   return (
-    <FlatList<FavoriteWork | FavoriteArtist>
+    <FlatList<FavoriteWork>
       data={data}
       key={activeTab}
       style={styles.list}
@@ -186,12 +148,12 @@ export function ProfileLikesScreen() {
       ListEmptyComponent={
         query.isLoading ? (
           <View style={styles.inlineState}>
-            <Text style={styles.inlineStateText}>{'\ubd88\ub7ec\uc624\ub294 \uc911...'}</Text>
+            <Text style={styles.inlineStateText}>{'불러오는 중...'}</Text>
           </View>
         ) : query.isError ? (
           <View style={styles.inlineState}>
             <Text style={styles.inlineStateText}>
-              {'\uad00\uc2ec \uc815\ubcf4\ub97c \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc5b4\uc694.'}
+              {'관심 정보를 불러오지 못했어요.'}
             </Text>
           </View>
         ) : (
@@ -204,41 +166,23 @@ export function ProfileLikesScreen() {
           void query.fetchNextPage()
         }
       }}
-      renderItem={({ item }) =>
-        activeTab === 'works' ? (
-          <ProfileLikedWorkItem
-            item={item as FavoriteWork}
-            isFavorite={!pendingWorkRemoved.has((item as FavoriteWork).worksId)}
-            onToggleFavorite={(worksId) => {
-              setPendingWorkRemoved((current) => {
-                const next = new Set(current)
-                if (next.has(worksId)) {
-                  next.delete(worksId)
-                } else {
-                  next.add(worksId)
-                }
-                return next
-              })
-            }}
-          />
-        ) : (
-          <ProfileLikedWriterItem
-            item={item as FavoriteArtist}
-            isFavorite={!pendingArtistRemoved.has((item as FavoriteArtist).artistId)}
-            onToggleFavorite={(artistId) => {
-              setPendingArtistRemoved((current) => {
-                const next = new Set(current)
-                if (next.has(artistId)) {
-                  next.delete(artistId)
-                } else {
-                  next.add(artistId)
-                }
-                return next
-              })
-            }}
-          />
-        )
-      }
+      renderItem={({ item }) => (
+        <ProfileLikedWorkItem
+          item={item}
+          isFavorite={!pendingWorkRemoved.has(item.worksId)}
+          onToggleFavorite={(worksId) => {
+            setPendingWorkRemoved((current) => {
+              const next = new Set(current)
+              if (next.has(worksId)) {
+                next.delete(worksId)
+              } else {
+                next.add(worksId)
+              }
+              return next
+            })
+          }}
+        />
+      )}
     />
   )
 }

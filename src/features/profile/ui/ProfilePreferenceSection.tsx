@@ -3,10 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { C, Gray, Typography } from '../../../theme'
-import {
-  useProfileFavoriteArtistsPreview,
-  useProfileFavoriteWorksPreview,
-} from '../hooks'
+import { useProfileFavoriteWorksPreview } from '../hooks'
 
 const findWritersButton = require('../../../../assets/icons/profile/find-writers.svg')
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
@@ -17,13 +14,9 @@ const WORK_RENDER_LIMIT = 4
 
 export function ProfilePreferenceSection() {
   const router = useRouter()
-  const writersQuery = useProfileFavoriteArtistsPreview()
   const worksQuery = useProfileFavoriteWorksPreview()
 
-  const writers = useMemo(
-    () => writersQuery.data?.writers.slice(0, WRITER_RENDER_LIMIT) ?? [],
-    [writersQuery.data?.writers],
-  )
+  const writers: never[] = []
   const works = useMemo(
     () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
     [worksQuery.data?.works],
@@ -37,7 +30,7 @@ export function ProfilePreferenceSection() {
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
             <Text style={styles.title}>관심 작가</Text>
-            <Text style={styles.count}>{writersQuery.data?.count ?? 0}</Text>
+            <Text style={styles.count}>0</Text>
           </View>
 
           <Pressable
@@ -48,7 +41,7 @@ export function ProfilePreferenceSection() {
           </Pressable>
         </View>
 
-        {(writersQuery.data?.count ?? 0) > 0 ? (
+        {writers.length > 0 ? (
           <View style={styles.writersViewport}>
             <View style={styles.writersRow}>
               {writers.map((writer) => (
