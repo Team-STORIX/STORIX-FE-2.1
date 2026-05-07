@@ -25,10 +25,11 @@ export type PreferenceCardHandle = {
 type PreferenceCardProps = {
   work: PreferenceWork
   onSwiped?: (dir: PreferenceSwipeDir, startX: number) => void
+  overlayAction?: PreferenceSwipeDir | null
 }
 
 export const PreferenceCard = forwardRef<PreferenceCardHandle, PreferenceCardProps>(
-  function PreferenceCard({ work, onSwiped }, ref) {
+  function PreferenceCard({ work, onSwiped, overlayAction = null }, ref) {
     const translateX = useRef(new Animated.Value(0)).current
     const startTimeRef = useRef(0)
     const swipedRef = useRef(onSwiped)
@@ -128,6 +129,8 @@ export const PreferenceCard = forwardRef<PreferenceCardHandle, PreferenceCardPro
           <View style={styles.overlayBase} />
           <View style={styles.overlayBottom} />
 
+          {overlayAction ? <ActionStamp action={overlayAction} /> : null}
+
           <View style={styles.copyBlock}>
             {(work.genre || work.worksType) && (
               <View style={styles.badgeRow}>
@@ -168,6 +171,29 @@ export const PreferenceCard = forwardRef<PreferenceCardHandle, PreferenceCardPro
   },
 )
 
+function ActionStamp({ action }: { action: PreferenceSwipeDir }) {
+  const isLike = action === 'like'
+
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.actionStamp,
+        isLike ? styles.likeStamp : styles.dislikeStamp,
+      ]}
+    >
+      <Text
+        style={[
+          styles.actionStampText,
+          isLike ? styles.likeStampText : styles.dislikeStampText,
+        ]}
+      >
+        {isLike ? '관심' : '삭제'}
+      </Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   root: {
     width: '100%',
@@ -202,6 +228,39 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 248,
     backgroundColor: 'rgba(19, 17, 18, 0.6)',
+  },
+  actionStamp: {
+    position: 'absolute',
+    top: 34,
+    borderWidth: 4,
+    borderRadius: Radius.sm,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    zIndex: 2,
+  },
+  likeStamp: {
+    right: 24,
+    borderColor: Magenta[300],
+    transform: [{ rotate: '12deg' }],
+  },
+  dislikeStamp: {
+    left: 24,
+    borderColor: Gray[50],
+    transform: [{ rotate: '-12deg' }],
+  },
+  actionStampText: {
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: '800',
+    fontFamily: 'SUIT',
+    letterSpacing: 1,
+  },
+  likeStampText: {
+    color: Magenta[300],
+  },
+  dislikeStampText: {
+    color: Gray[50],
   },
   copyBlock: {
     position: 'absolute',

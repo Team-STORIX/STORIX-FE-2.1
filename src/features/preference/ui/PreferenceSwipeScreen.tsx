@@ -31,6 +31,7 @@ type ExitingCardInfo = {
   work: PreferenceWork
   dir: PreferenceSwipeDir
   startX: number
+  overlayAction: PreferenceSwipeDir
 }
 
 const EXIT_MS = 360
@@ -73,7 +74,7 @@ function ExitingCard({
           transform: [{ translateX }, { rotate }],
         }}
       >
-        <PreferenceCard work={info.work} />
+        <PreferenceCard work={info.work} overlayAction={info.overlayAction} />
       </Animated.View>
     </View>
   )
@@ -98,6 +99,7 @@ export function PreferenceSwipeScreen() {
 
   const cardRef = useRef<PreferenceCardHandle | null>(null)
   const [exitingCards, setExitingCards] = useState<ExitingCardInfo[]>([])
+  const isAdvancing = exitingCards.length > 0
 
   const nextWork = useMemo(() => {
     if (currentIndex < 0) return null
@@ -124,17 +126,23 @@ export function PreferenceSwipeScreen() {
 
   const handleSwiped = useCallback(
     (dir: PreferenceSwipeDir, startX: number) => {
-      if (!currentWork || isSubmitting) return
+      if (!currentWork || isSubmitting || isAdvancing) return
 
       setExitingCards((prev) => [
         ...prev,
-        { id: currentWork.id, work: currentWork, dir, startX },
+        {
+          id: currentWork.id,
+          work: currentWork,
+          dir,
+          startX,
+          overlayAction: dir,
+        },
       ])
 
       if (dir === 'like') like()
       else dislike()
     },
-    [currentWork, dislike, isSubmitting, like],
+    [currentWork, dislike, isAdvancing, isSubmitting, like],
   )
 
   const removeExiting = useCallback((id: number) => {
@@ -204,7 +212,7 @@ export function PreferenceSwipeScreen() {
                 key={`current-${currentWork.id}`}
                 ref={cardRef}
                 work={currentWork}
-                onSwiped={handleSwiped}
+                onSwiped={isAdvancing ? undefined : handleSwiped}
               />
             </View>
           ) : null}
@@ -225,7 +233,7 @@ export function PreferenceSwipeScreen() {
           ]}
         >
           <PreferenceActionButtons
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAdvancing}
             onDislike={() => cardRef.current?.swipe('dislike')}
             onLike={() => cardRef.current?.swipe('like')}
           />
