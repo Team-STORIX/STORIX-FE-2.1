@@ -9,8 +9,8 @@
 // taking precedence over .env values.
 require("dotenv").config({ override: false });
 
-import type { ConfigContext, ExpoConfig } from "expo/config";
 import { withEntitlementsPlist } from "@expo/config-plugins";
+import type { ConfigContext, ExpoConfig } from "expo/config";
 
 // ─── Build-time env var helpers ───────────────────────────────────────────────
 // Variables with EXPO_PUBLIC_ prefix are also inlined into the JS bundle.
@@ -85,6 +85,15 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     plugins: [
       // Preserve plugins declared in app.json (expo-router, expo-secure-store).
       ...(config.plugins ?? []),
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "STORIX에서 피드 이미지를 첨부하려면 사진 접근 권한이 필요합니다.",
+          cameraPermission: false,
+          microphonePermission: false,
+        },
+      ],
       [
         "@react-native-seoul/kakao-login",
         {

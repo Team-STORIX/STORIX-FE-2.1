@@ -15,33 +15,128 @@ const ApiEnvelopeSchema = <T extends z.ZodTypeAny>(result: T) =>
 /** -------------------------------
  * 1) GET /api/v1/preference/exploration
  *    취향 탐색 작품 리스트
+ *
+ * Backend item shape (confirmed from live response):
+ *   { worksId, worksName, thumbnailUrl, artistName, platforms[],
+ *     genre, worksType, description, hashtags[] }
+ *
+ * The preprocess step normalizes legacy aliases that may still appear from
+ * older endpoints — `platform` (string) → `platforms` (string[]),
+ * `author` / `authorName` → `artistName`, `type` → `worksType`.
  * -------------------------------- */
-export const PreferenceExplorationWorkSchema = z
-  .object({
-    worksId: z.coerce.number(),
-    worksName: z.string().catch(''),
-    thumbnailUrl: z.string().nullable().optional(),
-    worksType: z.string().catch(''),
-    artistName: z.string().catch(''),
-    platform: z.string().catch(''),
-    genre: z.string().catch(''),
-    description: z.string().catch(''),
-    hashtags: z.array(z.string()).catch([]),
-  })
-  .passthrough()
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
 
-export const PreferenceExplorationResponseSchema = z.preprocess(
-  (raw) => {
-    if (raw && typeof raw === 'object') {
-      const r = (raw as any).result
-      if (r && typeof r === 'object' && (r as any).result) {
-        return { ...(raw as any), result: (r as any).result }
-      }
-    }
-    return raw
-  },
-  ApiEnvelopeSchema(z.array(PreferenceExplorationWorkSchema).default([])),
+const normalizeExplorationItem = (raw: unknown): unknown => {
+  if (!isRecord(raw)) return raw
+
+  const platforms = Array.isArray(raw.platforms)
+    ? raw.platforms.filter((p) => typeof p === 'string')
+    : typeof raw.platform === 'string' && raw.platform.length > 0
+      ? [raw.platform]
+      : []
+
+  const artistName =
+    typeof raw.artistName === 'string' && raw.artistName.length > 0
+      ? raw.artistName
+      : typeof raw.author === 'string'
+        ? raw.author
+        : typeof raw.authorName === 'string'
+          ? raw.authorName
+          : ''
+
+  const worksType =
+    typeof raw.worksType === 'string' && raw.worksType.length > 0
+      ? raw.worksType
+      : typeof raw.type === 'string'
+        ? raw.type
+        : ''
+
+  return { ...raw, platforms, artistName, worksType }
+}
+
+export const PreferenceExplorationWorkSchema = z.preprocess(
+  normalizeExplorationItem,
+  z.object({
+    worksId: z.coerce.number(),
+    worksName: z.string(),
+    thumbnailUrl: z.string().nullable().optional(),
+    artistName: z.string().default(''),
+    platforms: z.array(z.string()).default([]),
+    genre: z.string().default(''),
+    worksType: z.string().default(''),
+    description: z.string().default(''),
+    hashtags: z.array(z.string()).default([]),
+  }),
 )
+
+const pickExplorationArray = (raw: unknown): unknown[] | undefined => {
+  if (Array.isArray(raw)) return raw
+  if (!isRecord(raw)) return undefined
+
+  const result = raw.result
+  if (Array.isArray(result)) return result
+  if (isRecord(result)) {
+    if (Array.isArray(result.content)) return result.content
+    if (Array.isArray(result.result)) return result.result
+    if (Array.isArray(result.works)) return result.works
+  }
+
+  // Daily-limit/no-content case where the backend returns `result: null`.
+  if (result === null) return []
+
+  return undefined
+}
+
+export class PreferenceExplorationShapeError extends Error {
+  constructor() {
+    super('Preference exploration response did not contain a known item array.')
+    this.name = 'PreferenceExplorationShapeError'
+  }
+}
+
+export const normalizePreferenceExploration = (
+  raw: unknown,
+): PreferenceExplorationWork[] => {
+  const items = pickExplorationArray(raw)
+  if (!items) throw new PreferenceExplorationShapeError()
+
+  // Per-item safeParse — a single malformed item must not blow up the list.
+  // Items missing required worksId/worksName are dropped silently.
+  const parsed: PreferenceExplorationWork[] = []
+  for (const item of items) {
+    const result = PreferenceExplorationWorkSchema.safeParse(item)
+    if (result.success) parsed.push(result.data)
+  }
+  return parsed
+}
+
+export const PreferenceExplorationResponseSchema = z
+  .unknown()
+  .transform((raw, ctx) => {
+    try {
+      const envelope = isRecord(raw) ? raw : {}
+      return {
+        isSuccess:
+          typeof envelope.isSuccess === 'boolean' ? envelope.isSuccess : true,
+        code: typeof envelope.code === 'string' ? envelope.code : undefined,
+        message:
+          typeof envelope.message === 'string' ? envelope.message : undefined,
+        timestamp:
+          typeof envelope.timestamp === 'string'
+            ? envelope.timestamp
+            : undefined,
+        result: normalizePreferenceExploration(raw),
+      }
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Preference exploration response did not contain a known item array.',
+      })
+      return z.NEVER
+    }
+  })
 
 export type PreferenceExplorationWork = z.infer<
   typeof PreferenceExplorationWorkSchema

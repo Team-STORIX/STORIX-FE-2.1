@@ -23,6 +23,7 @@ import {
   useWorksSearchInfinite,
 } from '../hooks'
 import { useJoinTopicRoom } from '../../topicroom'
+import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
 import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
 import { SearchHeader } from './SearchHeader'
@@ -105,6 +106,7 @@ export function SearchScreen() {
 
   const recentKeywordsQuery = useRecentKeywords()
   const trendingKeywordsQuery = useTrendingKeywords()
+  const recommendedHashtagsQuery = useRecommendedHashtags()
   const deleteRecentKeywordMutation = useDeleteRecentKeyword()
   const deleteAllRecentKeywordsMutation = useDeleteAllRecentKeywords()
 
@@ -133,6 +135,9 @@ export function SearchScreen() {
 
   const recentKeywords = recentKeywordsQuery.data?.result.recentKeywords ?? []
   const trendingKeywords = trendingKeywordsQuery.data?.result.trendingKeywords ?? []
+  const recommendationKeyword =
+    recommendedHashtagsQuery.data?.find((item) => item.name.trim().length > 0)
+      ?.name ?? trendingKeywords.find((item) => item.keyword.trim().length > 0)?.keyword ?? null
 
   const sortLabel =
     activeTab === 'works'
@@ -183,12 +188,14 @@ export function SearchScreen() {
 
     if (!keyword) {
       setActiveTab('works')
+      setInputValue('')
       router.replace('/search' as never)
       void recentKeywordsQuery.refetch()
       return
     }
 
     setActiveTab('works')
+    setInputValue(keyword)
     router.replace(buildSearchHref(keyword) as never)
   }
 
@@ -258,7 +265,6 @@ export function SearchScreen() {
             {activeTab === 'works' ? (
               <>
                 <SearchWorksResultList
-                  keyword={submittedKeyword}
                   data={worksQuery.items}
                   isLoading={worksQuery.isLoading}
                   isError={worksQuery.isError}
@@ -270,6 +276,8 @@ export function SearchScreen() {
                     }
                   }}
                   onPressItem={handlePressWorks}
+                  recommendationKeyword={recommendationKeyword}
+                  onPressRecommendation={submitKeyword}
                 />
                 {!worksQuery.isLoading && !worksQuery.isError ? (
                   <SearchFloatingButton />
@@ -277,7 +285,6 @@ export function SearchScreen() {
               </>
             ) : (
               <SearchTopicRoomResultList
-                keyword={submittedKeyword}
                 data={topicRoomQuery.items}
                 isLoading={topicRoomQuery.isLoading}
                 isError={topicRoomQuery.isError}
@@ -290,6 +297,8 @@ export function SearchScreen() {
                   }
                 }}
                 onPressItem={handlePressTopicRoom}
+                recommendationKeyword={recommendationKeyword}
+                onPressRecommendation={submitKeyword}
               />
             )}
           </View>

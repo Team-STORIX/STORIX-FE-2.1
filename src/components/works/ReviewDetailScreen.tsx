@@ -20,6 +20,7 @@ import { useLikesStore } from '../../store/likes.store'
 import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
+import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
 const reviewProfileIcon = require('../../../assets/icons/common/reviewProfile.svg')
@@ -31,8 +32,6 @@ const menuDotsIcon = require('../../../assets/icons/common/menu-3dots.svg')
 type Props = {
   reviewId: number
 }
-
-const FALLBACK_SPOILER_TEXT = '스포일러가 포함된 리뷰입니다'
 
 const formatKoreanDate = (iso?: string) => {
   if (!iso) return ''
@@ -85,8 +84,6 @@ export function ReviewDetailScreen({ reviewId }: Props) {
 
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [revealed, setRevealed] = useState(false)
-
   useEffect(() => {
     setLiked(ui.isLiked || storeIsLiked)
     setLikeCount(ui.likeCount)
@@ -181,12 +178,6 @@ export function ReviewDetailScreen({ reviewId }: Props) {
     )
   }
 
-  const isContentHidden = ui.isSpoiler && !revealed
-  const spoilerText =
-    ui.spoilerScript && ui.spoilerScript.trim().length > 0
-      ? ui.spoilerScript
-      : FALLBACK_SPOILER_TEXT
-
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -270,25 +261,14 @@ export function ReviewDetailScreen({ reviewId }: Props) {
           ) : null}
 
           <View style={styles.contentWrap}>
-            <Text
-              style={[
-                styles.contentText,
-                isContentHidden && styles.contentHidden,
-              ]}
-            >
-              {ui.content}
-            </Text>
-
-            {isContentHidden ? (
-              <Pressable
-                style={styles.spoilerOverlay}
-                onPress={() => setRevealed(true)}
-                accessibilityRole="button"
-                accessibilityLabel="스포일러 해제"
-              >
-                <Text style={styles.spoilerText}>{spoilerText}</Text>
-              </Pressable>
-            ) : null}
+            <ReviewSpoilerBlock
+              isSpoiler={ui.isSpoiler}
+              spoilerScript={ui.spoilerScript}
+              content={ui.content}
+              backgroundColor={C.card}
+              textStyle={styles.contentText}
+              spoilerTextStyle={styles.detailSpoilerText}
+            />
           </View>
 
           <Pressable
@@ -522,19 +502,8 @@ const styles = StyleSheet.create({
     color: C.textSecondary,
     lineHeight: 28,
   },
-  contentHidden: {
-    opacity: 0.18,
-  },
-  spoilerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  spoilerText: {
+  detailSpoilerText: {
     ...Typography.body2Medium,
-    color: C.primary,
-    textAlign: 'center',
   },
   likeButton: {
     flexDirection: 'row',
