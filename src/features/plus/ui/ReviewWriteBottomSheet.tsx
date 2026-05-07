@@ -19,8 +19,8 @@ import { C, Gray, Radius, S, Typography } from '../../../theme'
 import type { PlusWorksSearchItem } from '../api'
 import { usePlusReviewDuplicateCheck, usePlusWorksSearch } from '../hooks'
 
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
+const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
+const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
 const searchIcon = require('../../../../assets/icons/common/search.svg')
 
@@ -77,7 +77,7 @@ function WorkResultItem({
       </View>
 
       <Image
-        source={selected ? activeIcon : deactiveIcon}
+        source={selected ? checkPinkIcon : checkGrayIcon}
         style={styles.selectIcon}
         contentFit="contain"
       />
@@ -420,15 +420,15 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   itemThumbWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.xs,
+    width: 87,
+    height: 116,
+    borderRadius: Radius.sm,
     overflow: 'hidden',
     backgroundColor: Gray[100],
   },
   itemThumb: {
-    width: '100%',
-    height: '100%',
+    width: 87,
+    height: 116,
   },
   itemThumbFallback: {
     flex: 1,
@@ -457,8 +457,8 @@ const styles = StyleSheet.create({
     color: C.textMuted,
   },
   selectIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   stateWrap: {
     flex: 1,
