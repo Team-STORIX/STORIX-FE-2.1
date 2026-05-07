@@ -12,6 +12,7 @@ import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
 import type { TopicRoomSearchItem } from '../api'
+import { SearchEmptyState } from './SearchEmptyState'
 
 function formatTopicRoomSubtitle(
   worksType?: string | null,
@@ -29,7 +30,6 @@ function formatTopicRoomSubtitle(
 }
 
 type Props = {
-  keyword: string
   data: TopicRoomSearchItem[]
   isLoading: boolean
   isError: boolean
@@ -38,21 +38,11 @@ type Props = {
   hasNextPage: boolean
   onEndReached: () => void
   onPressItem: (item: TopicRoomSearchItem) => void
-}
-
-function EmptyState({ keyword }: { keyword: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>검색 결과가 없어요.</Text>
-      <Text style={styles.emptyBody}>
-        "{keyword}"에 맞는 토픽룸을 찾지 못했어요.
-      </Text>
-    </View>
-  )
+  recommendationKeyword?: string | null
+  onPressRecommendation?: (keyword: string) => void
 }
 
 export function SearchTopicRoomResultList({
-  keyword,
   data,
   isLoading,
   isError,
@@ -61,6 +51,8 @@ export function SearchTopicRoomResultList({
   hasNextPage,
   onEndReached,
   onPressItem,
+  recommendationKeyword,
+  onPressRecommendation,
 }: Props) {
   if (isLoading) {
     return (
@@ -138,7 +130,12 @@ export function SearchTopicRoomResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={<EmptyState keyword={keyword} />}
+      ListEmptyComponent={
+        <SearchEmptyState
+          recommendationKeyword={recommendationKeyword}
+          onPressRecommendation={onPressRecommendation}
+        />
+      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -222,23 +219,6 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     flexGrow: 1,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 120,
-  },
-  emptyTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    marginBottom: 6,
-  },
-  emptyBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
   },
   footer: {
     paddingVertical: 20,

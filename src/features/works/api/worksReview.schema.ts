@@ -2,10 +2,14 @@
 import { z } from 'zod'
 import { SliceSchema } from './works.schema'
 
-export const WorksMyReviewSchema = z.object({
+const WorksMyReviewOutputSchema = z.object({
   reviewId: z.preprocess((v) => (v == null ? v : Number(v)), z.number()),
   content: z.string().optional(),
   isSpoiler: z.boolean().optional(),
+  spoilerScript: z.preprocess(
+    (v) => (v == null ? '' : String(v)),
+    z.string(),
+  ),
   rating: z
     .preprocess((v) => (v == null ? v : Number(v)), z.number())
     .nullable()
@@ -16,12 +20,34 @@ export const WorksMyReviewSchema = z.object({
     .optional(),
 })
 
+export const WorksMyReviewSchema = z.preprocess((input) => {
+  if (input && typeof input === 'object') {
+    const obj = input as any
+
+    if (obj.review) {
+      return {
+        reviewId: obj.review?.reviewId,
+        content: obj.review?.content,
+        isSpoiler: obj.review?.isSpoiler,
+        spoilerScript: obj.review?.spoilerScript,
+        rating: obj.review?.rating,
+        likeCount: obj.review?.likeCount,
+      }
+    }
+  }
+
+  return input
+}, WorksMyReviewOutputSchema)
+
 const WorksReviewItemOutputSchema = z.object({
   reviewId: z.preprocess((v) => (v == null ? v : Number(v)), z.number()),
   userName: z.string().optional(),
   content: z.string().optional(),
   isSpoiler: z.boolean().optional(),
-  spoilerScript: z.string().optional(),
+  spoilerScript: z.preprocess(
+    (v) => (v == null ? '' : String(v)),
+    z.string(),
+  ),
   rating: z
     .preprocess((v) => (v == null ? v : Number(v)), z.number())
     .nullable()
@@ -64,7 +90,10 @@ const WorksReviewDetailOutputSchema = z.object({
   profileImageUrl: z.string().nullable().optional(),
   content: z.string().optional(),
   isSpoiler: z.boolean().optional(),
-  spoilerScript: z.string().optional(),
+  spoilerScript: z.preprocess(
+    (v) => (v == null ? '' : String(v)),
+    z.string(),
+  ),
   rating: z
     .preprocess((v) => (v == null ? v : Number(v)), z.number())
     .nullable()
