@@ -12,16 +12,20 @@ export function PreferenceProgress({
   currentIndex,
   isDone,
 }: PreferenceProgressProps) {
+  // One segment per item — guarantees that one swipe advances exactly one
+  // segment, regardless of total. Previous logic mapped `total` items onto a
+  // fixed 10-segment bar with Math.round, which jumped by 2 when total != 10.
+  const segmentCount = total > 0 ? total : 10
   const filledCount =
     total <= 0
       ? 0
       : isDone
-        ? 10
-        : Math.round(((currentIndex + 1) / total) * 10)
+        ? total
+        : Math.max(0, Math.min(total, currentIndex + 1))
 
   return (
     <View style={styles.row}>
-      {Array.from({ length: 10 }).map((_, index) => (
+      {Array.from({ length: segmentCount }).map((_, index) => (
         <View
           key={`pref-progress-${index}`}
           style={[

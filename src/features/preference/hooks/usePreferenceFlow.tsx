@@ -300,23 +300,10 @@ export function PreferenceFlowProvider({
           worksId,
           isLiked: choice === 'like',
         })
-
-        if (choice === 'like') {
-          setLikedSuccessIds((prev) => {
-            const next = new Set(prev)
-            next.add(worksId)
-            return next
-          })
-        }
       } catch {
-        if (choice === 'like') {
-          setLikedSuccessIds((prev) => {
-            if (!prev.has(worksId)) return prev
-            const next = new Set(prev)
-            next.delete(worksId)
-            return next
-          })
-        }
+        // Choice persists locally even on POST failure (matches 2.0 policy).
+        // likedSuccessIds is now driven solely by explicit favorite toggles
+        // on the result screen, so no rollback is needed here.
       }
     },
     [analyzeMutation, currentWork],

@@ -218,7 +218,12 @@ export function PreferenceSwipeScreen() {
           ))}
         </View>
 
-        <View style={[styles.buttonWrap, { paddingBottom: insets.bottom + 24 }]}>
+        <View
+          style={[
+            styles.buttonWrap,
+            { paddingBottom: Math.max(insets.bottom, 8) + 16 },
+          ]}
+        >
           <PreferenceActionButtons
             disabled={isSubmitting}
             onDislike={() => cardRef.current?.swipe('dislike')}
@@ -271,8 +276,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   stackArea: {
+    flex: 1,
     position: 'relative',
-    height: 588,
+    minHeight: 0,
   },
   nextCardWrap: {
     ...StyleSheet.absoluteFillObject,
