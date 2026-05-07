@@ -76,6 +76,7 @@ export function FeedDetailScreen() {
   const [openReplyMenuId, setOpenReplyMenuId] = useState<number | null>(null)
   const [openSubReplyMenuId, setOpenSubReplyMenuId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [replyCountDelta, setReplyCountDelta] = useState(0)
 
   const board = boardItem?.board
   const profile = boardItem?.profile
@@ -264,6 +265,7 @@ export function FeedDetailScreen() {
         ...prev,
         [targetId]: [...(prev[targetId] ?? []), newSubReply],
       }))
+      setReplyCountDelta((prev) => prev + 1)
       setReplyTargetId(null)
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
@@ -271,11 +273,20 @@ export function FeedDetailScreen() {
 
       try {
         await createSubReply({ boardId, replyId: targetId, comment: trimmed })
+        await detailQuery.refetch()
+        setSubRepliesMap((prev) => {
+          const next = { ...prev }
+          delete next[targetId]
+          return next
+        })
+        setReplyCountDelta(0)
+        await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
       } catch {
         setSubRepliesMap((prev) => ({
           ...prev,
           [targetId]: (prev[targetId] ?? []).filter((r) => r.reply.replyId !== tempId),
         }))
+        setReplyCountDelta((prev) => Math.max(0, prev - 1))
         Alert.alert('오류', '대댓글 등록에 실패했어요. 다시 시도해 주세요.')
       }
       return
@@ -284,6 +295,8 @@ export function FeedDetailScreen() {
     try {
       await createReply({ boardId, comment: trimmed })
       await detailQuery.refetch()
+      setReplyCountDelta(0)
+      await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
     } catch {
@@ -379,9 +392,10 @@ export function FeedDetailScreen() {
                     : null
                 }
                 isSpoiler={board.isSpoiler ?? false}
+                spoilerScript={board.spoilerScript}
                 isLiked={effectivePostLike.isLiked}
                 likeCount={effectivePostLike.likeCount}
-                replyCount={board.replyCount}
+                replyCount={board.replyCount + replyCountDelta}
                 onToggleLike={onTogglePostLike}
                 onClickWorksArrow={
                   board.isWorksSelected && board.worksId ? () => router.push(`/works/${board.worksId}` as const) : undefined
@@ -390,9 +404,9 @@ export function FeedDetailScreen() {
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
               />
 
-              {board.replyCount > 0 ? (
+              {(board.replyCount + replyCountDelta) > 0 ? (
                 <View style={styles.commentHeader}>
-                  <Text style={styles.commentHeaderText}>댓글 {board.replyCount}</Text>
+                  <Text style={styles.commentHeaderText}>댓글 {board.replyCount + replyCountDelta}</Text>
                 </View>
               ) : null}
 

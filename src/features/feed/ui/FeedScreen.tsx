@@ -162,6 +162,7 @@ export function FeedScreen() {
               : null
           }
           isSpoiler={board.isSpoiler ?? false}
+          spoilerScript={board.spoilerScript}
           isLiked={isLiked}
           likeCount={likeCount}
           replyCount={board.replyCount}
