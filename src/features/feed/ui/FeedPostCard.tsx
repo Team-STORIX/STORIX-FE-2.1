@@ -46,6 +46,7 @@ type FeedPostCardProps = {
   images?: string[]
   works?: PostCardWorks | null
   isSpoiler?: boolean
+  spoilerScript?: string
   isLiked: boolean
   likeCount: number
   replyCount: number
@@ -90,6 +91,7 @@ export function FeedPostCard({
   images = [],
   works,
   isSpoiler = false,
+  spoilerScript,
   isLiked,
   likeCount,
   replyCount,
@@ -241,7 +243,7 @@ export function FeedPostCard({
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
             <Text style={styles.spoilerRevealText}>
-              스포일러가 포함된 피드글 보기
+              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
             </Text>
           </Pressable>
         ) : (
