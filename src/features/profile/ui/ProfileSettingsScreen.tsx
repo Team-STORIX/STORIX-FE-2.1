@@ -76,7 +76,7 @@ export function ProfileSettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <ProfileSettingsButton label="이용약관 보러가기" onPress={() => void openTerms()} />
 
         <View style={styles.bottomActions}>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 32,
+    paddingTop: 32,
   },
   bottomActions: {
     marginTop: 'auto',

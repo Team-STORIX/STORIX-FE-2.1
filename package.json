@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "prebuild:android": "expo prebuild --platform android",
+    "prebuild:android": "expo prebuild --platform android && node scripts/patch-gradle.js",
     "android:open": "start android",
-    "android": "npm run prebuild:android",
+    "android": "expo prebuild --platform android && node scripts/patch-gradle.js && npx expo run:android",
     "prebuild:ios": "expo prebuild --platform ios",
     "ios:open": "open ios/STORIXFE21.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",

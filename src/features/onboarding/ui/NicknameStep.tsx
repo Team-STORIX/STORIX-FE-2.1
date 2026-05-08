@@ -1,5 +1,6 @@
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import type { Dispatch, SetStateAction } from 'react'
 import {
   checkNicknameValid,
@@ -24,6 +25,8 @@ export function NicknameStep({
   onStatusChange,
   message,
   onMessageChange,
+  profileImageUri,
+  onProfileImageChange,
 }: {
   value: string
   onChange: (value: string) => void
@@ -33,8 +36,26 @@ export function NicknameStep({
   onStatusChange: Dispatch<SetStateAction<Status>>
   message: string
   onMessageChange: Dispatch<SetStateAction<string>>
+  profileImageUri?: string
+  onProfileImageChange: (uri: string) => void
 }) {
   const normalized = value.trim()
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요. 설정에서 허용해 주세요.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      onProfileImageChange(result.assets[0].uri)
+    }
+  }
 
   const handleCheck = async () => {
     if (normalized.length < 2 || normalized.length > 10) {
@@ -81,11 +102,12 @@ export function NicknameStep({
 
       <View style={styles.profileWrap}>
         <View style={styles.profileImageWrap}>
-          <Image source={profilePhoto} style={styles.profileImage} contentFit="cover" />
-          <Pressable
-            style={styles.profileChangeButton}
-            onPress={() => Alert.alert('안내', '프로필 이미지 업로드는 아직 준비 중이에요.')}
-          >
+          <Image
+            source={profileImageUri ? { uri: profileImageUri } : profilePhoto}
+            style={styles.profileImage}
+            contentFit="cover"
+          />
+          <Pressable style={styles.profileChangeButton} onPress={() => void handlePickImage()}>
             <Image source={profileChange} style={styles.profileChangeIcon} contentFit="contain" />
           </Pressable>
         </View>
@@ -109,7 +131,7 @@ export function NicknameStep({
             style={styles.input}
           />
 
-          <Pressable onPress={handleCheck} style={styles.checkButton}>
+          <Pressable onPress={() => void handleCheck()} style={styles.checkButton}>
             <Image
               source={normalized ? idCheckPink : idCheckGray}
               style={styles.checkImage}
@@ -168,7 +190,7 @@ const styles = StyleSheet.create({
   },
   inputSection: {
     marginTop: 36,
-    width: 361,
+    width: '100%',
   },
   inputRow: {
     height: 42,
@@ -177,7 +199,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   input: {
-    width: 254,
+    flex: 1,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 10,
     borderBottomWidth: 2,
