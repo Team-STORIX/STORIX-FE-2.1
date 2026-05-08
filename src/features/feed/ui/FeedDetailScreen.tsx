@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Pressable,
   RefreshControl,
@@ -77,6 +78,21 @@ export function FeedDetailScreen() {
   const [openSubReplyMenuId, setOpenSubReplyMenuId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [replyCountDelta, setReplyCountDelta] = useState(0)
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true)
+    })
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false)
+    })
+
+    return () => {
+      showSubscription.remove()
+      hideSubscription.remove()
+    }
+  }, [])
 
   const board = boardItem?.board
   const profile = boardItem?.profile
@@ -352,7 +368,8 @@ export function FeedDetailScreen() {
         <KeyboardAvoidingView
           style={styles.flex}
           behavior="padding"
-          keyboardVerticalOffset={insets.bottom}
+          enabled={keyboardVisible}
+          keyboardVerticalOffset={0}
         >
           <ScrollView
               ref={scrollRef}
@@ -494,7 +511,6 @@ export function FeedDetailScreen() {
             />
           </KeyboardAvoidingView>
         )}
-      <View style={{ height: insets.bottom, backgroundColor: '#ffffff' }} />
     </View>
   )
 }
