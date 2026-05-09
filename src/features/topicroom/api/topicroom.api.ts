@@ -127,13 +127,34 @@ export async function getMyTopicRooms(params?: {
   return ApiEnvelopeSchema(MyTopicRoomSliceSchema).parse(res.data).result
 }
 
-// Searches by worksName and returns the topicRoomId of an exact match, or null.
+// Searches by worksName and returns the topicRoomId of the matching room, or null.
+// Comparison is tolerant: exact match → trim+case-insensitive match → single-result fallback.
+// Without this leniency, a transient whitespace / case difference between the works detail
+// payload and the search payload caused the first entry tap to silently return null even
+// when a room existed (which the second tap would then "succeed" on by user retry).
 export async function findTopicRoomIdByWorksName(
   worksName: string,
 ): Promise<number | null> {
-  if (!worksName.trim()) return null
-  const list = await searchTopicRooms({ keyword: worksName, page: 0, size: 10 })
-  return list.find((r) => r.worksName === worksName)?.topicRoomId ?? null
+  const trimmed = worksName.trim()
+  if (!trimmed) return null
+
+  const list = await searchTopicRooms({ keyword: trimmed, page: 0, size: 20 })
+  if (list.length === 0) return null
+
+  const exact = list.find((r) => r.worksName === worksName)
+  if (exact) return exact.topicRoomId
+
+  const target = trimmed.toLowerCase()
+  const fuzzy = list.find(
+    (r) => (r.worksName ?? '').trim().toLowerCase() === target,
+  )
+  if (fuzzy) return fuzzy.topicRoomId
+
+  // If the keyword search returned a single result, treat it as the match —
+  // the backend already ranked it and there is no other candidate.
+  if (list.length === 1) return list[0].topicRoomId
+
+  return null
 }
 
 // Searches by keyword and finds the item with a matching topicRoomId.

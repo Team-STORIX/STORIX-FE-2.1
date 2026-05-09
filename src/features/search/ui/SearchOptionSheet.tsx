@@ -9,13 +9,9 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Shadow } from '../../../theme/shadows'
-import { Typography } from '../../../theme/typography'
+import { C, Gray, Typography } from '../../../theme'
 
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const inactiveIcon = require('../../../../assets/icons/common/deactive.svg')
+const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
 const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 
@@ -30,6 +26,7 @@ type Props = {
   options: Option[]
   value: string[]
   multiple?: boolean
+  resetValue?: string[]
   onClose: () => void
   onApply: (value: string[]) => void
 }
@@ -40,6 +37,7 @@ export function SearchOptionSheet({
   options,
   value,
   multiple = false,
+  resetValue,
   onClose,
   onApply,
 }: Props) {
@@ -65,11 +63,20 @@ export function SearchOptionSheet({
     setDraft([optionValue])
   }
 
+  const handleReset = () => {
+    setDraft(resetValue ?? [])
+  }
+
+  const handleApply = () => {
+    onApply(draft)
+    onClose()
+  }
+
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
       <View style={styles.modalRoot}>
@@ -80,8 +87,20 @@ export function SearchOptionSheet({
           accessibilityLabel="시트 닫기"
         />
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
-          <Text style={styles.title}>{title}</Text>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 36 }]}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{title}</Text>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+            >
+              <Image source={cancelIcon} style={styles.closeIcon} contentFit="contain" />
+            </Pressable>
+          </View>
+
+          <View style={styles.divider} />
 
           <ScrollView
             style={styles.optionsScroll}
@@ -90,27 +109,51 @@ export function SearchOptionSheet({
           >
             {options.map((option) => {
               const selected = draft.includes(option.value)
-              const iconSource = multiple
-                ? selected
-                  ? checkPinkIcon
-                  : checkGrayIcon
-                : selected
-                  ? activeIcon
-                  : inactiveIcon
+
+              if (multiple) {
+                const iconSource = selected ? checkPinkIcon : checkGrayIcon
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={({ pressed }) => [
+                      styles.checkRow,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => handleToggle(option.value)}
+                    accessibilityRole="button"
+                    accessibilityState={selected ? { selected: true } : {}}
+                  >
+                    <Image
+                      source={iconSource}
+                      style={styles.checkIcon}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.checkLabel}>{option.label}</Text>
+                  </Pressable>
+                )
+              }
 
               return (
                 <Pressable
                   key={option.value}
                   style={({ pressed }) => [
-                    styles.optionRow,
+                    styles.sortRow,
                     pressed && styles.pressed,
                   ]}
                   onPress={() => handleToggle(option.value)}
                   accessibilityRole="button"
                   accessibilityState={selected ? { selected: true } : {}}
                 >
-                  <Text style={styles.optionLabel}>{option.label}</Text>
-                  <Image source={iconSource} style={styles.optionIcon} contentFit="contain" />
+                  <Text style={styles.sortLabel}>{option.label}</Text>
+                  {selected ? (
+                    <Image
+                      source={checkPinkIcon}
+                      style={styles.sortCheckIcon}
+                      contentFit="contain"
+                    />
+                  ) : (
+                    <View style={styles.sortCheckIcon} />
+                  )}
                 </Pressable>
               )
             })}
@@ -118,23 +161,16 @@ export function SearchOptionSheet({
 
           <View style={styles.footer}>
             <Pressable
-              style={({ pressed }) => [styles.footerButton, pressed && styles.pressed]}
-              onPress={() => setDraft([])}
+              style={({ pressed }) => [styles.resetButton, pressed && styles.pressed]}
+              onPress={handleReset}
               accessibilityRole="button"
             >
               <Text style={styles.resetLabel}>초기화</Text>
             </Pressable>
 
             <Pressable
-              style={({ pressed }) => [
-                styles.footerButton,
-                styles.applyButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => {
-                onApply(draft)
-                onClose()
-              }}
+              style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}
+              onPress={handleApply}
               accessibilityRole="button"
             >
               <Text style={styles.applyLabel}>적용하기</Text>
@@ -150,68 +186,114 @@ const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
-    borderTopLeftRadius: Radius.lg,
-    borderTopRightRadius: Radius.lg,
     backgroundColor: C.card,
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    ...Shadow.lg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 28,
+    paddingHorizontal: 16,
+    maxHeight: 580,
   },
-  title: {
-    ...Typography.heading4,
-    color: C.text,
-    marginBottom: 16,
-  },
-  optionsScroll: {
-    maxHeight: 360,
-  },
-  optionsContent: {
-    paddingBottom: 8,
-  },
-  optionRow: {
-    minHeight: 52,
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: C.divider,
   },
-  optionLabel: {
-    ...Typography.body1Medium,
-    color: C.text,
+  title: {
+    ...Typography.heading2,
+    color: '#000000',
+    fontFamily: 'SUIT',
   },
-  optionIcon: {
+  closeButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeIcon: {
     width: 24,
     height: 24,
   },
+  divider: {
+    marginTop: 24,
+    marginHorizontal: -16,
+    height: 1,
+    backgroundColor: Gray[100],
+  },
+  optionsScroll: {
+    flexShrink: 1,
+  },
+  optionsContent: {
+    paddingTop: 28,
+    paddingBottom: 28,
+    gap: 20,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sortLabel: {
+    ...Typography.body1Medium,
+    color: '#000000',
+    fontFamily: 'SUIT',
+  },
+  sortCheckIcon: {
+    width: 24,
+    height: 24,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingLeft: 4,
+  },
+  checkIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+  },
+  checkLabel: {
+    ...Typography.body1Medium,
+    color: '#000000',
+    fontFamily: 'SUIT',
+  },
   footer: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    marginTop: 16,
   },
-  footerButton: {
-    flex: 1,
-    height: 52,
-    borderRadius: Radius.lg,
+  resetButton: {
+    height: 56,
+    minWidth: 110,
+    paddingHorizontal: 24,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Gray[100],
   },
-  applyButton: {
-    backgroundColor: C.primary,
-  },
   resetLabel: {
-    ...Typography.body1Semibold,
-    color: C.textSecondary,
+    ...Typography.body1Bold,
+    color: '#000000',
+    fontFamily: 'SUIT',
+  },
+  applyButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
   },
   applyLabel: {
-    ...Typography.body1Semibold,
-    color: C.card,
+    ...Typography.body1Bold,
+    color: '#ffffff',
+    fontFamily: 'SUIT',
   },
   pressed: {
-    opacity: 0.75,
+    opacity: 0.85,
   },
 })

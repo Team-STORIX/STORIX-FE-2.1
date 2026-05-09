@@ -90,13 +90,17 @@ export const useUpdateMyReview = (params: { worksId: number }) => {
 
 export const useDeleteMyReview = (params: { worksId: number }) => {
   const qc = useQueryClient()
-  const m = useMutation({
+  return useMutation({
     mutationFn: (reviewId: number) => deleteMyReview(reviewId),
+    onSuccess: async (_, reviewId) => {
+      // Run invalidations inside the mutation's promise chain so they finish
+      // before the caller navigates away after `await mutateAsync(...)`.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'detail', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'detail', reviewId] }),
+      ])
+    },
   })
-  useEffect(() => {
-    if (!m.isSuccess) return
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
-  }, [m.isSuccess, qc, params.worksId])
-  return m
 }
