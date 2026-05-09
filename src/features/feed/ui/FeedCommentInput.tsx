@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
+  Keyboard,
   NativeSyntheticEvent,
   Pressable,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Gray, Radius, Typography } from '../../../theme'
 
 const commentBlackIcon = require('../../../../assets/icons/feed/comment-black.svg')
@@ -29,8 +31,29 @@ export function FeedCommentInput({
   onChangeText,
   onSubmit,
 }: Props) {
+  const { bottom } = useSafeAreaInsets()
+  const [navBarHeight, setNavBarHeight] = useState(0)
   const [inputHeight, setInputHeight] = useState(20)
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
   const canSubmit = value.trim().length > 0
+
+  useEffect(() => {
+    if (bottom > 0) setNavBarHeight(bottom)
+  }, [bottom])
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true)
+    })
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false)
+    })
+
+    return () => {
+      showSubscription.remove()
+      hideSubscription.remove()
+    }
+  }, [])
 
   const handleContentSizeChange = (
     event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>,
@@ -40,35 +63,40 @@ export function FeedCommentInput({
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.avatarWrap}>
-        <Image
-          source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
-          style={styles.avatar}
-          contentFit="cover"
-        />
-      </View>
+    <View>
+      <View style={styles.container}>
+        <View style={styles.avatarWrap}>
+          <Image
+            source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+            style={styles.avatar}
+            contentFit="cover"
+          />
+        </View>
 
-      <View style={styles.inputWrap}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          multiline
-          maxLength={300}
-          onContentSizeChange={handleContentSizeChange}
-          style={[styles.input, { height: inputHeight }]}
-          placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
-          placeholderTextColor={Gray[300]}
-        />
-      </View>
+        <View style={styles.inputWrap}>
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            multiline
+            maxLength={300}
+            onContentSizeChange={handleContentSizeChange}
+            style={[styles.input, { height: inputHeight }]}
+            placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
+            placeholderTextColor={Gray[300]}
+          />
+        </View>
 
-      <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>
-        <Image
-          source={canSubmit ? commentBlackIcon : commentDisabledIcon}
-          style={styles.submitIcon}
-          contentFit="contain"
-        />
-      </Pressable>
+        <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>
+          <Image
+            source={canSubmit ? commentBlackIcon : commentDisabledIcon}
+            style={styles.submitIcon}
+            contentFit="contain"
+          />
+        </Pressable>
+      </View>
+      {!keyboardVisible ? (
+        <View style={{ height: navBarHeight, backgroundColor: '#ffffff' }} />
+      ) : null}
     </View>
   )
 }

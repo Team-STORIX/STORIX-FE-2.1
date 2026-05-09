@@ -27,3 +27,25 @@ export const updateProfileImage = async (
   const res = await apiClient.post('/api/v1/profile/image', { objectKey })
   return res.data as ApiResponse<string>
 }
+
+export const getProfileImagePresignedUrl = async (
+  contentType: string,
+): Promise<{ url: string; objectKey: string; expiresInSeconds: number }> => {
+  const res = await apiClient.post('/api/v1/image/profile', {
+    file: { contentType },
+  })
+  return res.data.result
+}
+
+export const uploadAndSetProfileImage = async (localUri: string): Promise<void> => {
+  const contentType = /\.png$/i.test(localUri) ? 'image/png' : 'image/jpeg'
+  const { url, objectKey } = await getProfileImagePresignedUrl(contentType)
+  const blob = await fetch(localUri).then((r) => r.blob())
+  const uploadRes = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: blob,
+  })
+  if (!uploadRes.ok) throw new Error(`S3 upload failed: ${uploadRes.status}`)
+  await updateProfileImage(objectKey)
+}

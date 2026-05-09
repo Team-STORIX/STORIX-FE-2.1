@@ -16,7 +16,6 @@ export function ProfilePreferenceSection() {
   const router = useRouter()
   const worksQuery = useProfileFavoriteWorksPreview()
 
-  const writers: never[] = []
   const works = useMemo(
     () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
     [worksQuery.data?.works],
@@ -41,40 +40,17 @@ export function ProfilePreferenceSection() {
           </Pressable>
         </View>
 
-        {writers.length > 0 ? (
-          <View style={styles.writersViewport}>
-            <View style={styles.writersRow}>
-              {writers.map((writer) => (
-                <View key={writer.id} style={styles.writerItem}>
-                  <View style={styles.writerAvatarWrap}>
-                    {writer.imageUrl ? (
-                      <Image
-                        source={{ uri: writer.imageUrl }}
-                        style={styles.writerAvatar}
-                        contentFit="cover"
-                      />
-                    ) : null}
-                  </View>
-                  <Text style={styles.writerName} numberOfLines={1}>
-                    {writer.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="작가 찾기"
-            >
-              <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
-            </Pressable>
-          </View>
-        )}
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
+          <Pressable
+            onPress={() => router.push('/search')}
+            style={({ pressed }) => [pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="작가 찾기"
+          >
+            <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.section, styles.worksSection]}>

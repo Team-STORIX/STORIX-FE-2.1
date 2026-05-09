@@ -1,8 +1,12 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { OnboardingWork } from '../api/onboarding.api'
 
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
+
+const COLUMNS = 3
+const HORIZONTAL_PADDING = 16 // OnboardingScreen scrollContent paddingHorizontal
+const COLUMN_GAP = 8
 
 export function FavoriteStep({
   works,
@@ -15,6 +19,12 @@ export function FavoriteStep({
   onToggle: (id: number) => void
   loading: boolean
 }) {
+  const { width } = useWindowDimensions()
+  const cardWidth = Math.floor(
+    (width - HORIZONTAL_PADDING * 2 - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS,
+  )
+  const thumbHeight = Math.floor(cardWidth * (4 / 3))
+
   const gridItems = loading ? Array.from({ length: 18 }).map((_, idx) => ({ worksId: idx + 1 })) : works
 
   return (
@@ -36,14 +46,28 @@ export function FavoriteStep({
           return (
             <Pressable
               key={item.worksId}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed, disabled && styles.disabled]}
+              style={({ pressed }) => [
+                { width: cardWidth, height: thumbHeight + 48 },
+                pressed && styles.pressed,
+                disabled && styles.disabled,
+              ]}
               onPress={() => !loading && !disabled && onToggle(item.worksId)}
             >
-              <View style={[styles.thumbWrap, selected && styles.thumbWrapSelected]}>
+              <View
+                style={[
+                  styles.thumbWrap,
+                  { width: cardWidth, height: thumbHeight },
+                  selected && styles.thumbWrapSelected,
+                ]}
+              >
                 {'thumbnailUrl' in item && item.thumbnailUrl ? (
-                  <Image source={{ uri: String(item.thumbnailUrl) }} style={styles.thumb} contentFit="cover" />
+                  <Image
+                    source={{ uri: String(item.thumbnailUrl) }}
+                    style={{ width: cardWidth, height: thumbHeight }}
+                    contentFit="cover"
+                  />
                 ) : (
-                  <View style={styles.thumbSkeleton} />
+                  <View style={{ width: cardWidth, height: thumbHeight, backgroundColor: '#F2EDEF' }} />
                 )}
                 {selected ? (
                   <>
@@ -52,7 +76,7 @@ export function FavoriteStep({
                   </>
                 ) : null}
               </View>
-              <View style={styles.metaWrap}>
+              <View style={[styles.metaWrap, { width: cardWidth }]}>
                 <Text style={styles.workName} numberOfLines={1}>
                   {'worksName' in item ? String(item.worksName ?? '') : ''}
                 </Text>
@@ -98,17 +122,11 @@ const styles = StyleSheet.create({
     marginTop: 64,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: 8,
+    columnGap: COLUMN_GAP,
     rowGap: 16,
     paddingBottom: 80,
   },
-  card: {
-    width: 108,
-    height: 192,
-  },
   thumbWrap: {
-    width: 108,
-    height: 144,
     borderRadius: 8,
     backgroundColor: '#F2EDEF',
     overflow: 'hidden',
@@ -118,15 +136,6 @@ const styles = StyleSheet.create({
   },
   thumbWrapSelected: {
     borderColor: '#FF4093',
-  },
-  thumb: {
-    width: 108,
-    height: 144,
-  },
-  thumbSkeleton: {
-    width: 108,
-    height: 144,
-    backgroundColor: '#F2EDEF',
   },
   thumbOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -141,7 +150,6 @@ const styles = StyleSheet.create({
   },
   metaWrap: {
     marginTop: 8,
-    width: 100,
     paddingHorizontal: 4,
   },
   workName: {

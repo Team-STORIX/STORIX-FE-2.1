@@ -106,7 +106,7 @@ export function AgreementScreen() {
       </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
-        <Pressable onPress={handleNext} disabled={!allAgreed}>
+        <Pressable onPress={handleNext} disabled={!allAgreed} style={styles.nextButtonPressable}>
           <Image
             source={allAgreed ? nextPink : nextGray}
             style={styles.nextButtonImage}
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   allAgreeImage: {
-    width: 361,
+    width: '100%',
     height: 56,
   },
   termsBlock: {
@@ -277,8 +277,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
+  nextButtonPressable: {
+    width: '100%',
+  },
   nextButtonImage: {
-    width: 361,
+    width: '100%',
     height: 50,
   },
 })

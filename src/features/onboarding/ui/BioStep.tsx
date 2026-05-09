@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   },
   inputBlock: {
     marginTop: 84,
-    width: 361,
+    width: '100%',
   },
   inputUnderline: {
     borderBottomWidth: 2,
