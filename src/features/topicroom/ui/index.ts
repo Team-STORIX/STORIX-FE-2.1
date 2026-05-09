@@ -1,5 +1,5 @@
 export * from './TopicRoomCard'
-export * from './TopicRoomCreateSheet'
+export * from './TopicRoomCreateModal'
 export * from './TopicRoomListItem'
 export * from './TopicRoomMenuSheet'
 export * from './TopicRoomParticipationPager'

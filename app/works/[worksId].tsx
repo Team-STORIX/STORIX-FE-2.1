@@ -26,7 +26,7 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
-  TopicRoomCreateSheet,
+  TopicRoomCreateModal,
   useCreateTopicRoom,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
@@ -65,7 +65,7 @@ export default function WorksDetailScreen() {
   const createMutation = useCreateTopicRoom()
 
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
-  const [createSheetOpen, setCreateSheetOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -93,7 +93,7 @@ export default function WorksDetailScreen() {
   const navigateToRoom = useCallback(
     (roomId: number) => {
       setEntryPhase('idle')
-      setCreateSheetOpen(false)
+      setCreateModalOpen(false)
       router.push(`/topicroom/${roomId}` as const)
     },
     [router],
@@ -109,7 +109,7 @@ export default function WorksDetailScreen() {
       if (!roomId) {
         // No existing room — open the create flow instead of inline error.
         setEntryPhase('idle')
-        setCreateSheetOpen(true)
+        setCreateModalOpen(true)
         return
       }
 
@@ -258,14 +258,12 @@ export default function WorksDetailScreen() {
         </>
       )}
 
-      <TopicRoomCreateSheet
-        visible={createSheetOpen}
-        worksName={works?.worksName}
-        defaultName={works?.worksName}
+      <TopicRoomCreateModal
+        visible={createModalOpen}
         isSubmitting={entryPhase === 'creating' || createMutation.isPending}
         onClose={() => {
           if (entryPhase === 'creating' || createMutation.isPending) return
-          setCreateSheetOpen(false)
+          setCreateModalOpen(false)
         }}
         onConfirm={(topicRoomName) => {
           void handleCreate(topicRoomName)

@@ -4,7 +4,7 @@ import { C } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const warningIcon = require('../../../../assets/icons/search/warning.svg')
 const searchIcon = require('../../../../assets/icons/common/search.svg')
 
 type Props = {

@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    marginHorizontal: -16,
+    paddingHorizontal: 0,
   },
   listRow: {
     flexDirection: 'row',

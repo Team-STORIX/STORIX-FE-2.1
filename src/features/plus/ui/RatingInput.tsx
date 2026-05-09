@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
+import { Gray, Magenta } from '../../../theme'
 
 const ratingStarIcon = require('../../../../assets/icons/common/ratingStar.svg')
-const middleStarIcon = require('../../../../assets/icons/common/middleStar.svg')
 
 type Props = {
   value: number
@@ -12,7 +12,7 @@ type Props = {
 
 export function RatingInput({ value, onChange, size = 36 }: Props) {
   return (
-    <View style={[styles.row, { gap: 8 }]}>
+    <View style={[styles.row, { gap: 4 }]}>
       {[0, 1, 2, 3, 4].map((index) => {
         const fillRaw = value - index
         const fill = fillRaw >= 1 ? 1 : fillRaw >= 0.5 ? 0.5 : 0
@@ -28,6 +28,7 @@ export function RatingInput({ value, onChange, size = 36 }: Props) {
               source={ratingStarIcon}
               style={{ width: size, height: size }}
               contentFit="contain"
+              tintColor={Gray[200]}
             />
 
             {fill > 0 ? (
@@ -39,9 +40,10 @@ export function RatingInput({ value, onChange, size = 36 }: Props) {
                 pointerEvents="none"
               >
                 <Image
-                  source={middleStarIcon}
+                  source={ratingStarIcon}
                   style={{ width: size, height: size }}
                   contentFit="contain"
+                  tintColor={Magenta[300]}
                 />
               </View>
             ) : null}
