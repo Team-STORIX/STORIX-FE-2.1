@@ -16,6 +16,7 @@ import {
   useLikeWorksReview,
   useWorksReviewDetail,
 } from '../../features/works/hooks/useWorksReviews'
+import { useMe } from '../../features/profile'
 import { useLikesStore } from '../../store/likes.store'
 import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
@@ -60,6 +61,7 @@ export function ReviewDetailScreen({ reviewId }: Props) {
 
     return {
       worksId: data?.worksId ?? 0,
+      userId: typeof data?.userId === 'number' ? data.userId : null,
       userName: data?.userName ?? '',
       profileImageUrl: data?.profileImageUrl ?? null,
       worksTitle: data?.worksName ?? '',
@@ -70,10 +72,17 @@ export function ReviewDetailScreen({ reviewId }: Props) {
       content: data?.content ?? '',
       likeCount: typeof data?.likeCount === 'number' ? data.likeCount : 0,
       isLiked: !!data?.isLiked,
+      isMineFlag: data?.isMine === true,
       isSpoiler: !!data?.isSpoiler,
       spoilerScript: data?.spoilerScript ?? '',
     }
   }, [data])
+
+  const { data: meData } = useMe()
+  const myUserId = typeof meData?.userId === 'number' ? meData.userId : null
+  const isMine =
+    ui.isMineFlag ||
+    (myUserId != null && ui.userId != null && myUserId === ui.userId)
 
   const likeMutation = useLikeWorksReview({ worksId: ui.worksId })
   const deleteMutation = useDeleteMyReview({ worksId: ui.worksId })
@@ -184,8 +193,8 @@ export function ReviewDetailScreen({ reviewId }: Props) {
       <TopBar
         topInset={insets.top}
         onBack={handleBack}
-        onPressMenu={onConfirmDelete}
-        showMenu
+        onPressMenu={isMine ? onConfirmDelete : undefined}
+        showMenu={isMine}
       />
 
       <ScrollView
