@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   dislikeStamp: {
     left: 24,
-    borderColor: Gray[50],
+    borderColor: '#22c55e',
     transform: [{ rotate: '-12deg' }],
   },
   actionStampText: {
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   dislikeStampText: {
-    color: Gray[50],
+    color: '#22c55e',
   },
   copyBlock: {
     position: 'absolute',

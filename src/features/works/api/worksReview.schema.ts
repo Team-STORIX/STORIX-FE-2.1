@@ -86,6 +86,9 @@ export const WorksReviewSliceSchema = SliceSchema(WorksReviewItemSchema)
 
 const WorksReviewDetailOutputSchema = z.object({
   reviewId: z.number(),
+  userId: z
+    .preprocess((v) => (v == null ? v : Number(v)), z.number())
+    .optional(),
   userName: z.string().optional(),
   profileImageUrl: z.string().nullable().optional(),
   content: z.string().optional(),
@@ -103,6 +106,7 @@ const WorksReviewDetailOutputSchema = z.object({
     .nullable()
     .optional(),
   isLiked: z.boolean().optional(),
+  isMine: z.boolean().optional(),
   createdAt: z.string().optional(),
   lastCreatedTime: z.string().optional(),
   worksId: z.number().optional(),
@@ -129,6 +133,7 @@ export const WorksReviewDetailSchema = z.preprocess((input) => {
     if (obj.profile && obj.review) {
       return {
         reviewId: obj.review?.reviewId,
+        userId: obj.profile?.userId,
         userName: obj.profile?.nickName ?? obj.profile?.userName,
         profileImageUrl: obj.profile?.profileImageUrl,
         content: obj.review?.content,
@@ -137,6 +142,7 @@ export const WorksReviewDetailSchema = z.preprocess((input) => {
         rating: obj.review?.rating,
         likeCount: obj.review?.likeCount,
         isLiked: obj.review?.isLiked,
+        isMine: obj.review?.isMine ?? obj.isMine,
         createdAt: obj.review?.createdAt ?? obj.review?.createdDate,
         lastCreatedTime: obj.review?.lastCreatedTime,
         worksId: obj.works?.worksId ?? obj.review?.worksId,
@@ -150,6 +156,7 @@ export const WorksReviewDetailSchema = z.preprocess((input) => {
     if (obj.works && (obj.reviewId || obj.review?.reviewId)) {
       return {
         reviewId: obj.reviewId ?? obj.review?.reviewId,
+        userId: obj.userId ?? obj.review?.userId,
         userName: obj.userName,
         profileImageUrl: obj.profileImageUrl,
         content: obj.content,
@@ -158,6 +165,7 @@ export const WorksReviewDetailSchema = z.preprocess((input) => {
         rating: obj.rating,
         likeCount: obj.likeCount,
         isLiked: obj.isLiked,
+        isMine: obj.isMine ?? obj.review?.isMine,
         createdAt: obj.createdAt ?? obj.createdDate,
         lastCreatedTime: obj.lastCreatedTime,
         worksId: obj.works?.worksId,

@@ -1,27 +1,27 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
+import { SearchWarningIcon } from "./SearchWarningIcon";
 
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
-const searchIcon = require('../../../../assets/icons/common/search.svg')
+const searchIcon = require("../../../../assets/icons/common/search.svg");
 
 type Props = {
-  recommendationKeyword?: string | null
-  onPressRecommendation?: (keyword: string) => void
-}
+  recommendationKeyword?: string | null;
+  onPressRecommendation?: (keyword: string) => void;
+};
 
 export function SearchEmptyState({
   recommendationKeyword,
   onPressRecommendation,
 }: Props) {
-  const keyword = recommendationKeyword?.replace(/^#/, '').trim()
-  const showRecommendation = !!keyword && !!onPressRecommendation
+  const keyword = recommendationKeyword?.replace(/^#/, "").trim();
+  const showRecommendation = !!keyword && !!onPressRecommendation;
 
   return (
     <View style={styles.container}>
-      <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
+      <SearchWarningIcon size={120} />
 
       <View style={styles.textGroup}>
         <Text style={styles.title}>검색 결과가 없어요...</Text>
@@ -30,7 +30,10 @@ export function SearchEmptyState({
 
       {showRecommendation ? (
         <Pressable
-          style={({ pressed }) => [styles.recommendChip, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.recommendChip,
+            pressed && styles.pressed,
+          ]}
           onPress={() => onPressRecommendation(keyword)}
           accessibilityRole="button"
           accessibilityLabel={`${keyword} 검색하기`}
@@ -47,42 +50,38 @@ export function SearchEmptyState({
         </Pressable>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 192,
     gap: 12,
   },
-  warningIcon: {
-    width: 120,
-    height: 120,
-  },
   textGroup: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
     marginTop: 10,
   },
   title: {
     ...Typography.heading2,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   recommendChip: {
-    maxWidth: '100%',
+    maxWidth: "100%",
     minHeight: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
     borderRadius: Radius.xs,
     borderWidth: 1,
@@ -104,4 +103,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-})
+});
