@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
+import { SearchWarningIcon } from "./SearchWarningIcon";
 
-const warningIcon = require("../../../../assets/icons/search/warning.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 
 type Props = {
@@ -21,11 +21,7 @@ export function SearchEmptyState({
 
   return (
     <View style={styles.container}>
-      <Image
-        source={warningIcon}
-        style={styles.warningIcon}
-        contentFit="contain"
-      />
+      <SearchWarningIcon size={120} />
 
       <View style={styles.textGroup}>
         <Text style={styles.title}>검색 결과가 없어요...</Text>
@@ -64,10 +60,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 192,
     gap: 12,
-  },
-  warningIcon: {
-    width: 120,
-    height: 120,
   },
   textGroup: {
     alignItems: "center",
