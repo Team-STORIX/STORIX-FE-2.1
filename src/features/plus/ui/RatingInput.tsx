@@ -10,9 +10,9 @@ type Props = {
   size?: number
 }
 
-export function RatingInput({ value, onChange, size = 33 }: Props) {
+export function RatingInput({ value, onChange, size = 36 }: Props) {
   return (
-    <View style={[styles.row, { gap: 4 }]}>
+    <View style={[styles.row, { gap: 8 }]}>
       {[0, 1, 2, 3, 4].map((index) => {
         const fillRaw = value - index
         const fill = fillRaw >= 1 ? 1 : fillRaw >= 0.5 ? 0.5 : 0

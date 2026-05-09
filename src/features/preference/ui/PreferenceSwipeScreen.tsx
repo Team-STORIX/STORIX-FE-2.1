@@ -32,9 +32,11 @@ type ExitingCardInfo = {
   dir: PreferenceSwipeDir
   startX: number
   overlayAction: PreferenceSwipeDir
+  duration: number
 }
 
-const EXIT_MS = 360
+const GESTURE_EXIT_MS = 360
+const BUTTON_EXIT_MS = 520
 
 function ExitingCard({
   info,
@@ -52,12 +54,12 @@ function ExitingCard({
   useEffect(() => {
     Animated.timing(translateX, {
       toValue: targetX,
-      duration: EXIT_MS,
+      duration: info.duration,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) onDone()
     })
-  }, [onDone, targetX, translateX])
+  }, [info.duration, onDone, targetX, translateX])
 
   const rotate = translateX.interpolate({
     inputRange: [-216, 0, 216],
@@ -128,6 +130,8 @@ export function PreferenceSwipeScreen() {
     (dir: PreferenceSwipeDir, startX: number) => {
       if (!currentWork || isSubmitting || isAdvancing) return
 
+      const isButtonTriggered = startX === 0
+
       setExitingCards((prev) => [
         ...prev,
         {
@@ -136,6 +140,7 @@ export function PreferenceSwipeScreen() {
           dir,
           startX,
           overlayAction: dir,
+          duration: isButtonTriggered ? BUTTON_EXIT_MS : GESTURE_EXIT_MS,
         },
       ])
 

@@ -14,8 +14,6 @@ import { Radius } from '../../../theme/radius'
 import { Shadow } from '../../../theme/shadows'
 import { Typography } from '../../../theme/typography'
 
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const inactiveIcon = require('../../../../assets/icons/common/deactive.svg')
 const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 
@@ -90,13 +88,7 @@ export function SearchOptionSheet({
           >
             {options.map((option) => {
               const selected = draft.includes(option.value)
-              const iconSource = multiple
-                ? selected
-                  ? checkPinkIcon
-                  : checkGrayIcon
-                : selected
-                  ? activeIcon
-                  : inactiveIcon
+              const iconSource = selected ? checkPinkIcon : checkGrayIcon
 
               return (
                 <Pressable

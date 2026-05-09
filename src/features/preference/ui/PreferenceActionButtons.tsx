@@ -54,19 +54,17 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    height: 52,
     borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   dislikeButton: {
     backgroundColor: Magenta[50],
-    paddingVertical: 10,
-    paddingHorizontal: 40,
   },
   likeButton: {
     backgroundColor: Magenta[300],
-    paddingVertical: 14,
-    paddingHorizontal: 60,
   },
   dislikeLabel: {
     ...Typography.body1Semibold,

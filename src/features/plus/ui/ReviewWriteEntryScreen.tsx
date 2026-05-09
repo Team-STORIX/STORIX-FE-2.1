@@ -164,7 +164,7 @@ export function ReviewWriteEntryScreen() {
             thumbnailUrl={work?.thumbnailUrl ?? undefined}
             loading={cardLoading}
           >
-            <RatingInput value={rating} onChange={setRating} size={33} />
+            <RatingInput value={rating} onChange={setRating} size={36} />
           </WriteTargetWorkCard>
 
           {!worksId ? (

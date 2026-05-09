@@ -16,7 +16,7 @@ export function SearchFloatingButton() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { bottom: insets.bottom + 24 }]}>
+    <View style={[styles.wrap, { bottom: insets.bottom + 12 }]}>
       <Pressable
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
         onPress={() => {
