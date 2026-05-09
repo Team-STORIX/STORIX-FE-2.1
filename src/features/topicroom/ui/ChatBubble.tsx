@@ -1,19 +1,25 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { C } from '../../../theme/colors'
+
+const profileDefault = require('../../../../assets/icons/profile/profile-default.svg')
 
 export type DisplayMsg = {
   key: string
   text: string
+  senderId?: number
   senderName: string
+  profileImageUrl?: string | null
   time: string
   isMe: boolean
 }
 
-type Props = { msg: DisplayMsg }
+type Props = {
+  msg: DisplayMsg
+  onLongPressOther?: (msg: DisplayMsg) => void
+}
 
-export function ChatBubble({ msg }: Props) {
-  const initial = (msg.senderName || '?')[0].toUpperCase()
-
+export function ChatBubble({ msg, onLongPressOther }: Props) {
   if (msg.isMe) {
     return (
       <View style={styles.rowMe}>
@@ -25,17 +31,31 @@ export function ChatBubble({ msg }: Props) {
     )
   }
 
+  const handleLongPress = onLongPressOther ? () => onLongPressOther(msg) : undefined
+
   return (
     <View style={styles.rowOther}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarInitial}>{initial}</Text>
+        <Image
+          source={msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault}
+          style={styles.avatarImage}
+          contentFit="cover"
+        />
       </View>
       <View style={styles.otherBody}>
-        <Text style={styles.senderName}>{msg.senderName}</Text>
+        <Text style={styles.senderName}>{msg.senderName || '익명'}</Text>
         <View style={styles.otherBubbleRow}>
-          <View style={[styles.bubble, styles.bubbleOther]}>
+          <Pressable
+            onLongPress={handleLongPress}
+            delayLongPress={400}
+            style={({ pressed }) => [
+              styles.bubble,
+              styles.bubbleOther,
+              pressed && handleLongPress ? styles.pressed : null,
+            ]}
+          >
             <Text style={styles.textOther}>{msg.text}</Text>
-          </View>
+          </Pressable>
           <Text style={styles.timeOther}>{msg.time}</Text>
         </View>
       </View>
@@ -66,12 +86,14 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: C.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginRight: 8,
     flexShrink: 0,
   },
-  avatarInitial: { fontSize: 13, fontWeight: '700', color: C.primary },
+  avatarImage: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+  },
 
   otherBody: { flexShrink: 1 },
   senderName: {
@@ -100,6 +122,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     borderBottomLeftRadius: 4,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 
   textMe: { fontSize: 14, color: '#fff', lineHeight: 20 },

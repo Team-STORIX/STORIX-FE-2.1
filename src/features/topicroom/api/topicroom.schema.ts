@@ -45,12 +45,29 @@ export const TopicRoomIdSchema = z.preprocess((v) => {
   return Number.isFinite(n) ? n : v
 }, z.number())
 
-/** 토픽룸 검색: swagger가 result.result.content 로 내려오는 구조 */
-export const TopicRoomSearchWrappedSchema = z.object({
+/**
+ * 토픽룸 검색 응답: swagger 정의는 result.result.content 로 두 단계 래핑된 구조이지만,
+ * 백엔드 환경에 따라 result.content (단일 래핑) 로 내려오는 케이스가 있다.
+ * 두 형태 모두 받아 들여 { result: { content: [...] } } 로 정규화한다.
+ */
+export const TopicRoomSearchWrappedSchema = z.preprocess((input) => {
+  if (input && typeof input === 'object') {
+    const obj = input as Record<string, any>
+    if (obj.result && Array.isArray(obj.result.content)) {
+      // already shaped as { result: { content } }
+      return obj
+    }
+    if (Array.isArray(obj.content)) {
+      // single-wrap: outer envelope already unwrapped — promote to expected shape
+      return { result: { content: obj.content } }
+    }
+  }
+  return input
+}, z.object({
   result: z.object({
     content: z.array(TopicRoomItemSchema),
   }),
-})
+}))
 
 /** 참여 중인 토픽룸: result가 Page/Slice 형태 */
 export const MyTopicRoomSliceSchema = SliceSchema(TopicRoomItemSchema)
