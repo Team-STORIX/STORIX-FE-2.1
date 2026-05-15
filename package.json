@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "firebase-admin": "^13.9.0",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },

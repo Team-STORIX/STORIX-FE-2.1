@@ -25,6 +25,15 @@ export const registerDeviceToken = async (
   // TODO(PUSH-2-BE): remove this short-circuit once the endpoint is live.
   const ENDPOINT_AVAILABLE = false
 
+  // TODO(PUSH_DIAG): remove [PUSH_DIAG] logs after delivery is confirmed.
+  const tokenPreview = `${payload.deviceToken.slice(0, 12)}…(len=${payload.deviceToken.length})`
+  // eslint-disable-next-line no-console
+  console.log('[PUSH_DIAG] registerDeviceToken called', {
+    platform: payload.platform,
+    tokenPreview,
+    endpointAvailable: ENDPOINT_AVAILABLE,
+  })
+
   if (!ENDPOINT_AVAILABLE) {
     if (__DEV__) {
       // eslint-disable-next-line no-console
@@ -38,6 +47,11 @@ export const registerDeviceToken = async (
       )
       // eslint-disable-next-line no-console
       console.log('[push] (dev) FCM token (full):', payload.deviceToken)
+      // eslint-disable-next-line no-console
+      console.log(
+        '[PUSH_DIAG] FCM_REGISTRATION_TOKEN_FULL (from registerDeviceToken)',
+        payload.deviceToken,
+      )
     }
     return {
       isSuccess: true,

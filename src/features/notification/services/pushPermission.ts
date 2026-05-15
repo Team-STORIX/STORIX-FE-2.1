@@ -38,15 +38,29 @@ const isIosGranted = (status: number): boolean =>
  * denied result so callers can show a "retry from settings" UI later.
  */
 export const requestPushPermission = async (): Promise<PushPermissionResult> => {
+  // TODO(PUSH_DIAG): remove [PUSH_DIAG] logs after delivery is confirmed.
+  // eslint-disable-next-line no-console
+  console.log('[PUSH_DIAG] requestPushPermission start', {
+    os: Platform.OS,
+    version: Platform.Version,
+  })
+
   if (Platform.OS === 'ios') {
     try {
       const status = await requestPermission(getMessaging())
-      return {
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] ios raw authorization status', status)
+      const result: PushPermissionResult = {
         platform: 'ios',
         granted: isIosGranted(status),
         status: mapIosStatus(status),
       }
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] permission result', result)
+      return result
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] ios requestPermission threw', err)
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.warn('[push] iOS requestPermission failed', err)
@@ -59,22 +73,37 @@ export const requestPushPermission = async (): Promise<PushPermissionResult> => 
     // Below API 33 there is no runtime permission for notifications — apps
     // can post freely. Treat as granted so the bootstrap flow proceeds.
     if (typeof Platform.Version === 'number' && Platform.Version < 33) {
-      return { platform: 'android', granted: true, status: 'granted' }
+      const result: PushPermissionResult = {
+        platform: 'android',
+        granted: true,
+        status: 'granted',
+      }
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] android <33, auto-granted', result)
+      return result
     }
 
     try {
-      const result = await PermissionsAndroid.request(
+      const raw = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
       )
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] android raw permission result', raw)
 
-      if (result === PermissionsAndroid.RESULTS.GRANTED) {
-        return { platform: 'android', granted: true, status: 'granted' }
+      let result: PushPermissionResult
+      if (raw === PermissionsAndroid.RESULTS.GRANTED) {
+        result = { platform: 'android', granted: true, status: 'granted' }
+      } else if (raw === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+        result = { platform: 'android', granted: false, status: 'blocked' }
+      } else {
+        result = { platform: 'android', granted: false, status: 'denied' }
       }
-      if (result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-        return { platform: 'android', granted: false, status: 'blocked' }
-      }
-      return { platform: 'android', granted: false, status: 'denied' }
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] permission result', result)
+      return result
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log('[PUSH_DIAG] android requestPermission threw', err)
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.warn('[push] Android requestPermission failed', err)
@@ -85,5 +114,7 @@ export const requestPushPermission = async (): Promise<PushPermissionResult> => 
 
   // Web / other platforms: not supported in this phase. Report as iOS for
   // payload purposes since the bootstrap caller only uses `granted`.
+  // eslint-disable-next-line no-console
+  console.log('[PUSH_DIAG] unsupported platform for push', Platform.OS)
   return { platform: 'ios', granted: false, status: 'denied' }
 }
