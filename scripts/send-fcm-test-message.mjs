@@ -32,9 +32,9 @@ const token = args[0]
 if (!token) {
   die(
     'Usage: node scripts/send-fcm-test-message.mjs "<FCM_REGISTRATION_TOKEN>"\n' +
-      '  Token comes from the "[PUSH_DIAG] FCM_REGISTRATION_TOKEN_FULL" log line\n' +
-      '  in the running iOS/Android app — NOT the Firebase Installation ID and\n' +
-      '  NOT the APNs token.',
+      '  Token comes from the FCM registration token logged by the running\n' +
+      '  iOS/Android app — NOT the Firebase Installation ID and NOT the\n' +
+      '  APNs token.',
   )
 }
 
@@ -156,7 +156,7 @@ try {
     case 'messaging/registration-token-not-registered':
       console.error(
         `${TAG} → Token is stale / app reinstalled / project changed.\n` +
-          '  Rebuild the app, copy the new [PUSH_DIAG] FCM_REGISTRATION_TOKEN_FULL.',
+          '  Rebuild the app and copy the new FCM registration token.',
       )
       break
     case 'messaging/sender-id-mismatch':
@@ -168,8 +168,8 @@ try {
     case 'messaging/invalid-registration-token':
     case 'messaging/invalid-argument':
       console.error(
-        `${TAG} → Malformed or truncated token. Re-copy the full string from\n` +
-          '  the [PUSH_DIAG] FCM_REGISTRATION_TOKEN_FULL log line.',
+        `${TAG} → Malformed or truncated token. Re-copy the full FCM\n` +
+          '  registration token from the device log.',
       )
       break
     case 'messaging/third-party-auth-error':

@@ -70,9 +70,15 @@ Notion reference: see existing Android Firebase setup page (storixbiz@gmail.com)
    Messaging → Apple app config → upload the `.p8` along with Team ID and
    Key ID. _Do not commit the `.p8` to the repo._
 7. Push capability + entitlements:
-   - `ios/STORIXFE21/STORIXFE21.entitlements` already declares
-     `aps-environment = development` (PUSH-1). Production builds will need a
-     separate provisioning profile / release entitlement set to `production`.
+   - **APNs sandbox vs production**: this was the root cause of an early
+     PUSH-1 delivery failure — make sure the entitlement environment matches
+     the FCM target. Xcode/dev builds use `aps-environment = development`
+     (APNs sandbox); TestFlight/Release builds need a separate provisioning
+     profile with `aps-environment = production`. The Firebase APNs Auth Key
+     covers both environments, but if the entitlement and the FCM send do
+     not agree, the device silently receives nothing.
+   - `ios/STORIXFE21/STORIXFE21.entitlements` declares
+     `aps-environment = development` for the dev workflow.
    - `ios/STORIXFE21/Info.plist` declares
      `UIBackgroundModes = ["remote-notification"]`.
    - `ios/STORIXFE21/AppDelegate.swift` calls `FirebaseApp.configure()`
@@ -102,8 +108,8 @@ Implemented under `src/features/notification/`:
     `apns-token-not-set` race; retries once after `1.5s`.
 - `api/notification.api.ts` — `registerDeviceToken(payload)`
   - **Endpoint not yet implemented.** While `ENDPOINT_AVAILABLE = false` the
-    function logs the token in `__DEV__` and returns a synthetic success.
-    Flip the flag (and confirm the path) once PUSH-2-BE lands.
+    function returns a synthetic success envelope without making a network
+    call. Flip the flag (and confirm the path) once PUSH-2-BE lands.
 - `hooks/useRegisterDeviceToken.ts` — React Query mutation wrapper.
 - `hooks/usePushNotificationBootstrap.ts` — orchestrates everything; mounted
   from `app/_layout.tsx` as `<PushNotificationBootstrap />` inside the
@@ -117,11 +123,11 @@ no permission prompt appears on the login screen.
 
 - [ ] Fresh install, log in → OS permission prompt appears (iOS) / Android-13
       prompt appears.
-- [ ] Grant permission → console shows `[push] (dev) FCM token (full): …`.
-- [ ] Copy the token into Firebase Console → Cloud Messaging → Send test
-      message → message arrives (foreground log on iOS+Android).
-- [ ] Deny permission → no crash, app remains usable, log shows
-      `[push] permission not granted`.
+- [ ] Grant permission → FCM token is retrieved (no crash).
+- [ ] Use `scripts/send-fcm-test-message.mjs <token>` to send a direct FCM
+      push → message arrives on the device (foreground delivery confirmed
+      end-to-end without the Firebase Console UI).
+- [ ] Deny permission → no crash, app remains usable.
 - [ ] Background the app, send a test push → notification appears in tray
       (no JS hook required for system display).
 - [ ] Kill & relaunch the app while logged in → no second permission prompt
@@ -129,7 +135,27 @@ no permission prompt appears on the login screen.
 - [ ] Log out → log back in → flow re-runs once (module guard is per-process,
       not per-account).
 
-## 7. Known follow-ups
+> Push diagnostics (the `[PUSH_DIAG]` log lines and `dumpPushDiagnostics`
+> helper) were removed after the APNs sandbox credential issue was resolved.
+> Use `scripts/send-fcm-test-message.mjs` for any future delivery debugging.
+
+## 7. Direct FCM test script
+
+`scripts/send-fcm-test-message.mjs` sends a single notification directly to
+an FCM registration token via the Firebase Admin SDK. It bypasses the
+Firebase Console UI (which silently accepts the wrong identifier) and is the
+fastest way to confirm whether FCM → APNs delivery is healthy.
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=~/.config/storix/firebase-service-account.json
+node scripts/send-fcm-test-message.mjs "<FCM_REGISTRATION_TOKEN>"
+```
+
+The service-account JSON has full project privileges — keep it **outside**
+the repo. `.gitignore` already excludes common filenames; double-check
+before any `git add`.
+
+## 8. Known follow-ups
 
 - **PUSH-1-BG-HANDLER** — register
   `setBackgroundMessageHandler` at module entry (cannot live inside a React
