@@ -123,7 +123,7 @@ export function NicknameStep({
               onStatusChange('idle')
               onMessageChange('')
             }}
-            placeholder="프로필을 설정해 주세요"
+            placeholder="닉네임을 입력하세요"
             placeholderTextColor="#B0A5AA"
             autoCapitalize="none"
             autoCorrect={false}

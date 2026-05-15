@@ -134,19 +134,20 @@ const styles = StyleSheet.create({
   },
   logoWord: {
     width: 120,
-    height: 40,
+    height: 120,
   },
   buttonGroup: {
     marginTop: 64,
     gap: 8,
-    width: 360,
+    alignSelf: 'stretch',
+    paddingHorizontal: 16,
   },
   assetButton: {
-    width: 360,
+    width: '100%',
     height: 48,
   },
   assetButtonImage: {
-    width: 360,
+    width: '100%',
     height: 48,
   },
   loadingOverlay: {
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
   },
   devButton: {
     marginTop: 8,
-    width: 360,
+    width: '100%',
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',

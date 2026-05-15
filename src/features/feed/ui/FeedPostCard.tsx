@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,20 +61,52 @@ type FeedPostCardProps = {
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
 
 function HashtagRow({ tags }: { tags: string[] }) {
+  const containerWidthRef = useRef(0)
+  const chipRights = useRef<number[]>([])
+  const [cutIndex, setCutIndex] = useState(tags.length)
+
+  useEffect(() => {
+    setCutIndex(tags.length)
+    chipRights.current = []
+  }, [tags])
+
   if (!tags.length) return null
+
+  const recalculate = (cw: number) => {
+    if (cw === 0) return
+    let cut = tags.length
+    for (let i = 0; i < tags.length; i++) {
+      const right = chipRights.current[i]
+      if (right !== undefined && right > cw) {
+        cut = i
+        break
+      }
+    }
+    setCutIndex(cut)
+  }
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.hashtagScroll}
-      contentContainerStyle={styles.hashtagContent}
+    <View
+      style={styles.hashtagRow}
+      onLayout={(e) => {
+        containerWidthRef.current = e.nativeEvent.layout.width
+        recalculate(containerWidthRef.current)
+      }}
     >
       {tags.map((tag, i) => (
-        <View key={`${tag}-${i}`} style={styles.hashtagChip}>
+        <View
+          key={`${tag}-${i}`}
+          style={[styles.hashtagChip, i >= cutIndex ? { display: 'none' } : undefined]}
+          onLayout={(e) => {
+            if (i >= cutIndex) return
+            chipRights.current[i] = e.nativeEvent.layout.x + e.nativeEvent.layout.width
+            recalculate(containerWidthRef.current)
+          }}
+        >
           <Text style={styles.hashtagText}>{tag.startsWith('#') ? tag : `#${tag}`}</Text>
         </View>
       ))}
-    </ScrollView>
+    </View>
   )
 }
 
@@ -102,7 +135,20 @@ export function FeedPostCard({
   onPressCard,
 }: FeedPostCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuDropdownTop, setMenuDropdownTop] = useState(0)
+  const menuBtnRef = useRef<any>(null)
   const [spoilerRevealed, setSpoilerRevealed] = useState(false)
+
+  const handleMenuPress = () => {
+    if (menuOpen) {
+      setMenuOpen(false)
+      return
+    }
+    menuBtnRef.current?.measure((_fx: number, _fy: number, _w: number, h: number, _px: number, py: number) => {
+      setMenuDropdownTop(py + h + 4)
+      setMenuOpen(true)
+    })
+  }
 
   const isMine = currentUserId != null && writerUserId === currentUserId
   const isSpoilerHidden = isSpoiler && !spoilerRevealed
@@ -137,8 +183,9 @@ export function FeedPostCard({
 
         {/* Menu button */}
         <Pressable
+          ref={menuBtnRef}
           hitSlop={8}
-          onPress={() => setMenuOpen((v) => !v)}
+          onPress={handleMenuPress}
           style={styles.menuBtn}
           accessibilityLabel="메뉴"
         >
@@ -152,20 +199,24 @@ export function FeedPostCard({
 
       {/* ── Menu dropdown ─────────────────────────────────────── */}
       {menuOpen && (
-        <Pressable
-          style={styles.menuDropdown}
-          onPress={() => {
-            setMenuOpen(false)
-            if (isMine) onOpenDelete?.()
-            else onOpenReport?.()
-          }}
-        >
-          <Image
-            source={isMine ? deleteDropdown : commentDropdown}
-            style={styles.menuDropdownImg}
-            contentFit="contain"
-          />
-        </Pressable>
+        <Modal transparent visible animationType="none" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setMenuOpen(false)}>
+            <Pressable
+              style={[styles.menuDropdown, { top: menuDropdownTop }]}
+              onPress={() => {
+                setMenuOpen(false)
+                if (isMine) onOpenDelete?.()
+                else onOpenReport?.()
+              }}
+            >
+              <Image
+                source={isMine ? deleteDropdown : commentDropdown}
+                style={styles.menuDropdownImg}
+                contentFit="contain"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
 
       {/* ── Works card ────────────────────────────────────────── */}
@@ -371,12 +422,12 @@ const styles = StyleSheet.create({
   menuDropdown: {
     position: 'absolute',
     right: 16,
-    top: 52,
-    zIndex: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    shadowColor: '#131112',
+    shadowOpacity: 0.20,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   menuDropdownImg: {
@@ -396,7 +447,7 @@ const styles = StyleSheet.create({
     borderColor: Gray[100],
     backgroundColor: '#ffffff',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 12,
   },
   worksThumbnailBox: {
@@ -414,13 +465,13 @@ const styles = StyleSheet.create({
   worksInfo: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
   },
   worksName: {
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
     color: '#000000',
+    marginBottom: 4,
   },
   worksMeta: {
     fontSize: 12,
@@ -432,6 +483,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     flexShrink: 0,
   },
   arrowSmall: {
@@ -440,26 +492,25 @@ const styles = StyleSheet.create({
   },
 
   // Hashtag
-  hashtagScroll: {
-    marginTop: 2,
-  },
-  hashtagContent: {
+  hashtagRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
     gap: 4,
+    marginTop: 'auto',
   },
   hashtagChip: {
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: Gray[50],
+    borderColor: '#E3DCDF',
+    backgroundColor: '#F2EDEF',
   },
   hashtagText: {
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
-    letterSpacing: 0.2,
-    color: Gray[800],
+    color: '#847B7F',
   },
 
   // Body
@@ -475,8 +526,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageBox: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
@@ -485,8 +536,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   imageFill: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
   },
   textPad: {
     paddingHorizontal: 16,

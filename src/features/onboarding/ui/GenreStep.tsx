@@ -58,12 +58,14 @@ export function GenreStep({
   return (
     <View>
       <Text style={styles.title}>즐겨보는 장르를 선택해 주세요</Text>
-      <View style={styles.subRow}>
+      {value.length > 0 ? (
         <Text style={styles.subtitle}>
-          선택 장르를 기반으로 작품과 키워드를 추천해드려요
+          {'최소 1개~최대 3개 선택가능 '}
+          <Text style={styles.count}>({value.length}/3)</Text>
         </Text>
-        {value.length > 0 ? <Text style={styles.count}>({value.length}/3)</Text> : null}
-      </View>
+      ) : (
+        <Text style={styles.subtitle}>선택을 기반으로 웹툰/웹소설을 추천드려요</Text>
+      )}
 
       <View style={styles.grid}>
         {order.map((genre) => {
@@ -96,19 +98,14 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     color: '#000000',
   },
-  subRow: {
-    marginTop: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   subtitle: {
+    marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
     color: '#847B7F',
   },
   count: {
-    marginLeft: 4,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,

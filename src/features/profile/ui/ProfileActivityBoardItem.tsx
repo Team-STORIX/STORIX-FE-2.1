@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { FeedPostCard } from '../../feed/ui/FeedPostCard'
+import { ReportModal } from '../../feed/ui/ReportModal'
 import {
   deleteBoard,
   reportBoard,
@@ -22,6 +24,7 @@ export function ProfileActivityBoardCard({
 }) {
   const router = useRouter()
   const qc = useQueryClient()
+  const [reportModalVisible, setReportModalVisible] = useState(false)
 
   const syncBoardItem = (
     boardId: number,
@@ -103,25 +106,14 @@ export function ProfileActivityBoardCard({
     ])
   }
 
-  const handleReport = async () => {
-    try {
-      const result = await reportBoard({
-        boardId: item.board.boardId,
-        reportedUserId: item.profile.userId,
-      })
-
-      Alert.alert(
-        '알림',
-        result.status === 'duplicated' ? result.message : '신고가 접수되었어요.',
-      )
-    } catch {
-      Alert.alert('오류', '신고에 실패했어요.')
-    }
+  const handleReport = () => {
+    setReportModalVisible(true)
   }
 
   const worksId = item.works?.worksId
 
   return (
+    <>
     <FeedPostCard
       variant="list"
       boardId={item.board.boardId}
@@ -161,5 +153,21 @@ export function ProfileActivityBoardCard({
       onOpenReport={item.profile.userId !== currentUserId ? () => void handleReport() : undefined}
       onPressCard={() => router.push(`/feed/${item.board.boardId}` as const)}
     />
+    <ReportModal
+      visible={reportModalVisible}
+      profileImageUrl={item.profile.profileImageUrl}
+      nickname={item.profile.nickName}
+      onClose={() => setReportModalVisible(false)}
+      onConfirm={async () => {
+        const result = await reportBoard({
+          boardId: item.board.boardId,
+          reportedUserId: item.profile.userId,
+        })
+        if (result.status === 'duplicated') {
+          throw new Error('이미 신고한 유저예요.')
+        }
+      }}
+    />
+    </>
   )
 }

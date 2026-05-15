@@ -9,7 +9,7 @@ import { C, Gray, Typography } from '../../../theme'
 import { useProfileStore } from '../store/profile.store'
 import { updateProfileDescription, updateProfileNickname, uploadAndSetProfileImage } from '../api'
 import { ME_QUERY_KEY, useMe } from '../hooks/useMe'
-import { ProfileEditBioField } from './ProfileEditBioField'
+import { BioStep } from '../../onboarding/ui/BioStep'
 import { ProfileEditNicknameField } from './ProfileEditNicknameField'
 import { ProfileEditTopBar } from './ProfileEditTopBar'
 
@@ -67,7 +67,7 @@ export function ProfileEditScreen() {
   const handleProfileImagePress = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('\uad8c\ud55c \ud544\uc694', '\uac24\ub7ec\ub9ac \uc811\uadfc \uad8c\ud55c\uc774 \ud544\uc694\ud574\uc694. \uc124\uc815\uc5d0\uc11c \ud5c8\uc6a9\ud574 \uc8fc\uc138\uc694.')
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요. 설정에서 허용해 주세요.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,7 +85,7 @@ export function ProfileEditScreen() {
       patchMe({ profileImageUrl: uri })
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
     } catch {
-      Alert.alert('\uc624\ub958', '\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
+      Alert.alert('오류', '프로필 이미지 업로드에 실패했어요.')
       setLocalProfileImageUri(undefined)
     } finally {
       setIsUploadingImage(false)
@@ -101,7 +101,7 @@ export function ProfileEditScreen() {
       if (nicknameChanged) {
         const response = await updateProfileNickname(nickname.trim())
         if (!response.isSuccess) {
-          throw new Error(response.message || '\ub2c9\ub124\uc784 \ubcc0\uacbd\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
+          throw new Error(response.message || '닉네임 변경에 실패했어요.')
         }
         patchMe({ nickName: nickname.trim() })
       }
@@ -109,17 +109,15 @@ export function ProfileEditScreen() {
       if (bioChanged) {
         const response = await updateProfileDescription(bioText)
         if (!response.isSuccess) {
-          throw new Error(
-            response.message || '\ud55c\uc904\uc18c\uac1c \ubcc0\uacbd\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.',
-          )
+          throw new Error(response.message || '한줄소개 변경에 실패했어요.')
         }
         patchMe({ profileDescription: bioText })
       }
 
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
-      Alert.alert('\uc644\ub8cc', '\ud504\ub85c\ud544 \uc218\uc815\uc774 \uc644\ub8cc\ub418\uc5c8\uc5b4\uc694.', [
+      Alert.alert('완료', '프로필 수정이 완료되었어요.', [
         {
-          text: '\ud655\uc778',
+          text: '확인',
           onPress: () => router.replace('/(tabs)/profile'),
         },
       ])
@@ -127,8 +125,8 @@ export function ProfileEditScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : '\ud504\ub85c\ud544 \uc218\uc815 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc5b4\uc694.'
-      Alert.alert('\uc624\ub958', message)
+          : '프로필 수정 중 오류가 발생했어요.'
+      Alert.alert('오류', message)
     } finally {
       setIsSaving(false)
     }
@@ -137,7 +135,7 @@ export function ProfileEditScreen() {
   if (!me) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.loadingText}>{'\ud504\ub85c\ud544\uc744 \ubd88\ub7ec\uc624\ub294 \uc911...'}</Text>
+        <Text style={styles.loadingText}>프로필을 불러오는 중...</Text>
       </View>
     )
   }
@@ -174,7 +172,7 @@ export function ProfileEditScreen() {
             disabled={isUploadingImage}
             style={({ pressed }) => [styles.imageEditButton, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={'\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \ubcc0\uacbd'}
+            accessibilityLabel="프로필 이미지 변경"
           >
             <Image source={profileChangeIcon} style={styles.imageEditIcon} contentFit="contain" />
           </Pressable>
@@ -182,7 +180,7 @@ export function ProfileEditScreen() {
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.fieldLabel}>{'\ub2c9\ub124\uc784'}</Text>
+        <Text style={styles.fieldLabel}>닉네임</Text>
         <View style={styles.fieldSpacer} />
         <ProfileEditNicknameField
           currentNickname={initialNickname}
@@ -192,9 +190,9 @@ export function ProfileEditScreen() {
         />
 
         <View style={styles.bioSection}>
-          <Text style={styles.fieldLabel}>{'\ud55c\uc904\uc18c\uac1c'}</Text>
+          <Text style={styles.fieldLabel}>한줄소개</Text>
           <View style={styles.fieldSpacer} />
-          <ProfileEditBioField value={bioText} onChange={setBioText} />
+          <BioStep value={bioText} onChange={setBioText} showHeader={false} />
         </View>
       </View>
     </ScrollView>

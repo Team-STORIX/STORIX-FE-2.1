@@ -5,11 +5,9 @@ import { useRouter } from 'expo-router'
 import { C, Gray, Typography } from '../../../theme'
 import { useProfileFavoriteWorksPreview } from '../hooks'
 
-const findWritersButton = require('../../../../assets/icons/profile/find-writers.svg')
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
 const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
 
-const WRITER_RENDER_LIMIT = 5
 const WORK_RENDER_LIMIT = 4
 
 export function ProfilePreferenceSection() {
@@ -25,34 +23,6 @@ export function ProfilePreferenceSection() {
 
   return (
     <View>
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.titleWrap}>
-            <Text style={styles.title}>관심 작가</Text>
-            <Text style={styles.count}>0</Text>
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/profile/likes?tab=writers')}
-            accessibilityRole="button"
-          >
-            <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
-          </Pressable>
-        </View>
-
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
-          <Pressable
-            onPress={() => router.push('/search')}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="작가 찾기"
-          >
-            <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
-          </Pressable>
-        </View>
-      </View>
-
       <View style={[styles.section, styles.worksSection]}>
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
@@ -61,7 +31,7 @@ export function ProfilePreferenceSection() {
           </View>
 
           <Pressable
-            onPress={() => router.push('/profile/likes?tab=works')}
+            onPress={() => router.push('/profile/likes')}
             accessibilityRole="button"
           >
             <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
@@ -157,35 +127,6 @@ const styles = StyleSheet.create({
   moreIcon: {
     width: 24,
     height: 24,
-  },
-  writersViewport: {
-    marginTop: 24,
-    overflow: 'hidden',
-  },
-  writersRow: {
-    flexDirection: 'row',
-    gap: 18,
-  },
-  writerItem: {
-    alignItems: 'center',
-  },
-  writerAvatarWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    overflow: 'hidden',
-    backgroundColor: C.border,
-  },
-  writerAvatar: {
-    width: 60,
-    height: 60,
-  },
-  writerName: {
-    ...Typography.body2Medium,
-    marginTop: 8,
-    width: 60,
-    color: Gray[500],
-    textAlign: 'center',
   },
   worksContent: {
     marginTop: 24,

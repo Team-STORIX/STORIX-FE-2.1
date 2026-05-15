@@ -110,7 +110,7 @@ export function OnboardingScreen() {
       if (profileImageUri) {
         await uploadAndSetProfileImage(profileImageUri).catch(() => {})
       }
-      router.replace('/(tabs)')
+      router.replace('/(auth)/manual')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
     }
@@ -134,7 +134,7 @@ export function OnboardingScreen() {
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <OnboardingTopBar onBack={handleBack} onSkip={step < 5 ? handleSkip : undefined} />
+        <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
         {step <= 4 ? (
           <View style={styles.progressWrap}>
