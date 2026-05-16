@@ -120,13 +120,14 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
   spoilerText: {
     ...Typography.caption1Medium,
     color: C.primary,
-    textAlign: 'center',
+    textAlign: 'left',
+    alignSelf: 'stretch',
   },
 })

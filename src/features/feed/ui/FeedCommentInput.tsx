@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Keyboard,
+  NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -34,6 +35,7 @@ export function FeedCommentInput({
 }: Props) {
   const { bottom } = useSafeAreaInsets()
   const [navBarHeight, setNavBarHeight] = useState(0)
+  const [inputHeight, setInputHeight] = useState(20)
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
   const canSubmit = value.trim().length > 0
 
@@ -55,6 +57,13 @@ export function FeedCommentInput({
     }
   }, [])
 
+  const handleContentSizeChange = (
+    event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>,
+  ) => {
+    const next = Math.min(39.2, Math.max(20, event.nativeEvent.contentSize.height))
+    setInputHeight(next)
+  }
+
   return (
     <View>
       <View style={styles.container}>
@@ -69,15 +78,14 @@ export function FeedCommentInput({
         <View style={styles.inputWrap}>
           <TextInput
             value={value}
-            onChangeText={(text) => onChangeText(text.slice(0, MAX_LENGTH))}
+            onChangeText={onChangeText}
             multiline
-            maxLength={MAX_LENGTH}
-            style={styles.input}
+            maxLength={300}
+            onContentSizeChange={handleContentSizeChange}
+            style={[styles.input, { height: inputHeight }]}
             placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
             placeholderTextColor={Gray[300]}
-            textAlignVertical="top"
           />
-          <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
         </View>
 
         <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>

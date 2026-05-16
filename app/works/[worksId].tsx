@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   tabUnderlineActive: {
-    backgroundColor: C.primary,
+    backgroundColor: C.text,
   },
   pressed: {
     opacity: 0.7,

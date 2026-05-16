@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   entryIcon: {
     width: 18,
     height: 18,
+    tintColor: C.card,
   },
   pressed: {
     opacity: 0.88,

@@ -23,6 +23,34 @@ export function ProfilePreferenceSection() {
 
   return (
     <View>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.titleWrap}>
+            <Text style={styles.title}>관심 작가</Text>
+            <Text style={styles.count}>0</Text>
+          </View>
+
+          <Pressable
+            onPress={() => router.push('/profile/likes?tab=writers')}
+            accessibilityRole="button"
+          >
+            <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
+          </Pressable>
+        </View>
+
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
+          <Pressable
+            onPress={() => router.push('/search')}
+            style={({ pressed }) => [pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="작가 찾기"
+          >
+            <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
+          </Pressable>
+        </View>
+      </View>
+
       <View style={[styles.section, styles.worksSection]}>
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
