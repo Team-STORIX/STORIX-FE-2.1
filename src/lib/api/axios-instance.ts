@@ -112,6 +112,11 @@ apiClient.interceptors.request.use(
       const authorization = `Bearer ${token}`;
       setAuthorizationHeader(config.headers, authorization);
     }
+    // *******반드시 삭제********
+    console.log(
+      "[AUTH DEBUG] Bearer Token:",
+      token ? `Bearer ${token}` : "NO TOKEN",
+    );
 
     return config;
   },
