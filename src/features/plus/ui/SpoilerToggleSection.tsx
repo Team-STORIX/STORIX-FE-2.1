@@ -1,39 +1,41 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Gray } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { C, Gray } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
 
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
-const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
-const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
+const activeIcon = require("../../../../assets/icons/common/active.svg");
+const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
+const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
+const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
-const MAX_SPOILER_LENGTH = 50
+const MAX_SPOILER_LENGTH = 50;
 
 type Props = {
-  enabled: boolean
-  onToggle: () => void
-  message: string
-  onMessageChange: (next: string) => void
-  defaultMessage?: string
-}
+  enabled: boolean;
+  onToggle: () => void;
+  message: string;
+  onMessageChange: (next: string) => void;
+  defaultMessage?: string;
+};
 
 export function SpoilerToggleSection({
   enabled,
   onToggle,
   message,
   onMessageChange,
-  defaultMessage = '스포일러가 포함된 피드 보기',
+  defaultMessage = "스포일러가 포함된 피드 보기",
 }: Props) {
-  const isDefault = message === defaultMessage
+  const isDefault = message === defaultMessage;
   const onPressDefault = () => {
-    if (isDefault) onMessageChange('')
-    else onMessageChange(defaultMessage)
-  }
+    if (isDefault) onMessageChange("");
+    else onMessageChange(defaultMessage);
+  };
 
   const counterColor =
-    message.length === MAX_SPOILER_LENGTH ? styles.counterWarning : styles.counterValue
+    message.length === MAX_SPOILER_LENGTH
+      ? styles.counterWarning
+      : styles.counterValue;
 
   return (
     <View style={styles.section}>
@@ -91,12 +93,12 @@ export function SpoilerToggleSection({
 
           <Text style={styles.counterText}>
             <Text style={counterColor}>{message.length}</Text>
-            <Text style={styles.counterTotal}>/{MAX_SPOILER_LENGTH}</Text>
+            <Text style={counterColor}>/{MAX_SPOILER_LENGTH}</Text>
           </Text>
         </View>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -110,17 +112,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   heading: {
     ...Typography.body1Bold,
     color: C.text,
   },
   toggleArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   toggleLabel: {
@@ -145,13 +147,13 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   defaultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   checkIcon: {
@@ -169,9 +171,9 @@ const styles = StyleSheet.create({
     color: Gray[400],
   },
   counterWarning: {
-    color: '#ef433e',
+    color: "#ef433e",
   },
   counterTotal: {
     color: C.textMuted,
   },
-})
+});
