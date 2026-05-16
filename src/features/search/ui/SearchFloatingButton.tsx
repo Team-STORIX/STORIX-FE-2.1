@@ -32,12 +32,12 @@ export function SearchFloatingButton() {
             contentFit="contain"
           />
           <Text style={styles.label}>찾는 작품이 없다면?</Text>
+          <Image
+            source={forwardIcon}
+            style={styles.arrowIcon}
+            contentFit="contain"
+          />
         </View>
-        <Image
-          source={forwardIcon}
-          style={styles.arrowIcon}
-          contentFit="contain"
-        />
       </Pressable>
     </View>
   );
@@ -52,33 +52,33 @@ const styles = StyleSheet.create({
     pointerEvents: "box-none",
   },
   button: {
-    height: 40,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     borderRadius: Radius.full,
     backgroundColor: C.primary,
-    paddingHorizontal: 20,
-    minWidth: 210,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     ...Shadow.lg,
   },
   leading: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginRight: 12,
+    gap: 0,
   },
   fireIcon: {
     width: 20,
     height: 20,
+    marginLeft: 4,
   },
   label: {
     ...Typography.body2Medium,
     color: C.card,
   },
   arrowIcon: {
-    width: 18,
-    height: 18,
+    width: 24,
+    height: 24,
+    tintColor: C.card,
   },
   pressed: {
     opacity: 0.85,

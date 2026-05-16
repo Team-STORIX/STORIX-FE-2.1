@@ -437,6 +437,7 @@ const styles = StyleSheet.create({
   arrowSmall: {
     width: 24,
     height: 24,
+    tintColor: Gray[400],
   },
 
   // Hashtag

@@ -35,7 +35,15 @@ export async function joinTopicRoom(roomId: number) {
   const res = await apiClient.post(`/api/v1/topic-rooms/${roomId}/join`, null, {
     headers: { accept: '*/*' },
   })
-  return AnyEnvelopeSchema.parse(res.data)
+  // Callers only act on the HTTP outcome (2xx = joined, 409 = already a
+  // member, handled by useJoinTopicRoom); the success body is never read.
+  // Strictly parsing the envelope here threw a ZodError on the genuine
+  // first join whenever the success body shape differed from the envelope,
+  // surfacing a false "입장 실패" toast even though the join succeeded —
+  // while the second tap's 409 bypassed parsing and "worked". Parse
+  // leniently so a 2xx is always treated as success.
+  const parsed = AnyEnvelopeSchema.safeParse(res.data)
+  return parsed.success ? parsed.data : res.data
 }
 
 // DELETE /api/v1/topic-rooms/{roomId}/leave

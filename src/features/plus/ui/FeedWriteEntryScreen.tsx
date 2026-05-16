@@ -1,3 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
+import type { ImagePickerAsset, ImagePickerResult } from "expo-image-picker";
+import { requireOptionalNativeModule } from "expo-modules-core";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,14 +16,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Image } from "expo-image";
-import { requireOptionalNativeModule } from "expo-modules-core";
-import type {
-  ImagePickerAsset,
-  ImagePickerResult,
-} from "expo-image-picker";
-import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
@@ -243,10 +240,7 @@ export function FeedWriteEntryScreen() {
             ? e.message
             : "이미지를 다시 선택해 주세요.";
 
-      Alert.alert(
-        "이미지 선택 실패",
-        message,
-      );
+      Alert.alert("이미지 선택 실패", message);
     }
   };
 
@@ -309,10 +303,7 @@ export function FeedWriteEntryScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + (images.length > 0 ? 148 : 80) },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.worksHeaderRow}>
@@ -586,7 +577,6 @@ const styles = StyleSheet.create({
     top: "50%",
     width: 20,
     height: 20,
-    marginTop: -10,
   },
   selectedWorkWrap: {
     marginBottom: 24,
@@ -618,11 +608,9 @@ const styles = StyleSheet.create({
     padding: 0,
     textAlignVertical: "top",
   },
+  // Kept in normal flex flow (not absolute) so KeyboardAvoidingView lifts it
+  // directly above the keyboard while typing.
   bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
