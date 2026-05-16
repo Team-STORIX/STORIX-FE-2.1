@@ -6,6 +6,7 @@ import { C, Gray, Typography } from '../../../theme'
 import { useProfileFavoriteWorksPreview } from '../hooks'
 
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
+const findWritersButton = require('../../../../assets/icons/profile/find-writers.svg')
 const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
 
 const WORK_RENDER_LIMIT = 4
