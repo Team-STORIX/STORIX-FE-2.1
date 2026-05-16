@@ -6,6 +6,7 @@ import { C, Gray } from '../../../theme'
 import { useMe } from '../hooks'
 import { ProfileActivityContent } from './ProfileActivityContent'
 import { ProfileHashtagSection } from './ProfileHashtagSection'
+import { ProfilePreferGenreSection } from './ProfilePreferGenreSection'
 import { ProfilePreferenceSection } from './ProfilePreferenceSection'
 import { ProfilePreferenceTabs, type ProfilePreferenceTab } from './ProfilePreferenceTabs'
 import { ProfileRatingSection } from './ProfileRatingSection'
@@ -76,6 +77,7 @@ export function ProfileScreen() {
       <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <ProfilePreferenceSection />
       <ProfileRatingSection />
+      <ProfilePreferGenreSection />
       <ProfileHashtagSection />
     </ScrollView>
   )

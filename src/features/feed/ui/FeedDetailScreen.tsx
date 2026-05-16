@@ -19,7 +19,7 @@ import { Gray, Magenta } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { useMe } from '../../profile'
-import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
+import { reportReply } from '../api/feed/readerReply.api'
 import {
   createReply,
   createSubReply,
@@ -32,6 +32,7 @@ import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
 import { FeedCommentInput } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
+import { ReportModal } from './ReportModal'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -192,18 +193,18 @@ export function FeedDetailScreen() {
     ])
   }, [boardId, qc, router])
 
-  const onReportBoard = useCallback(async () => {
+  const onReportBoard = useCallback(() => {
     if (!boardId || !profile) return
-    try {
-      const result = await reportBoard({ boardId, reportedUserId: profile.userId })
-      if (result.status === 'duplicated') {
-        Alert.alert('알림', result.message)
-      } else {
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      }
-    } catch {
-      Alert.alert('오류', '신고에 실패했어요.')
-    }
+    setReportTarget({
+      profileImageUrl: profile.profileImageUrl,
+      nickname: profile.nickName,
+      onConfirm: async () => {
+        const result = await reportBoard({ boardId, reportedUserId: profile.userId })
+        if (result.status === 'duplicated') {
+          throw new Error('이미 신고한 유저예요.')
+        }
+      },
+    })
   }, [boardId, profile])
 
   const onDeleteReply = useCallback(
@@ -237,18 +238,19 @@ export function FeedDetailScreen() {
   )
 
   const onReportReply = useCallback(
-    async (replyId: number, reportedUserId: number) => {
+    (
+      replyId: number,
+      reportedUserId: number,
+      authorProfile: { profileImageUrl?: string | null; nickName: string },
+    ) => {
       if (!boardId) return
-      try {
-        await reportReply({ boardId, replyId, reportedUserId })
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      } catch (error) {
-        if (isAlreadyReportedError(error)) {
-          Alert.alert('알림', '이미 신고한 댓글이에요.')
-          return
-        }
-        Alert.alert('오류', '신고에 실패했어요.')
-      }
+      setReportTarget({
+        profileImageUrl: authorProfile.profileImageUrl,
+        nickname: authorProfile.nickName,
+        onConfirm: async () => {
+          await reportReply({ boardId, replyId, reportedUserId })
+        },
+      })
     },
     [boardId],
   )
@@ -419,13 +421,8 @@ export function FeedDetailScreen() {
                 }
                 onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
+                birthdayTheme={board.boardId % 2 === 0}
               />
-
-              {(board.replyCount + replyCountDelta) > 0 ? (
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentHeaderText}>댓글 {board.replyCount + replyCountDelta}</Text>
-                </View>
-              ) : null}
 
               {replies.map((item) => {
                 const override = replyLikeOverrides[item.reply.replyId]
@@ -456,7 +453,7 @@ export function FeedDetailScreen() {
                         )
                       }
                       onOpenDelete={() => onDeleteReply(item.reply.replyId)}
-                      onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId)}
+                      onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId, item.profile)}
                     />
 
                     {[...(item.childReplies ?? []), ...(subRepliesMap[item.reply.replyId] ?? [])].map((subReply) => {
@@ -488,7 +485,7 @@ export function FeedDetailScreen() {
                             onDeleteReply(subReply.reply.replyId, item.reply.replyId)
                           }
                           onOpenReport={() =>
-                            onReportReply(subReply.reply.replyId, subReply.reply.userId)
+                            onReportReply(subReply.reply.replyId, subReply.reply.userId, subReply.profile)
                           }
                         />
                       )
@@ -551,15 +548,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 24,
-  },
-  commentHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-  },
-  commentHeaderText: {
-    ...Typography.body2Medium,
-    color: Gray[900],
   },
   centerState: {
     flex: 1,

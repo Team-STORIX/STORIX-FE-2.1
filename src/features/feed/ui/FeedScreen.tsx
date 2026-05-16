@@ -24,6 +24,7 @@ import { Typography } from '../../../theme/typography'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
+import { ReportModal } from './ReportModal'
 
 const bigStarPinkIcon = require('../../../../assets/icons/common/big-star-pink.svg')
 
@@ -36,6 +37,11 @@ export function FeedScreen() {
 
   const [tab, setTab] = useState<FeedTab>('works')
   const [pick, setPick] = useState<string>('all')
+  const [reportTarget, setReportTarget] = useState<{
+    profileImageUrl?: string | null
+    nickname: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
 
   const worksId = pick !== 'all' ? Number(pick) : 0
 
@@ -81,13 +87,17 @@ export function FeedScreen() {
 
   // ── Report / Delete ──────────────────────────────────────────────────────────
   const handleReport = useCallback(
-    async (boardId: number, writerUserId: number) => {
-      const result = await reportBoard({ boardId, reportedUserId: writerUserId })
-      if (result.status === 'duplicated') {
-        Alert.alert('알림', result.message ?? '이미 신고한 글이에요.')
-      } else {
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      }
+    (boardId: number, writerUserId: number, reportedProfile: { profileImageUrl?: string | null; nickName: string }) => {
+      setReportTarget({
+        profileImageUrl: reportedProfile.profileImageUrl,
+        nickname: reportedProfile.nickName,
+        onConfirm: async () => {
+          const result = await reportBoard({ boardId, reportedUserId: writerUserId })
+          if (result.status === 'duplicated') {
+            throw new Error('이미 신고한 유저예요.')
+          }
+        },
+      })
     },
     [],
   )
@@ -122,7 +132,7 @@ export function FeedScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   const renderItem = useCallback(
-    ({ item }: { item: FeedBoardItem }) => {
+    ({ item, index }: { item: FeedBoardItem; index: number }) => {
       const { board, profile, works, images } = item
       const override = likeOverrides.current.get(board.boardId)
       const isLiked = override?.isLiked ?? board.isLiked
@@ -176,13 +186,14 @@ export function FeedScreen() {
           }
           onOpenReport={
             !isMine
-              ? () => handleReport(board.boardId, profile.userId)
+              ? () => handleReport(board.boardId, profile.userId, profile)
               : undefined
           }
           onOpenDelete={
             isMine ? () => handleDelete(board.boardId) : undefined
           }
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
+          birthdayTheme={index % 2 === 0}
         />
       )
     },
@@ -225,16 +236,30 @@ export function FeedScreen() {
     </View>
   )
 
+  const reportModal = (
+    <ReportModal
+      visible={reportTarget != null}
+      profileImageUrl={reportTarget?.profileImageUrl}
+      nickname={reportTarget?.nickname ?? ''}
+      onClose={() => setReportTarget(null)}
+      onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
+    />
+  )
+
   if (tab === 'writers') {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
-        {writersComingSoon}
-      </View>
+      <>
+        <View style={[styles.screen, { paddingTop: insets.top }]}>
+          <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
+          {writersComingSoon}
+        </View>
+        {reportModal}
+      </>
     )
   }
 
   return (
+    <>
     <FlatList
       style={[styles.screen, { paddingTop: insets.top }]}
       data={items}
@@ -284,6 +309,8 @@ export function FeedScreen() {
         />
       }
     />
+    {reportModal}
+    </>
   )
 }
 

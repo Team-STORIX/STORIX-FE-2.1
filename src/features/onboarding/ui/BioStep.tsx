@@ -3,21 +3,27 @@ import { StyleSheet, Text, TextInput, View } from 'react-native'
 export function BioStep({
   value,
   onChange,
+  showHeader = true,
 }: {
   value: string
   onChange: (value: string) => void
+  showHeader?: boolean
 }) {
   return (
     <View>
-      <Text style={styles.title}>한 줄 소개를 작성해 주세요</Text>
-      <Text style={styles.subtitle}>내 취향과 마음을 표현해보세요</Text>
+      {showHeader && (
+        <>
+          <Text style={styles.title}>한 줄 소개를 작성해 주세요</Text>
+          <Text style={styles.subtitle}>내 취향을 마음껏 표현해보세요</Text>
+        </>
+      )}
 
-      <View style={styles.inputBlock}>
+      <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
         <View style={styles.inputUnderline}>
           <TextInput
             value={value}
             onChangeText={(next) => onChange(next.slice(0, 30))}
-            placeholder="자기소개를 입력해보세요 !"
+            placeholder="나를 소개하는 글을 적어보세요"
             placeholderTextColor="#B0A5AA"
             style={styles.input}
             autoCorrect={false}
@@ -55,7 +61,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#CDC4C8',
     paddingTop: 12,
-    paddingBottom: 12,
+    paddingBottom: 10,
     paddingRight: 10,
     paddingLeft: 8,
   },

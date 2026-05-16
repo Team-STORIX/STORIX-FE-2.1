@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { Gray, Magenta, Typography } from '../../../theme'
@@ -9,32 +9,16 @@ import type { FavoriteWork } from '../types'
 import { useProfileFavoriteWorks } from '../hooks/useProfileFavoriteWorks'
 import { ProfileLikedWorkItem } from './ProfileLikedWorkItem'
 import { ProfileLikesEmptyState } from './ProfileLikesEmptyState'
-import { ProfileLikesTabs, type ProfileLikesTab } from './ProfileLikesTabs'
 import { ProfileLikesTopBar } from './ProfileLikesTopBar'
-
-const TAB_VALUES: ProfileLikesTab[] = ['works', 'writers']
-
-const isLikesTab = (value: string | string[] | undefined): value is ProfileLikesTab =>
-  typeof value === 'string' && TAB_VALUES.includes(value as ProfileLikesTab)
 
 export function ProfileLikesScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const params = useLocalSearchParams<{ tab?: string }>()
-  const initialTab: ProfileLikesTab = isLikesTab(params.tab) ? params.tab : 'works'
-  const [activeTab, setActiveTab] = useState<ProfileLikesTab>(initialTab)
-  const worksQuery = useProfileFavoriteWorks(activeTab === 'works')
+  const worksQuery = useProfileFavoriteWorks(true)
   const [pendingWorkRemoved, setPendingWorkRemoved] = useState<Set<number>>(new Set())
   const pendingRef = useRef({ pendingWorkRemoved })
-  const prevTabRef = useRef<ProfileLikesTab>(activeTab)
   const commitWorksLockRef = useRef(false)
-
-  useEffect(() => {
-    if (initialTab !== activeTab) {
-      setActiveTab(initialTab)
-    }
-  }, [activeTab, initialTab])
 
   useEffect(() => {
     pendingRef.current = { pendingWorkRemoved }
@@ -60,20 +44,6 @@ export function ProfileLikesScreen() {
   }, [queryClient])
 
   useEffect(() => {
-    const previousTab = prevTabRef.current
-    if (previousTab === activeTab) return
-
-    const commitPrevious = async () => {
-      if (previousTab === 'works') {
-        await commitWorks()
-      }
-      prevTabRef.current = activeTab
-    }
-
-    void commitPrevious()
-  }, [activeTab, commitWorks])
-
-  useEffect(() => {
     return () => {
       void commitWorks()
     }
@@ -87,11 +57,6 @@ export function ProfileLikesScreen() {
     [pendingWorkRemoved, worksQuery.data?.pages],
   )
 
-  const query = activeTab === 'works'
-    ? worksQuery
-    : { hasNextPage: false, isFetchingNextPage: false, fetchNextPage: async () => {}, isLoading: false, isError: false }
-  const data: FavoriteWork[] = activeTab === 'works' ? works : []
-
   const handleBack = () => {
     if ('canGoBack' in router && router.canGoBack()) {
       router.back()
@@ -100,32 +65,26 @@ export function ProfileLikesScreen() {
     router.replace('/(tabs)/profile')
   }
 
-  const handleChangeTab = (tab: ProfileLikesTab) => {
-    if (tab === activeTab) return
-    setActiveTab(tab)
-  }
-
   const renderHeader = () => (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ paddingTop: insets.top }}>
         <ProfileLikesTopBar onBack={handleBack} />
       </View>
-      <ProfileLikesTabs activeTab={activeTab} onChange={handleChangeTab} />
     </>
   )
 
   const renderFooter = () => {
-    if (!query.hasNextPage && !query.isFetchingNextPage) {
+    if (!worksQuery.hasNextPage && !worksQuery.isFetchingNextPage) {
       return <View style={{ height: insets.bottom + 24 }} />
     }
 
     return (
       <View style={styles.footer}>
-        {query.isFetchingNextPage ? (
+        {worksQuery.isFetchingNextPage ? (
           <ActivityIndicator size="small" color={Magenta[300]} />
         ) : (
-          <Pressable onPress={() => void query.fetchNextPage()}>
+          <Pressable onPress={() => void worksQuery.fetchNextPage()}>
             <Text style={styles.footerText}>{'더 보기'}</Text>
           </Pressable>
         )}
@@ -135,8 +94,7 @@ export function ProfileLikesScreen() {
 
   return (
     <FlatList<FavoriteWork>
-      data={data}
-      key={activeTab}
+      data={works}
       style={styles.list}
       contentContainerStyle={{
         flexGrow: 1,
@@ -146,24 +104,24 @@ export function ProfileLikesScreen() {
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderFooter}
       ListEmptyComponent={
-        query.isLoading ? (
+        worksQuery.isLoading ? (
           <View style={styles.inlineState}>
             <Text style={styles.inlineStateText}>{'불러오는 중...'}</Text>
           </View>
-        ) : query.isError ? (
+        ) : worksQuery.isError ? (
           <View style={styles.inlineState}>
             <Text style={styles.inlineStateText}>
-              {'관심 정보를 불러오지 못했어요.'}
+              {'관심 작품을 불러오지 못했어요.'}
             </Text>
           </View>
         ) : (
-          <ProfileLikesEmptyState tab={activeTab} />
+          <ProfileLikesEmptyState tab="works" />
         )
       }
       onEndReachedThreshold={0.4}
       onEndReached={() => {
-        if (query.hasNextPage && !query.isFetchingNextPage) {
-          void query.fetchNextPage()
+        if (worksQuery.hasNextPage && !worksQuery.isFetchingNextPage) {
+          void worksQuery.fetchNextPage()
         }
       }}
       renderItem={({ item }) => (

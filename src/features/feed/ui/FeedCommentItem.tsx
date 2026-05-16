@@ -97,9 +97,8 @@ export function FeedCommentItem(props: Props) {
             style={styles.actionIcon}
             contentFit="contain"
           />
+          {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
         </Pressable>
-
-        {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
 
         {props.variant === 'reply' ? (
           <Pressable
@@ -215,10 +214,12 @@ const styles = StyleSheet.create({
     right: 0,
     top: 28,
     zIndex: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    shadowColor: '#131112',
+    shadowOpacity: 0.20,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   dropdownImage: {
@@ -237,6 +238,7 @@ const styles = StyleSheet.create({
   iconButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   replyButton: {
     flexDirection: 'row',

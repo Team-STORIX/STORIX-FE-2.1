@@ -134,7 +134,7 @@ export function OnboardingScreen() {
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <OnboardingTopBar onBack={handleBack} onSkip={step < 5 ? handleSkip : undefined} />
+        <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
         {step <= 4 ? (
           <View style={styles.progressWrap}>

@@ -2,6 +2,16 @@ import { apiClient } from '../../../lib/api/axios-instance'
 import type { ApiResponse } from '../../../lib/api/types'
 import type { MeProfileResult } from '../../../types/profile'
 
+export type GenreStatItem = {
+  genre: string
+  score: number
+}
+
+export const getGenreStats = async (): Promise<ApiResponse<GenreStatItem[]>> => {
+  const res = await apiClient.get('/api/v1/profile/reader/stats')
+  return res.data as ApiResponse<GenreStatItem[]>
+}
+
 export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {
   const res = await apiClient.get('/api/v1/profile/me')
   return res.data as ApiResponse<MeProfileResult>
