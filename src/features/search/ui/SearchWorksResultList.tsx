@@ -3,11 +3,11 @@ import { Image } from 'expo-image'
 import { C } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import type { WorksSearchItem } from '../api'
+import { SearchEmptyState } from './SearchEmptyState'
 
 const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
 
 type Props = {
-  keyword: string
   data: WorksSearchItem[]
   isLoading: boolean
   isError: boolean
@@ -15,21 +15,11 @@ type Props = {
   hasNextPage: boolean
   onEndReached: () => void
   onPressItem: (item: WorksSearchItem) => void
-}
-
-function EmptyState({ keyword }: { keyword: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>검색 결과가 없어요.</Text>
-      <Text style={styles.emptyBody}>
-        "{keyword}"에 맞는 작품을 찾지 못했어요.
-      </Text>
-    </View>
-  )
+  recommendationKeyword?: string | null
+  onPressRecommendation?: (keyword: string) => void
 }
 
 export function SearchWorksResultList({
-  keyword,
   data,
   isLoading,
   isError,
@@ -37,6 +27,8 @@ export function SearchWorksResultList({
   hasNextPage,
   onEndReached,
   onPressItem,
+  recommendationKeyword,
+  onPressRecommendation,
 }: Props) {
   if (isLoading) {
     return (
@@ -103,7 +95,12 @@ export function SearchWorksResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={<EmptyState keyword={keyword} />}
+      ListEmptyComponent={
+        <SearchEmptyState
+          recommendationKeyword={recommendationKeyword}
+          onPressRecommendation={onPressRecommendation}
+        />
+      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -180,23 +177,6 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     flexGrow: 1,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 120,
-  },
-  emptyTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    marginBottom: 6,
-  },
-  emptyBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
   },
   footer: {
     paddingVertical: 20,

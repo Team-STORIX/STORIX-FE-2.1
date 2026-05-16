@@ -18,7 +18,7 @@ export function FeedTopbar({ activeTab, onChange }: FeedTopbarProps) {
       </Pressable>
       <Pressable onPress={() => onChange('writers')} hitSlop={8}>
         <Text style={[styles.tab, activeTab === 'writers' ? styles.tabActive : styles.tabInactive]}>
-          관심 작가
+          토픽룸
         </Text>
       </Pressable>
     </View>

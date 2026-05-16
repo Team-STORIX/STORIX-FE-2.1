@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Image } from "expo-image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -11,44 +12,45 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { S } from '../../../theme/spacing'
-import { Typography } from '../../../theme/typography'
-import type { PlusWorksSearchItem } from '../api'
-import { usePlusWorksSearch } from '../hooks'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { S } from "../../../theme/spacing";
+import { Typography } from "../../../theme/typography";
+import type { PlusWorksSearchItem } from "../api";
+import { usePlusWorksSearch } from "../hooks";
 
-const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
-const searchIcon = require('../../../../assets/icons/common/search.svg')
-const activeIcon = require('../../../../assets/icons/common/active.svg')
-const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
+const searchIcon = require("../../../../assets/icons/common/search.svg");
+const activeIcon = require("../../../../assets/icons/common/active.svg");
+const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
+const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
+const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
 export type PickedFeedWork = {
-  id: number
-  title: string
-  meta: string
-  thumb: string
-}
+  id: number;
+  title: string;
+  meta: string;
+  thumb: string;
+};
 
 type Props = {
-  visible: boolean
-  onClose: () => void
-  onPick: (work: PickedFeedWork) => void
-}
+  visible: boolean;
+  onClose: () => void;
+  onPick: (work: PickedFeedWork) => void;
+};
 
 function WorkItemRow({
   item,
   selected,
   onPress,
 }: {
-  item: PlusWorksSearchItem
-  selected: boolean
-  onPress: () => void
+  item: PlusWorksSearchItem;
+  selected: boolean;
+  onPress: () => void;
 }) {
-  const meta = [item.artistName, item.worksType].filter(Boolean).join(' · ')
+  const meta = [item.artistName, item.worksType].filter(Boolean).join(" · ");
 
   return (
     <Pressable
@@ -69,7 +71,7 @@ function WorkItemRow({
 
       <View style={styles.itemTextWrap}>
         <Text style={styles.itemTitle} numberOfLines={1}>
-          {item.worksName ?? '작품'}
+          {item.worksName ?? "작품"}
         </Text>
         {meta ? (
           <Text style={styles.itemMeta} numberOfLines={1}>
@@ -79,58 +81,62 @@ function WorkItemRow({
       </View>
 
       <Image
-        source={selected ? activeIcon : deactiveIcon}
+        source={selected ? checkPinkIcon : checkGrayIcon}
         style={styles.selectIcon}
         contentFit="contain"
       />
     </Pressable>
-  )
+  );
 }
 
-export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) {
-  const insets = useSafeAreaInsets()
-  const progress = useRef(new Animated.Value(0)).current
-  const [keyword, setKeyword] = useState('')
-  const [debouncedKeyword, setDebouncedKeyword] = useState('')
-  const [selectedWorkId, setSelectedWorkId] = useState<number | undefined>()
+export function FeedWritePickerBottomSheet({
+  visible,
+  onClose,
+  onPick,
+}: Props) {
+  const insets = useSafeAreaInsets();
+  const progress = useRef(new Animated.Value(0)).current;
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [selectedWorkId, setSelectedWorkId] = useState<number | undefined>();
 
   useEffect(() => {
     if (!visible) {
-      progress.setValue(0)
-      return
+      progress.setValue(0);
+      return;
     }
 
-    setKeyword('')
-    setDebouncedKeyword('')
-    setSelectedWorkId(undefined)
+    setKeyword("");
+    setDebouncedKeyword("");
+    setSelectedWorkId(undefined);
 
     Animated.timing(progress, {
       toValue: 1,
       duration: 220,
       useNativeDriver: true,
-    }).start()
-  }, [progress, visible])
+    }).start();
+  }, [progress, visible]);
 
   useEffect(() => {
-    if (!visible) return
-    const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 300)
-    return () => clearTimeout(t)
-  }, [keyword, visible])
+    if (!visible) return;
+    const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 300);
+    return () => clearTimeout(t);
+  }, [keyword, visible]);
 
   const searchQuery = usePlusWorksSearch({
     keyword: debouncedKeyword,
     size: 20,
-  })
+  });
 
   const works = useMemo(
     () => searchQuery.data?.pages.flatMap((page) => page.result.content) ?? [],
     [searchQuery.data?.pages],
-  )
+  );
 
   const selectedWork = useMemo(
     () => works.find((w) => w.worksId === selectedWorkId),
     [selectedWorkId, works],
-  )
+  );
 
   const handleClose = (after?: () => void) => {
     Animated.timing(progress, {
@@ -139,26 +145,26 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
-        onClose()
-        after?.()
+        onClose();
+        after?.();
       }
-    })
-  }
+    });
+  };
 
-  if (!visible) return null
+  if (!visible) return null;
 
   const onConfirm = () => {
-    if (!selectedWork) return
+    if (!selectedWork) return;
     const picked: PickedFeedWork = {
       id: Number(selectedWork.worksId),
-      title: selectedWork.worksName ?? '',
+      title: selectedWork.worksName ?? "",
       meta: [selectedWork.artistName, selectedWork.worksType]
         .filter(Boolean)
-        .join(' · '),
-      thumb: selectedWork.thumbnailUrl ?? '',
-    }
-    handleClose(() => onPick(picked))
-  }
+        .join(" · "),
+      thumb: selectedWork.thumbnailUrl ?? "",
+    };
+    handleClose(() => onPick(picked));
+  };
 
   return (
     <Modal
@@ -200,7 +206,7 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
           ]}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.keyboardWrap}
           >
             <View style={styles.header}>
@@ -234,8 +240,8 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
                 <Pressable
                   style={styles.clearButton}
                   onPress={() => {
-                    setKeyword('')
-                    setSelectedWorkId(undefined)
+                    setKeyword("");
+                    setSelectedWorkId(undefined);
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="검색어 지우기"
@@ -296,7 +302,7 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
                       searchQuery.hasNextPage &&
                       !searchQuery.isFetchingNextPage
                     ) {
-                      void searchQuery.fetchNextPage()
+                      void searchQuery.fetchNextPage();
                     }
                   }}
                   ListFooterComponent={
@@ -323,7 +329,7 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
                   accessibilityRole="button"
                 >
                   <Text style={styles.primaryButtonText}>
-                    선택 작품 피드 쓰기
+                    선택 작품 게시글 쓰기
                   </Text>
                 </Pressable>
               </View>
@@ -332,17 +338,17 @@ export function FeedWritePickerBottomSheet({ visible, onClose, onPick }: Props) 
         </Animated.View>
       </Animated.View>
     </Modal>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   sheet: {
-    height: '80%',
+    height: "80%",
     borderTopLeftRadius: Radius.lg,
     borderTopRightRadius: Radius.lg,
     backgroundColor: C.card,
@@ -352,9 +358,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 28,
     paddingBottom: 28,
   },
@@ -365,8 +371,8 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeIcon: {
     width: 20,
@@ -374,7 +380,7 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     marginBottom: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   searchInput: {
     borderRadius: Radius.md,
@@ -388,18 +394,18 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
   },
   searchFieldIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     width: 20,
     height: 20,
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 12,
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   clearIcon: {
     width: 16,
@@ -412,8 +418,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     padding: 8,
     borderRadius: Radius.sm,
@@ -422,7 +428,7 @@ const styles = StyleSheet.create({
     width: 87,
     height: 116,
     borderRadius: Radius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[100],
   },
   itemThumb: {
@@ -448,8 +454,8 @@ const styles = StyleSheet.create({
   },
   stateWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: 40,
   },
   stateText: {
@@ -466,8 +472,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: Radius.md,
     backgroundColor: C.text,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   primaryButtonText: {
     ...Typography.body1Medium,
@@ -476,4 +482,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-})
+});

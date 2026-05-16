@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { C, Gray, Typography } from '../../../theme'
 import { useProfileStore } from '../store/profile.store'
-import { updateProfileDescription, updateProfileNickname } from '../api'
+import { updateProfileDescription, updateProfileNickname, uploadAndSetProfileImage } from '../api'
 import { ME_QUERY_KEY, useMe } from '../hooks/useMe'
-import { ProfileEditBioField } from './ProfileEditBioField'
+import { BioStep } from '../../onboarding/ui/BioStep'
 import { ProfileEditNicknameField } from './ProfileEditNicknameField'
 import { ProfileEditTopBar } from './ProfileEditTopBar'
 
@@ -30,6 +31,8 @@ export function ProfileEditScreen() {
   const [initialBioText, setInitialBioText] = useState('')
   const [nicknameVerified, setNicknameVerified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [localProfileImageUri, setLocalProfileImageUri] = useState<string | undefined>()
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -61,11 +64,32 @@ export function ProfileEditScreen() {
     router.replace('/(tabs)/profile')
   }
 
-  const handleProfileImagePress = () => {
-    Alert.alert(
-      '\uc548\ub0b4',
-      '\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\ub294 \ub124\uc774\ud2f0\ube0c \uc5f0\ub3d9 \uc900\ube44 \uc911\uc774\uc5d0\uc694.',
-    )
+  const handleProfileImagePress = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert('\uad8c\ud55c \ud544\uc694', '\uac24\ub7ec\ub9ac \uc811\uadfc \uad8c\ud55c\uc774 \ud544\uc694\ud574\uc694. \uc124\uc815\uc5d0\uc11c \ud5c8\uc6a9\ud574 \uc8fc\uc138\uc694.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.8,
+    })
+    if (result.canceled || !result.assets[0]) return
+
+    const uri = result.assets[0].uri
+    setLocalProfileImageUri(uri)
+    setIsUploadingImage(true)
+    try {
+      await uploadAndSetProfileImage(uri)
+      patchMe({ profileImageUrl: uri })
+      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    } catch {
+      Alert.alert('\uc624\ub958', '\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
+      setLocalProfileImageUri(undefined)
+    } finally {
+      setIsUploadingImage(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -77,7 +101,7 @@ export function ProfileEditScreen() {
       if (nicknameChanged) {
         const response = await updateProfileNickname(nickname.trim())
         if (!response.isSuccess) {
-          throw new Error(response.message || '\ub2c9\ub124\uc784 \ubcc0\uacbd\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
+          throw new Error(response.message || '닉네임 변경에 실패했어요.')
         }
         patchMe({ nickName: nickname.trim() })
       }
@@ -85,17 +109,15 @@ export function ProfileEditScreen() {
       if (bioChanged) {
         const response = await updateProfileDescription(bioText)
         if (!response.isSuccess) {
-          throw new Error(
-            response.message || '\ud55c\uc904\uc18c\uac1c \ubcc0\uacbd\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.',
-          )
+          throw new Error(response.message || '한줄소개 변경에 실패했어요.')
         }
         patchMe({ profileDescription: bioText })
       }
 
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
-      Alert.alert('\uc644\ub8cc', '\ud504\ub85c\ud544 \uc218\uc815\uc774 \uc644\ub8cc\ub418\uc5c8\uc5b4\uc694.', [
+      Alert.alert('완료', '프로필 수정이 완료되었어요.', [
         {
-          text: '\ud655\uc778',
+          text: '확인',
           onPress: () => router.replace('/(tabs)/profile'),
         },
       ])
@@ -103,8 +125,8 @@ export function ProfileEditScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : '\ud504\ub85c\ud544 \uc218\uc815 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc5b4\uc694.'
-      Alert.alert('\uc624\ub958', message)
+          : '프로필 수정 중 오류가 발생했어요.'
+      Alert.alert('오류', message)
     } finally {
       setIsSaving(false)
     }
@@ -113,7 +135,7 @@ export function ProfileEditScreen() {
   if (!me) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.loadingText}>{'\ud504\ub85c\ud544\uc744 \ubd88\ub7ec\uc624\ub294 \uc911...'}</Text>
+        <Text style={styles.loadingText}>프로필을 불러오는 중...</Text>
       </View>
     )
   }
@@ -134,16 +156,23 @@ export function ProfileEditScreen() {
       <View style={styles.imageSection}>
         <View style={styles.imageFrame}>
           <Image
-            source={me.profileImageUrl ? { uri: me.profileImageUrl } : defaultProfileImage}
-            style={styles.profileImage}
+            source={
+              localProfileImageUri
+                ? { uri: localProfileImageUri }
+                : me.profileImageUrl
+                  ? { uri: me.profileImageUrl }
+                  : defaultProfileImage
+            }
+            style={[styles.profileImage, isUploadingImage && styles.imageUploading]}
             contentFit="cover"
           />
 
           <Pressable
-            onPress={handleProfileImagePress}
+            onPress={() => void handleProfileImagePress()}
+            disabled={isUploadingImage}
             style={({ pressed }) => [styles.imageEditButton, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={'\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \ubcc0\uacbd'}
+            accessibilityLabel="프로필 이미지 변경"
           >
             <Image source={profileChangeIcon} style={styles.imageEditIcon} contentFit="contain" />
           </Pressable>
@@ -151,7 +180,7 @@ export function ProfileEditScreen() {
       </View>
 
       <View style={styles.formSection}>
-        <Text style={styles.fieldLabel}>{'\ub2c9\ub124\uc784'}</Text>
+        <Text style={styles.fieldLabel}>닉네임</Text>
         <View style={styles.fieldSpacer} />
         <ProfileEditNicknameField
           currentNickname={initialNickname}
@@ -161,9 +190,9 @@ export function ProfileEditScreen() {
         />
 
         <View style={styles.bioSection}>
-          <Text style={styles.fieldLabel}>{'\ud55c\uc904\uc18c\uac1c'}</Text>
+          <Text style={styles.fieldLabel}>한줄소개</Text>
           <View style={styles.fieldSpacer} />
-          <ProfileEditBioField value={bioText} onChange={setBioText} />
+          <BioStep value={bioText} onChange={setBioText} showHeader={false} />
         </View>
       </View>
     </ScrollView>
@@ -202,6 +231,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Gray[200],
     backgroundColor: C.card,
+  },
+  imageUploading: {
+    opacity: 0.5,
   },
   imageEditButton: {
     position: 'absolute',

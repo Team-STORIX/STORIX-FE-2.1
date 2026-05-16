@@ -18,7 +18,12 @@ export type ReplyItem = {
     lastCreatedTime: string
     likeCount: number
     isLiked: boolean
+    depth?: number
+    childReplyCount?: number
+    parentReplyId?: number
+    deleted?: boolean
   }
+  childReplies?: ReplyItem[]
 }
 
 export type BoardDetailResult = {

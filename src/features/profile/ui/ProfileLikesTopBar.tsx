@@ -15,12 +15,12 @@ export function ProfileLikesTopBar({ onBack }: Props) {
         onPress={onBack}
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={'\ub4a4\ub85c\uac00\uae30'}
+        accessibilityLabel="뒤로가기"
       >
         <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
       </Pressable>
 
-      <Text style={styles.title}>{'\uad00\uc2ec'}</Text>
+      <Text style={styles.title}>관심작품</Text>
     </View>
   )
 }

@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,7 +19,7 @@ import { Gray, Magenta } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { useMe } from '../../profile'
-import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
+import { reportReply } from '../api/feed/readerReply.api'
 import {
   createReply,
   createSubReply,
@@ -32,6 +32,7 @@ import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
 import { FeedCommentInput } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
+import { ReportModal } from './ReportModal'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -77,6 +78,22 @@ export function FeedDetailScreen() {
   const [openReplyMenuId, setOpenReplyMenuId] = useState<number | null>(null)
   const [openSubReplyMenuId, setOpenSubReplyMenuId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [replyCountDelta, setReplyCountDelta] = useState(0)
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true)
+    })
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false)
+    })
+
+    return () => {
+      showSubscription.remove()
+      hideSubscription.remove()
+    }
+  }, [])
 
   const board = boardItem?.board
   const profile = boardItem?.profile
@@ -176,18 +193,18 @@ export function FeedDetailScreen() {
     ])
   }, [boardId, qc, router])
 
-  const onReportBoard = useCallback(async () => {
+  const onReportBoard = useCallback(() => {
     if (!boardId || !profile) return
-    try {
-      const result = await reportBoard({ boardId, reportedUserId: profile.userId })
-      if (result.status === 'duplicated') {
-        Alert.alert('알림', result.message)
-      } else {
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      }
-    } catch {
-      Alert.alert('오류', '신고에 실패했어요.')
-    }
+    setReportTarget({
+      profileImageUrl: profile.profileImageUrl,
+      nickname: profile.nickName,
+      onConfirm: async () => {
+        const result = await reportBoard({ boardId, reportedUserId: profile.userId })
+        if (result.status === 'duplicated') {
+          throw new Error('이미 신고한 유저예요.')
+        }
+      },
+    })
   }, [boardId, profile])
 
   const onDeleteReply = useCallback(
@@ -208,7 +225,6 @@ export function FeedDetailScreen() {
                     (item) => item.reply.replyId !== replyId,
                   ),
                 }))
-                return
               }
               await detailQuery.refetch()
             } catch {
@@ -222,18 +238,19 @@ export function FeedDetailScreen() {
   )
 
   const onReportReply = useCallback(
-    async (replyId: number, reportedUserId: number) => {
+    (
+      replyId: number,
+      reportedUserId: number,
+      authorProfile: { profileImageUrl?: string | null; nickName: string },
+    ) => {
       if (!boardId) return
-      try {
-        await reportReply({ boardId, replyId, reportedUserId })
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      } catch (error) {
-        if (isAlreadyReportedError(error)) {
-          Alert.alert('알림', '이미 신고한 댓글이에요.')
-          return
-        }
-        Alert.alert('오류', '신고에 실패했어요.')
-      }
+      setReportTarget({
+        profileImageUrl: authorProfile.profileImageUrl,
+        nickname: authorProfile.nickName,
+        onConfirm: async () => {
+          await reportReply({ boardId, replyId, reportedUserId })
+        },
+      })
     },
     [boardId],
   )
@@ -266,6 +283,7 @@ export function FeedDetailScreen() {
         ...prev,
         [targetId]: [...(prev[targetId] ?? []), newSubReply],
       }))
+      setReplyCountDelta((prev) => prev + 1)
       setReplyTargetId(null)
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
@@ -273,11 +291,20 @@ export function FeedDetailScreen() {
 
       try {
         await createSubReply({ boardId, replyId: targetId, comment: trimmed })
+        await detailQuery.refetch()
+        setSubRepliesMap((prev) => {
+          const next = { ...prev }
+          delete next[targetId]
+          return next
+        })
+        setReplyCountDelta(0)
+        await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
       } catch {
         setSubRepliesMap((prev) => ({
           ...prev,
           [targetId]: (prev[targetId] ?? []).filter((r) => r.reply.replyId !== tempId),
         }))
+        setReplyCountDelta((prev) => Math.max(0, prev - 1))
         Alert.alert('오류', '대댓글 등록에 실패했어요. 다시 시도해 주세요.')
       }
       return
@@ -286,6 +313,8 @@ export function FeedDetailScreen() {
     try {
       await createReply({ boardId, comment: trimmed })
       await detailQuery.refetch()
+      setReplyCountDelta(0)
+      await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
     } catch {
@@ -315,11 +344,7 @@ export function FeedDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { paddingTop: insets.top }]}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : insets.bottom}
-    >
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -342,7 +367,12 @@ export function FeedDetailScreen() {
           </Pressable>
         </View>
       ) : (
-        <>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior="padding"
+          enabled={keyboardVisible}
+          keyboardVerticalOffset={0}
+        >
           <ScrollView
               ref={scrollRef}
               style={styles.flex}
@@ -381,22 +411,18 @@ export function FeedDetailScreen() {
                     : null
                 }
                 isSpoiler={board.isSpoiler ?? false}
+                spoilerScript={board.spoilerScript}
                 isLiked={effectivePostLike.isLiked}
                 likeCount={effectivePostLike.likeCount}
-                replyCount={board.replyCount}
+                replyCount={board.replyCount + replyCountDelta}
                 onToggleLike={onTogglePostLike}
                 onClickWorksArrow={
                   board.isWorksSelected && board.worksId ? () => router.push(`/works/${board.worksId}` as const) : undefined
                 }
                 onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
+                birthdayTheme={board.boardId % 2 === 0}
               />
-
-              {board.replyCount > 0 ? (
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentHeaderText}>댓글 {board.replyCount}</Text>
-                </View>
-              ) : null}
 
               {replies.map((item) => {
                 const override = replyLikeOverrides[item.reply.replyId]
@@ -408,7 +434,7 @@ export function FeedDetailScreen() {
                       variant="reply"
                       myUserId={myUserId}
                       item={merged}
-                      subReplyCount={(subRepliesMap[item.reply.replyId] ?? []).length}
+                      subReplyCount={(item.childReplies ?? []).length + (subRepliesMap[item.reply.replyId] ?? []).length}
                       isMenuOpen={openReplyMenuId === item.reply.replyId}
                       onToggleMenu={() =>
                         setOpenReplyMenuId((prev) =>
@@ -427,10 +453,10 @@ export function FeedDetailScreen() {
                         )
                       }
                       onOpenDelete={() => onDeleteReply(item.reply.replyId)}
-                      onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId)}
+                      onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId, item.profile)}
                     />
 
-                    {(subRepliesMap[item.reply.replyId] ?? []).map((subReply) => {
+                    {[...(item.childReplies ?? []), ...(subRepliesMap[item.reply.replyId] ?? [])].map((subReply) => {
                       const subOverride =
                         subReplyLikeOverrides[item.reply.replyId]?.[subReply.reply.replyId]
                       const mergedSub = subOverride
@@ -459,7 +485,7 @@ export function FeedDetailScreen() {
                             onDeleteReply(subReply.reply.replyId, item.reply.replyId)
                           }
                           onOpenReport={() =>
-                            onReportReply(subReply.reply.replyId, subReply.reply.userId)
+                            onReportReply(subReply.reply.replyId, subReply.reply.userId, subReply.profile)
                           }
                         />
                       )
@@ -473,18 +499,16 @@ export function FeedDetailScreen() {
               ) : null}
             </ScrollView>
 
-            <View style={{ paddingBottom: insets.bottom }}>
-              <FeedCommentInput
-                profileImageUrl={me?.profileImageUrl}
-                replyTargetActive={replyTargetId != null}
-                value={commentText}
-                onChangeText={setCommentText}
-                onSubmit={onSubmitComment}
-              />
-            </View>
-          </>
+            <FeedCommentInput
+              profileImageUrl={me?.profileImageUrl}
+              replyTargetActive={replyTargetId != null}
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmit={onSubmitComment}
+            />
+          </KeyboardAvoidingView>
         )}
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 
@@ -524,15 +548,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 24,
-  },
-  commentHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-  },
-  commentHeaderText: {
-    ...Typography.body2Medium,
-    color: Gray[900],
   },
   centerState: {
     flex: 1,

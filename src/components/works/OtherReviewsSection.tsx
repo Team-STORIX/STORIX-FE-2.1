@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   // 2.0: heading-2 -mx-4 px-5 pt-5 pb-3
   titleRow: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 12,
   },
@@ -105,18 +105,18 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   loaderRow: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'flex-start',
   },
   emptyText: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
   loadMoreButton: {
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
     minHeight: 48,
@@ -135,6 +135,7 @@ const styles = StyleSheet.create({
   loadMoreIcon: {
     width: 16,
     height: 16,
+    tintColor: C.primary,
   },
   pressed: {
     opacity: 0.7,

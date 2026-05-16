@@ -5,6 +5,7 @@ import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
 import { ReviewMetaBar } from './ReviewMetaBar'
+import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
 
 const arrowForwardIcon = require('../../../assets/icons/common/icon-arrow-forward.svg')
 const arrowSmallIcon = require('../../../assets/icons/common/icon-arrow-forward-small.svg')
@@ -37,12 +38,16 @@ export function MyReviewSection({
               if (myReview?.reviewId != null) onPressDetail(myReview.reviewId)
             }}
           >
-            <Text
-              style={styles.contentText}
-              numberOfLines={2}
-            >
-              {myReview?.content ?? ''}
-            </Text>
+            <View style={styles.contentTextWrap}>
+              <ReviewSpoilerBlock
+                isSpoiler={myReview?.isSpoiler === true}
+                spoilerScript={myReview?.spoilerScript}
+                content={myReview?.content ?? ''}
+                numberOfLines={2}
+                backgroundColor={C.bg}
+                textStyle={styles.contentText}
+              />
+            </View>
             <Image
               source={arrowForwardIcon}
               style={styles.arrowForward}
@@ -89,7 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.bg,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 20,
   },
@@ -109,6 +114,9 @@ const styles = StyleSheet.create({
   contentText: {
     ...Typography.body2Medium,
     color: C.textMuted,
+    paddingRight: 4,
+  },
+  contentTextWrap: {
     flex: 1,
     paddingRight: 8,
   },
@@ -161,6 +169,7 @@ const styles = StyleSheet.create({
   ctaArrow: {
     width: 16,
     height: 16,
+    tintColor: C.primary,
   },
   pressed: {
     opacity: 0.7,

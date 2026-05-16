@@ -1,13 +1,12 @@
+import { useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { deleteReply, toggleReplyLike } from '../../feed/api/feed/readerBoardDetail.api'
-import {
-  isAlreadyReportedError,
-  reportReply,
-} from '../../feed/api/feed/readerReply.api'
+import { reportReply } from '../../feed/api/feed/readerReply.api'
 import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
+import { ReportModal } from '../../feed/ui/ReportModal'
 import { C, Gray, Radius, Typography } from '../../../theme'
 
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -33,6 +32,7 @@ export function ProfileActivityCommentItem({
   const router = useRouter()
   const qc = useQueryClient()
   const isMine = currentUserId != null && item.reply.userId === currentUserId
+  const [reportModalVisible, setReportModalVisible] = useState(false)
 
   const syncReplyItem = (
     replyId: number,
@@ -109,24 +109,12 @@ export function ProfileActivityCommentItem({
     ])
   }
 
-  const handleReport = async () => {
-    try {
-      await reportReply({
-        boardId: item.reply.boardId,
-        replyId: item.reply.replyId,
-        reportedUserId: item.reply.userId,
-      })
-      Alert.alert('알림', '신고가 접수되었어요.')
-    } catch (error) {
-      if (isAlreadyReportedError(error)) {
-        Alert.alert('알림', '이미 신고한 댓글이에요.')
-        return
-      }
-      Alert.alert('오류', '신고에 실패했어요.')
-    }
+  const handleReport = () => {
+    setReportModalVisible(true)
   }
 
   return (
+    <>
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={() => router.push(`/feed/${item.reply.boardId}` as const)}
@@ -147,7 +135,7 @@ export function ProfileActivityCommentItem({
 
           <View style={styles.metaRow}>
             <Text style={styles.name}>{item.profile.nickName}</Text>
-            <Text style={styles.dot}>쨌</Text>
+            <Text style={styles.dot}> </Text>
             <Text style={styles.time}>{item.reply.lastCreatedTime}</Text>
           </View>
         </View>
@@ -203,6 +191,20 @@ export function ProfileActivityCommentItem({
         {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
       </View>
     </Pressable>
+    <ReportModal
+      visible={reportModalVisible}
+      profileImageUrl={item.profile.profileImageUrl}
+      nickname={item.profile.nickName}
+      onClose={() => setReportModalVisible(false)}
+      onConfirm={async () => {
+        await reportReply({
+          boardId: item.reply.boardId,
+          replyId: item.reply.replyId,
+          reportedUserId: item.reply.userId,
+        })
+      }}
+    />
+    </>
   )
 }
 
@@ -270,10 +272,12 @@ const styles = StyleSheet.create({
     right: 0,
     top: 28,
     zIndex: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    shadowColor: '#131112',
+    shadowOpacity: 0.20,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   dropdownImage: {

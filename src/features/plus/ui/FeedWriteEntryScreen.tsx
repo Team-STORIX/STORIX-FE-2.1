@@ -1,3 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
+import type { ImagePickerAsset, ImagePickerResult } from "expo-image-picker";
+import { requireOptionalNativeModule } from "expo-modules-core";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,15 +16,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Image } from "expo-image";
-import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
 import { useWorksDetail } from "../../works";
-import { useCreateReaderBoard } from "../hooks";
+import { useCreateReaderBoard, type FeedWriteImage } from "../hooks";
 import {
   FeedWritePickerBottomSheet,
   type PickedFeedWork,
@@ -34,12 +36,72 @@ const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
 const photoIcon = require("../../../../assets/icons/feed/icon-photo.svg");
 
 const MAX_CONTENT_LENGTH = 300;
+const MAX_IMAGE_COUNT = 3;
 const FEED_DEFAULT_SPOILER = "스포일러가 포함된 피드 보기";
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
+
+type PickedFeedImage = FeedWriteImage & {
+  id: string;
+};
+
+type ImagePickerModule = {
+  launchImageLibraryAsync: (options: {
+    mediaTypes: "images" | unknown;
+    allowsMultipleSelection: boolean;
+    selectionLimit: number;
+    orderedSelection: boolean;
+    quality: number;
+  }) => Promise<ImagePickerResult>;
+  MediaTypeOptions?: {
+    Images?: unknown;
+  };
+};
 
 function parseWorksId(raw?: string | string[]) {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+}
+
+function normalizeContentType(asset: ImagePickerAsset) {
+  const fromPicker = asset.mimeType?.toLowerCase();
+  if (fromPicker === "image/jpg") return "image/jpeg";
+  if (fromPicker) return fromPicker;
+
+  const extension = asset.uri.split("?")[0]?.split(".").pop()?.toLowerCase();
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  return "image/jpeg";
+}
+
+function loadImagePickerModule(): ImagePickerModule {
+  const nativeImagePicker = requireOptionalNativeModule("ExponentImagePicker");
+  if (!nativeImagePicker) {
+    throw new Error("이미지 첨부 기능을 사용하려면 앱을 새로 빌드해야 해요.");
+  }
+
+  const module = require("expo-image-picker");
+  const candidates = [
+    module,
+    module?.default,
+    module?.default?.default,
+  ] as ImagePickerModule[];
+
+  const imagePicker = candidates.find(
+    (candidate) => typeof candidate?.launchImageLibraryAsync === "function",
+  );
+
+  if (!imagePicker) {
+    throw new Error("이미지 선택 모듈을 불러오지 못했어요.");
+  }
+
+  return imagePicker;
 }
 
 export function FeedWriteEntryScreen() {
@@ -55,8 +117,10 @@ export function FeedWriteEntryScreen() {
   const [text, setText] = useState("");
   const [spoiler, setSpoiler] = useState(false);
   const [spoilerMessage, setSpoilerMessage] = useState("");
+  const [images, setImages] = useState<PickedFeedImage[]>([]);
 
   const submitMutation = useCreateReaderBoard();
+  const isSubmitting = submitMutation.isPending;
 
   // Hydrate selectedWork from worksId route param using useWorksDetail
   const initialWorksQuery = useWorksDetail(initialWorksId ?? 0);
@@ -93,7 +157,7 @@ export function FeedWriteEntryScreen() {
   };
 
   const onSubmit = async () => {
-    if (!canSubmit || submitMutation.isPending) return;
+    if (!canSubmit || isSubmitting) return;
 
     const isWorksSelected = !isWorksNotNeeded && !!selectedWork?.id;
     const worksId = selectedWork?.id ?? 0;
@@ -105,6 +169,7 @@ export function FeedWriteEntryScreen() {
         isSpoiler: spoiler,
         spoilerScript: spoiler ? spoilerMessage.trim() : "",
         content,
+        images,
       });
 
       queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -117,6 +182,71 @@ export function FeedWriteEntryScreen() {
         e instanceof Error ? e.message : "잠시 후 다시 시도해 주세요.",
       );
     }
+  };
+
+  const pickImages = async () => {
+    if (isSubmitting) return;
+
+    const remaining = MAX_IMAGE_COUNT - images.length;
+    if (remaining <= 0) {
+      Alert.alert(
+        "이미지 첨부",
+        `이미지는 최대 ${MAX_IMAGE_COUNT}장까지 첨부할 수 있어요.`,
+      );
+      return;
+    }
+
+    try {
+      const ImagePicker = loadImagePickerModule();
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? "images",
+        allowsMultipleSelection: remaining > 1,
+        selectionLimit: remaining,
+        orderedSelection: true,
+        quality: 1,
+      });
+
+      if (result.canceled) return;
+
+      const picked = result.assets
+        .map((asset, index) => {
+          const contentType = normalizeContentType(asset);
+          if (!ACCEPTED_IMAGE_TYPES.has(contentType)) return null;
+
+          return {
+            id: `${asset.uri}-${Date.now()}-${index}`,
+            uri: asset.uri,
+            contentType,
+          };
+        })
+        .filter((asset): asset is PickedFeedImage => asset !== null);
+
+      if (picked.length === 0) {
+        Alert.alert("이미지 첨부", "JPG, PNG, WEBP 이미지만 첨부할 수 있어요.");
+        return;
+      }
+
+      if (picked.length < result.assets.length) {
+        Alert.alert("이미지 첨부", "지원하지 않는 형식의 이미지는 제외했어요.");
+      }
+
+      setImages((current) => [...current, ...picked].slice(0, MAX_IMAGE_COUNT));
+    } catch (e) {
+      const message =
+        e instanceof Error && e.message.includes("ExponentImagePicker")
+          ? "이미지 첨부 기능을 사용하려면 앱을 새로 빌드해야 해요."
+          : e instanceof Error
+            ? e.message
+            : "이미지를 다시 선택해 주세요.";
+
+      Alert.alert("이미지 선택 실패", message);
+    }
+  };
+
+  const removeImage = (id: string) => {
+    if (isSubmitting) return;
+    setImages((current) => current.filter((image) => image.id !== id));
   };
 
   return (
@@ -145,11 +275,11 @@ export function FeedWriteEntryScreen() {
 
         <Pressable
           onPress={onSubmit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
           hitSlop={12}
           style={({ pressed }) => [
             styles.headerBtn,
-            pressed && canSubmit && styles.pressed,
+            pressed && canSubmit && !isSubmitting && styles.pressed,
           ]}
           accessibilityRole="button"
           accessibilityLabel="등록"
@@ -160,7 +290,9 @@ export function FeedWriteEntryScreen() {
             <Text
               style={[
                 styles.submitText,
-                canSubmit ? styles.submitTextActive : styles.submitTextDisabled,
+                canSubmit && !isSubmitting
+                  ? styles.submitTextActive
+                  : styles.submitTextDisabled,
               ]}
             >
               완료
@@ -171,10 +303,7 @@ export function FeedWriteEntryScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 80 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.worksHeaderRow}>
@@ -273,14 +402,60 @@ export function FeedWriteEntryScreen() {
           { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 },
         ]}
       >
-        {/* TODO(image-upload): native image picking is not yet wired; affordance is visual-only. */}
-        <View style={styles.imagePicker}>
-          <Image
-            source={photoIcon}
-            style={styles.photoIcon}
-            contentFit="contain"
-          />
-          <Text style={styles.imageCount}>0/3</Text>
+        <View style={styles.imageTool}>
+          <Pressable
+            onPress={pickImages}
+            disabled={isSubmitting || images.length >= MAX_IMAGE_COUNT}
+            style={({ pressed }) => [
+              styles.imagePicker,
+              pressed &&
+                !isSubmitting &&
+                images.length < MAX_IMAGE_COUNT &&
+                styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="이미지 추가"
+          >
+            <Image
+              source={photoIcon}
+              style={styles.photoIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.imageCount}>
+              {images.length}/{MAX_IMAGE_COUNT}
+            </Text>
+          </Pressable>
+
+          {images.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.previewScroll}
+              contentContainerStyle={styles.previewList}
+            >
+              {images.map((image) => (
+                <View key={image.id} style={styles.previewItem}>
+                  <Image
+                    source={{ uri: image.uri }}
+                    style={styles.previewImage}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    onPress={() => removeImage(image.id)}
+                    disabled={isSubmitting}
+                    style={({ pressed }) => [
+                      styles.removeImageButton,
+                      pressed && !isSubmitting && styles.pressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="이미지 삭제"
+                  >
+                    <Text style={styles.removeImageText}>X</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
         </View>
 
         <Text style={styles.contentCounter}>
@@ -402,7 +577,6 @@ const styles = StyleSheet.create({
     top: "50%",
     width: 20,
     height: 20,
-    marginTop: -10,
   },
   selectedWorkWrap: {
     marginBottom: 24,
@@ -434,13 +608,11 @@ const styles = StyleSheet.create({
     padding: 0,
     textAlignVertical: "top",
   },
+  // Kept in normal flex flow (not absolute) so KeyboardAvoidingView lifts it
+  // directly above the keyboard while typing.
   bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     backgroundColor: C.card,
     borderTopWidth: 1,
@@ -448,9 +620,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
+  imageTool: {
+    flex: 1,
+    marginRight: 16,
+  },
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     gap: 8,
   },
   photoIcon: {
@@ -461,8 +638,47 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: C.textMuted,
   },
+  previewScroll: {
+    marginTop: 12,
+    maxWidth: "100%",
+  },
+  previewList: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  previewItem: {
+    position: "relative",
+    width: 64,
+    height: 64,
+    borderRadius: Radius.sm,
+    overflow: "hidden",
+    backgroundColor: Gray[100],
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    minWidth: 24,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    paddingHorizontal: 7,
+  },
+  removeImageText: {
+    color: C.card,
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: "700",
+  },
   contentCounter: {
     ...Typography.body1Bold,
+    paddingTop: 2,
   },
   contentCounterValue: {
     color: Gray[400],

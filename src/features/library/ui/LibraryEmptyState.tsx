@@ -1,15 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Radius, Typography } from '../../../theme'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C, Radius, Typography } from "../../../theme";
 
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const warningIcon = require("../../../../assets/icons/search/warning.svg");
 
 type Props = {
-  title: string
-  description?: string
-  buttonText?: string
-  onPressButton?: () => void
-}
+  title: string;
+  description?: string;
+  buttonText?: string;
+  onPressButton?: () => void;
+};
 
 export function LibraryEmptyState({
   title,
@@ -23,7 +23,9 @@ export function LibraryEmptyState({
 
       <View style={styles.textWrap}>
         <Text style={styles.title}>{title}</Text>
-        {description ? <Text style={styles.description}>{description}</Text> : null}
+        {description ? (
+          <Text style={styles.description}>{description}</Text>
+        ) : null}
       </View>
 
       {buttonText && onPressButton ? (
@@ -36,13 +38,13 @@ export function LibraryEmptyState({
         </Pressable>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingTop: 120,
     gap: 12,
@@ -52,18 +54,18 @@ const styles = StyleSheet.create({
     height: 120,
   },
   textWrap: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   title: {
     ...Typography.heading2,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   button: {
     marginTop: 6,
@@ -81,4 +83,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-})
+});

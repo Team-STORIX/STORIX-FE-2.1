@@ -8,6 +8,7 @@ import { useSignup } from '../../auth/hooks/useSignup'
 import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
 import { getOnboardingWorks } from '../api/onboarding.api'
+import { uploadAndSetProfileImage } from '../../profile/api/profile.api'
 import { NicknameStep } from './NicknameStep'
 import { BioStep } from './BioStep'
 import { GenreStep } from './GenreStep'
@@ -46,6 +47,7 @@ export function OnboardingScreen() {
   const [bio, setBio] = useState('')
   const [genres, setGenres] = useState<GenreKey[]>([])
   const [favoriteIds, setFavoriteIds] = useState<number[]>([])
+  const [profileImageUri, setProfileImageUri] = useState<string | undefined>()
   const [error, setError] = useState('')
 
   const handleBack = () => {
@@ -105,6 +107,9 @@ export function OnboardingScreen() {
         favoriteWorksIdList: favoriteIds,
         profileDescription: bio,
       })
+      if (profileImageUri) {
+        await uploadAndSetProfileImage(profileImageUri).catch(() => {})
+      }
       router.replace('/(tabs)')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
@@ -129,7 +134,7 @@ export function OnboardingScreen() {
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <OnboardingTopBar onBack={handleBack} onSkip={step < 5 ? handleSkip : undefined} />
+        <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
         {step <= 4 ? (
           <View style={styles.progressWrap}>
@@ -156,6 +161,8 @@ export function OnboardingScreen() {
               onStatusChange={setNicknameStatus}
               message={nicknameMessage}
               onMessageChange={setNicknameMessage}
+              profileImageUri={profileImageUri}
+              onProfileImageChange={setProfileImageUri}
             />
           ) : null}
 
@@ -182,6 +189,7 @@ export function OnboardingScreen() {
           <Pressable
             onPress={() => void handleNext()}
             disabled={!canProceed() || signupMutation.isPending}
+            style={styles.nextPressable}
           >
             <Image
               source={canProceed() ? nextPink : nextGray}
@@ -206,7 +214,7 @@ const styles = StyleSheet.create({
   },
   progressImage: {
     height: 8,
-    width: 361,
+    width: '100%',
   },
   scroll: {
     flex: 1,
@@ -222,8 +230,11 @@ const styles = StyleSheet.create({
     right: 16,
     alignItems: 'center',
   },
+  nextPressable: {
+    width: '100%',
+  },
   nextImage: {
-    width: 361,
+    width: '100%',
     height: 50,
   },
   errorText: {

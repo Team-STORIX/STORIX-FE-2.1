@@ -1,7 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { C } from '../../theme/colors'
-import { S } from '../../theme/spacing'
 import { Typography } from '../../theme/typography'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: S.screenH,
+    paddingHorizontal: 16,
     paddingBottom: 10,
     backgroundColor: C.card,
   },

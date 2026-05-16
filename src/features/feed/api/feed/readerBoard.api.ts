@@ -27,6 +27,7 @@ export type FeedBoardItem = {
     likeCount: number
     replyCount: number
     isSpoiler?: boolean
+    spoilerScript?: string
     isLiked: boolean
   }
   images: FeedBoardImage[]

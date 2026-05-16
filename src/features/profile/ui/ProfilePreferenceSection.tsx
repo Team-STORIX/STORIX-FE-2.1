@@ -3,27 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { C, Gray, Typography } from '../../../theme'
-import {
-  useProfileFavoriteArtistsPreview,
-  useProfileFavoriteWorksPreview,
-} from '../hooks'
+import { useProfileFavoriteWorksPreview } from '../hooks'
 
-const findWritersButton = require('../../../../assets/icons/profile/find-writers.svg')
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
 const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
 
-const WRITER_RENDER_LIMIT = 5
 const WORK_RENDER_LIMIT = 4
 
 export function ProfilePreferenceSection() {
   const router = useRouter()
-  const writersQuery = useProfileFavoriteArtistsPreview()
   const worksQuery = useProfileFavoriteWorksPreview()
 
-  const writers = useMemo(
-    () => writersQuery.data?.writers.slice(0, WRITER_RENDER_LIMIT) ?? [],
-    [writersQuery.data?.writers],
-  )
   const works = useMemo(
     () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
     [worksQuery.data?.works],
@@ -37,7 +27,7 @@ export function ProfilePreferenceSection() {
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
             <Text style={styles.title}>관심 작가</Text>
-            <Text style={styles.count}>{writersQuery.data?.count ?? 0}</Text>
+            <Text style={styles.count}>0</Text>
           </View>
 
           <Pressable
@@ -48,40 +38,17 @@ export function ProfilePreferenceSection() {
           </Pressable>
         </View>
 
-        {(writersQuery.data?.count ?? 0) > 0 ? (
-          <View style={styles.writersViewport}>
-            <View style={styles.writersRow}>
-              {writers.map((writer) => (
-                <View key={writer.id} style={styles.writerItem}>
-                  <View style={styles.writerAvatarWrap}>
-                    {writer.imageUrl ? (
-                      <Image
-                        source={{ uri: writer.imageUrl }}
-                        style={styles.writerAvatar}
-                        contentFit="cover"
-                      />
-                    ) : null}
-                  </View>
-                  <Text style={styles.writerName} numberOfLines={1}>
-                    {writer.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="작가 찾기"
-            >
-              <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
-            </Pressable>
-          </View>
-        )}
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
+          <Pressable
+            onPress={() => router.push('/search')}
+            style={({ pressed }) => [pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="작가 찾기"
+          >
+            <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.section, styles.worksSection]}>
@@ -92,7 +59,7 @@ export function ProfilePreferenceSection() {
           </View>
 
           <Pressable
-            onPress={() => router.push('/profile/likes?tab=works')}
+            onPress={() => router.push('/profile/likes')}
             accessibilityRole="button"
           >
             <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
@@ -188,35 +155,6 @@ const styles = StyleSheet.create({
   moreIcon: {
     width: 24,
     height: 24,
-  },
-  writersViewport: {
-    marginTop: 24,
-    overflow: 'hidden',
-  },
-  writersRow: {
-    flexDirection: 'row',
-    gap: 18,
-  },
-  writerItem: {
-    alignItems: 'center',
-  },
-  writerAvatarWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    overflow: 'hidden',
-    backgroundColor: C.border,
-  },
-  writerAvatar: {
-    width: 60,
-    height: 60,
-  },
-  writerName: {
-    ...Typography.body2Medium,
-    marginTop: 8,
-    width: 60,
-    color: Gray[500],
-    textAlign: 'center',
   },
   worksContent: {
     marginTop: 24,

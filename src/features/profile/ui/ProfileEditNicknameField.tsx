@@ -196,14 +196,15 @@ export function ProfileEditNicknameField({
 
 const styles = StyleSheet.create({
   row: {
-    width: 361,
+    width: '100%',
     height: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   input: {
-    width: 254,
+    flex: 1,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 10,
     borderBottomWidth: 2,

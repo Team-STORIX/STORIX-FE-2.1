@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useLikesStore } from '../../store/likes.store'
@@ -7,6 +6,7 @@ import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
 import { ReviewMetaBar } from './ReviewMetaBar'
+import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
 
 const reviewProfileIcon = require('../../../assets/icons/common/reviewProfile.svg')
 const arrowForwardIcon = require('../../../assets/icons/common/icon-arrow-forward.svg')
@@ -18,8 +18,6 @@ type Props = {
   isLiking?: boolean
 }
 
-const FALLBACK_SPOILER_TEXT = '스포일러가 포함된 리뷰입니다'
-
 export function OtherReviewCard({
   item,
   onPressDetail,
@@ -29,21 +27,6 @@ export function OtherReviewCard({
   const isLiked = useLikesStore(
     (state) => !!state.likedIds[String(item.reviewId)],
   )
-  const [revealed, setRevealed] = useState(false)
-  const isHidden = item.isSpoiler === true && !revealed
-
-  const handlePressContent = () => {
-    if (isHidden) {
-      setRevealed(true)
-      return
-    }
-    onPressDetail(item.reviewId)
-  }
-
-  const spoilerText =
-    (item.spoilerScript && item.spoilerScript.trim().length > 0
-      ? item.spoilerScript
-      : FALLBACK_SPOILER_TEXT)
 
   return (
     <View style={styles.card}>
@@ -69,23 +52,18 @@ export function OtherReviewCard({
           styles.contentButton,
           pressed && styles.pressed,
         ]}
-        onPress={handlePressContent}
+        onPress={() => onPressDetail(item.reviewId)}
       >
         <View style={styles.contentInner}>
           <View style={styles.contentTextWrap}>
-            <Text
-              style={[styles.contentText, isHidden && styles.contentHidden]}
+            <ReviewSpoilerBlock
+              isSpoiler={item.isSpoiler === true}
+              spoilerScript={item.spoilerScript}
+              content={item.content ?? ''}
               numberOfLines={3}
-            >
-              {item.content ?? ''}
-            </Text>
-            {isHidden ? (
-              <View style={styles.spoilerOverlay} pointerEvents="none">
-                <Text style={styles.spoilerText} numberOfLines={2}>
-                  {spoilerText}
-                </Text>
-              </View>
-            ) : null}
+              backgroundColor={C.card}
+              textStyle={styles.contentText}
+            />
           </View>
 
           <Image
@@ -112,7 +90,7 @@ export function OtherReviewCard({
 const styles = StyleSheet.create({
   // 2.0: -mx-4 px-5 → 20 horizontal pad + bottomBorder 1px gray-100; left text
   card: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },
@@ -156,20 +134,6 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: C.textSecondary,
     paddingRight: 4,
-  },
-  contentHidden: {
-    opacity: 0.18,
-  },
-  spoilerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  spoilerText: {
-    ...Typography.caption1Medium,
-    color: C.primary,
-    textAlign: 'center',
   },
   arrowForward: {
     width: 24,

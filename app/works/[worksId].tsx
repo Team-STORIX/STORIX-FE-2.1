@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -26,14 +26,15 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
+  TopicRoomCreateModal,
+  useCreateTopicRoom,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
+import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
-import { Radius } from '../../src/theme/radius'
-import { S } from '../../src/theme/spacing'
 import { Typography } from '../../src/theme/typography'
 
-type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
+type EntryPhase = 'idle' | 'searching' | 'joining' | 'creating'
 type TabKey = 'info' | 'review'
 
 export default function WorksDetailScreen() {
@@ -61,35 +62,89 @@ export default function WorksDetailScreen() {
 
   const likeMutation = useLikeWorksReview({ worksId })
   const joinMutation = useJoinTopicRoom()
+  const createMutation = useCreateTopicRoom()
 
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
-  const [entryError, setEntryError] = useState<string | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const isEntering = entryPhase === 'searching' || entryPhase === 'joining'
+  const isEntering =
+    entryPhase === 'searching' ||
+    entryPhase === 'joining' ||
+    entryPhase === 'creating'
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage(null)
+      toastTimerRef.current = null
+    }, 2400)
+  }, [])
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    },
+    [],
+  )
+
+  const navigateToRoom = useCallback(
+    (roomId: number) => {
+      setEntryPhase('idle')
+      setCreateModalOpen(false)
+      router.push(`/topicroom/${roomId}` as const)
+    },
+    [router],
+  )
 
   const enterTopicRoom = useCallback(async () => {
-    if (!works?.worksName) return
+    if (!works?.worksName || isEntering) return
 
     setEntryPhase('searching')
-    setEntryError(null)
 
     try {
       const roomId = await findTopicRoomIdByWorksName(works.worksName)
       if (!roomId) {
-        setEntryPhase('error')
-        setEntryError('이 작품의 토픽룸이 아직 없어요.')
+        // No existing room — open the create flow instead of inline error.
+        setEntryPhase('idle')
+        setCreateModalOpen(true)
         return
       }
 
       setEntryPhase('joining')
       await joinMutation.mutateAsync(roomId)
-      router.push(`/topicroom/${roomId}` as const)
-      setEntryPhase('idle')
+      navigateToRoom(roomId)
     } catch {
-      setEntryPhase('error')
-      setEntryError('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      setEntryPhase('idle')
+      showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
-  }, [joinMutation, router, works?.worksName])
+  }, [isEntering, joinMutation, navigateToRoom, showToast, works?.worksName])
+
+  const handleCreate = useCallback(
+    async (topicRoomName: string) => {
+      if (!worksId || createMutation.isPending) return
+
+      setEntryPhase('creating')
+      try {
+        const newRoomId = await createMutation.mutateAsync({
+          worksId,
+          topicRoomName,
+        })
+        try {
+          await joinMutation.mutateAsync(newRoomId)
+        } catch {
+          // Creator is auto-joined server-side in most setups; ignore join failures here.
+        }
+        navigateToRoom(newRoomId)
+      } catch {
+        setEntryPhase('idle')
+        showToast('토픽룸 생성에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      }
+    },
+    [createMutation, joinMutation, navigateToRoom, showToast, worksId],
+  )
 
   const backToPrevious = useCallback(() => {
     if (router.canGoBack()) {
@@ -164,15 +219,6 @@ export default function WorksDetailScreen() {
               />
             </View>
 
-            {entryPhase === 'error' && entryError ? (
-              <View style={styles.entryErrorBox}>
-                <Text style={styles.entryErrorText}>{entryError}</Text>
-                <Pressable onPress={() => setEntryPhase('idle')}>
-                  <Text style={styles.entryErrorDismiss}>닫기</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
             {tab === 'info' ? (
               <WorksInfoSection works={works} />
             ) : (
@@ -211,6 +257,20 @@ export default function WorksDetailScreen() {
           />
         </>
       )}
+
+      <TopicRoomCreateModal
+        visible={createModalOpen}
+        isSubmitting={entryPhase === 'creating' || createMutation.isPending}
+        onClose={() => {
+          if (entryPhase === 'creating' || createMutation.isPending) return
+          setCreateModalOpen(false)
+        }}
+        onConfirm={(topicRoomName) => {
+          void handleCreate(topicRoomName)
+        }}
+      />
+
+      <Toast message={toastMessage} bottomOffset={insets.bottom + 96} />
     </View>
   )
 }
@@ -298,27 +358,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   tabUnderlineActive: {
-    backgroundColor: C.primary,
-  },
-  entryErrorBox: {
-    marginHorizontal: S.screenH,
-    marginTop: 16,
-    borderRadius: Radius.md,
-    backgroundColor: '#FFF3F3',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  entryErrorText: {
-    ...Typography.body2Medium,
-    color: C.error,
-    flex: 1,
-  },
-  entryErrorDismiss: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginLeft: 12,
+    backgroundColor: C.text,
   },
   pressed: {
     opacity: 0.7,

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,15 @@ const arrowSmallIcon     = require('../../../../assets/icons/common/icon-arrow-f
 const commentDropdown    = require('../../../../assets/icons/common/comment-dropdown.svg')
 const deleteDropdown     = require('../../../../assets/icons/common/delete-dropdown.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
+
+const birthdayFeedThemes = {
+  article: require('../../../../assets/common/birthday/b_feed_article.svg'),
+  photo: require('../../../../assets/common/birthday/b_feed_photo.svg'),
+  photoArticle: require('../../../../assets/common/birthday/b_feed_photo_article.svg'),
+  contentlinkArticle: require('../../../../assets/common/birthday/b_feed_contentlink_article.svg'),
+  contentlinkPhoto: require('../../../../assets/common/birthday/b_feed_contentlink_photo.svg'),
+  contentlinkPhotoArticle: require('../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg'),
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +56,7 @@ type FeedPostCardProps = {
   images?: string[]
   works?: PostCardWorks | null
   isSpoiler?: boolean
+  spoilerScript?: string
   isLiked: boolean
   likeCount: number
   replyCount: number
@@ -54,25 +65,76 @@ type FeedPostCardProps = {
   onOpenReport?: () => void
   onOpenDelete?: () => void
   onPressCard?: () => void
+  birthdayTheme?: boolean
+}
+
+function getBirthdayThemeSource({
+  hasArticle,
+  hasPhoto,
+  hasContentlink,
+}: {
+  hasArticle: boolean
+  hasPhoto: boolean
+  hasContentlink: boolean
+}) {
+  if (hasContentlink && hasPhoto && hasArticle) return birthdayFeedThemes.contentlinkPhotoArticle
+  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto
+  if (hasContentlink && hasArticle) return birthdayFeedThemes.contentlinkArticle
+  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle
+  if (hasPhoto) return birthdayFeedThemes.photo
+  if (hasArticle) return birthdayFeedThemes.article
+  return null
 }
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
 
 function HashtagRow({ tags }: { tags: string[] }) {
+  const containerWidthRef = useRef(0)
+  const chipRights = useRef<number[]>([])
+  const [cutIndex, setCutIndex] = useState(tags.length)
+
+  useEffect(() => {
+    setCutIndex(tags.length)
+    chipRights.current = []
+  }, [tags])
+
   if (!tags.length) return null
+
+  const recalculate = (cw: number) => {
+    if (cw === 0) return
+    let cut = tags.length
+    for (let i = 0; i < tags.length; i++) {
+      const right = chipRights.current[i]
+      if (right !== undefined && right > cw) {
+        cut = i
+        break
+      }
+    }
+    setCutIndex(cut)
+  }
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.hashtagScroll}
-      contentContainerStyle={styles.hashtagContent}
+    <View
+      style={styles.hashtagRow}
+      onLayout={(e) => {
+        containerWidthRef.current = e.nativeEvent.layout.width
+        recalculate(containerWidthRef.current)
+      }}
     >
       {tags.map((tag, i) => (
-        <View key={`${tag}-${i}`} style={styles.hashtagChip}>
+        <View
+          key={`${tag}-${i}`}
+          style={[styles.hashtagChip, i >= cutIndex ? { display: 'none' } : undefined]}
+          onLayout={(e) => {
+            if (i >= cutIndex) return
+            chipRights.current[i] = e.nativeEvent.layout.x + e.nativeEvent.layout.width
+            recalculate(containerWidthRef.current)
+          }}
+        >
           <Text style={styles.hashtagText}>{tag.startsWith('#') ? tag : `#${tag}`}</Text>
         </View>
       ))}
-    </ScrollView>
+    </View>
   )
 }
 
@@ -90,6 +152,7 @@ export function FeedPostCard({
   images = [],
   works,
   isSpoiler = false,
+  spoilerScript,
   isLiked,
   likeCount,
   replyCount,
@@ -98,9 +161,23 @@ export function FeedPostCard({
   onOpenReport,
   onOpenDelete,
   onPressCard,
+  birthdayTheme = false,
 }: FeedPostCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuDropdownTop, setMenuDropdownTop] = useState(0)
+  const menuBtnRef = useRef<any>(null)
   const [spoilerRevealed, setSpoilerRevealed] = useState(false)
+
+  const handleMenuPress = () => {
+    if (menuOpen) {
+      setMenuOpen(false)
+      return
+    }
+    menuBtnRef.current?.measure((_fx: number, _fy: number, _w: number, h: number, _px: number, py: number) => {
+      setMenuDropdownTop(py + h + 4)
+      setMenuOpen(true)
+    })
+  }
 
   const isMine = currentUserId != null && writerUserId === currentUserId
   const isSpoilerHidden = isSpoiler && !spoilerRevealed
@@ -110,6 +187,16 @@ export function FeedPostCard({
     !!works.thumbnailUrl &&
     !!works.worksName &&
     !!works.artistName
+  const hasArticle = content.trim().length > 0
+  const hasPhoto = images.some((src) => src.trim().length > 0)
+  const hasContentlink = works != null && !!works.worksName?.trim()
+  const birthdayThemeSource = birthdayTheme
+    ? getBirthdayThemeSource({
+        hasArticle,
+        hasPhoto,
+        hasContentlink,
+      })
+    : null
 
   const cardBody = (
     <View style={styles.card}>
@@ -135,8 +222,9 @@ export function FeedPostCard({
 
         {/* Menu button */}
         <Pressable
+          ref={menuBtnRef}
           hitSlop={8}
-          onPress={() => setMenuOpen((v) => !v)}
+          onPress={handleMenuPress}
           style={styles.menuBtn}
           accessibilityLabel="메뉴"
         >
@@ -150,20 +238,24 @@ export function FeedPostCard({
 
       {/* ── Menu dropdown ─────────────────────────────────────── */}
       {menuOpen && (
-        <Pressable
-          style={styles.menuDropdown}
-          onPress={() => {
-            setMenuOpen(false)
-            if (isMine) onOpenDelete?.()
-            else onOpenReport?.()
-          }}
-        >
-          <Image
-            source={isMine ? deleteDropdown : commentDropdown}
-            style={styles.menuDropdownImg}
-            contentFit="contain"
-          />
-        </Pressable>
+        <Modal transparent visible animationType="none" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setMenuOpen(false)}>
+            <Pressable
+              style={[styles.menuDropdown, { top: menuDropdownTop }]}
+              onPress={() => {
+                setMenuOpen(false)
+                if (isMine) onOpenDelete?.()
+                else onOpenReport?.()
+              }}
+            >
+              <Image
+                source={isMine ? deleteDropdown : commentDropdown}
+                style={styles.menuDropdownImg}
+                contentFit="contain"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
 
       {/* ── Works card ────────────────────────────────────────── */}
@@ -241,7 +333,7 @@ export function FeedPostCard({
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
             <Text style={styles.spoilerRevealText}>
-              스포일러가 포함된 피드글 보기
+              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
             </Text>
           </Pressable>
         ) : (
@@ -285,6 +377,16 @@ export function FeedPostCard({
           )}
         </View>
       </View>
+
+      {birthdayThemeSource && (
+        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
+          <Image
+            source={birthdayThemeSource}
+            style={styles.birthdayThemeImage}
+            contentFit="fill"
+          />
+        </View>
+      )}
     </View>
   )
 
@@ -316,6 +418,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
     backgroundColor: '#ffffff',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  birthdayThemeLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  birthdayThemeImage: {
+    width: '100%',
+    height: '100%',
   },
 
   // Profile row
@@ -369,12 +481,12 @@ const styles = StyleSheet.create({
   menuDropdown: {
     position: 'absolute',
     right: 16,
-    top: 52,
-    zIndex: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    shadowColor: '#131112',
+    shadowOpacity: 0.20,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   menuDropdownImg: {
@@ -394,7 +506,7 @@ const styles = StyleSheet.create({
     borderColor: Gray[100],
     backgroundColor: '#ffffff',
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 12,
   },
   worksThumbnailBox: {
@@ -412,13 +524,13 @@ const styles = StyleSheet.create({
   worksInfo: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
   },
   worksName: {
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
     color: '#000000',
+    marginBottom: 4,
   },
   worksMeta: {
     fontSize: 12,
@@ -430,34 +542,35 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     flexShrink: 0,
   },
   arrowSmall: {
     width: 24,
     height: 24,
+    tintColor: Gray[400],
   },
 
   // Hashtag
-  hashtagScroll: {
-    marginTop: 2,
-  },
-  hashtagContent: {
+  hashtagRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
     gap: 4,
+    marginTop: 'auto',
   },
   hashtagChip: {
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: Gray[50],
+    borderColor: '#E3DCDF',
+    backgroundColor: '#F2EDEF',
   },
   hashtagText: {
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
-    letterSpacing: 0.2,
-    color: Gray[800],
+    color: '#847B7F',
   },
 
   // Body
@@ -473,8 +586,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageBox: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
@@ -483,8 +596,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   imageFill: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
   },
   textPad: {
     paddingHorizontal: 16,
