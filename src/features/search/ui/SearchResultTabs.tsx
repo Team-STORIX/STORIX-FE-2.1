@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabButtonActive: {
-    borderBottomColor: C.primary,
+    borderBottomColor: C.text,
   },
   tabText: {
     ...Typography.body1Medium,

@@ -67,7 +67,7 @@ export function ProfileEditScreen() {
   const handleProfileImagePress = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요. 설정에서 허용해 주세요.')
+      Alert.alert('\uad8c\ud55c \ud544\uc694', '\uac24\ub7ec\ub9ac \uc811\uadfc \uad8c\ud55c\uc774 \ud544\uc694\ud574\uc694. \uc124\uc815\uc5d0\uc11c \ud5c8\uc6a9\ud574 \uc8fc\uc138\uc694.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,7 +85,7 @@ export function ProfileEditScreen() {
       patchMe({ profileImageUrl: uri })
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
     } catch {
-      Alert.alert('오류', '프로필 이미지 업로드에 실패했어요.')
+      Alert.alert('\uc624\ub958', '\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
       setLocalProfileImageUri(undefined)
     } finally {
       setIsUploadingImage(false)

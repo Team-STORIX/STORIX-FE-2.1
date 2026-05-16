@@ -80,11 +80,6 @@ export function FeedDetailScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
-  const [reportTarget, setReportTarget] = useState<{
-    profileImageUrl?: string | null
-    nickname: string
-    onConfirm: () => Promise<void>
-  } | null>(null)
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
@@ -513,14 +508,6 @@ export function FeedDetailScreen() {
             />
           </KeyboardAvoidingView>
         )}
-
-      <ReportModal
-        visible={reportTarget != null}
-        profileImageUrl={reportTarget?.profileImageUrl}
-        nickname={reportTarget?.nickname ?? ''}
-        onClose={() => setReportTarget(null)}
-        onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
-      />
     </View>
   )
 }

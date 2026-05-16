@@ -26,6 +26,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
+import { usePushNotificationBootstrap } from '../src/features/notification'
 import { useMe } from '../src/features/profile'
 import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
@@ -200,6 +201,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileBootstrap />
+      <PushNotificationBootstrap />
       <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -219,5 +221,13 @@ function RootLayoutNav() {
 
 function ProfileBootstrap() {
   useMe()
+  return null
+}
+
+// Mounted under the QueryClientProvider so the registration mutation has
+// access to React Query. The hook itself short-circuits until the auth
+// store reports an authenticated user, so this is safe to mount eagerly.
+function PushNotificationBootstrap() {
+  usePushNotificationBootstrap()
   return null
 }

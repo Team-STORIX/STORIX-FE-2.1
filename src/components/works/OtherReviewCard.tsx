@@ -90,7 +90,7 @@ export function OtherReviewCard({
 const styles = StyleSheet.create({
   // 2.0: -mx-4 px-5 → 20 horizontal pad + bottomBorder 1px gray-100; left text
   card: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },

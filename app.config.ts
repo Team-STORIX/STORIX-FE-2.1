@@ -46,6 +46,16 @@ const naverUrlScheme = requireEnv("EXPO_PUBLIC_NAVER_URL_SCHEME");
 const iosBundleId = process.env.EXPO_IOS_BUNDLE_ID ?? "kr.storix.app";
 const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
 
+// Firebase client config files. Both paths are optional at config evaluation
+// time so the JS bundle can build without them — but native builds (prebuild)
+// will fail loudly if Firebase is enabled and the file is missing. See
+// PUSH_NOTIFICATION_SETUP.md for placement instructions.
+const androidGoogleServicesFile =
+  process.env.GOOGLE_SERVICES_JSON ?? "./android/app/google-services.json";
+const iosGoogleServicesPlist =
+  process.env.GOOGLE_SERVICE_INFO_PLIST ??
+  "./ios/STORIXFE21/GoogleService-Info.plist";
+
 // ─── Apple Sign In entitlement plugin ────────────────────────────────────────
 // @invertase/react-native-apple-authentication ships no Expo config plugin.
 // Applied as a config wrapper (not in the plugins array) because the ExpoConfig
@@ -75,16 +85,47 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       ...config.ios,
       bundleIdentifier: iosBundleId,
       supportsTablet: true,
+      googleServicesFile: iosGoogleServicesPlist,
+      // Push Notifications + Background Modes (remote-notification) are
+      // required for APNs delivery. The Firebase config plugin adds the
+      // aps-environment entitlement automatically during prebuild.
+      infoPlist: {
+        ...(config.ios?.infoPlist ?? {}),
+        UIBackgroundModes: Array.from(
+          new Set([
+            ...(((config.ios?.infoPlist as any)?.UIBackgroundModes as
+              | string[]
+              | undefined) ?? []),
+            "remote-notification",
+          ]),
+        ),
+      },
     },
 
     android: {
       ...config.android,
       package: androidPackage,
+      googleServicesFile: androidGoogleServicesFile,
+      // Android 13+ runtime permission for showing notifications.
+      // FCM SDK declares the rest of the messaging-related permissions.
+      permissions: Array.from(
+        new Set([
+          ...(config.android?.permissions ?? []),
+          "android.permission.POST_NOTIFICATIONS",
+        ]),
+      ),
     },
 
     plugins: [
       // Preserve plugins declared in app.json (expo-router, expo-secure-store).
       ...(config.plugins ?? []),
+      // React Native Firebase. The @react-native-firebase/app plugin wires
+      // google-services.json / GoogleService-Info.plist into the native
+      // builds and registers the modular SDK initialiser at app launch.
+      // @react-native-firebase/messaging adds APNs entitlements / Android
+      // notification permission and registers the FCM module.
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       [
         "expo-image-picker",
         {

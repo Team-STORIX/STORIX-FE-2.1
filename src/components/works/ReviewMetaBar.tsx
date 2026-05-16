@@ -1,30 +1,38 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { Typography } from '../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../theme/colors";
+import { Radius } from "../../theme/radius";
+import { Typography } from "../../theme/typography";
 
-const ratingStarIcon = require('../../../assets/icons/common/ratingStar.svg')
-const middleStarIcon = require('../../../assets/icons/common/middleStar.svg')
-const likeIcon = require('../../../assets/icons/common/icon-like.svg')
-const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
+const ratingStarIcon = require("../../../assets/icons/common/ratingStar.svg");
+const likeIcon = require("../../../assets/icons/common/icon-like.svg");
+const likePinkIcon = require("../../../assets/icons/common/icon-like-pink.svg");
 
 type Props = {
-  rating?: number | null
-  likeCount?: number | null
-  isLiked?: boolean
-  onPressLike?: () => void
-  isLiking?: boolean
-}
+  rating?: number | null;
+  likeCount?: number | null;
+  isLiked?: boolean;
+  onPressLike?: () => void;
+  isLiking?: boolean;
+};
 
-function StaticRatingStars({ value, size = 18 }: { value: number; size?: number }) {
-  const safe = Math.max(0, Math.min(5, Number.isFinite(value) ? value : 0))
+function StaticRatingStars({
+  value,
+  size = 16,
+}: {
+  value: number;
+  size?: number;
+}) {
+  const safe = Math.max(0, Math.min(5, Number.isFinite(value) ? value : 0));
   return (
     <View style={ratingStyles.row}>
       {[0, 1, 2, 3, 4].map((index) => {
-        const fill = Math.max(0, Math.min(1, safe - index))
+        const fill = Math.max(0, Math.min(1, safe - index));
         return (
-          <View key={index} style={[ratingStyles.slot, { width: size, height: size }]}>
+          <View
+            key={index}
+            style={[ratingStyles.slot, { width: size, height: size }]}
+          >
             <Image
               source={ratingStarIcon}
               style={{ width: size, height: size }}
@@ -34,21 +42,22 @@ function StaticRatingStars({ value, size = 18 }: { value: number; size?: number 
               <View
                 style={[
                   StyleSheet.absoluteFillObject,
-                  { width: size * fill, overflow: 'hidden' },
+                  { width: size * fill, overflow: "hidden" },
                 ]}
               >
                 <Image
-                  source={middleStarIcon}
+                  source={ratingStarIcon}
                   style={{ width: size, height: size }}
                   contentFit="contain"
+                  tintColor={C.primary}
                 />
               </View>
             ) : null}
           </View>
-        )
+        );
       })}
     </View>
-  )
+  );
 }
 
 export function ReviewMetaBar({
@@ -58,8 +67,8 @@ export function ReviewMetaBar({
   onPressLike,
   isLiking = false,
 }: Props) {
-  const safeLikeCount = Math.max(0, Number(likeCount ?? 0))
-  const showRating = typeof rating === 'number' && Number.isFinite(rating)
+  const safeLikeCount = Math.max(0, Number(likeCount ?? 0));
+  const showRating = typeof rating === "number" && Number.isFinite(rating);
 
   const PillContent = (
     <>
@@ -70,14 +79,14 @@ export function ReviewMetaBar({
       />
       <Text style={styles.likeCount}>{safeLikeCount}</Text>
     </>
-  )
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.ratingArea}>
         {showRating ? (
           <>
-            <StaticRatingStars value={rating!} size={18} />
+            <StaticRatingStars value={rating!} size={16} />
             <Text style={styles.ratingValue}>{Number(rating).toFixed(1)}</Text>
           </>
         ) : null}
@@ -89,7 +98,7 @@ export function ReviewMetaBar({
           disabled={isLiking}
           style={({ pressed }) => [styles.likePill, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={isLiked ? '리뷰 좋아요 취소' : '리뷰 좋아요'}
+          accessibilityLabel={isLiked ? "리뷰 좋아요 취소" : "리뷰 좋아요"}
         >
           {PillContent}
         </Pressable>
@@ -97,47 +106,47 @@ export function ReviewMetaBar({
         <View style={styles.likePill}>{PillContent}</View>
       )}
     </View>
-  )
+  );
 }
 
 const ratingStyles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   slot: {
-    position: 'relative',
+    position: "relative",
   },
-})
+});
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   ratingArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   ratingValue: {
     ...Typography.body2Medium,
     color: C.textMuted,
   },
   likePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: Radius.sm,
     backgroundColor: C.card,
     minHeight: 28,
-    shadowColor: '#131112',
+    shadowColor: "#131112",
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
@@ -154,4 +163,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-})
+});

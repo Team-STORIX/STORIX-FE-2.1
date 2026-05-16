@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.bg,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 20,
   },
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
   ctaArrow: {
     width: 16,
     height: 16,
+    tintColor: C.primary,
   },
   pressed: {
     opacity: 0.7,

@@ -329,7 +329,7 @@ export function FeedWritePickerBottomSheet({
                   accessibilityRole="button"
                 >
                   <Text style={styles.primaryButtonText}>
-                    선택 작품 피드 쓰기
+                    선택 작품 게시글 쓰기
                   </Text>
                 </Pressable>
               </View>
