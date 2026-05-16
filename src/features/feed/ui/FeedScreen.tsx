@@ -132,7 +132,7 @@ export function FeedScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   const renderItem = useCallback(
-    ({ item }: { item: FeedBoardItem }) => {
+    ({ item, index }: { item: FeedBoardItem; index: number }) => {
       const { board, profile, works, images } = item
       const override = likeOverrides.current.get(board.boardId)
       const isLiked = override?.isLiked ?? board.isLiked
@@ -193,6 +193,7 @@ export function FeedScreen() {
             isMine ? () => handleDelete(board.boardId) : undefined
           }
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
+          birthdayTheme={index % 2 === 0}
         />
       )
     },

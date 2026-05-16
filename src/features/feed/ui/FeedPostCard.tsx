@@ -22,6 +22,15 @@ const commentDropdown    = require('../../../../assets/icons/common/comment-drop
 const deleteDropdown     = require('../../../../assets/icons/common/delete-dropdown.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
+const birthdayFeedThemes = {
+  article: require('../../../../assets/common/birthday/b_feed_article.svg'),
+  photo: require('../../../../assets/common/birthday/b_feed_photo.svg'),
+  photoArticle: require('../../../../assets/common/birthday/b_feed_photo_article.svg'),
+  contentlinkArticle: require('../../../../assets/common/birthday/b_feed_contentlink_article.svg'),
+  contentlinkPhoto: require('../../../../assets/common/birthday/b_feed_contentlink_photo.svg'),
+  contentlinkPhotoArticle: require('../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg'),
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type PostCardWorks = {
@@ -56,6 +65,25 @@ type FeedPostCardProps = {
   onOpenReport?: () => void
   onOpenDelete?: () => void
   onPressCard?: () => void
+  birthdayTheme?: boolean
+}
+
+function getBirthdayThemeSource({
+  hasArticle,
+  hasPhoto,
+  hasContentlink,
+}: {
+  hasArticle: boolean
+  hasPhoto: boolean
+  hasContentlink: boolean
+}) {
+  if (hasContentlink && hasPhoto && hasArticle) return birthdayFeedThemes.contentlinkPhotoArticle
+  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto
+  if (hasContentlink && hasArticle) return birthdayFeedThemes.contentlinkArticle
+  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle
+  if (hasPhoto) return birthdayFeedThemes.photo
+  if (hasArticle) return birthdayFeedThemes.article
+  return null
 }
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
@@ -133,6 +161,7 @@ export function FeedPostCard({
   onOpenReport,
   onOpenDelete,
   onPressCard,
+  birthdayTheme = false,
 }: FeedPostCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuDropdownTop, setMenuDropdownTop] = useState(0)
@@ -158,6 +187,16 @@ export function FeedPostCard({
     !!works.thumbnailUrl &&
     !!works.worksName &&
     !!works.artistName
+  const hasArticle = content.trim().length > 0
+  const hasPhoto = images.some((src) => src.trim().length > 0)
+  const hasContentlink = works != null && !!works.worksName?.trim()
+  const birthdayThemeSource = birthdayTheme
+    ? getBirthdayThemeSource({
+        hasArticle,
+        hasPhoto,
+        hasContentlink,
+      })
+    : null
 
   const cardBody = (
     <View style={styles.card}>
@@ -338,6 +377,16 @@ export function FeedPostCard({
           )}
         </View>
       </View>
+
+      {birthdayThemeSource && (
+        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
+          <Image
+            source={birthdayThemeSource}
+            style={styles.birthdayThemeImage}
+            contentFit="fill"
+          />
+        </View>
+      )}
     </View>
   )
 
@@ -369,6 +418,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
     backgroundColor: '#ffffff',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  birthdayThemeLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  birthdayThemeImage: {
+    width: '100%',
+    height: '100%',
   },
 
   // Profile row

@@ -426,6 +426,7 @@ export function FeedDetailScreen() {
                 }
                 onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
+                birthdayTheme={board.boardId % 2 === 0}
               />
 
               {replies.map((item) => {
