@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { getApps } from '@react-native-firebase/app'
 import {
   getMessaging,
   getToken,
@@ -14,7 +15,14 @@ const APNS_RETRY_DELAY_MS = 1_500
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-const messaging = () => getMessaging()
+const getFirebaseMessagingIfAvailable = () => {
+  try {
+    if (getApps().length === 0) return null
+    return getMessaging()
+  } catch {
+    return null
+  }
+}
 
 /**
  * Fetches the device's current FCM registration token, returning null if the
@@ -26,23 +34,22 @@ const messaging = () => getMessaging()
  * "apns-token-not-set yet" on first launch.
  */
 export const getFcmDeviceToken = async (): Promise<string | null> => {
+  const msg = getFirebaseMessagingIfAvailable()
+  if (!msg) return null
   try {
     if (Platform.OS === 'ios') {
-      // Idempotent — RNFirebase ignores duplicate calls.
-      await registerDeviceForRemoteMessages(messaging())
+      await registerDeviceForRemoteMessages(msg)
     }
 
     try {
-      const token = await getToken(messaging())
+      const token = await getToken(msg)
       return typeof token === 'string' && token.length > 0 ? token : null
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      // Retry once for the common iOS race where APNs has not yet handed
-      // back a token. Anything else is non-recoverable here.
       if (Platform.OS === 'ios' && /apns|no apns token/i.test(message)) {
         await sleep(APNS_RETRY_DELAY_MS)
         try {
-          const token = await getToken(messaging())
+          const token = await getToken(msg)
           return typeof token === 'string' && token.length > 0 ? token : null
         } catch (retryErr) {
           if (__DEV__) {
@@ -76,7 +83,9 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
 export const subscribeFcmTokenRefresh = (
   onRefresh: (token: string) => void,
 ): (() => void) => {
-  const unsubscribe = onTokenRefresh(messaging(), (token) => {
+  const msg = getFirebaseMessagingIfAvailable()
+  if (!msg) return () => {}
+  const unsubscribe = onTokenRefresh(msg, (token) => {
     if (typeof token === 'string' && token.length > 0) {
       onRefresh(token)
     }
