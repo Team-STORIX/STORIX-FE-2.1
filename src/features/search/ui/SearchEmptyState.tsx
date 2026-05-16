@@ -55,10 +55,11 @@ export function SearchEmptyState({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     width: "100%",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingTop: 192,
     gap: 12,
   },
   textGroup: {

@@ -1,48 +1,45 @@
-import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import type { WorksDetail } from '../../features/works/api/works.api'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
-import { Typography } from '../../theme/typography'
-import { HashtagChip } from '../common/HashtagChip'
+import { Image } from "expo-image";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { WorksDetail } from "../../features/works/api/works.api";
+import { C } from "../../theme/colors";
+import { Radius } from "../../theme/radius";
+import { Typography } from "../../theme/typography";
+import { HashtagChip } from "../common/HashtagChip";
 
-const naverWebtoon = require('../../../assets/images/platforms/naverWebtoon.png')
-const ridibooks = require('../../../assets/images/platforms/ridibooks.png')
-const kakaoWebtoon = require('../../../assets/images/platforms/kakaoWebtoon.png')
-const kakaoPage = require('../../../assets/images/platforms/kakaoPage.png')
+const naverWebtoon = require("../../../assets/images/platforms/naverWebtoon.png");
+const ridibooks = require("../../../assets/images/platforms/ridibooks.png");
+const kakaoWebtoon = require("../../../assets/images/platforms/kakaoWebtoon.png");
+const kakaoPage = require("../../../assets/images/platforms/kakaoPage.png");
 
 function platformIcon(platform: string) {
-  const value = platform.toLowerCase().replace(/\s/g, '')
+  const value = platform.toLowerCase().replace(/\s/g, "");
 
-  if (value.includes('naver') || value.includes('\uB124\uC774\uBC84')) {
-    return naverWebtoon
+  if (value.includes("naver") || value.includes("네이버")) {
+    return naverWebtoon;
   }
-  if (value.includes('ridi') || value.includes('\uB9AC\uB514')) {
-    return ridibooks
+  if (value.includes("ridi") || value.includes("리디")) {
+    return ridibooks;
   }
-  if (
-    value.includes('kakao') &&
-    (value.includes('webtoon') || value.includes('\uC6F9\uD230'))
-  ) {
-    return kakaoWebtoon
+  if (value.includes("카카오웹툰") || value.includes("웹툰")) {
+    return kakaoWebtoon;
   }
-  if (
-    value.includes('kakao') &&
-    (value.includes('page') || value.includes('\uD398\uC774\uC9C0'))
-  ) {
-    return kakaoPage
+  if (value.includes("카카오페이지") || value.includes("페이지")) {
+    return kakaoPage;
   }
 
-  return null
+  return null;
 }
 
 export function WorksInfoSection({ works }: { works: WorksDetail }) {
-  const [expanded, setExpanded] = useState(false)
-  const platforms = (works.platforms ?? []).filter((item) => item.trim().length > 0)
-  const hashtags = (works.hashtags ?? []).filter((item) => item.trim().length > 0)
-  const description = works.description?.trim() ?? ''
+  const [expanded, setExpanded] = useState(false);
+  const platforms = (works.platforms ?? []).filter(
+    (item) => item.trim().length > 0,
+  );
+  const hashtags = (works.hashtags ?? []).filter(
+    (item) => item.trim().length > 0,
+  );
+  const description = works.description?.trim() ?? "";
 
   return (
     <View style={styles.container}>
@@ -52,12 +49,16 @@ export function WorksInfoSection({ works }: { works: WorksDetail }) {
       ) : (
         <View style={styles.platformList}>
           {platforms.map((platform) => {
-            const icon = platformIcon(platform)
+            const icon = platformIcon(platform);
             return (
               <View key={platform} style={styles.platformRow}>
                 <View style={styles.platformIconWrap}>
                   {icon ? (
-                    <Image source={icon} style={styles.platformIcon} contentFit="cover" />
+                    <Image
+                      source={icon}
+                      style={styles.platformIcon}
+                      contentFit="cover"
+                    />
                   ) : (
                     <Text style={styles.platformFallbackText}>
                       {platform.slice(0, 1).toUpperCase()}
@@ -66,7 +67,7 @@ export function WorksInfoSection({ works }: { works: WorksDetail }) {
                 </View>
                 <Text style={styles.platformLabel}>{platform}</Text>
               </View>
-            )
+            );
           })}
         </View>
       )}
@@ -74,12 +75,17 @@ export function WorksInfoSection({ works }: { works: WorksDetail }) {
       <SectionTitle title="작품 소개" />
       {description ? (
         <View>
-          <Text style={styles.description} numberOfLines={expanded ? undefined : 6}>
+          <Text
+            style={styles.description}
+            numberOfLines={expanded ? undefined : 6}
+          >
             {description}
           </Text>
           {description.length > 140 ? (
             <Pressable onPress={() => setExpanded((value) => !value)}>
-              <Text style={styles.expandText}>{expanded ? '접기' : '더보기'}</Text>
+              <Text style={styles.expandText}>
+                {expanded ? "접기" : "더보기"}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -98,21 +104,21 @@ export function WorksInfoSection({ works }: { works: WorksDetail }) {
         </View>
       )}
     </View>
-  )
+  );
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <Text style={styles.sectionTitle}>{title}</Text>
+  return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: S.screenH,
+    paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 32,
   },
   sectionTitle: {
-    ...Typography.heading2,
+    ...Typography.heading3,
     color: C.text,
     marginBottom: 12,
     marginTop: 4,
@@ -127,8 +133,8 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   platformRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   platformIconWrap: {
@@ -136,9 +142,9 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: Radius.full,
     backgroundColor: C.divider,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
   platformIcon: {
     width: 36,
@@ -163,8 +169,8 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   hashtagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
-})
+});

@@ -81,7 +81,7 @@ function summarizeSelected(
   if (values.length === 0) return fallback
   const first = labels[values[0]] ?? values[0]
   if (values.length === 1) return first
-  return `${first} +${values.length - 1}`
+  return `${first} 외 ${values.length - 1}`
 }
 
 function buildSearchHref(keyword: string) {
