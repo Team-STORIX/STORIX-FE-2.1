@@ -34,7 +34,7 @@ export function FavoriteStep({
         <Text style={styles.subtitle}>선택 작품을 기반으로 피드를 구성해드려요</Text>
       ) : (
         <View style={styles.countRow}>
-          <Text style={styles.subtitle}>최대 18개 선택가능</Text>
+          <Text style={[styles.subtitle, styles.subtitleInRow]}>최대 18개 선택가능</Text>
           <Text style={styles.count}>({selectedIds.length}/18)</Text>
         </View>
       )}
@@ -110,6 +110,9 @@ const styles = StyleSheet.create({
     marginTop: 5,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  subtitleInRow: {
+    marginTop: 0,
   },
   count: {
     marginLeft: 4,

@@ -246,12 +246,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionIcon: {
-    width: 24,
-    height: 24,
+    width: 16,
+    height: 16,
   },
   count: {
-    ...Typography.body2Bold,
-    color: Gray[500],
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16.8,
+    color: '#847B7F',
   },
   pressed: {
     opacity: 0.7,

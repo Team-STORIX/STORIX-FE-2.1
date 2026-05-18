@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Keyboard,
-  NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -35,9 +34,17 @@ export function FeedCommentInput({
 }: Props) {
   const { bottom } = useSafeAreaInsets()
   const [navBarHeight, setNavBarHeight] = useState(0)
-  const [inputHeight, setInputHeight] = useState(20)
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+  const [contentHeight, setContentHeight] = useState(0)
+  const inputRef = useRef<TextInput>(null)
   const canSubmit = value.trim().length > 0
+  const isMultiLine = contentHeight > 20
+
+  useEffect(() => {
+    if (replyTargetActive) {
+      inputRef.current?.focus()
+    }
+  }, [replyTargetActive])
 
   useEffect(() => {
     if (bottom > 0) setNavBarHeight(bottom)
@@ -57,13 +64,6 @@ export function FeedCommentInput({
     }
   }, [])
 
-  const handleContentSizeChange = (
-    event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>,
-  ) => {
-    const next = Math.min(39.2, Math.max(20, event.nativeEvent.contentSize.height))
-    setInputHeight(next)
-  }
-
   return (
     <View>
       <View style={styles.container}>
@@ -75,17 +75,24 @@ export function FeedCommentInput({
           />
         </View>
 
-        <View style={styles.inputWrap}>
+        <View style={[styles.inputWrap, isMultiLine && styles.inputWrapExpanded]}>
           <TextInput
+            ref={inputRef}
             value={value}
-            onChangeText={onChangeText}
+            onChangeText={(text) => onChangeText(text.slice(0, MAX_LENGTH))}
             multiline
-            maxLength={300}
-            onContentSizeChange={handleContentSizeChange}
-            style={[styles.input, { height: inputHeight }]}
+            maxLength={MAX_LENGTH}
+            style={styles.input}
             placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
             placeholderTextColor={Gray[300]}
+            textAlignVertical="top"
+            scrollEnabled={false}
+            onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
+            includeFontPadding={false}
           />
+          {value.length > 0 && (
+            <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
+          )}
         </View>
 
         <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>
@@ -133,25 +140,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E1E0E0',
     backgroundColor: '#F8F7F7',
-    paddingLeft: 16,
-    paddingRight: 12,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  inputWrapExpanded: {
+    justifyContent: 'flex-start',
   },
   input: {
-    flex: 1,
     ...Typography.body2Medium,
     color: Gray[800],
-    paddingVertical: 0,
+    padding: 0,
+    margin: 0,
   },
   counter: {
+    position: 'absolute',
+    bottom: 8,
+    right: 16,
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
     color: '#CDC4C8',
-    textAlign: 'right',
   },
   submitButton: {
     width: 36,
