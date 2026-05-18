@@ -315,37 +315,39 @@ export function FeedPostCard({
       )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.bodySection}>
-        <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
-          {images.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.imageScroll}
-              contentContainerStyle={styles.imageContent}
-            >
-              {images.slice(0, 3).map((src, idx) => (
-                <View
-                  key={`${boardId}-img-${idx}`}
-                  style={styles.imageBox}
-                >
-                  <Image
-                    source={{ uri: src }}
-                    style={styles.imageFill}
-                    contentFit="cover"
-                  />
-                </View>
-              ))}
-            </ScrollView>
-          )}
+      <View style={styles.spoilerContainer}>
+        <View style={styles.bodySection}>
+          <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
+            {images.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.imageScroll}
+                contentContainerStyle={styles.imageContent}
+              >
+                {images.slice(0, 3).map((src, idx) => (
+                  <View
+                    key={`${boardId}-img-${idx}`}
+                    style={styles.imageBox}
+                  >
+                    <Image
+                      source={{ uri: src }}
+                      style={styles.imageFill}
+                      contentFit="cover"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            )}
 
-          <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-            <Text
-              style={styles.contentText}
-              numberOfLines={variant === 'detail' ? undefined : 3}
-            >
-              {content}
-            </Text>
+            <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
+              <Text
+                style={styles.contentText}
+                numberOfLines={variant === 'detail' ? undefined : 3}
+              >
+                {content}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -354,18 +356,13 @@ export function FeedPostCard({
             style={styles.spoilerOverlay}
             onPress={() => setSpoilerRevealed(true)}
             accessibilityLabel="스포일러가 포함된 피드글 보기"
-          />
+          >
+            <Text style={styles.spoilerRevealText}>
+              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
+            </Text>
+          </Pressable>
         )}
       </View>
-
-      {/* 스포일러 문구: 프로필 영역 16px 아래, 왼쪽 16px */}
-      {isSpoilerHidden && (
-        <View style={styles.spoilerLabelWrap} pointerEvents="none">
-          <Text style={styles.spoilerRevealText}>
-            {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
-          </Text>
-        </View>
-      )}
 
       {/* ── Reactions row ────────────────────────────────────── */}
       <View style={styles.reactionRow}>
@@ -589,9 +586,11 @@ const styles = StyleSheet.create({
   },
 
   // Body
-  bodySection: {
+  spoilerContainer: {
     marginTop: 20,
     position: 'relative',
+  },
+  bodySection: {
     overflow: 'hidden',
   },
   imageScroll: {
@@ -630,17 +629,13 @@ const styles = StyleSheet.create({
   },
   spoilerOverlay: {
     position: 'absolute',
-    top: -20,
+    top: -4,
     left: 0,
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  },
-  spoilerLabelWrap: {
-    position: 'absolute',
-    top: 57,
-    left: 16,
-    zIndex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 0,
   },
   spoilerRevealText: {
     fontSize: 14,

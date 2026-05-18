@@ -14,6 +14,7 @@ const defaultProfileImage = require('../../../../assets/placeholders/profile-def
 
 type BaseProps = {
   myUserId: number | null
+  writerUserId?: number
   item: ReplyItem
   isMenuOpen: boolean
   onToggleMenu: () => void
@@ -26,6 +27,7 @@ type ReplyProps = BaseProps & {
   variant: 'reply'
   subReplyCount: number
   onReplyTo: () => void
+  isReplyTarget?: boolean
 }
 
 type SubReplyProps = BaseProps & {
@@ -35,12 +37,17 @@ type SubReplyProps = BaseProps & {
 type Props = ReplyProps | SubReplyProps
 
 export function FeedCommentItem(props: Props) {
-  const { myUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport } =
+  const { myUserId, writerUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport } =
     props
   const isMine = myUserId != null && item.reply.userId === myUserId
+  const isWriter = writerUserId != null && item.reply.userId === writerUserId
+  const isReplyTarget = props.variant === 'reply' && props.isReplyTarget
 
   const card = (
-    <View style={props.variant === 'reply' ? styles.replyCard : styles.subReplyInner}>
+    <View style={[
+      props.variant === 'reply' ? styles.replyCard : styles.subReplyInner,
+      isReplyTarget && styles.replyCardHighlighted,
+    ]}>
       <View style={styles.header}>
         <View style={styles.authorRow}>
           <View style={styles.avatarWrap}>
@@ -52,7 +59,7 @@ export function FeedCommentItem(props: Props) {
           </View>
 
           <View style={styles.metaRow}>
-            <Text style={styles.name}>{item.profile.nickName}</Text>
+            <Text style={[styles.name, isWriter && styles.writerName]}>{item.profile.nickName}{isWriter ? <Text style={styles.writerBadge}>(글쓴이)</Text> : null}</Text>
             <Text style={styles.dot}>·</Text>
             <Text style={styles.time}>{item.reply.lastCreatedTime}</Text>
           </View>
@@ -257,5 +264,19 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  writerName: {
+    color: '#FF4093',
+    fontWeight: '700',
+    lineHeight: 19.6,
+  },
+  writerBadge: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 19.6,
+    color: '#FF4093',
+  },
+  replyCardHighlighted: {
+    backgroundColor: '#FFEEF6',
   },
 })

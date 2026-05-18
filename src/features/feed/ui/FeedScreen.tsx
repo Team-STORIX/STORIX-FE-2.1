@@ -193,7 +193,7 @@ export function FeedScreen() {
             isMine ? () => handleDelete(board.boardId) : undefined
           }
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
-          birthdayTheme={board.board.theme === 'BIRTHDAY'}
+          birthdayTheme={board.theme === 'BIRTHDAY'}
         />
       )
     },

@@ -29,7 +29,7 @@ import {
 } from '../api/feed/readerBoardDetail.api'
 import { deleteBoard, reportBoard, toggleBoardLike } from '../api/feed/readerBoard.api'
 import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
-import { FeedCommentInput } from './FeedCommentInput'
+import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
 import { ReportModal } from './ReportModal'
@@ -50,6 +50,7 @@ export function FeedDetailScreen() {
   const params = useLocalSearchParams<{ boardId?: string }>()
   const boardId = parseBoardId(params.boardId)
   const scrollRef = useRef<ScrollView | null>(null)
+  const commentInputRef = useRef<FeedCommentInputHandle>(null)
 
   const { data: me } = useMe()
   const myUserId = me?.userId ?? null
@@ -80,6 +81,11 @@ export function FeedDetailScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+  const [reportTarget, setReportTarget] = useState<{
+    profileImageUrl?: string | null
+    nickname: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
@@ -421,7 +427,7 @@ export function FeedDetailScreen() {
                 }
                 onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
-                birthdayTheme={board.board.theme === 'BIRTHDAY'}
+                birthdayTheme={board.theme === 'BIRTHDAY'}
               />
 
               {replies.map((item) => {
@@ -433,7 +439,9 @@ export function FeedDetailScreen() {
                     <FeedCommentItem
                       variant="reply"
                       myUserId={myUserId}
+                      writerUserId={profile.userId}
                       item={merged}
+                      isReplyTarget={replyTargetId === item.reply.replyId}
                       subReplyCount={(item.childReplies ?? []).length + (subRepliesMap[item.reply.replyId] ?? []).length}
                       isMenuOpen={openReplyMenuId === item.reply.replyId}
                       onToggleMenu={() =>
@@ -447,11 +455,13 @@ export function FeedDetailScreen() {
                           likeCount: merged.reply.likeCount,
                         })
                       }
-                      onReplyTo={() =>
-                        setReplyTargetId((prev) =>
-                          prev === item.reply.replyId ? null : item.reply.replyId,
-                        )
-                      }
+                      onReplyTo={() => {
+                        const next = replyTargetId === item.reply.replyId ? null : item.reply.replyId
+                        setReplyTargetId(next)
+                        if (next != null) {
+                          commentInputRef.current?.focus()
+                        }
+                      }}
                       onOpenDelete={() => onDeleteReply(item.reply.replyId)}
                       onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId, item.profile)}
                     />
@@ -468,6 +478,7 @@ export function FeedDetailScreen() {
                           key={subReply.reply.replyId}
                           variant="subReply"
                           myUserId={myUserId}
+                          writerUserId={profile.userId}
                           item={mergedSub}
                           isMenuOpen={openSubReplyMenuId === subReply.reply.replyId}
                           onToggleMenu={() =>
@@ -500,6 +511,7 @@ export function FeedDetailScreen() {
             </ScrollView>
 
             <FeedCommentInput
+              ref={commentInputRef}
               profileImageUrl={me?.profileImageUrl}
               replyTargetActive={replyTargetId != null}
               value={commentText}
@@ -508,6 +520,13 @@ export function FeedDetailScreen() {
             />
           </KeyboardAvoidingView>
         )}
+      <ReportModal
+        visible={reportTarget != null}
+        profileImageUrl={reportTarget?.profileImageUrl}
+        nickname={reportTarget?.nickname ?? ''}
+        onClose={() => setReportTarget(null)}
+        onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
+      />
     </View>
   )
 }
