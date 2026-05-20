@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputContentSizeChangeEventData,
   View,
 } from 'react-native'
 import { Image } from 'expo-image'

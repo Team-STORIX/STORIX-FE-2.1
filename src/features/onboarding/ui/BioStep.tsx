@@ -57,6 +57,9 @@ const styles = StyleSheet.create({
     marginTop: 84,
     width: '100%',
   },
+  inputBlockEdit: {
+    marginTop: 0,
+  },
   inputUnderline: {
     borderBottomWidth: 2,
     borderBottomColor: '#CDC4C8',
