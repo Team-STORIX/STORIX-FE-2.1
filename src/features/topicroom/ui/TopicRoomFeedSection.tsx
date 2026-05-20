@@ -245,32 +245,36 @@ function PopularTopicRoomRow({
 const styles = StyleSheet.create({
   root: {
     backgroundColor: C.card,
-    paddingBottom: 16,
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: PADDING_H,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 20,
+    paddingBottom: 14,
   },
   headerSpaced: {
-    paddingTop: 24,
+    paddingTop: 32,
   },
   sectionTitle: {
     ...Typography.heading2,
     color: C.text,
   },
   loader: {
-    marginVertical: 16,
+    alignSelf: 'center',
+    marginVertical: 24,
   },
   errorText: {
     ...Typography.body2Medium,
     color: C.error,
     paddingHorizontal: PADDING_H,
+    textAlign: 'center',
   },
   emptyInline: {
     ...Typography.body2Medium,
     color: C.textMuted,
     paddingHorizontal: PADDING_H,
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   pageList: {
     paddingHorizontal: 0,
@@ -282,8 +286,9 @@ const styles = StyleSheet.create({
   dots: {
     flexDirection: 'row',
     alignSelf: 'center',
+    alignItems: 'center',
     gap: 6,
-    marginTop: 12,
+    marginTop: 16,
   },
   dot: {
     width: 6,
@@ -293,7 +298,7 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     backgroundColor: C.primary,
-    width: 18,
+    width: 16,
   },
 
   popularCard: {
@@ -302,9 +307,9 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radius.lg,
     backgroundColor: C.bg,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    gap: 12,
+    gap: 14,
   },
   cardPressed: {
     opacity: 0.85,
@@ -333,7 +338,7 @@ const styles = StyleSheet.create({
   popularBody: {
     flex: 1,
     justifyContent: 'center',
-    gap: 4,
+    gap: 6,
   },
   popularSubtitle: {
     ...Typography.caption1Medium,
@@ -347,7 +352,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 4,
+    marginTop: 6,
   },
   hotChip: {
     flexDirection: 'row',
@@ -386,21 +391,24 @@ const styles = StyleSheet.create({
   },
 
   myList: {
-    gap: 12,
-    paddingVertical: 4,
+    gap: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   myEmpty: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 48,
     paddingHorizontal: PADDING_H,
-    gap: 6,
+    gap: 8,
   },
   myEmptyTitle: {
     ...Typography.body1Bold,
     color: C.text,
+    textAlign: 'center',
   },
   myEmptySubtitle: {
     ...Typography.body2Medium,
     color: C.textMuted,
+    textAlign: 'center',
   },
 })
