@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
@@ -19,12 +20,12 @@ const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 
 const REPORT_REASONS: { value: string; label: string }[] = [
-  { value: 'ABUSE', label: '욕설 / 모욕적 언어' },
-  { value: 'SPAM', label: '도배 / 광고성 메시지' },
-  { value: 'ADULT', label: '음란 / 성적인 내용' },
-  { value: 'PRIVACY', label: '개인정보 노출' },
+  { value: 'ABUSE', label: '욕설, 비방, 혐오 표현을 해요' },
+  { value: 'PHISHING', label: '보이스 피싱과 같이 다른 채널로 유도해요' },
   { value: 'OTHER', label: '기타' },
 ]
+
+const OTHER_REASON_MAX = 200
 
 type Props = {
   visible: boolean
@@ -32,7 +33,11 @@ type Props = {
   myUserId?: number | null
   isSubmitting?: boolean
   onClose: () => void
-  onConfirm: (params: { userId: number; reason: string }) => void
+  onConfirm: (params: {
+    userId: number
+    reason: string
+    otherReason?: string | null
+  }) => void
 }
 
 export function TopicRoomReportSheet({
@@ -46,11 +51,13 @@ export function TopicRoomReportSheet({
   const insets = useSafeAreaInsets()
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [selectedReason, setSelectedReason] = useState<string | null>(null)
+  const [otherReason, setOtherReason] = useState('')
 
   useEffect(() => {
     if (!visible) {
       setSelectedUserId(null)
       setSelectedReason(null)
+      setOtherReason('')
     }
   }, [visible])
 
@@ -59,8 +66,13 @@ export function TopicRoomReportSheet({
     [members, myUserId],
   )
 
+  const trimmedOther = otherReason.trim()
+  const otherInvalid = selectedReason === 'OTHER' && trimmedOther.length === 0
   const canSubmit =
-    !isSubmitting && selectedUserId != null && selectedReason != null
+    !isSubmitting &&
+    selectedUserId != null &&
+    selectedReason != null &&
+    !otherInvalid
 
   return (
     <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
@@ -76,7 +88,7 @@ export function TopicRoomReportSheet({
 
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>유저 신고하기</Text>
+            <Text style={styles.title}>신고하기</Text>
             <Pressable
               onPress={() => {
                 if (!isSubmitting) onClose()
@@ -86,6 +98,10 @@ export function TopicRoomReportSheet({
               <Image source={cancelIcon} style={styles.closeIcon} contentFit="contain" />
             </Pressable>
           </View>
+
+          <Text style={styles.warningCopy}>
+            허위 신고 시 서비스 이용에 제한이 있을 수 있어요.
+          </Text>
 
           <Text style={styles.sectionLabel}>신고할 유저</Text>
           {reportable.length === 0 ? (
@@ -154,10 +170,33 @@ export function TopicRoomReportSheet({
             })}
           </View>
 
+          {selectedReason === 'OTHER' ? (
+            <View style={styles.otherWrap}>
+              <TextInput
+                value={otherReason}
+                onChangeText={(t) => setOtherReason(t.slice(0, OTHER_REASON_MAX))}
+                placeholder="신고 사유를 직접 입력해 주세요"
+                placeholderTextColor={C.textMuted}
+                multiline
+                style={styles.otherInput}
+                maxLength={OTHER_REASON_MAX}
+                editable={!isSubmitting}
+              />
+              <Text style={styles.otherCounter}>
+                {trimmedOther.length}/{OTHER_REASON_MAX}
+              </Text>
+            </View>
+          ) : null}
+
           <Pressable
             onPress={() => {
               if (!canSubmit) return
-              onConfirm({ userId: selectedUserId!, reason: selectedReason! })
+              onConfirm({
+                userId: selectedUserId!,
+                reason: selectedReason!,
+                otherReason:
+                  selectedReason === 'OTHER' ? trimmedOther : null,
+              })
             }}
             disabled={!canSubmit}
             style={({ pressed }) => [
@@ -213,6 +252,11 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
   },
+  warningCopy: {
+    ...Typography.caption1Medium,
+    color: C.textMuted,
+    marginBottom: 16,
+  },
   sectionLabel: {
     ...Typography.body2Bold,
     color: C.text,
@@ -220,6 +264,29 @@ const styles = StyleSheet.create({
   },
   reasonHeading: {
     marginTop: 18,
+  },
+  otherWrap: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: C.divider,
+    borderRadius: Radius.sm,
+    backgroundColor: C.bg,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  otherInput: {
+    minHeight: 72,
+    ...Typography.body2Medium,
+    color: C.text,
+    paddingVertical: 0,
+    textAlignVertical: 'top',
+  },
+  otherCounter: {
+    ...Typography.caption2Medium,
+    color: C.textMuted,
+    textAlign: 'right',
+    marginTop: 4,
   },
   emptyMembers: {
     paddingVertical: 24,

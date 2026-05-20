@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import {
   ChatBubble,
   ChatInput,
   ConnectionStatusPill,
+  LeaveConfirmModal,
   TopicRoomMenuSheet,
   TopicRoomReportSheet,
   TopicRoomTopBar,
@@ -52,6 +52,7 @@ export default function TopicRoomScreen() {
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [presetReportUserId, setPresetReportUserId] = useState<number | null>(null)
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -105,34 +106,33 @@ export default function TopicRoomScreen() {
 
   const handleLeave = useCallback(() => {
     if (leaveMutation.isPending) return
-    Alert.alert('채팅방 나가기', '정말 이 채팅방을 나가시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '나가기',
-        style: 'destructive',
-        onPress: () => {
-          leaveMutation.mutate(roomId, {
-            onSuccess: () => {
-              if (router.canGoBack()) router.back()
-              else router.replace('/(tabs)' as const)
-            },
-            onError: () => {
-              showToast('채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.')
-            },
-          })
-        },
+    setLeaveConfirmOpen(true)
+  }, [leaveMutation.isPending])
+
+  const handleConfirmLeave = useCallback(() => {
+    if (leaveMutation.isPending) return
+    leaveMutation.mutate(roomId, {
+      onSuccess: () => {
+        setLeaveConfirmOpen(false)
+        if (router.canGoBack()) router.back()
+        else router.replace('/(tabs)' as const)
       },
-    ])
+      onError: () => {
+        setLeaveConfirmOpen(false)
+        showToast('채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.')
+      },
+    })
   }, [leaveMutation, roomId, router, showToast])
 
   const handleConfirmReport = useCallback(
-    async (params: { userId: number; reason: string }) => {
+    async (params: { userId: number; reason: string; otherReason?: string | null }) => {
       if (reportMutation.isPending) return
       try {
         await reportMutation.mutateAsync({
           roomId,
           reportedUserId: params.userId,
           reason: params.reason,
+          otherReason: params.otherReason ?? null,
         })
         setReportOpen(false)
         setPresetReportUserId(null)
@@ -282,6 +282,16 @@ export default function TopicRoomScreen() {
         }}
         onConfirm={handleConfirmReport}
         key={presetReportUserId ?? 'report'}
+      />
+
+      <LeaveConfirmModal
+        visible={leaveConfirmOpen}
+        isPending={leaveMutation.isPending}
+        onClose={() => {
+          if (leaveMutation.isPending) return
+          setLeaveConfirmOpen(false)
+        }}
+        onConfirm={handleConfirmLeave}
       />
 
       <Toast message={toastMessage} bottomOffset={insets.bottom + 80} />
