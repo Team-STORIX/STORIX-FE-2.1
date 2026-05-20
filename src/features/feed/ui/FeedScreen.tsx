@@ -5,12 +5,12 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAllBoards } from '../hooks/feed/useAllBoards'
@@ -21,12 +21,11 @@ import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
 import { Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
+import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
 import { ReportModal } from './ReportModal'
-
-const bigStarPinkIcon = require('../../../../assets/icons/common/big-star-pink.svg')
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 
@@ -225,20 +224,6 @@ export function FeedScreen() {
 
   const favoriteWorks = favoriteWorksQuery.data?.result?.content ?? []
 
-  const writersComingSoon = (
-    <View style={styles.comingSoon}>
-      <Image
-        source={bigStarPinkIcon}
-        style={styles.comingSoonIcon}
-        contentFit="contain"
-      />
-      <View style={styles.comingSoonText}>
-        <Text style={styles.comingSoonLine}>오픈 준비 중이에요</Text>
-        <Text style={styles.comingSoonLine}>조금만 기다려주세요</Text>
-      </View>
-    </View>
-  )
-
   const listHeader = (
     <View style={styles.listHeader}>
       <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
@@ -266,8 +251,20 @@ export function FeedScreen() {
     return (
       <>
         <View style={[styles.screen, { paddingTop: insets.top }]}>
-          <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
-          {writersComingSoon}
+          <FeedTopbar
+            activeTab={tab}
+            onChange={(t) => {
+              setTab(t)
+              setPick('all')
+            }}
+          />
+          <ScrollView
+            style={styles.screen}
+            contentContainerStyle={styles.topicroomContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <TopicRoomFeedSection />
+          </ScrollView>
         </View>
         {reportModal}
       </>
@@ -369,22 +366,7 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 16,
   },
-  comingSoon: {
-    alignItems: 'center',
-    marginTop: 196,
-  },
-  comingSoonIcon: {
-    width: 100,
-    height: 100,
-  },
-  comingSoonText: {
-    marginTop: 22,
-    alignItems: 'center',
-  },
-  comingSoonLine: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
-    color: Gray[900],
+  topicroomContent: {
+    paddingBottom: 128,
   },
 })
