@@ -1,21 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import type { WorksMyReview } from '../../features/works/api/worksReview.schema'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { Typography } from '../../theme/typography'
-import { ReviewMetaBar } from './ReviewMetaBar'
-import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { WorksMyReview } from "../../features/works/api/worksReview.schema";
+import { C } from "../../theme/colors";
+import { Radius } from "../../theme/radius";
+import { Typography } from "../../theme/typography";
+import { ReviewMetaBar } from "./ReviewMetaBar";
+import { ReviewSpoilerBlock } from "./ReviewSpoilerBlock";
 
-const arrowForwardIcon = require('../../../assets/icons/common/icon-arrow-forward.svg')
-const arrowSmallIcon = require('../../../assets/icons/common/icon-arrow-forward-small.svg')
+const arrowForwardIcon = require("../../../assets/icons/common/icon-arrow-forward.svg");
+const arrowSmallIcon = require("../../../assets/icons/common/icon-arrow-forward-small.svg");
 
 type Props = {
-  myReview?: WorksMyReview | null
-  userName?: string
-  onPressWrite: () => void
-  onPressDetail: (reviewId: number) => void
-}
+  myReview?: WorksMyReview | null;
+  userName?: string;
+  onPressWrite: () => void;
+  onPressDetail: (reviewId: number) => void;
+};
 
 export function MyReviewSection({
   myReview,
@@ -23,8 +23,8 @@ export function MyReviewSection({
   onPressWrite,
   onPressDetail,
 }: Props) {
-  const hasReview = !!myReview?.content
-  const safeName = userName?.trim() || '유저'
+  const hasReview = !!myReview?.content;
+  const safeName = userName?.trim() || "유저";
 
   return (
     <View style={styles.section}>
@@ -33,16 +33,19 @@ export function MyReviewSection({
       {hasReview ? (
         <>
           <Pressable
-            style={({ pressed }) => [styles.contentRow, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.contentRow,
+              pressed && styles.pressed,
+            ]}
             onPress={() => {
-              if (myReview?.reviewId != null) onPressDetail(myReview.reviewId)
+              if (myReview?.reviewId != null) onPressDetail(myReview.reviewId);
             }}
           >
             <View style={styles.contentTextWrap}>
               <ReviewSpoilerBlock
                 isSpoiler={myReview?.isSpoiler === true}
                 spoilerScript={myReview?.spoilerScript}
-                content={myReview?.content ?? ''}
+                content={myReview?.content ?? ""}
                 numberOfLines={2}
                 backgroundColor={C.bg}
                 textStyle={styles.contentText}
@@ -70,7 +73,10 @@ export function MyReviewSection({
           </Text>
 
           <Pressable
-            style={({ pressed }) => [styles.ctaButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.ctaButton,
+              pressed && styles.pressed,
+            ]}
             onPress={onPressWrite}
             accessibilityRole="button"
             accessibilityLabel="리뷰 작성하기"
@@ -85,7 +91,7 @@ export function MyReviewSection({
         </View>
       )}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -99,15 +105,15 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   title: {
-    ...Typography.heading2,
+    ...Typography.heading3,
     color: C.text,
     paddingLeft: 4,
     paddingBottom: 12,
   },
   contentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingHorizontal: 4,
     paddingVertical: 20,
   },
@@ -136,8 +142,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     backgroundColor: C.card,
     borderRadius: Radius.md,
-    alignItems: 'center',
-    shadowColor: '#131112',
+    alignItems: "center",
+    shadowColor: "#131112",
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
@@ -146,21 +152,21 @@ const styles = StyleSheet.create({
   emptyTitle: {
     ...Typography.body1Semibold,
     color: C.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   ctaButton: {
     marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    width: '100%',
+    width: "100%",
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: '#fdbcd9',
-    backgroundColor: '#ffeef6',
+    borderColor: "#fdbcd9",
+    backgroundColor: "#ffeef6",
   },
   ctaText: {
     ...Typography.body2Bold,
@@ -174,4 +180,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-})
+});
