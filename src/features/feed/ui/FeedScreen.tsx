@@ -21,6 +21,7 @@ import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
 import { Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
+import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
@@ -295,9 +296,7 @@ export function FeedScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>등록된 피드가 없습니다.</Text>
-          </View>
+          <WarningEmptyState description="등록된 피드가 없습니다." />
         )
       }
       ListFooterComponent={

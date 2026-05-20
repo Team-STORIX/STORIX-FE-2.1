@@ -12,6 +12,7 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Toast } from '../../src/components/common/Toast'
+import { WarningEmptyState } from '../../src/components/common/WarningEmptyState'
 import { useProfileStore } from '../../src/features/profile'
 import {
   ChatBubble,
@@ -242,11 +243,11 @@ export default function TopicRoomScreen() {
         }
         ListEmptyComponent={
           !historyLoading && !historyError ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                아직 메시지가 없습니다. 첫 메시지를 보내보세요.
-              </Text>
-            </View>
+            <WarningEmptyState
+              description="아직 메시지가 없습니다. 첫 메시지를 보내보세요."
+              iconSize={96}
+              style={styles.chatEmpty}
+            />
           ) : null
         }
       />
@@ -304,15 +305,8 @@ const styles = StyleSheet.create({
 
   paginationLoader: { paddingVertical: 10 },
 
-  emptyContainer: {
+  chatEmpty: {
     paddingVertical: 56,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: C.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
+    transform: [{ scaleY: -1 }],
   },
 })

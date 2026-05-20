@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,65 +11,64 @@ import {
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { C } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
-import { formatTopicRoomSubtitle } from '../api/formatTopicRoomSubtitle'
-import type { TopicRoomItem } from '../api/topicroom.schema'
-import { useJoinTopicRoom } from '../hooks/useJoinTopicRoom'
-import { useMyTopicRoomsAll } from '../hooks/useMyTopicRoomsAll'
-import { usePopularTopicRooms } from '../hooks/usePopularTopicRooms'
-import { TopicRoomListItem } from './TopicRoomListItem'
+} from "react-native";
+import { WarningEmptyState } from "../../../components/common/WarningEmptyState";
+import { C } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
+import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
+import type { TopicRoomItem } from "../api/topicroom.schema";
+import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
+import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
+import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
+import { TopicRoomListItem } from "./TopicRoomListItem";
 
-const fireIcon = require('../../../../assets/icons/common/fire.svg')
-const peopleIcon = require('../../../../assets/icons/common/icon-topicroom-people.svg')
+const fireIcon = require("../../../../assets/icons/common/fire.svg");
+const peopleIcon = require("../../../../assets/icons/common/icon-topicroom-people.svg");
 
-const PADDING_H = 16
-const CARD_GAP = 12
-const CARDS_PER_PAGE = 3
+const PADDING_H = 16;
+const CARD_GAP = 12;
+const CARDS_PER_PAGE = 3;
 
 function chunk<T>(items: T[], size: number): T[][] {
-  if (size <= 0) return [items]
-  const out: T[][] = []
+  if (size <= 0) return [items];
+  const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
-    out.push(items.slice(i, i + size))
+    out.push(items.slice(i, i + size));
   }
-  return out
+  return out;
 }
 
 export function TopicRoomFeedSection() {
-  const router = useRouter()
-  const { width } = useWindowDimensions()
-  const pageWidth = Math.max(0, width - PADDING_H * 2)
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const pageWidth = Math.max(0, width - PADDING_H * 2);
 
-  const popularQuery = usePopularTopicRooms()
-  const myQuery = useMyTopicRoomsAll()
-  const joinMutation = useJoinTopicRoom()
-  const joiningId = joinMutation.isPending ? joinMutation.variables : null
+  const popularQuery = usePopularTopicRooms();
+  const myQuery = useMyTopicRoomsAll();
+  const joinMutation = useJoinTopicRoom();
+  const joiningId = joinMutation.isPending ? joinMutation.variables : null;
 
   const handleEnter = (item: TopicRoomItem) => {
     const navigate = () =>
-      router.push(`/topicroom/${item.topicRoomId}` as const)
+      router.push(`/topicroom/${item.topicRoomId}` as const);
     if (item.isJoined) {
-      navigate()
-      return
+      navigate();
+      return;
     }
-    joinMutation.mutate(item.topicRoomId, { onSuccess: navigate })
-  }
+    joinMutation.mutate(item.topicRoomId, { onSuccess: navigate });
+  };
 
   const popularPages = useMemo(
     () => chunk(popularQuery.data ?? [], CARDS_PER_PAGE),
     [popularQuery.data],
-  )
+  );
 
-  const [pageIndex, setPageIndex] = useState(0)
+  const [pageIndex, setPageIndex] = useState(0);
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (pageWidth <= 0) return
-    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / pageWidth))
-  }
+    if (pageWidth <= 0) return;
+    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / pageWidth));
+  };
 
   return (
     <View style={styles.root}>
@@ -84,7 +85,10 @@ export function TopicRoomFeedSection() {
       ) : popularQuery.isError ? (
         <Text style={styles.errorText}>토픽룸을 불러오지 못했어요.</Text>
       ) : popularPages.length === 0 ? (
-        <Text style={styles.emptyInline}>지금 핫한 토픽룸이 없어요.</Text>
+        <WarningEmptyState
+          description="지금 핫한 토픽룸이 없어요."
+          iconSize={96}
+        />
       ) : (
         <>
           <FlatList
@@ -138,30 +142,27 @@ export function TopicRoomFeedSection() {
           참여 중인 토픽룸을 불러오지 못했어요.
         </Text>
       ) : (myQuery.data?.length ?? 0) === 0 ? (
-        <View style={styles.myEmpty}>
-          <Text style={styles.myEmptyTitle}>
-            아직 참여 중인 토픽룸이 없어요
-          </Text>
-          <Text style={styles.myEmptySubtitle}>
-            위에서 마음에 드는 토픽룸에 참여해보세요
-          </Text>
-        </View>
+        <WarningEmptyState
+          title="아직 참여 중인 토픽룸이 없어요"
+          description="토픽룸 참여하러 가기"
+          iconSize={120}
+        />
       ) : (
         <View style={styles.myList}>
           {(myQuery.data ?? []).map((room) => {
-            const withJoined = { ...room, isJoined: true }
+            const withJoined = { ...room, isJoined: true };
             return (
               <TopicRoomListItem
                 key={room.topicRoomId}
                 item={withJoined}
                 onPress={() => handleEnter(withJoined)}
               />
-            )
+            );
           })}
         </View>
       )}
     </View>
-  )
+  );
 }
 
 function PopularTopicRoomRow({
@@ -169,14 +170,14 @@ function PopularTopicRoomRow({
   isJoining,
   onPress,
 }: {
-  item: TopicRoomItem
-  isJoining: boolean
-  onPress: () => void
+  item: TopicRoomItem;
+  isJoining: boolean;
+  onPress: () => void;
 }) {
-  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
-  const initial = (item.worksName || item.topicRoomName || '?')
+  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
+  const initial = (item.worksName || item.topicRoomName || "?")
     .slice(0, 1)
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <Pressable
@@ -239,7 +240,7 @@ function PopularTopicRoomRow({
         />
       ) : null}
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -260,21 +261,14 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   loader: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginVertical: 24,
   },
   errorText: {
     ...Typography.body2Medium,
     color: C.error,
     paddingHorizontal: PADDING_H,
-    textAlign: 'center',
-  },
-  emptyInline: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    paddingHorizontal: PADDING_H,
-    textAlign: 'center',
-    paddingVertical: 12,
+    textAlign: "center",
   },
   pageList: {
     paddingHorizontal: 0,
@@ -284,9 +278,9 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   dots: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignSelf: "center",
+    alignItems: "center",
     gap: 6,
     marginTop: 16,
   },
@@ -302,8 +296,8 @@ const styles = StyleSheet.create({
   },
 
   popularCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 120,
     borderRadius: Radius.lg,
     backgroundColor: C.bg,
@@ -318,7 +312,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: Radius.md,
-    overflow: 'hidden',
+    overflow: "hidden",
     flexShrink: 0,
   },
   popularThumb: {
@@ -327,8 +321,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
   },
   popularThumbFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primaryLight,
   },
   popularThumbFallbackText: {
@@ -337,7 +331,7 @@ const styles = StyleSheet.create({
   },
   popularBody: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     gap: 6,
   },
   popularSubtitle: {
@@ -349,14 +343,14 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 6,
   },
   hotChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: Radius.full,
     backgroundColor: C.primary,
     paddingHorizontal: 6,
@@ -368,8 +362,8 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   peopleChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: Radius.full,
     backgroundColor: C.primaryLight,
     paddingHorizontal: 6,
@@ -385,7 +379,7 @@ const styles = StyleSheet.create({
     height: 12,
   },
   joiningSpinner: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 16,
   },
@@ -395,20 +389,4 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 8,
   },
-  myEmpty: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: PADDING_H,
-    gap: 8,
-  },
-  myEmptyTitle: {
-    ...Typography.body1Bold,
-    color: C.text,
-    textAlign: 'center',
-  },
-  myEmptySubtitle: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
-  },
-})
+});
