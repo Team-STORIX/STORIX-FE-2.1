@@ -296,20 +296,21 @@ const styles = StyleSheet.create({
     color: C.error,
     textAlign: 'center',
     padding: 16,
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 20,
   },
 
-  listContent: { paddingVertical: 8 },
+  listContent: { paddingVertical: 12 },
 
   paginationLoader: { paddingVertical: 10 },
 
   emptyContainer: {
-    paddingVertical: 48,
+    paddingVertical: 56,
     paddingHorizontal: 32,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 14,
     color: C.textMuted,
     textAlign: 'center',
     lineHeight: 20,

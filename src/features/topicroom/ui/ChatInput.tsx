@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C } from '../../../theme/colors'
+import { Typography } from '../../../theme/typography'
 
 type Props = {
   value: string
@@ -22,20 +23,22 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
   const insets = useSafeAreaInsets()
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder="메시지를 입력하세요…"
-        placeholderTextColor={C.textMuted}
-        multiline
-        maxLength={500}
-        returnKeyType="send"
-        onSubmitEditing={canSend ? onSend : undefined}
-        blurOnSubmit={false}
-        editable={!isSending}
-      />
+    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+      <View style={styles.inputWrap}>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="메시지를 입력하세요"
+          placeholderTextColor={C.textMuted}
+          multiline
+          maxLength={500}
+          returnKeyType="send"
+          onSubmitEditing={canSend ? onSend : undefined}
+          blurOnSubmit={false}
+          editable={!isSending}
+        />
+      </View>
       <Pressable
         style={({ pressed }) => [
           styles.sendBtn,
@@ -51,7 +54,7 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
           <ActivityIndicator size="small" color="#fff" />
         ) : (
           <Text style={[styles.sendIcon, !canSend && styles.sendIconDisabled]}>
-            ▲
+            ↑
           </Text>
         )}
       </Pressable>
@@ -63,27 +66,27 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     backgroundColor: C.card,
     borderTopWidth: 1,
-    borderTopColor: C.border,
-    gap: 8,
+    borderTopColor: C.divider,
+    gap: 10,
   },
-  input: {
+  inputWrap: {
     flex: 1,
     minHeight: 40,
-    maxHeight: 120,
     backgroundColor: C.bg,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.border,
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 10 : 8,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-    fontSize: 14,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+  },
+  input: {
+    maxHeight: 96,
+    ...Typography.body2Medium,
     color: C.text,
-    lineHeight: 20,
+    paddingVertical: 0,
   },
   sendBtn: {
     width: 40,
@@ -92,11 +95,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    marginBottom: 0,
   },
   sendBtnActive: { backgroundColor: C.primary },
   sendBtnDisabled: { backgroundColor: C.divider },
   sendBtnPressed: { opacity: 0.75 },
-  sendIcon: { fontSize: 15, color: '#fff', fontWeight: '700' },
+  sendIcon: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '700',
+    lineHeight: 20,
+  },
   sendIconDisabled: { color: C.textMuted },
 })

@@ -9,6 +9,7 @@ const menuIcon = require('../../../../assets/icons/common/menu-3dots.svg')
 type Props = {
   topInset: number
   title: string
+  subtitle?: string
   memberCount?: number
   onBack: () => void
   onPressMenu?: () => void
@@ -17,10 +18,13 @@ type Props = {
 export function TopicRoomTopBar({
   topInset,
   title,
+  subtitle,
   memberCount,
   onBack,
   onPressMenu,
 }: Props) {
+  const hasSubLine = subtitle != null || typeof memberCount === 'number'
+
   return (
     <View style={[styles.container, { paddingTop: topInset + 8 }]}>
       <Pressable
@@ -36,10 +40,23 @@ export function TopicRoomTopBar({
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-        {typeof memberCount === 'number' ? (
-          <View style={styles.memberRow}>
-            <Image source={peopleIcon} style={styles.peopleIcon} contentFit="contain" />
-            <Text style={styles.memberText}>{memberCount}</Text>
+        {hasSubLine ? (
+          <View style={styles.subRow}>
+            {subtitle ? (
+              <Text style={styles.subtitleText} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+            {typeof memberCount === 'number' ? (
+              <View style={styles.memberRow}>
+                <Image
+                  source={peopleIcon}
+                  style={styles.peopleIcon}
+                  contentFit="contain"
+                />
+                <Text style={styles.memberText}>{memberCount}</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -82,14 +99,22 @@ const styles = StyleSheet.create({
   },
   titleWrap: {
     flex: 1,
+    paddingHorizontal: 4,
+    justifyContent: 'center',
+  },
+  title: {
+    ...Typography.body1Bold,
+    color: C.text,
+  },
+  subRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 4,
+    marginTop: 2,
   },
-  title: {
-    ...Typography.body1Semibold,
-    color: C.text,
+  subtitleText: {
+    ...Typography.caption1Medium,
+    color: C.textSecondary,
     flexShrink: 1,
   },
   memberRow: {
@@ -98,8 +123,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   peopleIcon: {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
   },
   memberText: {
     ...Typography.caption1Medium,

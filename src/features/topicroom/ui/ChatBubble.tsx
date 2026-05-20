@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { C } from '../../../theme/colors'
+import { Typography } from '../../../theme/typography'
 
 const profileDefault = require('../../../../assets/icons/profile/profile-default.svg')
 
@@ -63,22 +64,22 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
   )
 }
 
-const AVATAR_SIZE = 32
-const BUBBLE_RADIUS = 16
+const AVATAR_SIZE = 36
+const BUBBLE_RADIUS = 18
 
 const styles = StyleSheet.create({
   rowMe: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
   rowOther: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
 
   avatar: {
@@ -97,9 +98,9 @@ const styles = StyleSheet.create({
 
   otherBody: { flexShrink: 1 },
   senderName: {
-    fontSize: 11,
-    color: C.textMuted,
-    marginBottom: 3,
+    ...Typography.caption1Medium,
+    color: C.textSecondary,
+    marginBottom: 4,
   },
   otherBubbleRow: {
     flexDirection: 'row',
@@ -107,34 +108,37 @@ const styles = StyleSheet.create({
   },
 
   bubble: {
-    maxWidth: 240,
+    maxWidth: 260,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: BUBBLE_RADIUS,
   },
   bubbleMe: {
     backgroundColor: C.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
     marginLeft: 6,
   },
   bubbleOther: {
     backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
   },
   pressed: {
     opacity: 0.7,
   },
 
-  textMe: { fontSize: 14, color: '#fff', lineHeight: 20 },
-  textOther: { fontSize: 14, color: C.text, lineHeight: 20 },
+  textMe: { ...Typography.body2Medium, color: '#fff' },
+  textOther: { ...Typography.body2Medium, color: C.text },
 
-  timeMe: { fontSize: 10, color: C.textMuted, marginRight: 4, marginBottom: 2 },
-  timeOther: {
-    fontSize: 10,
+  timeMe: {
+    ...Typography.caption2Medium,
     color: C.textMuted,
-    marginLeft: 4,
+    marginRight: 6,
+    marginBottom: 2,
+  },
+  timeOther: {
+    ...Typography.caption2Medium,
+    color: C.textMuted,
+    marginLeft: 6,
     marginBottom: 2,
     flexShrink: 0,
   },
