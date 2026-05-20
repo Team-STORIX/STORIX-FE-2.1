@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAllBoards } from '../hooks/feed/useAllBoards'
 import { useBoardsByWorksId } from '../hooks/feed/useBoardsByWorksId'
@@ -35,8 +35,24 @@ export function FeedScreen() {
   const router = useRouter()
   const qc = useQueryClient()
 
-  const [tab, setTab] = useState<FeedTab>('works')
+  // `section=topicroom` lands the user on the TopicRoom (writers) tab when
+  // navigated here from Home's "실시간 작품 이야기" section.
+  const params = useLocalSearchParams<{ section?: string | string[] }>()
+  const sectionParam = Array.isArray(params.section)
+    ? params.section[0]
+    : params.section
+
+  const [tab, setTab] = useState<FeedTab>(
+    sectionParam === 'topicroom' ? 'writers' : 'works',
+  )
   const [pick, setPick] = useState<string>('all')
+
+  useEffect(() => {
+    if (sectionParam === 'topicroom') {
+      setTab('writers')
+      setPick('all')
+    }
+  }, [sectionParam])
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
