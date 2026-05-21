@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Client, type IFrame, type StompSubscription } from '@stomp/stompjs'
+import { getAccessToken } from '../../../lib/storage/secure'
 import { useAuthStore } from '../../../store/auth.store'
 import { useProfileStore } from '../../profile/store/profile.store'
 import {
@@ -114,15 +115,51 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
       }
       if (cancelled) return
 
+      // Use the freshest persisted token. The in-memory store token can go stale
+      // after the axios interceptor silently rotates it on a 401 (it writes to
+      // SecureStore but does not update the store), which would otherwise make
+      // the STOMP CONNECT frame carry an expired token → server closes the
+      // socket ("연결 끊김") even though REST calls succeed with the new token.
+      const secureToken = await getAccessToken()
+      const token = secureToken || accessToken
+      if (cancelled) return
+      if (!token) {
+        setStatus('idle')
+        return
+      }
+
+      if (__DEV__) {
+        console.debug('[STOMP] connect attempt', {
+          brokerURL: STORIX_STOMP_BROKER_URL,
+          roomId,
+          hasStoreAccessToken: !!accessToken,
+          hasSecureStoreAccessToken: !!secureToken,
+        })
+      }
+
       const client = new Client({
         brokerURL: STORIX_STOMP_BROKER_URL,
         reconnectDelay: 3000,
         debug: (msg) => {
-          console.debug('[STOMP]', msg)
+          if (!__DEV__) return
+          // stompjs echoes raw frames here, including the CONNECT frame that
+          // carries the Bearer token — strip it so the token never hits logs.
+          const safe = msg.replace(/(Authorization:\s*Bearer\s+)\S+/gi, '$1***')
+          console.debug('[STOMP]', safe)
         },
         connectHeaders: {
           // JWT is required by the server STOMP endpoint.
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
+        },
+        // stompjs auto-reconnect (reconnectDelay) reuses the Client config, so a
+        // socket that drops after a token rotation would reconnect with the stale
+        // token and be closed again — a "connecting → 끊김" loop. Refresh the
+        // header from SecureStore before every (re)connect to break that loop.
+        beforeConnect: async () => {
+          const fresh = await getAccessToken()
+          if (fresh) {
+            client.connectHeaders = { Authorization: `Bearer ${fresh}` }
+          }
         },
         onConnect: () => {
           if (cancelled) return
@@ -176,6 +213,9 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
             { id: subId },
           )
 
+          if (__DEV__) {
+            console.debug('[STOMP] subscribed', topicRoomSubPath(roomId))
+          }
           console.log('[STOMP] connected', roomId)
         },
         onWebSocketClose: (event) => {
@@ -197,9 +237,12 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
         },
         onStompError: (frame: IFrame) => {
           if (cancelled) return
+          // Strip Authorization so the token never reaches logs.
+          const { Authorization: _auth, ...safeHeaders } = frame.headers ?? {}
           console.error('[STOMP] broker error', {
             roomId,
-            headers: frame.headers,
+            command: frame.command,
+            headers: safeHeaders,
             body: frame.body,
           })
           setStatus('error')

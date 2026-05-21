@@ -51,7 +51,17 @@ export function TopicRoomTabScreen() {
 
   const handleEnterRoom = useCallback(
     (item: TopicRoomItem) => {
-      const navigate = () => router.push(`/topicroom/${item.topicRoomId}` as const)
+      const navigate = () =>
+        router.push({
+          pathname: '/topicroom/[roomId]',
+          params: {
+            roomId: String(item.topicRoomId),
+            topicRoomName: item.topicRoomName ?? '',
+            worksName: item.worksName ?? '',
+            worksType: item.worksType ?? '',
+            activeUserNumber: String(item.activeUserNumber ?? ''),
+          },
+        })
 
       if (item.isJoined) {
         navigate()

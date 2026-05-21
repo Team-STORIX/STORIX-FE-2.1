@@ -4,7 +4,27 @@ import {
   type TopicRoomUiMsg,
 } from './topicroom.stomp.schema'
 
-export const STORIX_STOMP_BROKER_URL = 'wss://api.storix.kr/ws-stomp'
+// Hardcoded production broker — used as a fallback when the env URL is missing
+// or unparseable so the chat never silently points at the wrong host.
+const FALLBACK_STOMP_BROKER_URL = 'wss://api.storix.kr/ws-stomp'
+
+// Derive the STOMP endpoint from the same origin as the REST API so that
+// staging/local builds connect to their own backend instead of prod:
+//   https://api.storix.kr  → wss://api.storix.kr/ws-stomp
+//   http://localhost:8080  → ws://localhost:8080/ws-stomp
+const resolveBrokerURL = (): string => {
+  const base = process.env.EXPO_PUBLIC_API_URL
+  if (!base) return FALLBACK_STOMP_BROKER_URL
+  try {
+    const u = new URL(base)
+    const wsProtocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${wsProtocol}//${u.host}/ws-stomp`
+  } catch {
+    return FALLBACK_STOMP_BROKER_URL
+  }
+}
+
+export const STORIX_STOMP_BROKER_URL = resolveBrokerURL()
 
 export const topicRoomSubPath = (roomId: number) => `/sub/chat/room/${roomId}`
 export const topicRoomPubPath = () => `/pub/chat/message`

@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useQueryClient } from '@tanstack/react-query'
 import { Toast } from '../../src/components/common/Toast'
 import { WarningEmptyState } from '../../src/components/common/WarningEmptyState'
 import { useProfileStore } from '../../src/features/profile'
@@ -18,17 +19,41 @@ import {
   ChatInput,
   ConnectionStatusPill,
   LeaveConfirmModal,
+  TopicRoomDdayBar,
   TopicRoomMenuDropdown,
   TopicRoomReportSheet,
   TopicRoomTopBar,
+  formatTopicRoomSubtitle,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
   useReportTopicRoomUser,
   useTopicRoomMembers,
   useTopicRoomStomp,
   type DisplayMsg,
+  type TopicRoomItem,
 } from '../../src/features/topicroom'
 import { C } from '../../src/theme/colors'
+
+// Scans the React Query caches that hold TopicRoomItem lists (popular / me /
+// today / search) for a room matching roomId, so the header can show real
+// metadata even when the caller did not pass it as a route param.
+function findCachedTopicRoom(
+  entries: [unknown, unknown][],
+  roomId: number,
+): TopicRoomItem | null {
+  for (const [, data] of entries) {
+    const candidates: any[] = Array.isArray(data)
+      ? data
+      : (data as any)?.pages
+        ? (data as any).pages.flatMap((p: any) => p?.content ?? [])
+        : []
+    const hit = candidates.find(
+      (it) => it && typeof it === 'object' && it.topicRoomId === roomId,
+    )
+    if (hit) return hit as TopicRoomItem
+  }
+  return null
+}
 
 const formatTime = (iso?: string | null): string => {
   if (!iso) return ''
@@ -42,12 +67,20 @@ const formatTime = (iso?: string | null): string => {
 }
 
 export default function TopicRoomScreen() {
-  const { roomId: roomIdParam } = useLocalSearchParams<{ roomId: string }>()
-  const roomId = typeof roomIdParam === 'string' ? Number(roomIdParam) : 0
+  const params = useLocalSearchParams<{
+    roomId: string
+    topicRoomName?: string
+    worksName?: string
+    worksType?: string
+    activeUserNumber?: string
+    startDate?: string
+  }>()
+  const roomId = typeof params.roomId === 'string' ? Number(params.roomId) : 0
 
   const insets = useSafeAreaInsets()
   const myUserId = useProfileStore((s) => s.me?.userId)
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [inputText, setInputText] = useState('')
 
   const [menuOpen, setMenuOpen] = useState(false)
@@ -187,7 +220,40 @@ export default function TopicRoomScreen() {
 
   const canSend = status === 'open' && !!inputText.trim()
 
-  const headerTitle = `채팅방 #${roomId}`
+  // Header metadata priority: route params → cached list query → fallback.
+  const cachedRoom = useMemo(
+    () =>
+      findCachedTopicRoom(
+        queryClient.getQueriesData<unknown>({ queryKey: ['topicroom'] }),
+        roomId,
+      ),
+    [queryClient, roomId, members.length],
+  )
+
+  const worksName = params.worksName || cachedRoom?.worksName || ''
+  const worksType = params.worksType || cachedRoom?.worksType || ''
+  const topicRoomName = params.topicRoomName || cachedRoom?.topicRoomName || ''
+
+  const headerMemberCount =
+    memberCount > 0
+      ? memberCount
+      : Number(params.activeUserNumber) ||
+        cachedRoom?.activeUserNumber ||
+        undefined
+
+  // First line: "웹툰 <상수리나무 아래>" when a works name exists; otherwise the
+  // room name; only "채팅방 #id" as a true last resort. Second line is the room
+  // name when the first line already shows the works.
+  const hasWorks = !!worksName
+  const headerTitle = hasWorks
+    ? formatTopicRoomSubtitle(worksType, worksName)
+    : topicRoomName || `채팅방 #${roomId}`
+  const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined
+
+  // Room-age / D-Day source. No room creation/join date is currently exposed by
+  // the TopicRoom API (TopicRoomItem has no createdAt/joinedAt), so the bar only
+  // renders if a startDate param is supplied. See report notes.
+  const ddayStartDate = params.startDate ?? null
 
   const onLongPressOther = useCallback(
     (msg: DisplayMsg) => {
@@ -203,7 +269,7 @@ export default function TopicRoomScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={0}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -211,11 +277,14 @@ export default function TopicRoomScreen() {
         <TopicRoomTopBar
           topInset={insets.top}
           title={headerTitle}
-          memberCount={memberCount > 0 ? memberCount : undefined}
+          subtitle={headerSubtitle}
+          memberCount={headerMemberCount}
           onBack={handleBack}
           onPressMenu={() => setMenuOpen(true)}
         />
       </View>
+
+      <TopicRoomDdayBar startDate={ddayStartDate} />
 
       <ConnectionStatusPill status={status} />
 

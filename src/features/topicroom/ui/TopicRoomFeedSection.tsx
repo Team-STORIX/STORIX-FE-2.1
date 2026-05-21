@@ -51,7 +51,16 @@ export function TopicRoomFeedSection() {
 
   const handleEnter = (item: TopicRoomItem) => {
     const navigate = () =>
-      router.push(`/topicroom/${item.topicRoomId}` as const);
+      router.push({
+        pathname: "/topicroom/[roomId]",
+        params: {
+          roomId: String(item.topicRoomId),
+          topicRoomName: item.topicRoomName ?? "",
+          worksName: item.worksName ?? "",
+          worksType: item.worksType ?? "",
+          activeUserNumber: String(item.activeUserNumber ?? ""),
+        },
+      });
     if (item.isJoined) {
       navigate();
       return;

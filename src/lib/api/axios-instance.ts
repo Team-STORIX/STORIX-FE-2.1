@@ -42,8 +42,11 @@ const setAuthorizationHeader = (
   (headers as Record<string, unknown>)["Authorization"] = value;
 };
 
+// Masks the token so dev logs never expose a usable credential — keeps a short
+// head/tail preview for correlation only.
 const maskBearerToken = (token: string): string => {
-  return `Bearer: ${token}`;
+  if (token.length <= 12) return "Bearer ***";
+  return `Bearer ${token.slice(0, 6)}…${token.slice(-4)}`;
 };
 
 // ---------- no-refresh endpoint list ----------
@@ -125,11 +128,6 @@ apiClient.interceptors.request.use(
         );
       }
     }
-    // *******반드시 삭제********
-    console.log(
-      "[AUTH DEBUG] Bearer Token:",
-      token ? `Bearer ${token}` : "NO TOKEN",
-    );
 
     return config;
   },

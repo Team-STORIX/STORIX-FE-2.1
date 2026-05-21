@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
@@ -23,9 +25,25 @@ type Props = {
 
 export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: Props) {
   const insets = useSafeAreaInsets()
+  const [keyboardShown, setKeyboardShown] = useState(false)
+
+  useEffect(() => {
+    // While the keyboard is up it covers the bottom safe-area (home indicator),
+    // so the input must sit directly on the keyboard with no extra inset padding.
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+    const show = Keyboard.addListener(showEvt, () => setKeyboardShown(true))
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardShown(false))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
+
+  const paddingBottom = keyboardShown ? 10 : insets.bottom + 10
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+    <View style={[styles.container, { paddingBottom }]}>
       <View style={styles.inputWrap}>
         <TextInput
           style={styles.input}

@@ -1,24 +1,24 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../../theme/colors";
+import { Typography } from "../../../theme/typography";
 
-const profileDefault = require('../../../../assets/icons/profile/profile-default.svg')
+const profileDefault = require("../../../../assets/placeholders/profile-default.png");
 
 export type DisplayMsg = {
-  key: string
-  text: string
-  senderId?: number
-  senderName: string
-  profileImageUrl?: string | null
-  time: string
-  isMe: boolean
-}
+  key: string;
+  text: string;
+  senderId?: number;
+  senderName: string;
+  profileImageUrl?: string | null;
+  time: string;
+  isMe: boolean;
+};
 
 type Props = {
-  msg: DisplayMsg
-  onLongPressOther?: (msg: DisplayMsg) => void
-}
+  msg: DisplayMsg;
+  onLongPressOther?: (msg: DisplayMsg) => void;
+};
 
 export function ChatBubble({ msg, onLongPressOther }: Props) {
   if (msg.isMe) {
@@ -29,22 +29,26 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
           <Text style={styles.textMe}>{msg.text}</Text>
         </View>
       </View>
-    )
+    );
   }
 
-  const handleLongPress = onLongPressOther ? () => onLongPressOther(msg) : undefined
+  const handleLongPress = onLongPressOther
+    ? () => onLongPressOther(msg)
+    : undefined;
 
   return (
     <View style={styles.rowOther}>
       <View style={styles.avatar}>
         <Image
-          source={msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault}
+          source={
+            msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault
+          }
           style={styles.avatarImage}
-          contentFit="cover"
+          contentFit={msg.profileImageUrl ? "cover" : "contain"}
         />
       </View>
       <View style={styles.otherBody}>
-        <Text style={styles.senderName}>{msg.senderName || '익명'}</Text>
+        <Text style={styles.senderName}>{msg.senderName || "익명"}</Text>
         <View style={styles.otherBubbleRow}>
           <Pressable
             onLongPress={handleLongPress}
@@ -61,23 +65,23 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
         </View>
       </View>
     </View>
-  )
+  );
 }
 
-const AVATAR_SIZE = 36
-const BUBBLE_RADIUS = 18
+const AVATAR_SIZE = 36;
+const BUBBLE_RADIUS = 18;
 
 const styles = StyleSheet.create({
   rowMe: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
     marginBottom: 8,
     paddingHorizontal: 16,
   },
   rowOther: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     marginBottom: 8,
     paddingHorizontal: 16,
   },
@@ -87,7 +91,7 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: C.primaryLight,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginRight: 8,
     flexShrink: 0,
   },
@@ -103,8 +107,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   otherBubbleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
   },
 
   bubble: {
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
 
-  textMe: { ...Typography.body2Medium, color: '#fff' },
+  textMe: { ...Typography.body2Medium, color: "#fff" },
   textOther: { ...Typography.body2Medium, color: C.text },
 
   timeMe: {
@@ -142,4 +146,4 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     flexShrink: 0,
   },
-})
+});
