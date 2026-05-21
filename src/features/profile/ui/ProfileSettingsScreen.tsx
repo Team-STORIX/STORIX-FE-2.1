@@ -2,26 +2,31 @@ import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Constants from 'expo-constants'
 import { C } from '../../../theme'
-import { useLogoutAction, useWithdrawAccount } from '../hooks'
-import { ProfileSettingsButton } from './ProfileSettingsButton'
+import { useLogoutAction, useSocialProvider } from '../hooks'
+import { SettingsSection } from './SettingsSection'
 
 const TERMS_URL =
   'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0'
+const VERSION_DATE = '26.05.07'
+const VERSION_LABEL = VERSION_DATE ? `버전 ${APP_VERSION} (${VERSION_DATE})` : `버전 ${APP_VERSION}`
+
 export function ProfileSettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { isPending: isLoggingOut, logout } = useLogoutAction()
-  const { isPending: isWithdrawing, withdraw } = useWithdrawAccount()
+  const socialProviderName = useSocialProvider()
 
-  const openTerms = async () => {
+  const openUrl = async (url: string) => {
     try {
-      await Linking.openURL(TERMS_URL)
+      await Linking.openURL(url)
     } catch {
-      Alert.alert('오류', '이용약관을 열지 못했어요.')
+      Alert.alert('오류', '페이지를 열지 못했어요.')
     }
   }
 
@@ -31,30 +36,9 @@ export function ProfileSettingsScreen() {
       {
         text: '로그아웃',
         style: 'destructive',
-        onPress: () => {
-          void logout()
-        },
+        onPress: () => { void logout() },
       },
     ])
-  }
-
-  const confirmWithdraw = () => {
-    Alert.alert(
-      '회원탈퇴',
-      '회원 탈퇴 시 계정 정보는 복구할 수 없어요.\n정말 탈퇴하시겠어요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '회원탈퇴',
-          style: 'destructive',
-          onPress: () => {
-            void withdraw().catch(() => {
-              Alert.alert('오류', '회원 탈퇴 중 오류가 발생했어요. 다시 시도해주세요.')
-            })
-          },
-        },
-      ],
-    )
   }
 
   return (
@@ -71,27 +55,58 @@ export function ProfileSettingsScreen() {
           >
             <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
           </Pressable>
-
           <Text style={styles.topBarTitle}>설정</Text>
         </View>
       </View>
 
-      <View style={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
-        <ProfileSettingsButton label="이용약관 보러가기" onPress={() => void openTerms()} />
+      <View style={styles.content}>
+        <SettingsSection
+          title="앱 설정"
+          items={[
+            { label: '알림 설정', hasArrow: true, onPress: () => {} },
+          ]}
+        />
 
-        <View style={styles.bottomActions}>
-          <ProfileSettingsButton
-            label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-            onPress={confirmLogout}
-            disabled={isLoggingOut || isWithdrawing}
-          />
-          <ProfileSettingsButton
-            label={isWithdrawing ? '탈퇴 처리 중...' : '회원탈퇴'}
-            onPress={confirmWithdraw}
-            disabled={isWithdrawing || isLoggingOut}
-            destructive
-          />
-        </View>
+        <View style={styles.divider} />
+
+        <SettingsSection
+          title="이용 안내"
+          items={[
+            {
+              label: '버전 관리',
+              hasArrow: true,
+              rightLabel: VERSION_LABEL,
+              rightLabelVariant: 'version',
+              onPress: () => {},
+            },
+            { label: '문의하기', hasArrow: true, onPress: () => {} },
+            { label: '개인정보 처리 방침', hasArrow: true, onPress: () => {} },
+            { label: '서비스 이용약관', hasArrow: true, onPress: () => void openUrl(TERMS_URL) },
+          ]}
+        />
+
+        <View style={styles.divider} />
+
+        <SettingsSection
+          title="계정"
+          items={[
+            {
+              label: '소셜 로그인',
+              rightLabel: socialProviderName ?? undefined,
+              rightLabelVariant: 'social',
+            },
+            {
+              label: isLoggingOut ? '로그아웃 중...' : '로그아웃',
+              hasArrow: true,
+              onPress: confirmLogout,
+            },
+            {
+              label: '회원 탈퇴',
+              hasArrow: true,
+              onPress: () => router.push('/profile/withdraw'),
+            },
+          ]}
+        />
       </View>
     </View>
   )
@@ -133,13 +148,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 32,
   },
-  bottomActions: {
-    marginTop: 'auto',
-    paddingTop: 40,
-    gap: 12,
+  divider: {
+    height: 1,
+    backgroundColor: '#EEEDED',
   },
   pressed: {
     opacity: 0.7,

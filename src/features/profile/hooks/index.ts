@@ -1,4 +1,5 @@
 export * from './useMe'
+export * from './useSocialProvider'
 export * from './useProfileFavoriteWorksPreview'
 export * from './useProfileRatings'
 export * from './usePreferredHashtags'
