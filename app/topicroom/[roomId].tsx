@@ -18,7 +18,7 @@ import {
   ChatInput,
   ConnectionStatusPill,
   LeaveConfirmModal,
-  TopicRoomMenuSheet,
+  TopicRoomMenuDropdown,
   TopicRoomReportSheet,
   TopicRoomTopBar,
   useChatRoomMessagesInfinite,
@@ -51,6 +51,7 @@ export default function TopicRoomScreen() {
   const [inputText, setInputText] = useState('')
 
   const [menuOpen, setMenuOpen] = useState(false)
+  const [headerHeight, setHeaderHeight] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
   const [presetReportUserId, setPresetReportUserId] = useState<number | null>(null)
@@ -206,13 +207,15 @@ export default function TopicRoomScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <TopicRoomTopBar
-        topInset={insets.top}
-        title={headerTitle}
-        memberCount={memberCount > 0 ? memberCount : undefined}
-        onBack={handleBack}
-        onPressMenu={() => setMenuOpen(true)}
-      />
+      <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+        <TopicRoomTopBar
+          topInset={insets.top}
+          title={headerTitle}
+          memberCount={memberCount > 0 ? memberCount : undefined}
+          onBack={handleBack}
+          onPressMenu={() => setMenuOpen(true)}
+        />
+      </View>
 
       <ConnectionStatusPill status={status} />
 
@@ -259,8 +262,9 @@ export default function TopicRoomScreen() {
         canSend={canSend}
       />
 
-      <TopicRoomMenuSheet
+      <TopicRoomMenuDropdown
         visible={menuOpen}
+        topOffset={headerHeight}
         onClose={() => setMenuOpen(false)}
         onPressReport={() => {
           setPresetReportUserId(null)

@@ -3,13 +3,15 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C } from '../../../theme/colors'
+import { C, Gray } from '../../../theme'
 import { Typography } from '../../../theme/typography'
+
+const sendIcon = require('../../../../assets/topicroom/icon-topicroom-send.svg')
 
 type Props = {
   value: string
@@ -53,9 +55,7 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
         {isSending ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={[styles.sendIcon, !canSend && styles.sendIconDisabled]}>
-            ↑
-          </Text>
+          <Image source={sendIcon} style={styles.sendIcon} contentFit="contain" />
         )}
       </Pressable>
     </View>
@@ -89,21 +89,18 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   sendBtnActive: { backgroundColor: C.primary },
-  sendBtnDisabled: { backgroundColor: C.divider },
+  sendBtnDisabled: { backgroundColor: Gray[300] },
   sendBtnPressed: { opacity: 0.75 },
   sendIcon: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '700',
-    lineHeight: 20,
+    width: 24,
+    height: 24,
   },
-  sendIconDisabled: { color: C.textMuted },
 })
