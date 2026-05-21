@@ -17,6 +17,7 @@ import {
   usePreferenceExploration,
 } from '../../src/features/preference'
 import { useTodayTopicRooms } from '../../src/features/topicroom'
+import { useUnreadNotificationCount } from '../../src/features/notification'
 import { C } from '../../src/theme/colors'
 
 const HOME_PAD = 16
@@ -40,6 +41,7 @@ export default function HomeScreen() {
     refetch: refetchExploration,
     isFetching: checkingExploration,
   } = usePreferenceExploration(false)
+  const { data: unreadCount } = useUnreadNotificationCount()
 
   useEffect(() => {
     return () => {
@@ -105,7 +107,11 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader onSearchPress={() => router.push('/search' as never)} />
+        <HomeHeader
+          onSearchPress={() => router.push('/search' as never)}
+          onNotificationPress={() => router.push('/notifications' as never)}
+          unreadCount={unreadCount ?? 0}
+        />
 
         <View style={styles.stack}>
           <View>
