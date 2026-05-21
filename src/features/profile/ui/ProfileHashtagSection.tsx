@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 361,
     height: 178,
-    marginTop: 56,
+    marginTop: 24,
   },
   emptyOverlay: {
     ...StyleSheet.absoluteFillObject,

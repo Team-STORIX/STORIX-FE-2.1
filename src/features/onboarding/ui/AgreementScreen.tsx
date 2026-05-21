@@ -8,8 +8,6 @@ import { C } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
-const termsPink = require('../../../../assets/icons/login/terms-pink.svg')
-const termsGray = require('../../../../assets/icons/login/terms-gray.svg')
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 const checkGray = require('../../../../assets/icons/common/check-gray.svg')
 const nextPink = require('../../../../assets/onboarding/next.svg')
@@ -69,12 +67,18 @@ export function AgreementScreen() {
           스토릭스 이용을 위해{'\n'}필수 약관에 동의해 주세요.
         </Text>
 
-        <Pressable onPress={handleAllAgree} style={styles.allAgreeButton}>
+        <Pressable
+          onPress={handleAllAgree}
+          style={[styles.allAgreeButton, allAgreed && styles.allAgreeButtonActive]}
+        >
           <Image
-            source={allAgreed ? termsPink : termsGray}
-            style={styles.allAgreeImage}
+            source={allAgreed ? checkPink : checkGray}
+            style={styles.allAgreeCheckIcon}
             contentFit="contain"
           />
+          <Text style={[styles.allAgreeText, allAgreed && styles.allAgreeTextActive]}>
+            전체동의
+          </Text>
         </Pressable>
 
         <View style={styles.termsBlock}>
@@ -105,7 +109,7 @@ export function AgreementScreen() {
         </View>
       </View>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
         <Pressable onPress={handleNext} disabled={!allAgreed} style={styles.nextButtonPressable}>
           <Image
             source={allAgreed ? nextPink : nextGray}
@@ -235,10 +239,32 @@ const styles = StyleSheet.create({
   },
   allAgreeButton: {
     marginTop: 32,
-  },
-  allAgreeImage: {
-    width: '100%',
     height: 56,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E1E0E0',
+    backgroundColor: '#F8F7F7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  allAgreeButtonActive: {
+    borderColor: '#FDBCD9',
+    backgroundColor: '#FFEEF6',
+  },
+  allAgreeCheckIcon: {
+    width: 24,
+    height: 24,
+  },
+  allAgreeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 19.6,
+    color: '#888787',
+  },
+  allAgreeTextActive: {
+    color: '#FF4093',
   },
   termsBlock: {
     marginTop: 20,
@@ -259,22 +285,22 @@ const styles = StyleSheet.create({
   termLink: {
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 19.6,
     color: '#888787',
     textDecorationLine: 'underline',
   },
   termAgeText: {
     fontSize: 14,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: 19.6,
     color: '#888787',
   },
   termLinkActive: {
     color: '#FF4093',
   },
   footer: {
-    height: 84,
     paddingHorizontal: 16,
+    paddingTop: 17,
     justifyContent: 'center',
   },
   nextButtonPressable: {

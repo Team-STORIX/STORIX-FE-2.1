@@ -216,6 +216,20 @@ export function FeedPostCard({
 
   const cardBody = (
     <View style={styles.card}>
+      {/* ── Birthday theme background ─────────────────────────── */}
+      {birthdayThemeSource && (
+        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
+          <Image
+            source={birthdayThemeSource}
+            style={styles.birthdayThemeImage}
+            contentFit="cover"
+          />
+        </View>
+      )}
+
+      {/* ── Card content (above birthday theme) ───────────────── */}
+      <View style={styles.cardContent}>
+
       {/* ── Profile row ───────────────────────────────────────── */}
       <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
         <View style={styles.avatarWrap}>
@@ -343,10 +357,20 @@ export function FeedPostCard({
           </ScrollView>
         )}
 
-        {/* 스포일러 숨김: 버튼만 표시 / 공개: 텍스트 표시 */}
-        {isSpoilerHidden ? (
+            <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
+              <Text
+                style={styles.contentText}
+                numberOfLines={variant === 'detail' ? undefined : 3}
+              >
+                {content}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {isSpoilerHidden && (
           <Pressable
-            style={[styles.textPad, styles.spoilerReveal]}
+            style={styles.spoilerOverlay}
             onPress={() => setSpoilerRevealed(true)}
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
@@ -401,15 +425,7 @@ export function FeedPostCard({
         </View>
       </View>
 
-      {birthdayThemeSource && (
-        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
-          <Image
-            source={birthdayThemeSource}
-            style={styles.birthdayThemeImage}
-            contentFit="fill"
-          />
-        </View>
-      )}
+      </View>{/* end cardContent */}
     </View>
   );
 
@@ -446,11 +462,14 @@ const styles = StyleSheet.create({
   },
   birthdayThemeLayer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
+    zIndex: 0,
   },
   birthdayThemeImage: {
     width: "100%",
     height: "100%",
+  },
+  cardContent: {
+    zIndex: 1,
   },
 
   // Profile row
@@ -524,7 +543,7 @@ const styles = StyleSheet.create({
   },
   worksCard: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Gray[100],
     backgroundColor: Gray[50],
@@ -547,6 +566,7 @@ const styles = StyleSheet.create({
   worksInfo: {
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
   },
   worksName: {
     fontSize: 16,
@@ -597,9 +617,12 @@ const styles = StyleSheet.create({
   },
 
   // Body
-  bodySection: {
+  spoilerContainer: {
     marginTop: 20,
     position: "relative",
+  },
+  bodySection: {
+    overflow: 'hidden',
   },
   imageScroll: {
     paddingHorizontal: 0,
@@ -635,9 +658,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: Gray[800],
   },
-  spoilerReveal: {
-    minHeight: 48,
-    justifyContent: "center",
+  spoilerOverlay: {
+    position: 'absolute',
+    top: -4,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 16,
+    paddingTop: 0,
   },
   spoilerRevealText: {
     fontSize: 14,

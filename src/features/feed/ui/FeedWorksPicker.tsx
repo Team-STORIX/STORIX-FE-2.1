@@ -68,7 +68,7 @@ export function FeedWorksPicker({
             <View key={item.id} style={styles.itemWrapper}>
               <Pressable
                 onPress={() => handlePress(item)}
-                style={[styles.itemBtn, !isActive && styles.itemInactive]}
+                style={[styles.itemBtn, !isActive && !isAdd && styles.itemInactive]}
                 accessibilityRole="button"
                 aria-pressed={isActive}
               >

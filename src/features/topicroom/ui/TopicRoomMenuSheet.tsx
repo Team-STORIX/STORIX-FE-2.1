@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderTopLeftRadius: Radius.lg,
     borderTopRightRadius: Radius.lg,
-    paddingTop: 4,
+    paddingTop: 8,
   },
   row: {
     minHeight: 56,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[100],
   },
   rowText: {
-    ...Typography.body1Medium,
+    ...Typography.body1Semibold,
     color: C.text,
   },
   destructiveText: {
@@ -121,10 +121,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    backgroundColor: Gray[50],
+    borderTopWidth: 1,
+    borderTopColor: C.divider,
+    backgroundColor: C.card,
   },
   cancelText: {
-    ...Typography.body1Semibold,
+    ...Typography.body1Medium,
     color: C.textSecondary,
   },
 })
