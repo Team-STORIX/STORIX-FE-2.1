@@ -1,25 +1,26 @@
-import { useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { C, Gray, Typography } from '../../../theme'
-import { useProfileFavoriteWorksPreview } from '../hooks'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useMemo } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { C, Gray, Typography } from "../../../theme";
+import { useProfileFavoriteWorksPreview } from "../hooks";
 
-const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
-const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
+const findWritersButton = require("../../../../assets/icons/profile/find-writers.svg");
+const findBooksButton = require("../../../../assets/icons/profile/find-books.svg");
+const nextArrowIcon = require("../../../../assets/icons/common/arrow-next.svg");
 
-const WORK_RENDER_LIMIT = 4
+const WORK_RENDER_LIMIT = 4;
 
 export function ProfilePreferenceSection() {
-  const router = useRouter()
-  const worksQuery = useProfileFavoriteWorksPreview()
+  const router = useRouter();
+  const worksQuery = useProfileFavoriteWorksPreview();
 
   const works = useMemo(
     () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
     [worksQuery.data?.works],
-  )
+  );
 
-  const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length)
+  const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length);
 
   return (
     <View>
@@ -31,10 +32,14 @@ export function ProfilePreferenceSection() {
           </View>
 
           <Pressable
-            onPress={() => router.push('/profile/likes')}
+            onPress={() => router.push("/profile/likes")}
             accessibilityRole="button"
           >
-            <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
+            <Image
+              source={nextArrowIcon}
+              style={styles.moreIcon}
+              contentFit="contain"
+            />
           </Pressable>
         </View>
 
@@ -64,10 +69,15 @@ export function ProfilePreferenceSection() {
                   ))}
 
                   {Array.from({ length: emptySlots }).map((_, index) => (
-                    <View key={`empty-${index}`} style={[styles.workItem, styles.emptyWorkItem]}>
+                    <View
+                      key={`empty-${index}`}
+                      style={[styles.workItem, styles.emptyWorkItem]}
+                    >
                       <View style={styles.emptyWorkThumb} />
                       <Text style={styles.emptyDot}>.</Text>
-                      <Text style={[styles.emptyDot, styles.emptyDotSmall]}>.</Text>
+                      <Text style={[styles.emptyDot, styles.emptyDotSmall]}>
+                        .
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -78,18 +88,22 @@ export function ProfilePreferenceSection() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>아직 관심 작품이 없어요...</Text>
             <Pressable
-              onPress={() => router.push('/search')}
+              onPress={() => router.push("/search")}
               style={({ pressed }) => [pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel="작품 찾기"
             >
-              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
+              <Image
+                source={findBooksButton}
+                style={styles.emptyButtonImage}
+                contentFit="contain"
+              />
             </Pressable>
           </View>
         )}
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -103,24 +117,24 @@ const styles = StyleSheet.create({
     borderBottomColor: C.border,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   titleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: C.text,
   },
   count: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: Gray[300],
   },
@@ -130,15 +144,15 @@ const styles = StyleSheet.create({
   },
   worksContent: {
     marginTop: 24,
-    width: '100%',
+    width: "100%",
   },
   worksMinWidth: {
     minWidth: 361,
   },
   worksRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
   workItem: {
     width: 87,
@@ -147,7 +161,7 @@ const styles = StyleSheet.create({
     width: 87,
     height: 116,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: C.border,
   },
   workThumb: {
@@ -183,11 +197,11 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     marginTop: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: Gray[500],
   },
@@ -199,4 +213,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-})
+});
