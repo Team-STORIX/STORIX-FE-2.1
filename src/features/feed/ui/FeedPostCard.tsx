@@ -229,203 +229,200 @@ export function FeedPostCard({
 
       {/* ── Card content (above birthday theme) ───────────────── */}
       <View style={styles.cardContent}>
+        {/* ── Profile row ───────────────────────────────────────── */}
+        <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
+          <View style={styles.avatarWrap}>
+            <Image
+              source={
+                profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage
+              }
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          </View>
 
-      {/* ── Profile row ───────────────────────────────────────── */}
-      <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
-        <View style={styles.avatarWrap}>
-          <Image
-            source={
-              profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage
-            }
-            style={styles.avatar}
-            contentFit="cover"
-          />
-        </View>
+          <View style={styles.authorMeta}>
+            <Text style={styles.authorName}>{nickName}</Text>
+            {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
+          </View>
 
-        <View style={styles.authorMeta}>
-          <Text style={styles.authorName}>{nickName}</Text>
-          {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
-        </View>
-
-        {/* Menu button */}
-        <Pressable
-          ref={menuBtnRef}
-          hitSlop={8}
-          onPress={handleMenuPress}
-          style={styles.menuBtn}
-          accessibilityLabel="메뉴"
-        >
-          <Image
-            source={menuIcon}
-            style={styles.menuIcon}
-            contentFit="contain"
-          />
-        </Pressable>
-      </Pressable>
-
-      {/* ── Menu dropdown ─────────────────────────────────────── */}
-      {menuOpen && (
-        <Modal
-          transparent
-          visible
-          animationType="none"
-          onRequestClose={() => setMenuOpen(false)}
-        >
+          {/* Menu button */}
           <Pressable
-            style={StyleSheet.absoluteFillObject}
-            onPress={() => setMenuOpen(false)}
+            ref={menuBtnRef}
+            hitSlop={8}
+            onPress={handleMenuPress}
+            style={styles.menuBtn}
+            accessibilityLabel="메뉴"
+          >
+            <Image
+              source={menuIcon}
+              style={styles.menuIcon}
+              contentFit="contain"
+            />
+          </Pressable>
+        </Pressable>
+
+        {/* ── Menu dropdown ─────────────────────────────────────── */}
+        {menuOpen && (
+          <Modal
+            transparent
+            visible
+            animationType="none"
+            onRequestClose={() => setMenuOpen(false)}
           >
             <Pressable
-              style={[styles.menuDropdown, { top: menuDropdownTop }]}
-              onPress={() => {
-                setMenuOpen(false);
-                if (isMine) onOpenDelete?.();
-                else onOpenReport?.();
-              }}
+              style={StyleSheet.absoluteFillObject}
+              onPress={() => setMenuOpen(false)}
             >
-              <Image
-                source={isMine ? deleteDropdown : commentDropdown}
-                style={styles.menuDropdownImg}
-                contentFit="contain"
-              />
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
-
-      {/* ── Works card ────────────────────────────────────────── */}
-      {showWorks && (
-        <View style={styles.worksSection}>
-          <View style={styles.worksCard}>
-            <View style={styles.worksThumbnailBox}>
-              <Image
-                source={{ uri: works!.thumbnailUrl }}
-                style={styles.worksThumbnail}
-                contentFit="cover"
-              />
-            </View>
-
-            <View style={styles.worksInfo}>
-              <Text style={styles.worksName} numberOfLines={1}>
-                {works!.worksName}
-              </Text>
-              <Text style={styles.worksMeta} numberOfLines={1}>
-                {[works!.artistName, works!.worksType, works!.genre]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
-              <HashtagRow tags={works!.hashtags ?? []} />
-            </View>
-
-            {onClickWorksArrow && (
               <Pressable
-                onPress={onClickWorksArrow}
-                hitSlop={8}
-                style={styles.worksArrowBtn}
-                accessibilityLabel="작품 상세 보기"
+                style={[styles.menuDropdown, { top: menuDropdownTop }]}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (isMine) onOpenDelete?.();
+                  else onOpenReport?.();
+                }}
               >
                 <Image
-                  source={arrowSmallIcon}
-                  style={styles.arrowSmall}
+                  source={isMine ? deleteDropdown : commentDropdown}
+                  style={styles.menuDropdownImg}
                   contentFit="contain"
                 />
               </Pressable>
-            )}
-          </View>
-        </View>
-      )}
+            </Pressable>
+          </Modal>
+        )}
 
-      {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.bodySection}>
-        {/* Images — 스포일러 숨김 상태에서는 이미지도 숨김 */}
-        {images.length > 0 && !isSpoilerHidden && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.imageScroll}
-            contentContainerStyle={styles.imageContent}
-          >
-            {images.slice(0, 3).map((src, idx) => (
-              <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
+        {/* ── Works card ────────────────────────────────────────── */}
+        {showWorks && (
+          <View style={styles.worksSection}>
+            <View style={styles.worksCard}>
+              <View style={styles.worksThumbnailBox}>
                 <Image
-                  source={{ uri: src }}
-                  style={styles.imageFill}
+                  source={{ uri: works!.thumbnailUrl }}
+                  style={styles.worksThumbnail}
                   contentFit="cover"
                 />
               </View>
-            ))}
-          </ScrollView>
-        )}
 
-            <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-              <Text
-                style={styles.contentText}
-                numberOfLines={variant === 'detail' ? undefined : 3}
-              >
-                {content}
-              </Text>
+              <View style={styles.worksInfo}>
+                <Text style={styles.worksName} numberOfLines={1}>
+                  {works!.worksName}
+                </Text>
+                <Text style={styles.worksMeta} numberOfLines={1}>
+                  {[works!.artistName, works!.worksType, works!.genre]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+                <HashtagRow tags={works!.hashtags ?? []} />
+              </View>
+
+              {onClickWorksArrow && (
+                <Pressable
+                  onPress={onClickWorksArrow}
+                  hitSlop={8}
+                  style={styles.worksArrowBtn}
+                  accessibilityLabel="작품 상세 보기"
+                >
+                  <Image
+                    source={arrowSmallIcon}
+                    style={styles.arrowSmall}
+                    contentFit="contain"
+                  />
+                </Pressable>
+              )}
             </View>
           </View>
-        </View>
-
-        {isSpoilerHidden && (
-          <Pressable
-            style={styles.spoilerOverlay}
-            onPress={() => setSpoilerRevealed(true)}
-            accessibilityLabel="스포일러가 포함된 피드글 보기"
-          >
-            <Text style={styles.spoilerRevealText}>
-              {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
-            </Text>
-          </Pressable>
-        ) : (
-          <View
-            style={[
-              styles.textPad,
-              images.length > 0 && styles.textPadAfterImage,
-            ]}
-          >
-            <Text
-              style={styles.contentText}
-              numberOfLines={variant === "detail" ? undefined : 3}
-            >
-              {content}
-            </Text>
-          </View>
         )}
-      </View>
 
-      {/* ── Reactions row ────────────────────────────────────── */}
-      <View style={styles.reactionRow}>
-        <Pressable
-          onPress={onToggleLike}
-          style={styles.reactionItem}
-          accessibilityLabel="좋아요"
-          hitSlop={8}
-        >
-          <Image
-            source={isLiked ? likePinkIcon : likeIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {likeCount > 0 && (
-            <Text style={styles.reactionCount}>{likeCount}</Text>
-          )}
-        </Pressable>
+        {/* ── Body: images + text ──────────────────────────────── */}
+        <View style={styles.spoilerContainer}>
+          <View style={styles.bodySection}>
+            <View
+              style={
+                isSpoilerHidden
+                  ? ({ filter: "blur(17px)", overflow: "hidden" } as any)
+                  : undefined
+              }
+            >
+              {images.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.imageScroll}
+                  contentContainerStyle={styles.imageContent}
+                >
+                  {images.slice(0, 3).map((src, idx) => (
+                    <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
+                      <Image
+                        source={{ uri: src }}
+                        style={styles.imageFill}
+                        contentFit="cover"
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
 
-        <View style={[styles.reactionItem, styles.commentItem]}>
-          <Image
-            source={commentIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {replyCount > 0 && (
-            <Text style={styles.reactionCount}>{replyCount}</Text>
+              <View
+                style={[
+                  styles.textPad,
+                  images.length > 0 && styles.textPadAfterImage,
+                ]}
+              >
+                <Text
+                  style={styles.contentText}
+                  numberOfLines={variant === "detail" ? undefined : 3}
+                >
+                  {content}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {isSpoilerHidden && (
+            <Pressable
+              style={styles.spoilerOverlay}
+              onPress={() => setSpoilerRevealed(true)}
+              accessibilityLabel="스포일러가 포함된 피드글 보기"
+            >
+              <Text style={styles.spoilerRevealText}>
+                {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
+              </Text>
+            </Pressable>
           )}
         </View>
-      </View>
 
-      </View>{/* end cardContent */}
+        {/* ── Reactions row ────────────────────────────────────── */}
+        <View style={styles.reactionRow}>
+          <Pressable
+            onPress={onToggleLike}
+            style={styles.reactionItem}
+            accessibilityLabel="좋아요"
+            hitSlop={8}
+          >
+            <Image
+              source={isLiked ? likePinkIcon : likeIcon}
+              style={styles.reactionIcon}
+              contentFit="contain"
+            />
+            {likeCount > 0 && (
+              <Text style={styles.reactionCount}>{likeCount}</Text>
+            )}
+          </Pressable>
+
+          <View style={[styles.reactionItem, styles.commentItem]}>
+            <Image
+              source={commentIcon}
+              style={styles.reactionIcon}
+              contentFit="contain"
+            />
+            {replyCount > 0 && (
+              <Text style={styles.reactionCount}>{replyCount}</Text>
+            )}
+          </View>
+        </View>
+      </View>
+      {/* end cardContent */}
     </View>
   );
 
@@ -545,8 +542,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: Gray[50],
+    borderColor: "#EEEDED",
+    backgroundColor: "#F9F6F7",
     flexDirection: "row",
     alignItems: "stretch",
     gap: 12,
@@ -566,7 +563,7 @@ const styles = StyleSheet.create({
   worksInfo: {
     flex: 1,
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   worksName: {
     fontSize: 16,
@@ -622,7 +619,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   bodySection: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageScroll: {
     paddingHorizontal: 0,
@@ -659,12 +656,12 @@ const styles = StyleSheet.create({
     color: Gray[800],
   },
   spoilerOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     paddingHorizontal: 16,
     paddingTop: 0,
   },
