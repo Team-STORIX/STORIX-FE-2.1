@@ -22,6 +22,7 @@ import { useMe } from '../../profile'
 import { Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
+import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
@@ -58,6 +59,40 @@ export function FeedScreen() {
     nickname: string
     onConfirm: () => Promise<void>
   } | null>(null)
+
+  const [createSheetOpen, setCreateSheetOpen] = useState(false)
+
+  const handlePressSearchTopicRoom = useCallback(() => {
+    router.push('/(tabs)/two' as never)
+  }, [router])
+
+  const handlePressAddTopicRoom = useCallback(() => {
+    setCreateSheetOpen(true)
+  }, [])
+
+  const createWorksSheet = (
+    <TopicRoomCreateWorksBottomSheet
+      visible={createSheetOpen}
+      onClose={() => setCreateSheetOpen(false)}
+      onAdvance={(works) => {
+        setCreateSheetOpen(false)
+        router.push({
+          pathname: '/topicroom/create',
+          params: {
+            worksId: String(works.worksId),
+            worksName: works.worksName,
+            thumbnailUrl: works.thumbnailUrl ?? '',
+            artistName: works.artistName ?? '',
+            worksType: works.worksType ?? '',
+          },
+        } as never)
+      }}
+      onEnterExisting={(roomId) => {
+        setCreateSheetOpen(false)
+        router.push(`/topicroom/${roomId}` as const)
+      }}
+    />
+  )
 
   const worksId = pick !== 'all' ? Number(pick) : 0
 
@@ -227,7 +262,15 @@ export function FeedScreen() {
 
   const listHeader = (
     <View style={styles.listHeader}>
-      <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
+      <FeedTopbar
+        activeTab={tab}
+        onChange={(t) => {
+          setTab(t)
+          setPick('all')
+        }}
+        onPressSearch={handlePressSearchTopicRoom}
+        onPressAddTopicRoom={handlePressAddTopicRoom}
+      />
       {tab === 'works' && (
         <FeedWorksPicker
           works={favoriteWorks}
@@ -258,6 +301,8 @@ export function FeedScreen() {
               setTab(t)
               setPick('all')
             }}
+            onPressSearch={handlePressSearchTopicRoom}
+            onPressAddTopicRoom={handlePressAddTopicRoom}
           />
           <ScrollView
             style={styles.screen}
@@ -268,6 +313,7 @@ export function FeedScreen() {
           </ScrollView>
         </View>
         {reportModal}
+        {createWorksSheet}
       </>
     )
   }
@@ -322,6 +368,7 @@ export function FeedScreen() {
       }
     />
     {reportModal}
+    {createWorksSheet}
     </>
   )
 }

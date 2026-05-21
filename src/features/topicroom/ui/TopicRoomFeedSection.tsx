@@ -72,18 +72,8 @@ export function TopicRoomFeedSection() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.header, styles.headerRow]}>
+      <View style={styles.header}>
         <Text style={styles.sectionTitle}>🔥 지금 핫한 토픽룸</Text>
-        <Pressable
-          onPress={() => router.push('/topicroom/create' as const)}
-          style={({ pressed }) => [
-            styles.createBtn,
-            pressed && styles.cardPressed,
-          ]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.createBtnText}>+ 토픽룸 만들기</Text>
-        </Pressable>
       </View>
 
       {popularQuery.isLoading ? (
@@ -263,26 +253,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 14,
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
   headerSpaced: {
     paddingTop: 32,
-  },
-  createBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
-    backgroundColor: C.primaryLight,
-    borderWidth: 1,
-    borderColor: C.primaryMid,
-  },
-  createBtnText: {
-    ...Typography.caption1Extrabold,
-    color: C.primary,
   },
   sectionTitle: {
     ...Typography.heading2,
