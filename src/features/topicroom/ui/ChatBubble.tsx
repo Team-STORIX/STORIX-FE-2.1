@@ -1,23 +1,24 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../../theme/colors";
+import { Typography } from "../../../theme/typography";
 
-const profileDefault = require('../../../../assets/icons/profile/profile-default.svg')
+const profileDefault = require("../../../../assets/placeholders/profile-default.png");
 
 export type DisplayMsg = {
-  key: string
-  text: string
-  senderId?: number
-  senderName: string
-  profileImageUrl?: string | null
-  time: string
-  isMe: boolean
-}
+  key: string;
+  text: string;
+  senderId?: number;
+  senderName: string;
+  profileImageUrl?: string | null;
+  time: string;
+  isMe: boolean;
+};
 
 type Props = {
-  msg: DisplayMsg
-  onLongPressOther?: (msg: DisplayMsg) => void
-}
+  msg: DisplayMsg;
+  onLongPressOther?: (msg: DisplayMsg) => void;
+};
 
 export function ChatBubble({ msg, onLongPressOther }: Props) {
   if (msg.isMe) {
@@ -28,22 +29,26 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
           <Text style={styles.textMe}>{msg.text}</Text>
         </View>
       </View>
-    )
+    );
   }
 
-  const handleLongPress = onLongPressOther ? () => onLongPressOther(msg) : undefined
+  const handleLongPress = onLongPressOther
+    ? () => onLongPressOther(msg)
+    : undefined;
 
   return (
     <View style={styles.rowOther}>
       <View style={styles.avatar}>
         <Image
-          source={msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault}
+          source={
+            msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault
+          }
           style={styles.avatarImage}
-          contentFit="cover"
+          contentFit={msg.profileImageUrl ? "cover" : "contain"}
         />
       </View>
       <View style={styles.otherBody}>
-        <Text style={styles.senderName}>{msg.senderName || '익명'}</Text>
+        <Text style={styles.senderName}>{msg.senderName || "익명"}</Text>
         <View style={styles.otherBubbleRow}>
           <Pressable
             onLongPress={handleLongPress}
@@ -60,25 +65,25 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
         </View>
       </View>
     </View>
-  )
+  );
 }
 
-const AVATAR_SIZE = 32
-const BUBBLE_RADIUS = 16
+const AVATAR_SIZE = 36;
+const BUBBLE_RADIUS = 18;
 
 const styles = StyleSheet.create({
   rowMe: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
   rowOther: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
 
   avatar: {
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: C.primaryLight,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginRight: 8,
     flexShrink: 0,
   },
@@ -97,45 +102,48 @@ const styles = StyleSheet.create({
 
   otherBody: { flexShrink: 1 },
   senderName: {
-    fontSize: 11,
-    color: C.textMuted,
-    marginBottom: 3,
+    ...Typography.caption1Medium,
+    color: C.textSecondary,
+    marginBottom: 4,
   },
   otherBubbleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
   },
 
   bubble: {
-    maxWidth: 240,
+    maxWidth: 260,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: BUBBLE_RADIUS,
   },
   bubbleMe: {
     backgroundColor: C.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
     marginLeft: 6,
   },
   bubbleOther: {
     backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
   },
   pressed: {
     opacity: 0.7,
   },
 
-  textMe: { fontSize: 14, color: '#fff', lineHeight: 20 },
-  textOther: { fontSize: 14, color: C.text, lineHeight: 20 },
+  textMe: { ...Typography.body2Medium, color: "#fff" },
+  textOther: { ...Typography.body2Medium, color: C.text },
 
-  timeMe: { fontSize: 10, color: C.textMuted, marginRight: 4, marginBottom: 2 },
-  timeOther: {
-    fontSize: 10,
+  timeMe: {
+    ...Typography.caption2Medium,
     color: C.textMuted,
-    marginLeft: 4,
+    marginRight: 6,
+    marginBottom: 2,
+  },
+  timeOther: {
+    ...Typography.caption2Medium,
+    color: C.textMuted,
+    marginLeft: 6,
     marginBottom: 2,
     flexShrink: 0,
   },
-})
+});
