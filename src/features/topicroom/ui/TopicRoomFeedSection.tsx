@@ -394,7 +394,6 @@ const styles = StyleSheet.create({
   },
 
   myList: {
-    gap: 16,
     paddingTop: 4,
     paddingBottom: 8,
   },

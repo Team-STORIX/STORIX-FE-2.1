@@ -17,6 +17,41 @@ import type { TopicRoomUiMsg } from '../stomp'
 
 type Status = 'idle' | 'connecting' | 'open' | 'closed' | 'error'
 
+// ---------- diagnostic helpers (dev-only) ----------
+// All masking keeps a short head/tail for correlation — never a usable token.
+
+// "abc123…wxyz" (or "…" / token length if too short). Strips any "Bearer " prefix.
+const maskToken = (token?: string | null): string => {
+  if (!token) return '∅'
+  const t = token.startsWith('Bearer ') ? token.slice(7) : token
+  if (t.length <= 12) return `len:${t.length}`
+  return `${t.slice(0, 6)}…${t.slice(-4)}`
+}
+
+// Returns header object with Authorization value masked (keys preserved).
+const maskAuthHeaders = (
+  headers?: Record<string, string> | null,
+): Record<string, string> => {
+  const out: Record<string, string> = {}
+  if (!headers) return out
+  for (const [k, v] of Object.entries(headers)) {
+    out[k] = /^authorization$/i.test(k) ? maskToken(v) : v
+  }
+  return out
+}
+
+// Redacts Bearer tokens and any "authorization:" line from a raw STOMP frame.
+const redactFrame = (msg: string): string =>
+  msg
+    .split('\n')
+    .map((line) =>
+      /^\s*authorization\s*:/i.test(line)
+        ? line.replace(/(:\s*).*$/, '$1***')
+        : line,
+    )
+    .join('\n')
+    .replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, '$1***')
+
 export const useTopicRoomStomp = (params: { roomId: number }) => {
   const { roomId } = params
   const { accessToken } = useAuthStore()
@@ -30,11 +65,20 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
   // Prevents duplicate connect when roomId/token haven't changed (StrictMode / re-render).
   const sessionKeyRef = useRef<string>('')
 
+  // Dev-only: counts connect attempts within one mount to surface reconnect loops.
+  const connectAttemptRef = useRef<number>(0)
+
   // Tracks optimistic messages sent by this client pending server echo.
   const pendingSentRef = useRef<Array<{ tempId: string; text: string; at: number }>>([])
 
   const [status, setStatus] = useState<Status>('idle')
   const [messages, setMessages] = useState<TopicRoomUiMsg[]>([])
+
+  // Mirror of `status` readable inside async/event closures without re-subscribing.
+  const statusRef = useRef<Status>('idle')
+  useEffect(() => {
+    statusRef.current = status
+  }, [status])
 
   const canConnect = useMemo(() => !!roomId && !!accessToken, [roomId, accessToken])
 
@@ -62,6 +106,9 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
     try {
       if (clientRef.current) {
         await clientRef.current.deactivate()
+        if (__DEV__) {
+          console.debug('[STOMP_DIAG] deactivated', { roomId })
+        }
       }
     } catch {
       // noop
@@ -69,7 +116,7 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
       clientRef.current = null
       setStatus('closed')
     }
-  }, [unsubscribe])
+  }, [unsubscribe, roomId])
 
   const appendOptimisticMe = useCallback(
     (tempId: string, text: string) => {
@@ -94,6 +141,17 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
     },
     [],
   )
+
+  // Unmount detector. Defined BEFORE the connect effect so that on a real
+  // unmount its cleanup (sets ref = true) runs first; on a deps change it does
+  // not re-run, so the connect-effect cleanup can tell the two cases apart.
+  const isUnmountingRef = useRef(false)
+  useEffect(() => {
+    isUnmountingRef.current = false
+    return () => {
+      isUnmountingRef.current = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!canConnect) return
@@ -128,12 +186,22 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
         return
       }
 
+      const attempt = (connectAttemptRef.current += 1)
+
       if (__DEV__) {
-        console.debug('[STOMP] connect attempt', {
-          brokerURL: STORIX_STOMP_BROKER_URL,
+        console.debug('[STOMP_DIAG] prepare', {
           roomId,
+          roomIdType: typeof roomId,
+          canConnect,
+          statusBeforeConnect: statusRef.current,
+          brokerURL: STORIX_STOMP_BROKER_URL,
+          attempt,
           hasStoreAccessToken: !!accessToken,
           hasSecureStoreAccessToken: !!secureToken,
+          storeAccessTokenPreview: `Bearer ${maskToken(accessToken)}`,
+          secureStoreAccessTokenPreview: `Bearer ${maskToken(secureToken)}`,
+          // No token in the key — roomId + token length only.
+          sessionKeyPreview: `room:${roomId}|tokenLen:${token.length}`,
         })
       }
 
@@ -143,9 +211,9 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
         debug: (msg) => {
           if (!__DEV__) return
           // stompjs echoes raw frames here, including the CONNECT frame that
-          // carries the Bearer token — strip it so the token never hits logs.
-          const safe = msg.replace(/(Authorization:\s*Bearer\s+)\S+/gi, '$1***')
-          console.debug('[STOMP]', safe)
+          // carries the Bearer token. redactFrame strips "authorization:" lines
+          // and any Bearer string so the token never reaches logs.
+          console.debug('[STOMP_DIAG] frame', redactFrame(msg))
         },
         connectHeaders: {
           // JWT is required by the server STOMP endpoint.
@@ -160,8 +228,18 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
           if (fresh) {
             client.connectHeaders = { Authorization: `Bearer ${fresh}` }
           }
+          if (__DEV__) {
+            console.debug('[STOMP_DIAG] beforeConnect', {
+              brokerURL: STORIX_STOMP_BROKER_URL,
+              roomId,
+              hasFreshToken: !!fresh,
+              freshTokenPreview: `Bearer ${maskToken(fresh)}`,
+              connectHeaderKeys: Object.keys(client.connectHeaders ?? {}),
+              authorizationExists: !!client.connectHeaders?.Authorization,
+            })
+          }
         },
-        onConnect: () => {
+        onConnect: (frame: IFrame) => {
           if (cancelled) return
           setStatus('open')
 
@@ -170,6 +248,19 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
 
           // On reconnect, clean up the previous subscription before re-subscribing.
           unsubscribe()
+
+          if (__DEV__) {
+            console.debug('[STOMP_DIAG] onConnect', {
+              roomId,
+              connectedHeaders: maskAuthHeaders(frame.headers),
+              subscribeDestination: topicRoomSubPath(roomId),
+              clientConnected: client.connected,
+            })
+            console.debug('[STOMP_DIAG] subscribe', {
+              destination: topicRoomSubPath(roomId),
+              subscriptionId: subId,
+            })
+          }
 
           subRef.current = client.subscribe(
             topicRoomSubPath(roomId),
@@ -221,30 +312,47 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
         onWebSocketClose: (event) => {
           if (cancelled) return
           // window.location.origin removed — not available in React Native.
-          console.warn('[STOMP] websocket closed', {
-            roomId,
-            code: event.code,
-            reason: event.reason,
-            wasClean: event.wasClean,
-          })
+          if (__DEV__) {
+            console.warn('[STOMP_DIAG] websocketClose', {
+              code: event?.code,
+              reason: event?.reason,
+              wasClean: event?.wasClean,
+              roomId,
+              brokerURL: STORIX_STOMP_BROKER_URL,
+              statusBeforeClose: statusRef.current,
+              clientConnected: client.connected,
+            })
+          }
           setStatus('closed')
         },
         onWebSocketError: (event) => {
           if (cancelled) return
           // window.location.origin removed — not available in React Native.
-          console.error('[STOMP] websocket error', { roomId, event })
+          if (__DEV__) {
+            const e = event as any
+            console.error('[STOMP_DIAG] websocketError', {
+              message: e?.message,
+              type: e?.type,
+              targetUrl: e?.target?.url ?? e?.target?._url,
+              roomId,
+              brokerURL: STORIX_STOMP_BROKER_URL,
+            })
+          }
           setStatus('error')
         },
         onStompError: (frame: IFrame) => {
           if (cancelled) return
           // Strip Authorization so the token never reaches logs.
           const { Authorization: _auth, ...safeHeaders } = frame.headers ?? {}
-          console.error('[STOMP] broker error', {
-            roomId,
-            command: frame.command,
-            headers: safeHeaders,
-            body: frame.body,
-          })
+          if (__DEV__) {
+            console.error('[STOMP_DIAG] stompError', {
+              command: frame.command,
+              headers: safeHeaders,
+              body: frame.body,
+              roomId,
+              brokerURL: STORIX_STOMP_BROKER_URL,
+            })
+          }
           setStatus('error')
         },
       })
@@ -255,6 +363,14 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
 
     return () => {
       cancelled = true
+      if (__DEV__) {
+        console.debug('[STOMP_DIAG] cleanup', {
+          roomId,
+          reason: isUnmountingRef.current ? 'unmount' : 'deps-change',
+          hadClient: !!clientRef.current,
+          hadSubscription: !!subRef.current || !!subIdRef.current,
+        })
+      }
       // Explicit UNSUBSCRIBE + deactivate on unmount / room navigation away.
       void disconnect()
     }
@@ -265,19 +381,61 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
   const sendMessage = useCallback(
     (text: string): boolean => {
       const t = text.trim()
-      if (!t) return false
-
       const client = clientRef.current
-      if (!client || !client.connected) return false
+
+      if (!t) {
+        if (__DEV__) {
+          console.warn('[STOMP_DIAG] sendBlocked', {
+            reason: 'empty-message',
+            roomId,
+            status: statusRef.current,
+          })
+        }
+        return false
+      }
+      if (!client) {
+        if (__DEV__) {
+          console.warn('[STOMP_DIAG] sendBlocked', {
+            reason: 'no-client',
+            roomId,
+            status: statusRef.current,
+          })
+        }
+        return false
+      }
+      if (!client.connected) {
+        if (__DEV__) {
+          console.warn('[STOMP_DIAG] sendBlocked', {
+            reason: 'client-not-connected',
+            roomId,
+            status: statusRef.current,
+            clientConnected: client.connected,
+          })
+        }
+        return false
+      }
 
       const tempId = `me_tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`
       pendingSentRef.current.push({ tempId, text: t, at: Date.now() })
       appendOptimisticMe(tempId, t)
 
+      if (__DEV__) {
+        // Message length only — never the message body.
+        console.debug('[STOMP_DIAG] publish', {
+          destination: topicRoomPubPath(),
+          roomId,
+          messageLength: t.length,
+        })
+      }
+
       client.publish({
         destination: topicRoomPubPath(),
         body: JSON.stringify({ roomId, type: 'TALK', message: t }),
       })
+
+      if (__DEV__) {
+        console.debug('[STOMP_DIAG] publishSuccess', { tempId })
+      }
 
       return true
     },
