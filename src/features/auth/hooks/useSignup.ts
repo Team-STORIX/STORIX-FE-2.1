@@ -32,7 +32,7 @@ export const useSignup = () => {
 
     onError: (error) => {
       if (isAxiosError(error)) {
-        console.error('[useSignup] failed:', {
+        console.log('[useSignup] failed:', {
           message: error.message,
           status: error.response?.status,
           data: error.response?.data,
@@ -40,7 +40,7 @@ export const useSignup = () => {
         return
       }
 
-      console.error('[useSignup] failed:', error)
+      console.log('[useSignup] failed:', error)
     },
   })
 }

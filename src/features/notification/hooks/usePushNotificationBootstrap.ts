@@ -1,3 +1,4 @@
+import { getApps } from "@react-native-firebase/app";
 import {
   getInitialNotification,
   getMessaging,
@@ -49,26 +50,33 @@ const safeRegister = async (token: string): Promise<void> => {
 // no-ops — actual payload routing will land with PUSH-2-BACKGROUND and the
 // notification-centre UI work.
 const attachMessageListeners = (): (() => void) => {
-  const unsubMessage = onMessage(getMessaging(), async () => {
-    // Foreground messages: iOS/Android intentionally do not show an OS
-    // banner. In-app UI will be wired up in a later PUSH phase.
-  });
+  try {
+    if (getApps().length === 0) return () => {};
+    const msg = getMessaging();
 
-  const unsubOpened = onNotificationOpenedApp(getMessaging(), () => {
-    // Background → tap: deep-link routing lands with PUSH-4-UI.
-  });
+    const unsubMessage = onMessage(msg, async () => {
+      // Foreground messages: iOS/Android intentionally do not show an OS
+      // banner. In-app UI will be wired up in a later PUSH phase.
+    });
 
-  void getInitialNotification(getMessaging()).catch((err) => {
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.warn("[push] getInitialNotification failed", err);
-    }
-  });
+    const unsubOpened = onNotificationOpenedApp(msg, () => {
+      // Background → tap: deep-link routing lands with PUSH-4-UI.
+    });
 
-  return () => {
-    unsubMessage();
-    unsubOpened();
-  };
+    void getInitialNotification(msg).catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] getInitialNotification failed", err);
+      }
+    });
+
+    return () => {
+      unsubMessage();
+      unsubOpened();
+    };
+  } catch {
+    return () => {};
+  }
 };
 
 /**
@@ -94,6 +102,13 @@ export const usePushNotificationBootstrap = (): void => {
     if (!isAuthenticated) {
       return;
     }
+
+    try {
+      if (getApps().length === 0) return;
+    } catch {
+      return;
+    }
+
     if (permissionFlowRan) {
       // Permission flow already ran this session — only (re)attach the
       // refresh + message listeners.
@@ -115,18 +130,23 @@ export const usePushNotificationBootstrap = (): void => {
     let cancelled = false;
 
     void (async () => {
-      const permission = await requestPushPermission();
-      if (cancelled) return;
+      try {
+        const permission = await requestPushPermission();
+        if (cancelled) return;
 
-      if (!permission.granted) {
-        return;
+        if (!permission.granted) return;
+
+        const token = await getFcmDeviceToken();
+        if (cancelled) return;
+        if (!token) return;
+
+        await safeRegister(token);
+      } catch (err) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] bootstrap failed", err);
+        }
       }
-
-      const token = await getFcmDeviceToken();
-      if (cancelled) return;
-      if (!token) return;
-
-      await safeRegister(token);
     })();
 
     const unsubRefresh = subscribeFcmTokenRefresh((newToken) => {
