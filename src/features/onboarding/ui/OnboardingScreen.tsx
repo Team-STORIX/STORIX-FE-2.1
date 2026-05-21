@@ -185,6 +185,22 @@ export function OnboardingScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
+        {step === 4 ? (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.footerGradient,
+              { height: insets.bottom + 34 + 50 + 32 },
+            ]}
+          >
+            <View style={[styles.footerFadeBand, styles.footerFadeBand1]} />
+            <View style={[styles.footerFadeBand, styles.footerFadeBand2]} />
+            <View style={[styles.footerFadeBand, styles.footerFadeBand3]} />
+            <View style={[styles.footerFadeBand, styles.footerFadeBand4]} />
+            <View style={styles.footerSolidBand} />
+          </View>
+        ) : null}
+
         <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
           <Pressable
             onPress={() => void handleNext()}
@@ -209,12 +225,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   progressWrap: {
-    paddingHorizontal: 16,
     paddingTop: 16,
+    paddingLeft: 16,
+    alignItems: 'flex-start',
   },
   progressImage: {
+    width: 60,
     height: 8,
-    width: '100%',
   },
   scroll: {
     flex: 1,
@@ -229,6 +246,33 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     alignItems: 'center',
+    zIndex: 2,
+  },
+  footerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  footerFadeBand: {
+    height: 8,
+  },
+  footerFadeBand1: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  footerFadeBand2: {
+    backgroundColor: 'rgba(255, 255, 255, 0.34)',
+  },
+  footerFadeBand3: {
+    backgroundColor: 'rgba(255, 255, 255, 0.62)',
+  },
+  footerFadeBand4: {
+    backgroundColor: 'rgba(255, 255, 255, 0.86)',
+  },
+  footerSolidBand: {
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
   nextPressable: {
     width: '100%',

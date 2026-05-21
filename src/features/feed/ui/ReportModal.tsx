@@ -227,12 +227,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   doneImage: {
-    width: 286,
-    height: 48,
+    width: 320,
+    height: 82,
   },
   toastCard: {
-    width: 333,
-    height: 56,
+    width: 286,
+    height: 48,
     borderRadius: 12,
     backgroundColor: Gray[900],
     paddingHorizontal: 16,

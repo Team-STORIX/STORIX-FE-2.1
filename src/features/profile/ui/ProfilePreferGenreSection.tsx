@@ -1,6 +1,8 @@
 import { Image } from 'expo-image'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
+import { useRouter } from 'expo-router'
+import { C } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -85,6 +87,7 @@ function GenreBarItem({ genre, score }: { genre: string; score: number }) {
 }
 
 export function ProfilePreferGenreSection() {
+  const router = useRouter()
   const { data: genres = [] } = useProfileGenreStats()
 
   const renderIconSection = () => {
@@ -122,7 +125,14 @@ export function ProfilePreferGenreSection() {
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>아직 선호 장르가 없어요...</Text>
-          <Image source={findGenreButton} style={styles.findButton} contentFit="contain" />
+          <Pressable
+            onPress={() => router.push('/search')}
+            style={({ pressed }) => [pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="검색으로 이동"
+          >
+            <Image source={findGenreButton} style={styles.findButton} contentFit="contain" />
+          </Pressable>
         </View>
       )
     }
@@ -156,7 +166,10 @@ export function ProfilePreferGenreSection() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 28,
+    paddingVertical: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    backgroundColor: C.card,
   },
   title: {
     fontSize: 18,
@@ -182,6 +195,9 @@ const styles = StyleSheet.create({
     width: 131,
     height: 36,
     marginTop: 12,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 
   singleGenre: {
