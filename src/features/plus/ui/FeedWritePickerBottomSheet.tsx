@@ -31,6 +31,10 @@ const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 export type PickedFeedWork = {
   id: number;
   title: string;
+  artistName: string;
+  worksType: string;
+  genre: string;
+  hashtags: string[];
   meta: string;
   thumb: string;
 };
@@ -158,6 +162,10 @@ export function FeedWritePickerBottomSheet({
     const picked: PickedFeedWork = {
       id: Number(selectedWork.worksId),
       title: selectedWork.worksName ?? "",
+      artistName: selectedWork.artistName ?? "",
+      worksType: selectedWork.worksType ?? "",
+      genre: selectedWork.genre ?? "",
+      hashtags: selectedWork.hashtags ?? [],
       meta: [selectedWork.artistName, selectedWork.worksType]
         .filter(Boolean)
         .join(" · "),

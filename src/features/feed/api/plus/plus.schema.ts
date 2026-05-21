@@ -46,12 +46,15 @@ export const ReaderReviewCreateResponseSchema = createApiResponseSchema(
 )
 
 /**   게시글 등록 */
+export const BoardThemeSchema = z.enum(['BIRTHDAY'])
+
 export const ReaderBoardCreateRequestSchema = z.object({
   isWorksSelected: z.boolean(),
   worksId: z.number(),
   isSpoiler: z.boolean(),
   spoilerScript: z.string(),
   content: z.string(),
+  theme: BoardThemeSchema.optional(),
   files: z
     .array(
       z.object({
@@ -93,6 +96,7 @@ export const PlusWorksSearchItemSchema = z.object({
   worksType: z.string().optional(),
   platform: z.string().optional(),
   genre: z.string().optional(),
+  hashtags: z.array(z.string()).optional(),
 })
 
 export const PlusWorksSearchResultSchema = SliceSchema(

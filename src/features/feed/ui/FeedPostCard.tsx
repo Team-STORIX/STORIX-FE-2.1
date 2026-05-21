@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { Image } from "expo-image";
+import { useEffect, useRef, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -6,142 +7,148 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { Gray, Magenta } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+} from "react-native";
+import { Gray, Magenta } from "../../../theme/colors";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
-const likeIcon           = require('../../../../assets/icons/common/icon-like.svg')
-const likePinkIcon       = require('../../../../assets/icons/common/icon-like-pink.svg')
-const commentIcon        = require('../../../../assets/icons/common/icon-comment.svg')
-const menuIcon           = require('../../../../assets/icons/common/menu-3dots.svg')
-const arrowSmallIcon     = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
-const commentDropdown    = require('../../../../assets/icons/common/comment-dropdown.svg')
-const deleteDropdown     = require('../../../../assets/icons/common/delete-dropdown.svg')
-const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
+const likeIcon = require("../../../../assets/icons/common/icon-like.svg");
+const likePinkIcon = require("../../../../assets/icons/common/icon-like-pink.svg");
+const commentIcon = require("../../../../assets/icons/common/icon-comment.svg");
+const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
+const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
+const commentDropdown = require("../../../../assets/icons/common/comment-dropdown.svg");
+const deleteDropdown = require("../../../../assets/icons/common/delete-dropdown.svg");
+const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
 
 const birthdayFeedThemes = {
-  article: require('../../../../assets/common/birthday/b_feed_article.svg'),
-  photo: require('../../../../assets/common/birthday/b_feed_photo.svg'),
-  photoArticle: require('../../../../assets/common/birthday/b_feed_photo_article.svg'),
-  contentlinkArticle: require('../../../../assets/common/birthday/b_feed_contentlink_article.svg'),
-  contentlinkPhoto: require('../../../../assets/common/birthday/b_feed_contentlink_photo.svg'),
-  contentlinkPhotoArticle: require('../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg'),
-}
+  article: require("../../../../assets/common/birthday/b_feed_article.svg"),
+  photo: require("../../../../assets/common/birthday/b_feed_photo.svg"),
+  photoArticle: require("../../../../assets/common/birthday/b_feed_photo_article.svg"),
+  contentlinkArticle: require("../../../../assets/common/birthday/b_feed_contentlink_article.svg"),
+  contentlinkPhoto: require("../../../../assets/common/birthday/b_feed_contentlink_photo.svg"),
+  contentlinkPhotoArticle: require("../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg"),
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type PostCardWorks = {
-  thumbnailUrl: string
-  worksName: string
-  artistName: string
-  worksType: string
-  genre: string
-  hashtags: string[]
-}
+  thumbnailUrl: string;
+  worksName: string;
+  artistName: string;
+  worksType: string;
+  genre: string;
+  hashtags: string[];
+};
 
-type FeedPostCardVariant = 'list' | 'detail'
+type FeedPostCardVariant = "list" | "detail";
 
 type FeedPostCardProps = {
-  variant?: FeedPostCardVariant
-  boardId: number
-  writerUserId: number
-  currentUserId?: number
-  profileImageUrl?: string | null
-  nickName: string
-  createdAt?: string | null
-  content: string
-  images?: string[]
-  works?: PostCardWorks | null
-  isSpoiler?: boolean
-  spoilerScript?: string
-  isLiked: boolean
-  likeCount: number
-  replyCount: number
-  onToggleLike: () => void
-  onClickWorksArrow?: () => void
-  onOpenReport?: () => void
-  onOpenDelete?: () => void
-  onPressCard?: () => void
-  birthdayTheme?: boolean
-}
+  variant?: FeedPostCardVariant;
+  boardId: number;
+  writerUserId: number;
+  currentUserId?: number;
+  profileImageUrl?: string | null;
+  nickName: string;
+  createdAt?: string | null;
+  content: string;
+  images?: string[];
+  works?: PostCardWorks | null;
+  isSpoiler?: boolean;
+  spoilerScript?: string;
+  isLiked: boolean;
+  likeCount: number;
+  replyCount: number;
+  onToggleLike: () => void;
+  onClickWorksArrow?: () => void;
+  onOpenReport?: () => void;
+  onOpenDelete?: () => void;
+  onPressCard?: () => void;
+  birthdayTheme?: boolean;
+};
 
 function getBirthdayThemeSource({
   hasArticle,
   hasPhoto,
   hasContentlink,
 }: {
-  hasArticle: boolean
-  hasPhoto: boolean
-  hasContentlink: boolean
+  hasArticle: boolean;
+  hasPhoto: boolean;
+  hasContentlink: boolean;
 }) {
-  if (hasContentlink && hasPhoto && hasArticle) return birthdayFeedThemes.contentlinkPhotoArticle
-  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto
-  if (hasContentlink && hasArticle) return birthdayFeedThemes.contentlinkArticle
-  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle
-  if (hasPhoto) return birthdayFeedThemes.photo
-  if (hasArticle) return birthdayFeedThemes.article
-  return null
+  if (hasContentlink && hasPhoto && hasArticle)
+    return birthdayFeedThemes.contentlinkPhotoArticle;
+  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto;
+  if (hasContentlink && hasArticle)
+    return birthdayFeedThemes.contentlinkArticle;
+  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle;
+  if (hasPhoto) return birthdayFeedThemes.photo;
+  if (hasArticle) return birthdayFeedThemes.article;
+  return null;
 }
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
 
 function HashtagRow({ tags }: { tags: string[] }) {
-  const containerWidthRef = useRef(0)
-  const chipRights = useRef<number[]>([])
-  const [cutIndex, setCutIndex] = useState(tags.length)
+  const containerWidthRef = useRef(0);
+  const chipRights = useRef<number[]>([]);
+  const [cutIndex, setCutIndex] = useState(tags.length);
 
   useEffect(() => {
-    setCutIndex(tags.length)
-    chipRights.current = []
-  }, [tags])
+    setCutIndex(tags.length);
+    chipRights.current = [];
+  }, [tags]);
 
-  if (!tags.length) return null
+  if (!tags.length) return null;
 
   const recalculate = (cw: number) => {
-    if (cw === 0) return
-    let cut = tags.length
+    if (cw === 0) return;
+    let cut = tags.length;
     for (let i = 0; i < tags.length; i++) {
-      const right = chipRights.current[i]
+      const right = chipRights.current[i];
       if (right !== undefined && right > cw) {
-        cut = i
-        break
+        cut = i;
+        break;
       }
     }
-    setCutIndex(cut)
-  }
+    setCutIndex(cut);
+  };
 
   return (
     <View
       style={styles.hashtagRow}
       onLayout={(e) => {
-        containerWidthRef.current = e.nativeEvent.layout.width
-        recalculate(containerWidthRef.current)
+        containerWidthRef.current = e.nativeEvent.layout.width;
+        recalculate(containerWidthRef.current);
       }}
     >
       {tags.map((tag, i) => (
         <View
           key={`${tag}-${i}`}
-          style={[styles.hashtagChip, i >= cutIndex ? { display: 'none' } : undefined]}
+          style={[
+            styles.hashtagChip,
+            i >= cutIndex ? { display: "none" } : undefined,
+          ]}
           onLayout={(e) => {
-            if (i >= cutIndex) return
-            chipRights.current[i] = e.nativeEvent.layout.x + e.nativeEvent.layout.width
-            recalculate(containerWidthRef.current)
+            if (i >= cutIndex) return;
+            chipRights.current[i] =
+              e.nativeEvent.layout.x + e.nativeEvent.layout.width;
+            recalculate(containerWidthRef.current);
           }}
         >
-          <Text style={styles.hashtagText}>{tag.startsWith('#') ? tag : `#${tag}`}</Text>
+          <Text style={styles.hashtagText}>
+            {tag.startsWith("#") ? tag : `#${tag}`}
+          </Text>
         </View>
       ))}
     </View>
-  )
+  );
 }
 
 // ─── FeedPostCard ─────────────────────────────────────────────────────────────
 
 export function FeedPostCard({
-  variant = 'list',
+  variant = "list",
   boardId,
   writerUserId,
   currentUserId,
@@ -163,40 +170,49 @@ export function FeedPostCard({
   onPressCard,
   birthdayTheme = false,
 }: FeedPostCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [menuDropdownTop, setMenuDropdownTop] = useState(0)
-  const menuBtnRef = useRef<any>(null)
-  const [spoilerRevealed, setSpoilerRevealed] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuDropdownTop, setMenuDropdownTop] = useState(0);
+  const menuBtnRef = useRef<any>(null);
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
 
   const handleMenuPress = () => {
     if (menuOpen) {
-      setMenuOpen(false)
-      return
+      setMenuOpen(false);
+      return;
     }
-    menuBtnRef.current?.measure((_fx: number, _fy: number, _w: number, h: number, _px: number, py: number) => {
-      setMenuDropdownTop(py + h + 4)
-      setMenuOpen(true)
-    })
-  }
+    menuBtnRef.current?.measure(
+      (
+        _fx: number,
+        _fy: number,
+        _w: number,
+        h: number,
+        _px: number,
+        py: number,
+      ) => {
+        setMenuDropdownTop(py + h + 4);
+        setMenuOpen(true);
+      },
+    );
+  };
 
-  const isMine = currentUserId != null && writerUserId === currentUserId
-  const isSpoilerHidden = isSpoiler && !spoilerRevealed
+  const isMine = currentUserId != null && writerUserId === currentUserId;
+  const isSpoilerHidden = isSpoiler && !spoilerRevealed;
 
   const showWorks =
     works != null &&
     !!works.thumbnailUrl &&
     !!works.worksName &&
-    !!works.artistName
-  const hasArticle = content.trim().length > 0
-  const hasPhoto = images.some((src) => src.trim().length > 0)
-  const hasContentlink = works != null && !!works.worksName?.trim()
+    !!works.artistName;
+  const hasArticle = content.trim().length > 0;
+  const hasPhoto = images.some((src) => src.trim().length > 0);
+  const hasContentlink = works != null && !!works.worksName?.trim();
   const birthdayThemeSource = birthdayTheme
     ? getBirthdayThemeSource({
         hasArticle,
         hasPhoto,
         hasContentlink,
       })
-    : null
+    : null;
 
   const cardBody = (
     <View style={styles.card}>
@@ -215,13 +231,12 @@ export function FeedPostCard({
       <View style={styles.cardContent}>
 
       {/* ── Profile row ───────────────────────────────────────── */}
-      <Pressable
-        style={styles.profileRow}
-        onPress={() => setMenuOpen(false)}
-      >
+      <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
         <View style={styles.avatarWrap}>
           <Image
-            source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+            source={
+              profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage
+            }
             style={styles.avatar}
             contentFit="cover"
           />
@@ -229,9 +244,7 @@ export function FeedPostCard({
 
         <View style={styles.authorMeta}>
           <Text style={styles.authorName}>{nickName}</Text>
-          {!!createdAt && (
-            <Text style={styles.timestamp}>{createdAt}</Text>
-          )}
+          {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
         </View>
 
         {/* Menu button */}
@@ -252,14 +265,22 @@ export function FeedPostCard({
 
       {/* ── Menu dropdown ─────────────────────────────────────── */}
       {menuOpen && (
-        <Modal transparent visible animationType="none" onRequestClose={() => setMenuOpen(false)}>
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setMenuOpen(false)}>
+        <Modal
+          transparent
+          visible
+          animationType="none"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setMenuOpen(false)}
+          >
             <Pressable
               style={[styles.menuDropdown, { top: menuDropdownTop }]}
               onPress={() => {
-                setMenuOpen(false)
-                if (isMine) onOpenDelete?.()
-                else onOpenReport?.()
+                setMenuOpen(false);
+                if (isMine) onOpenDelete?.();
+                else onOpenReport?.();
               }}
             >
               <Image
@@ -291,7 +312,7 @@ export function FeedPostCard({
               <Text style={styles.worksMeta} numberOfLines={1}>
                 {[works!.artistName, works!.worksType, works!.genre]
                   .filter(Boolean)
-                  .join(' · ')}
+                  .join(" · ")}
               </Text>
               <HashtagRow tags={works!.hashtags ?? []} />
             </View>
@@ -315,30 +336,26 @@ export function FeedPostCard({
       )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.spoilerContainer}>
-        <View style={styles.bodySection}>
-          <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
-            {images.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.imageScroll}
-                contentContainerStyle={styles.imageContent}
-              >
-                {images.slice(0, 3).map((src, idx) => (
-                  <View
-                    key={`${boardId}-img-${idx}`}
-                    style={styles.imageBox}
-                  >
-                    <Image
-                      source={{ uri: src }}
-                      style={styles.imageFill}
-                      contentFit="cover"
-                    />
-                  </View>
-                ))}
-              </ScrollView>
-            )}
+      <View style={styles.bodySection}>
+        {/* Images — 스포일러 숨김 상태에서는 이미지도 숨김 */}
+        {images.length > 0 && !isSpoilerHidden && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.imageScroll}
+            contentContainerStyle={styles.imageContent}
+          >
+            {images.slice(0, 3).map((src, idx) => (
+              <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
+                <Image
+                  source={{ uri: src }}
+                  style={styles.imageFill}
+                  contentFit="cover"
+                />
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
             <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
               <Text
@@ -358,9 +375,23 @@ export function FeedPostCard({
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
             <Text style={styles.spoilerRevealText}>
-              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
+              {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
             </Text>
           </Pressable>
+        ) : (
+          <View
+            style={[
+              styles.textPad,
+              images.length > 0 && styles.textPadAfterImage,
+            ]}
+          >
+            <Text
+              style={styles.contentText}
+              numberOfLines={variant === "detail" ? undefined : 3}
+            >
+              {content}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -396,9 +427,9 @@ export function FeedPostCard({
 
       </View>{/* end cardContent */}
     </View>
-  )
+  );
 
-  if (variant === 'list' && onPressCard) {
+  if (variant === "list" && onPressCard) {
     return (
       <Pressable
         onPress={onPressCard}
@@ -408,10 +439,10 @@ export function FeedPostCard({
       >
         {cardBody}
       </Pressable>
-    )
+    );
   }
 
-  return cardBody
+  return cardBody;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -425,17 +456,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
-    backgroundColor: '#ffffff',
-    position: 'relative',
-    overflow: 'hidden',
+    backgroundColor: "#ffffff",
+    position: "relative",
+    overflow: "hidden",
   },
   birthdayThemeLayer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 0,
   },
   birthdayThemeImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   cardContent: {
     zIndex: 1,
@@ -443,9 +474,9 @@ const styles = StyleSheet.create({
 
   // Profile row
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     height: 41,
     paddingHorizontal: 16,
   },
@@ -453,7 +484,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 9999,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     marginRight: 12,
   },
@@ -466,22 +497,22 @@ const styles = StyleSheet.create({
   },
   authorName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 22,
     color: Gray[900],
   },
   timestamp: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 17,
     color: Gray[300],
   },
   menuBtn: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   menuIcon: {
     width: 24,
@@ -490,12 +521,12 @@ const styles = StyleSheet.create({
 
   // Menu dropdown
   menuDropdown: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
-    shadowColor: '#131112',
-    shadowOpacity: 0.20,
+    backgroundColor: "#ffffff",
+    shadowColor: "#131112",
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
@@ -514,17 +545,17 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#EEEDED',
-    backgroundColor: '#F9F6F7',
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    borderColor: Gray[100],
+    backgroundColor: Gray[50],
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: 12,
   },
   worksThumbnailBox: {
     width: 62,
     height: 83,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
@@ -539,22 +570,22 @@ const styles = StyleSheet.create({
   },
   worksName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 22,
-    color: '#000000',
+    color: "#000000",
     marginBottom: 4,
   },
   worksMeta: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 17,
     color: Gray[500],
   },
   worksArrowBtn: {
     paddingLeft: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
     flexShrink: 0,
   },
   arrowSmall: {
@@ -565,30 +596,30 @@ const styles = StyleSheet.create({
 
   // Hashtag
   hashtagRow: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
+    flexDirection: "row",
+    flexWrap: "nowrap",
     gap: 4,
-    marginTop: 'auto',
+    marginTop: "auto",
   },
   hashtagChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#E3DCDF',
-    backgroundColor: '#F2EDEF',
+    borderColor: "#E3DCDF",
+    backgroundColor: "#F2EDEF",
   },
   hashtagText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 14,
-    color: '#847B7F',
+    color: "#847B7F",
   },
 
   // Body
   spoilerContainer: {
     marginTop: 20,
-    position: 'relative',
+    position: "relative",
   },
   bodySection: {
     overflow: 'hidden',
@@ -606,7 +637,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
@@ -623,7 +654,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
     color: Gray[800],
   },
@@ -639,21 +670,21 @@ const styles = StyleSheet.create({
   },
   spoilerRevealText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
     color: Magenta[300],
   },
 
   // Reactions
   reactionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 20,
     paddingHorizontal: 16,
   },
   reactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   commentItem: {
     marginLeft: 16,
@@ -665,8 +696,8 @@ const styles = StyleSheet.create({
   reactionCount: {
     marginLeft: 4,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     lineHeight: 20,
     color: Gray[500],
   },
-})
+});

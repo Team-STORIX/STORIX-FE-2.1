@@ -17,11 +17,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, Gray } from "../../../theme/colors";
+import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
+import { useMe } from "../../profile";
 import { useWorksDetail } from "../../works";
 import { useCreateReaderBoard, type FeedWriteImage } from "../hooks";
+import type { BoardTheme } from "../../feed/api/plus/plusWrite";
+import { BirthdayThemePreviewBottomSheet } from "./BirthdayThemePreviewBottomSheet";
 import {
   FeedWritePickerBottomSheet,
   type PickedFeedWork,
@@ -34,6 +37,7 @@ const searchIcon = require("../../../../assets/icons/common/search.svg");
 const activeIcon = require("../../../../assets/icons/common/active.svg");
 const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
 const photoIcon = require("../../../../assets/icons/feed/icon-photo.svg");
+const arrowForwardIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
 
 const MAX_CONTENT_LENGTH = 300;
 const MAX_IMAGE_COUNT = 3;
@@ -118,9 +122,13 @@ export function FeedWriteEntryScreen() {
   const [spoiler, setSpoiler] = useState(false);
   const [spoilerMessage, setSpoilerMessage] = useState("");
   const [images, setImages] = useState<PickedFeedImage[]>([]);
+  const [theme, setTheme] = useState<BoardTheme | undefined>(undefined);
+  const [isThemeSheetOpen, setIsThemeSheetOpen] = useState(false);
 
   const submitMutation = useCreateReaderBoard();
   const isSubmitting = submitMutation.isPending;
+
+  const { data: me } = useMe();
 
   // Hydrate selectedWork from worksId route param using useWorksDetail
   const initialWorksQuery = useWorksDetail(initialWorksId ?? 0);
@@ -132,6 +140,10 @@ export function FeedWriteEntryScreen() {
     setSelectedWork({
       id: initialWorksId,
       title: w.worksName ?? "",
+      artistName: w.author ?? "",
+      worksType: w.worksType ?? "",
+      genre: w.genre ?? "",
+      hashtags: w.hashtags ?? [],
       meta: [w.author, w.worksType].filter(Boolean).join(" · "),
       thumb: w.thumbnailUrl ?? "",
     });
@@ -169,6 +181,7 @@ export function FeedWriteEntryScreen() {
         isSpoiler: spoiler,
         spoilerScript: spoiler ? spoilerMessage.trim() : "",
         content,
+        theme,
         images,
       });
 
@@ -394,6 +407,35 @@ export function FeedWriteEntryScreen() {
           onMessageChange={setSpoilerMessage}
           defaultMessage={FEED_DEFAULT_SPOILER}
         />
+
+        <Pressable
+          onPress={() => setIsThemeSheetOpen(true)}
+          style={({ pressed }) => [styles.themeRow, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="생일 테마 적용"
+        >
+          <View style={styles.themeRowLeft}>
+            <Text style={styles.themeRowLabel}>생일 테마 적용</Text>
+            <View style={styles.betaBadge}>
+              <Text style={styles.betaBadgeText}>Beta</Text>
+            </View>
+          </View>
+          <View style={styles.themeRowRight}>
+            <Text
+              style={[
+                styles.themeRowStatus,
+                theme === "BIRTHDAY" && styles.themeRowStatusActive,
+              ]}
+            >
+              {theme === "BIRTHDAY" ? "적용됨" : "선택 안함"}
+            </Text>
+            <Image
+              source={arrowForwardIcon}
+              style={styles.themeRowArrow}
+              contentFit="contain"
+            />
+          </View>
+        </Pressable>
       </ScrollView>
 
       <View
@@ -478,6 +520,36 @@ export function FeedWriteEntryScreen() {
         onPick={(work) => {
           setSelectedWork(work);
           setIsWorksNotNeeded(false);
+        }}
+      />
+
+      <BirthdayThemePreviewBottomSheet
+        visible={isThemeSheetOpen}
+        onClose={() => setIsThemeSheetOpen(false)}
+        initialEnabled={theme === "BIRTHDAY"}
+        onApply={(enabled) => setTheme(enabled ? "BIRTHDAY" : undefined)}
+        draft={{
+          nickName: me?.nickName ?? "나",
+          profileImageUrl: me?.profileImageUrl ?? null,
+          content,
+          images: images.map((image) => image.uri),
+          works: selectedWork
+            ? {
+                thumbnailUrl: selectedWork.thumb,
+                worksName: selectedWork.title,
+                artistName: selectedWork.artistName,
+                worksType: selectedWork.worksType,
+                genre: selectedWork.genre,
+                hashtags:
+                  selectedWork.hashtags.length > 0
+                    ? selectedWork.hashtags
+                    : selectedWork.genre
+                      ? [selectedWork.genre]
+                      : [],
+              }
+            : null,
+          isSpoiler: spoiler,
+          spoilerScript: spoiler ? spoilerMessage.trim() : undefined,
         }}
       />
     </KeyboardAvoidingView>
@@ -688,5 +760,51 @@ const styles = StyleSheet.create({
   },
   contentCounterTotal: {
     color: C.textMuted,
+  },
+  themeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+  },
+  themeRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  themeRowLabel: {
+    ...Typography.body1Bold,
+    color: C.text,
+  },
+  betaBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+    backgroundColor: Magenta[20],
+  },
+  betaBadgeText: {
+    ...Typography.caption2Extrabold,
+    color: Magenta[300],
+  },
+  themeRowRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  themeRowStatus: {
+    ...Typography.body2Medium,
+    color: C.textMuted,
+  },
+  themeRowStatusActive: {
+    color: Magenta[300],
+  },
+  themeRowArrow: {
+    width: 20,
+    height: 20,
+    tintColor: Gray[400],
   },
 });
