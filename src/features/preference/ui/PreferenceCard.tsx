@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import type { PreferenceWork } from '../hooks/usePreferenceFlow'
 
@@ -126,8 +127,16 @@ export const PreferenceCard = forwardRef<PreferenceCardHandle, PreferenceCardPro
             <View style={styles.coverFallback} />
           )}
 
+          <Svg style={styles.overlayBottom} pointerEvents="none">
+            <Defs>
+              <LinearGradient id="preferenceShade" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#131112" stopOpacity={0} />
+                <Stop offset="1" stopColor="#131112" stopOpacity={0.6} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#preferenceShade)" />
+          </Svg>
           <View style={styles.overlayBase} />
-          <View style={styles.overlayBottom} />
 
           {overlayAction ? <ActionStamp action={overlayAction} /> : null}
 
@@ -202,7 +211,7 @@ const styles = StyleSheet.create({
   frame: {
     width: '100%',
     height: '100%',
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     overflow: 'hidden',
     backgroundColor: Gray[200],
   },
@@ -222,12 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(19, 17, 18, 0.2)',
   },
   overlayBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 248,
-    backgroundColor: 'rgba(19, 17, 18, 0.6)',
+    ...StyleSheet.absoluteFillObject,
   },
   actionStamp: {
     position: 'absolute',
