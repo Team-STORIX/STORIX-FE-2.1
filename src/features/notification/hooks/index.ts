@@ -1,5 +1,10 @@
 export { usePushNotificationBootstrap } from './usePushNotificationBootstrap'
 export { usePushDeviceSync } from './usePushDeviceSync'
+export {
+  useNotificationConsentModal,
+  type ConsentStep,
+  type NotificationConsentModalState,
+} from './useNotificationConsentModal'
 
 export {
   useNotificationsInfinite,

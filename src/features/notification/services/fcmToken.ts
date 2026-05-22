@@ -43,6 +43,10 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
 
     try {
       const token = await getToken(msg)
+      if (__DEV__ && typeof token === 'string' && token.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log('[push] fcm token', token)
+      }
       return typeof token === 'string' && token.length > 0 ? token : null
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -50,6 +54,10 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
         await sleep(APNS_RETRY_DELAY_MS)
         try {
           const token = await getToken(msg)
+          if (__DEV__ && typeof token === 'string' && token.length > 0) {
+            // eslint-disable-next-line no-console
+            console.log('[push] fcm token', token)
+          }
           return typeof token === 'string' && token.length > 0 ? token : null
         } catch (retryErr) {
           if (__DEV__) {

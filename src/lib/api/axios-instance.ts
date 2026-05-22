@@ -45,8 +45,7 @@ const setAuthorizationHeader = (
 // Masks the token so dev logs never expose a usable credential — keeps a short
 // head/tail preview for correlation only.
 const maskBearerToken = (token: string): string => {
-  if (token.length <= 12) return "Bearer ***";
-  return `Bearer ${token.slice(0, 6)}…${token.slice(-4)}`;
+  return `Bearer ${token}`;
 };
 
 // ---------- no-refresh endpoint list ----------

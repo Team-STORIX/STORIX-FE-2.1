@@ -17,7 +17,11 @@ import {
   usePreferenceExploration,
 } from '../../src/features/preference'
 import { useTodayTopicRooms } from '../../src/features/topicroom'
-import { useUnreadNotificationCount } from '../../src/features/notification'
+import {
+  NotificationConsentModal,
+  useNotificationConsentModal,
+  useUnreadNotificationCount,
+} from '../../src/features/notification'
 import { C } from '../../src/theme/colors'
 
 const HOME_PAD = 16
@@ -42,6 +46,9 @@ export default function HomeScreen() {
     isFetching: checkingExploration,
   } = usePreferenceExploration(false)
   const { data: unreadCount } = useUnreadNotificationCount()
+
+  // One-time event/benefit consent overlay on first Home entry after onboarding.
+  const consent = useNotificationConsentModal()
 
   useEffect(() => {
     return () => {
@@ -176,6 +183,8 @@ export default function HomeScreen() {
         position="bottom"
         bottomOffset={24}
       />
+
+      <NotificationConsentModal {...consent} />
     </View>
   )
 }
