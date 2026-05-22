@@ -1,4 +1,8 @@
-export { registerDeviceToken } from './notification.api'
+export {
+  deletePushDevice,
+  syncPushDevice,
+  updatePushDeviceFcmToken,
+} from './pushDevice.api'
 export {
   getNotifications,
   getNotificationSettings,
@@ -25,3 +29,10 @@ export type {
   NotificationType,
   UpdateNotificationSettingsPayload,
 } from './notification.schema'
+
+export type {
+  OsPlatform,
+  PushDeviceResponse,
+  SyncPushDevicePayload,
+  UpdateFcmTokenPayload,
+} from './pushDevice.schema'

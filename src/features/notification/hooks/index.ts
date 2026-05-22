@@ -1,5 +1,5 @@
 export { usePushNotificationBootstrap } from './usePushNotificationBootstrap'
-export { useRegisterDeviceToken } from './useRegisterDeviceToken'
+export { usePushDeviceSync } from './usePushDeviceSync'
 
 export {
   useNotificationsInfinite,
