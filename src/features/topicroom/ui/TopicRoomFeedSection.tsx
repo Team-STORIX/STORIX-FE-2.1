@@ -1,10 +1,8 @@
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -16,15 +14,12 @@ import { WarningEmptyState } from "../../../components/common/WarningEmptyState"
 import { C } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
-import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
+import { HotTopicRoomCard } from "./HotTopicRoomCard";
 import { TopicRoomListItem } from "./TopicRoomListItem";
-
-const fireIcon = require("../../../../assets/icons/common/fire.svg");
-const peopleIcon = require("../../../../assets/icons/common/icon-topicroom-people.svg");
 
 const PADDING_H = 16;
 const CARD_GAP = 12;
@@ -104,12 +99,13 @@ export function TopicRoomFeedSection() {
             horizontal
             data={popularPages}
             keyExtractor={(_, i) => `popular_page_${i}`}
-            renderItem={({ item: pageRooms }) => (
+            renderItem={({ item: pageRooms, index: pageIdx }) => (
               <View style={[styles.page, { width: pageWidth }]}>
-                {pageRooms.map((room) => (
-                  <PopularTopicRoomRow
+                {pageRooms.map((room, i) => (
+                  <HotTopicRoomCard
                     key={room.topicRoomId}
                     item={room}
+                    rank={pageIdx * CARDS_PER_PAGE + i + 1}
                     isJoining={joiningId === room.topicRoomId}
                     onPress={() => handleEnter(room)}
                   />
@@ -174,84 +170,6 @@ export function TopicRoomFeedSection() {
   );
 }
 
-function PopularTopicRoomRow({
-  item,
-  isJoining,
-  onPress,
-}: {
-  item: TopicRoomItem;
-  isJoining: boolean;
-  onPress: () => void;
-}) {
-  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
-  const initial = (item.worksName || item.topicRoomName || "?")
-    .slice(0, 1)
-    .toUpperCase();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={isJoining}
-      style={({ pressed }) => [
-        styles.popularCard,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
-    >
-      <View style={styles.popularThumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.popularThumb}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.popularThumb, styles.popularThumbFallback]}>
-            <Text style={styles.popularThumbFallbackText}>{initial}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.popularBody}>
-        <Text style={styles.popularSubtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-        <Text style={styles.popularTitle} numberOfLines={2}>
-          {item.topicRoomName}
-        </Text>
-        <View style={styles.chipRow}>
-          <View style={styles.hotChip}>
-            <Image
-              source={fireIcon}
-              style={styles.icon12}
-              contentFit="contain"
-            />
-            <Text style={styles.hotChipText}>HOT</Text>
-          </View>
-          <View style={styles.peopleChip}>
-            <Image
-              source={peopleIcon}
-              style={styles.icon12}
-              contentFit="contain"
-            />
-            <Text style={styles.peopleChipText}>
-              {item.activeUserNumber ?? 0}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {isJoining ? (
-        <ActivityIndicator
-          size="small"
-          color={C.primary}
-          style={styles.joiningSpinner}
-        />
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
     backgroundColor: C.card,
@@ -302,95 +220,6 @@ const styles = StyleSheet.create({
   dotActive: {
     backgroundColor: C.primary,
     width: 16,
-  },
-
-  popularCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 120,
-    borderRadius: Radius.lg,
-    backgroundColor: C.bg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 14,
-  },
-  cardPressed: {
-    opacity: 0.85,
-  },
-  popularThumbWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: Radius.md,
-    overflow: "hidden",
-    flexShrink: 0,
-  },
-  popularThumb: {
-    width: 96,
-    height: 96,
-    borderRadius: Radius.md,
-  },
-  popularThumbFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: C.primaryLight,
-  },
-  popularThumbFallbackText: {
-    ...Typography.heading2,
-    color: C.primary,
-  },
-  popularBody: {
-    flex: 1,
-    justifyContent: "center",
-    gap: 6,
-  },
-  popularSubtitle: {
-    ...Typography.caption1Medium,
-    color: C.textMuted,
-  },
-  popularTitle: {
-    ...Typography.body1Bold,
-    color: C.text,
-  },
-  chipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  hotChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radius.full,
-    backgroundColor: C.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  hotChipText: {
-    ...Typography.caption2Extrabold,
-    color: C.card,
-    marginLeft: 2,
-  },
-  peopleChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radius.full,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  peopleChipText: {
-    ...Typography.caption2Extrabold,
-    color: C.primary,
-    marginLeft: 2,
-  },
-  icon12: {
-    width: 12,
-    height: 12,
-  },
-  joiningSpinner: {
-    position: "absolute",
-    right: 16,
-    top: 16,
   },
 
   myList: {
