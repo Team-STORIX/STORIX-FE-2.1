@@ -336,27 +336,27 @@ export function FeedPostCard({
       )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.bodySection}>
-        {/* Images — 스포일러 숨김 상태에서는 이미지도 숨김 */}
-        {images.length > 0 && !isSpoilerHidden && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.imageScroll}
-            contentContainerStyle={styles.imageContent}
-          >
-            {images.slice(0, 3).map((src, idx) => (
-              <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
-                <Image
-                  source={{ uri: src }}
-                  style={styles.imageFill}
-                  contentFit="cover"
-                />
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
+      <View style={styles.spoilerContainer}>
+        <View style={styles.bodySection}>
+          <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
+            {images.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.imageScroll}
+                contentContainerStyle={styles.imageContent}
+              >
+                {images.slice(0, 3).map((src, idx) => (
+                  <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
+                    <Image
+                      source={{ uri: src }}
+                      style={styles.imageFill}
+                      contentFit="cover"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            )}
             <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
               <Text
                 style={styles.contentText}
@@ -375,23 +375,9 @@ export function FeedPostCard({
             accessibilityLabel="스포일러가 포함된 피드글 보기"
           >
             <Text style={styles.spoilerRevealText}>
-              {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
+              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
             </Text>
           </Pressable>
-        ) : (
-          <View
-            style={[
-              styles.textPad,
-              images.length > 0 && styles.textPadAfterImage,
-            ]}
-          >
-            <Text
-              style={styles.contentText}
-              numberOfLines={variant === "detail" ? undefined : 3}
-            >
-              {content}
-            </Text>
-          </View>
         )}
       </View>
 

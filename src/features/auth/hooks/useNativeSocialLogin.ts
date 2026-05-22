@@ -22,6 +22,8 @@ import {
 } from "../api/auth.schema";
 import { kakaoNativeLogin } from "../api/kakao.api";
 import { naverNativeLogin } from "../api/naver.api";
+import { setItem } from "../../../lib/storage/async";
+import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
 
 // ─── internal helper ──────────────────────────────────────────────────────────
 
@@ -49,13 +51,16 @@ export const useNativeSocialLogin = () => {
   return useMutation({
     mutationFn: (provider: SocialProviderId) => callBackend(provider),
 
-    onSuccess: async (data: SocialLoginResponse) => {
+    onSuccess: async (data: SocialLoginResponse, provider: SocialProviderId) => {
       const { isRegistered, readerPreLoginResponse } = data.result;
       const loginTokens = extractLoginTokens(data.result);
 
       // Existing user — store tokens and go to the main app.
       if (isRegistered && loginTokens) {
-        await setLoginTokens(loginTokens);
+        await Promise.all([
+          setLoginTokens(loginTokens),
+          setItem(SOCIAL_PROVIDER_KEY, provider),
+        ]);
         router.replace("/(tabs)");
         return;
       }
