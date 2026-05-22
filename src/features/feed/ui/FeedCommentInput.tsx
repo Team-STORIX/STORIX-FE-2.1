@@ -91,7 +91,6 @@ export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
               textAlignVertical="top"
               scrollEnabled={false}
               onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
-              includeFontPadding={false}
             />
             {value.length > 0 && (
               <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
@@ -158,6 +157,7 @@ const styles = StyleSheet.create({
     color: Gray[800],
     padding: 0,
     margin: 0,
+    includeFontPadding: false,
   },
   counter: {
     position: 'absolute',

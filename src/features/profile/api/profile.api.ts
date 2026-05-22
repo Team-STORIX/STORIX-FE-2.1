@@ -12,9 +12,30 @@ export const getGenreStats = async (): Promise<ApiResponse<GenreStatItem[]>> => 
   return res.data as ApiResponse<GenreStatItem[]>
 }
 
+// Fallback nickname for users whose profile has not been filled in yet
+// (e.g. developer-login accounts), so the UI never renders an empty name.
+export const DEFAULT_NICKNAME = '스토릭스 유저'
+
+// The backend can return null for nickName / profileDescription / profileImageUrl
+// on incomplete profiles, but MeProfileResult types the text fields as non-null
+// strings. Normalize once here at the API boundary so every consumer (store + all
+// profile UI) receives safe values and no component calls .trim() on null.
+const normalizeMeProfile = (raw: MeProfileResult): MeProfileResult => {
+  const nickName = (raw.nickName ?? '').trim()
+  return {
+    ...raw,
+    nickName: nickName.length > 0 ? nickName : DEFAULT_NICKNAME,
+    profileDescription: raw.profileDescription ?? '',
+    profileImageUrl: raw.profileImageUrl ?? null,
+  }
+}
+
 export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {
   const res = await apiClient.get('/api/v1/profile/me')
-  return res.data as ApiResponse<MeProfileResult>
+  const data = res.data as ApiResponse<MeProfileResult>
+  return data.result
+    ? { ...data, result: normalizeMeProfile(data.result) }
+    : data
 }
 
 export const updateProfileNickname = async (

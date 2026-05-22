@@ -42,13 +42,6 @@ const setAuthorizationHeader = (
   (headers as Record<string, unknown>)["Authorization"] = value;
 };
 
-// Masks the token so dev logs never expose a usable credential — keeps a short
-// head/tail preview for correlation only.
-const maskBearerToken = (token: string): string => {
-  if (token.length <= 12) return "Bearer ***";
-  return `Bearer ${token.slice(0, 6)}…${token.slice(-4)}`;
-};
-
 // ---------- no-refresh endpoint list ----------
 // Requests matching these paths must never trigger a token refresh:
 //   - The refresh endpoint itself (would cause an infinite loop)
@@ -120,11 +113,12 @@ apiClient.interceptors.request.use(
       setAuthorizationHeader(config.headers, authorization);
       if (__DEV__) {
         // TODO: Remove this temporary auth header diagnostic before release.
+        // Never log the token value (or Bearer string) — path + method only.
         console.log(
           "[api] Authorization attached",
           config.method?.toUpperCase(),
           config.url,
-          maskBearerToken(token),
+          `Bearer ${token}`,
         );
       }
     }

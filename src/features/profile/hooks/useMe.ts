@@ -14,6 +14,11 @@ export const useMe = () => {
       const response = await getMyProfile()
       const me = response.result
       useProfileStore.getState().setMe(me)
+      if (__DEV__) {
+        // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
+        // eslint-disable-next-line no-console
+        console.log('[NOTIFICATION_TEST_DEBUG] profile userId', me.userId)
+      }
       return me
     },
     enabled: isAuthenticated,
