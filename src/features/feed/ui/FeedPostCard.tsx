@@ -482,9 +482,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
-    lineHeight: 22,
+    lineHeight: 20,
     color: Gray[900],
   },
   timestamp: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 17,
-    color: Gray[300],
+    color: Gray[400],
   },
   menuBtn: {
     width: 24,
@@ -555,9 +555,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   worksName: {
-    fontSize: 16,
-    fontWeight: "500",
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20,
     color: "#000000",
     marginBottom: 4,
   },
