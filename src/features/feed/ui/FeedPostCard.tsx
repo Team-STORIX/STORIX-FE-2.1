@@ -6,8 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gray, Magenta } from "../../../theme/colors";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
@@ -174,6 +176,10 @@ export function FeedPostCard({
   const [menuDropdownTop, setMenuDropdownTop] = useState(0);
   const menuBtnRef = useRef<any>(null);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxCurrent, setLightboxCurrent] = useState(0);
+  const { width: screenWidth } = useWindowDimensions();
+  const { bottom: bottomInset } = useSafeAreaInsets();
 
   const handleMenuPress = () => {
     if (menuOpen) {
@@ -293,6 +299,38 @@ export function FeedPostCard({
         </Modal>
       )}
 
+      {/* ── Lightbox ──────────────────────────────────────────── */}
+      {lightboxIndex !== null && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
+          <Pressable style={styles.lightboxBackdrop} onPress={() => setLightboxIndex(null)}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentOffset={{ x: lightboxIndex * screenWidth, y: 0 }}
+              onScroll={(e) => {
+                const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                setLightboxCurrent(page);
+              }}
+              scrollEventThrottle={16}
+              onStartShouldSetResponder={() => true}
+              onStartShouldSetResponderCapture={() => false}
+            >
+              {images.slice(0, 3).map((src, idx) => (
+                <Pressable key={idx} style={[styles.lightboxPage, { width: screenWidth }]} onPress={() => setLightboxIndex(null)}>
+                  <Image source={{ uri: src }} style={styles.lightboxImage} contentFit="contain" />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <View style={[styles.lightboxCounter, { top: bottomInset + 16 }]} pointerEvents="none">
+              <Text style={styles.lightboxCounterText}>
+                {lightboxCurrent + 1}/{images.slice(0, 3).length}
+              </Text>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
+
       {/* ── Works card ────────────────────────────────────────── */}
       {showWorks && (
         <View style={styles.worksSection}>
@@ -347,13 +385,13 @@ export function FeedPostCard({
                 contentContainerStyle={styles.imageContent}
               >
                 {images.slice(0, 3).map((src, idx) => (
-                  <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
+                  <Pressable key={`${boardId}-img-${idx}`} style={styles.imageBox} onPress={() => { setLightboxIndex(idx); setLightboxCurrent(idx); }}>
                     <Image
                       source={{ uri: src }}
                       style={styles.imageFill}
                       contentFit="cover"
                     />
-                  </View>
+                  </Pressable>
                 ))}
               </ScrollView>
             )}
@@ -685,5 +723,32 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
     color: Gray[500],
+  },
+  lightboxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+  },
+  lightboxPage: {
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxImage: {
+    width: '100%',
+    height: '100%',
+  },
+  lightboxCounter: {
+    position: 'absolute',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  lightboxCounterText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
