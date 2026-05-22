@@ -11,7 +11,9 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { Image } from 'expo-image'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import 'react-native-reanimated'
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -71,23 +73,25 @@ export default function RootLayout() {
     ]).then(() => setAuthReady(true))
   }, [])
 
-  // Hide the splash screen only after both async gates pass.
+  // Hide the native splash once fonts are ready, with a short delay so
+  // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
-    if (fontsLoaded && authReady) {
-      SplashScreen.hideAsync()
+    if (fontsLoaded) {
+      const t = setTimeout(() => SplashScreen.hideAsync(), 150)
+      return () => clearTimeout(t)
     }
-  }, [fontsLoaded, authReady])
+  }, [fontsLoaded])
 
-  // Show a branded screen while the native splash is visible (or as a JS-side
-  // fallback on Expo Go / warm starts where the native splash may not appear).
   if (!fontsLoaded || !authReady) {
     return <BrandedSplash />
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <RootLayoutNav />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   )
 }
 
@@ -157,11 +161,12 @@ function AuthGate() {
 // pending. On a normal native launch the native splash covers this entirely;
 // it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
 
+const logoPink = require('../assets/logos/logo-pink.svg')
+
 function BrandedSplash() {
   return (
     <View style={splashStyles.container}>
-      <Text style={splashStyles.logo}>STORIX</Text>
-      <Text style={splashStyles.tagline}>웹툰과 웹소설의 이야기 공간</Text>
+      <Image source={logoPink} style={splashStyles.logo} contentFit="contain" />
       <ActivityIndicator
         size="small"
         color={C.primary}
@@ -177,18 +182,10 @@ const splashStyles = StyleSheet.create({
     backgroundColor: C.card,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
   },
   logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: C.primary,
-    letterSpacing: 4,
-  },
-  tagline: {
-    fontSize: 14,
-    color: C.textMuted,
-    letterSpacing: 0.3,
+    width: 120,
+    height: 120,
   },
   spinner: { marginTop: 24 },
 })

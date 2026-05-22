@@ -9,6 +9,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gray, Magenta } from "../../../theme/colors";
 
@@ -22,6 +24,7 @@ const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forwa
 const commentDropdown = require("../../../../assets/icons/common/comment-dropdown.svg");
 const deleteDropdown = require("../../../../assets/icons/common/delete-dropdown.svg");
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
+const xIcon = require("../../../../assets/icons/common/x.svg");
 
 const birthdayFeedThemes = {
   article: require("../../../../assets/common/birthday/b_feed_article.svg"),
@@ -147,6 +150,56 @@ function HashtagRow({ tags }: { tags: string[] }) {
   );
 }
 
+// ─── ZoomableImage ────────────────────────────────────────────────────────────
+
+function ZoomableImage({
+  src,
+  width,
+  isActive,
+  onTap,
+}: {
+  src: string
+  width: number
+  isActive: boolean
+  onTap: () => void
+}) {
+  const scale = useSharedValue(1)
+  const savedScale = useSharedValue(1)
+
+  useEffect(() => {
+    if (!isActive) {
+      scale.value = withSpring(1)
+      savedScale.value = 1
+    }
+  }, [isActive, scale, savedScale])
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      scale.value = Math.max(1, savedScale.value * e.scale)
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value
+      if (scale.value < 1.05) {
+        scale.value = withSpring(1)
+        savedScale.value = 1
+      }
+    })
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  return (
+    <Pressable onPress={onTap} style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <GestureDetector gesture={pinchGesture}>
+        <Animated.View style={[{ width, height: '100%' }, animatedStyle]}>
+          <Image source={{ uri: src }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+        </Animated.View>
+      </GestureDetector>
+    </Pressable>
+  )
+}
+
 // ─── FeedPostCard ─────────────────────────────────────────────────────────────
 
 export function FeedPostCard({
@@ -178,8 +231,9 @@ export function FeedPostCard({
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxCurrent, setLightboxCurrent] = useState(0);
+  const [lightboxControls, setLightboxControls] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
-  const { bottom: bottomInset } = useSafeAreaInsets();
+  const { top: topInset } = useSafeAreaInsets();
 
   const handleMenuPress = () => {
     if (menuOpen) {
@@ -302,7 +356,7 @@ export function FeedPostCard({
       {/* ── Lightbox ──────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
-          <Pressable style={styles.lightboxBackdrop} onPress={() => setLightboxIndex(null)}>
+          <View style={styles.lightboxBackdrop}>
             <ScrollView
               horizontal
               pagingEnabled
@@ -313,21 +367,34 @@ export function FeedPostCard({
                 setLightboxCurrent(page);
               }}
               scrollEventThrottle={16}
-              onStartShouldSetResponder={() => true}
-              onStartShouldSetResponderCapture={() => false}
+              style={{ flex: 1 }}
             >
               {images.slice(0, 3).map((src, idx) => (
-                <Pressable key={idx} style={[styles.lightboxPage, { width: screenWidth }]} onPress={() => setLightboxIndex(null)}>
-                  <Image source={{ uri: src }} style={styles.lightboxImage} contentFit="contain" />
-                </Pressable>
+                <ZoomableImage
+                  key={idx}
+                  src={src}
+                  width={screenWidth}
+                  isActive={lightboxCurrent === idx}
+                  onTap={() => setLightboxControls((v) => !v)}
+                />
               ))}
             </ScrollView>
-            <View style={[styles.lightboxCounter, { top: bottomInset + 16 }]} pointerEvents="none">
-              <Text style={styles.lightboxCounterText}>
-                {lightboxCurrent + 1}/{images.slice(0, 3).length}
-              </Text>
-            </View>
-          </Pressable>
+
+            {lightboxControls && (
+              <View style={[styles.lightboxHeader, { top: topInset }]}>
+                <Pressable
+                  onPress={() => setLightboxIndex(null)}
+                  style={styles.lightboxCloseBtn}
+                  hitSlop={8}
+                >
+                  <Image source={xIcon} style={styles.lightboxCloseIcon} contentFit="contain" tintColor="#ffffff" />
+                </Pressable>
+                <Text style={styles.lightboxCounterText} pointerEvents="none">
+                  {lightboxCurrent + 1}/{images.slice(0, 3).length}
+                </Text>
+              </View>
+            )}
+          </View>
         </Modal>
       )}
 
@@ -385,7 +452,7 @@ export function FeedPostCard({
                 contentContainerStyle={styles.imageContent}
               >
                 {images.slice(0, 3).map((src, idx) => (
-                  <Pressable key={`${boardId}-img-${idx}`} style={styles.imageBox} onPress={() => { setLightboxIndex(idx); setLightboxCurrent(idx); }}>
+                  <Pressable key={`${boardId}-img-${idx}`} style={styles.imageBox} onPress={() => { setLightboxIndex(idx); setLightboxCurrent(idx); setLightboxControls(false); }}>
                     <Image
                       source={{ uri: src }}
                       style={styles.imageFill}
@@ -727,27 +794,36 @@ const styles = StyleSheet.create({
   lightboxBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.92)',
-    justifyContent: 'center',
   },
-  lightboxPage: {
-    height: '100%',
+  lightboxHeader: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 48,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 10,
+  },
+  lightboxCloseBtn: {
+    position: 'absolute',
+    top: 12,
+    left: 16,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lightboxImage: {
-    width: '100%',
-    height: '100%',
-  },
-  lightboxCounter: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  lightboxCloseIcon: {
+    width: 24,
+    height: 24,
   },
   lightboxCounterText: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
     color: '#ffffff',
+    fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '600',
   },
