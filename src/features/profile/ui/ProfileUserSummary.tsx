@@ -9,7 +9,7 @@ const defaultProfileImage = require('../../../../assets/placeholders/profile-def
 
 export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
   const router = useRouter()
-  const hasBio = me.profileDescription.trim().length > 0
+  const hasBio = (me.profileDescription ?? '').trim().length > 0
 
   return (
     <View style={styles.container}>

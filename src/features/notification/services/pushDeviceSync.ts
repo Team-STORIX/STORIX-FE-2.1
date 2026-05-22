@@ -44,6 +44,39 @@ const warn = (msg: string, err: unknown): void => {
   }
 }
 
+// [NOTIFICATION_TEST_DEBUG] temporary push-device sync tracing — remove after QA.
+// Never logs the full installationId or FCM token, only safe previews/booleans.
+const debugSyncRequest = (
+  installationId: string,
+  fcmToken: string,
+  meta: DeviceMeta,
+): void => {
+  if (!__DEV__) return
+  // eslint-disable-next-line no-console
+  console.log('[NOTIFICATION_TEST_DEBUG] push-device sync request', {
+    installationIdPreview: installationId.slice(0, 8),
+    hasFcmToken: fcmToken.length > 0,
+    osPlatform: meta.osPlatform,
+    appVersion: meta.appVersion,
+    osVersion: meta.osVersion,
+    deviceModel: meta.deviceModel,
+  })
+}
+
+const debugSyncFailure = (err: unknown): void => {
+  if (!__DEV__) return
+  const e = err as {
+    response?: { status?: number; data?: { code?: string; message?: string } }
+    message?: string
+  }
+  // eslint-disable-next-line no-console
+  console.log('[NOTIFICATION_TEST_DEBUG] push-device sync failed', {
+    status: e?.response?.status,
+    code: e?.response?.data?.code,
+    message: e?.response?.data?.message ?? e?.message,
+  })
+}
+
 const metaChanged = (meta: DeviceMeta): boolean =>
   cache.lastAppVersion !== meta.appVersion ||
   cache.lastOsVersion !== meta.osVersion ||
@@ -68,14 +101,24 @@ const doFullSync = async (
   fcmToken: string,
   meta: DeviceMeta,
 ): Promise<void> => {
-  await syncPushDevice({
-    installationId,
-    fcmToken,
-    osPlatform: meta.osPlatform,
-    appVersion: meta.appVersion,
-    osVersion: meta.osVersion,
-    deviceModel: meta.deviceModel,
-  })
+  debugSyncRequest(installationId, fcmToken, meta)
+  try {
+    await syncPushDevice({
+      installationId,
+      fcmToken,
+      osPlatform: meta.osPlatform,
+      appVersion: meta.appVersion,
+      osVersion: meta.osVersion,
+      deviceModel: meta.deviceModel,
+    })
+  } catch (err) {
+    debugSyncFailure(err)
+    throw err
+  }
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.log('[NOTIFICATION_TEST_DEBUG] push-device sync success')
+  }
   writeCache(installationId, fcmToken, meta)
 }
 

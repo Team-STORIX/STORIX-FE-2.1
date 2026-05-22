@@ -21,9 +21,19 @@ const attachMessageListeners = (): (() => void) => {
     if (getApps().length === 0) return () => {};
     const msg = getMessaging();
 
-    const unsubMessage = onMessage(msg, async () => {
+    const unsubMessage = onMessage(msg, async (remoteMessage) => {
       // Foreground messages: iOS/Android intentionally do not show an OS
       // banner. In-app UI will be wired up in a later PUSH phase.
+      if (__DEV__) {
+        // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
+        // Logs payload metadata only; never any token material.
+        // eslint-disable-next-line no-console
+        console.log("[NOTIFICATION_TEST_DEBUG] foreground push received", {
+          title: remoteMessage?.notification?.title,
+          body: remoteMessage?.notification?.body,
+          data: remoteMessage?.data,
+        });
+      }
     });
 
     const unsubOpened = onNotificationOpenedApp(msg, () => {
