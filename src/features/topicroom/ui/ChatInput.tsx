@@ -40,7 +40,7 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
     }
   }, [])
 
-  const paddingBottom = keyboardShown ? 10 : insets.bottom + 10
+  const paddingBottom = keyboardShown ? 16 : insets.bottom + 16
 
   return (
     <View style={[styles.container, { paddingBottom }]}>
@@ -84,38 +84,41 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 16,
     backgroundColor: C.card,
     borderTopWidth: 1,
-    borderTopColor: C.divider,
+    borderTopColor: Gray[100],
     gap: 10,
   },
   inputWrap: {
     flex: 1,
     minHeight: 40,
-    backgroundColor: C.bg,
+    backgroundColor: Gray[50],
+    borderWidth: 1,
+    borderColor: Gray[200],
     borderRadius: 20,
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    paddingVertical: 8,
   },
   input: {
     maxHeight: 96,
-    ...Typography.body2Medium,
-    color: C.text,
+    ...Typography.body1Medium,
+    color: Gray[900],
     paddingVertical: 0,
   },
   sendBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  sendBtnActive: { backgroundColor: C.primary },
-  sendBtnDisabled: { backgroundColor: Gray[300] },
+  sendBtnActive: { backgroundColor: Gray[900] },
+  sendBtnDisabled: { backgroundColor: Gray[200] },
   sendBtnPressed: { opacity: 0.75 },
   sendIcon: {
     width: 24,

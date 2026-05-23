@@ -73,8 +73,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     backgroundColor: C.card,
-    borderBottomWidth: 1,
-    borderBottomColor: C.divider,
   },
   iconButton: {
     width: 24,
