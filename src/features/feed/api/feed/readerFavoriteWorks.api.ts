@@ -28,10 +28,11 @@ type FavoriteWorksResponse = {
 export const getFavoriteWorks = async (params?: {
   page?: number
   sort?: FeedSort
+  size?: number
 }) => {
   const res = await apiClient.get<FavoriteWorksResponse>(
     '/api/v1/feed/reader/board/favorite/works',
-    { params: { page: params?.page ?? 0, sort: params?.sort ?? 'LATEST' } },
+    { params: { page: params?.page ?? 0, sort: params?.sort ?? 'LATEST', size: params?.size } },
   )
   return res.data
 }

@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { Image } from 'expo-image'
 import { C, Gray, Typography } from '../../../theme'
+
+const settingsIcon = require('../../../../assets/icons/common/settings.svg')
 
 type Props = {
   onPressSettings: () => void
@@ -22,7 +24,7 @@ export function ProfileTopBar({ onPressSettings }: Props) {
           accessibilityRole="button"
           accessibilityLabel="설정"
         >
-          <Ionicons name="settings-outline" size={24} color={C.text} />
+          <Image source={settingsIcon} style={styles.settingsIcon} contentFit="contain" />
         </Pressable>
       </View>
     </View>
@@ -48,25 +50,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   profileCardButton: {
-    minHeight: 32,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: '#E3DCDF',
     borderRadius: 24,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.card,
+    gap: 4,
+    backgroundColor: '#ffffff',
   },
   profileCardButtonText: {
-    ...Typography.caption1Extrabold,
-    color: Gray[600],
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16.8,
+    color: '#645C5F',
   },
   settingsButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingsIcon: {
+    width: 24,
+    height: 24,
   },
   pressed: {
     opacity: 0.7,

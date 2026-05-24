@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
 import { C, Gray, Magenta, Radius } from '../../../theme'
 
-const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
+const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
@@ -40,7 +40,7 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         accessibilityRole="button"
         accessibilityLabel={'\ud504\ub85c\ud544 \uc218\uc815'}
       >
-        <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" />
+        <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
       </Pressable>
     </View>
   )
@@ -110,14 +110,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     top: 55,
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   editIcon: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
   },
   pressed: {
     opacity: 0.7,

@@ -26,14 +26,8 @@ const deleteDropdown = require("../../../../assets/icons/common/delete-dropdown.
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
 const xIcon = require("../../../../assets/icons/common/x.svg");
 
-const birthdayFeedThemes = {
-  article: require("../../../../assets/common/birthday/b_feed_article.svg"),
-  photo: require("../../../../assets/common/birthday/b_feed_photo.svg"),
-  photoArticle: require("../../../../assets/common/birthday/b_feed_photo_article.svg"),
-  contentlinkArticle: require("../../../../assets/common/birthday/b_feed_contentlink_article.svg"),
-  contentlinkPhoto: require("../../../../assets/common/birthday/b_feed_contentlink_photo.svg"),
-  contentlinkPhotoArticle: require("../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg"),
-};
+const birthdayThemeUp = require("../../../../assets/common/birthday/brithdaytheme-up.svg");
+const birthdayThemeDown = require("../../../../assets/common/birthday/brithdaytheme-down.svg");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,26 +65,6 @@ type FeedPostCardProps = {
   onPressCard?: () => void;
   birthdayTheme?: boolean;
 };
-
-function getBirthdayThemeSource({
-  hasArticle,
-  hasPhoto,
-  hasContentlink,
-}: {
-  hasArticle: boolean;
-  hasPhoto: boolean;
-  hasContentlink: boolean;
-}) {
-  if (hasContentlink && hasPhoto && hasArticle)
-    return birthdayFeedThemes.contentlinkPhotoArticle;
-  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto;
-  if (hasContentlink && hasArticle)
-    return birthdayFeedThemes.contentlinkArticle;
-  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle;
-  if (hasPhoto) return birthdayFeedThemes.photo;
-  if (hasArticle) return birthdayFeedThemes.article;
-  return null;
-}
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
 
@@ -263,28 +237,18 @@ export function FeedPostCard({
     !!works.thumbnailUrl &&
     !!works.worksName &&
     !!works.artistName;
-  const hasArticle = content.trim().length > 0;
-  const hasPhoto = images.some((src) => src.trim().length > 0);
-  const hasContentlink = works != null && !!works.worksName?.trim();
-  const birthdayThemeSource = birthdayTheme
-    ? getBirthdayThemeSource({
-        hasArticle,
-        hasPhoto,
-        hasContentlink,
-      })
-    : null;
-
   const cardBody = (
     <View style={styles.card}>
-      {/* ── Birthday theme background ─────────────────────────── */}
-      {birthdayThemeSource && (
-        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
-          <Image
-            source={birthdayThemeSource}
-            style={styles.birthdayThemeImage}
-            contentFit="cover"
-          />
-        </View>
+      {/* ── Birthday theme decorations ────────────────────────── */}
+      {birthdayTheme && (
+        <>
+          <View pointerEvents="none" style={styles.birthdayThemeTop}>
+            <Image source={birthdayThemeUp} style={styles.birthdayThemeTopImg} contentFit="fill" />
+          </View>
+          <View pointerEvents="none" style={styles.birthdayThemeBottom}>
+            <Image source={birthdayThemeDown} style={styles.birthdayThemeBottomImg} contentFit="fill" />
+          </View>
+        </>
       )}
 
       {/* ── Card content (above birthday theme) ───────────────── */}
@@ -551,13 +515,25 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
-  birthdayThemeLayer: {
-    ...StyleSheet.absoluteFillObject,
+  birthdayThemeTop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
     zIndex: 0,
   },
-  birthdayThemeImage: {
-    width: "100%",
-    height: "100%",
+  birthdayThemeTopImg: {
+    width: 393,
+    height: 70,
+  },
+  birthdayThemeBottom: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  birthdayThemeBottomImg: {
+    width: 393,
+    height: 70,
   },
   cardContent: {
     zIndex: 1,
@@ -594,9 +570,10 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     marginTop: 2,
+    fontFamily: 'SUIT',
     fontSize: 12,
     fontWeight: "500",
-    lineHeight: 17,
+    lineHeight: 16.8,
     color: Gray[400],
   },
   menuBtn: {
@@ -639,7 +616,8 @@ const styles = StyleSheet.create({
     borderColor: Gray[100],
     backgroundColor: Gray[50],
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   worksThumbnailBox: {

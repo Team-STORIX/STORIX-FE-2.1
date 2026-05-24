@@ -49,9 +49,11 @@ const styles = StyleSheet.create({
     height: 24,
   },
   skipText: {
+    fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '500',
+    lineHeight: 22.4,
     color: Gray[500],
-    lineHeight: 20,
+    textAlign: 'center',
   },
 })

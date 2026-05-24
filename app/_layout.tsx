@@ -11,8 +11,9 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
+import Constants from 'expo-constants'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import 'react-native-reanimated'
 
@@ -28,13 +29,11 @@ import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
-import { usePushNotificationBootstrap } from '../src/features/notification'
 import { useMe } from '../src/features/profile'
 import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
-import { C } from '../src/theme/colors'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -161,17 +160,12 @@ function AuthGate() {
 // pending. On a normal native launch the native splash covers this entirely;
 // it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
 
-const logoPink = require('../assets/logos/logo-pink.svg')
+const logoWhite = require('../assets/icons/common/logo-white.png')
 
 function BrandedSplash() {
   return (
     <View style={splashStyles.container}>
-      <Image source={logoPink} style={splashStyles.logo} contentFit="contain" />
-      <ActivityIndicator
-        size="small"
-        color={C.primary}
-        style={splashStyles.spinner}
-      />
+      <Image source={logoWhite} style={splashStyles.logo} contentFit="contain" />
     </View>
   )
 }
@@ -179,7 +173,7 @@ function BrandedSplash() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.card,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -187,7 +181,6 @@ const splashStyles = StyleSheet.create({
     width: 120,
     height: 120,
   },
-  spinner: { marginTop: 24 },
 })
 
 // ─── Root navigation ──────────────────────────────────────────────────────────
@@ -203,14 +196,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="feed" options={{ headerShown: false }} />
-        <Stack.Screen name="library" options={{ headerShown: false }} />
-        <Stack.Screen name="review" options={{ headerShown: false }} />
-        <Stack.Screen name="search" options={{ headerShown: false }} />
-        <Stack.Screen name="topicroom" options={{ headerShown: false }} />
-        <Stack.Screen name="notifications" options={{ headerShown: false }} />
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
-        <Stack.Screen name="works" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
     </ThemeProvider>
@@ -226,6 +212,11 @@ function ProfileBootstrap() {
 // access to React Query. The hook itself short-circuits until the auth
 // store reports an authenticated user, so this is safe to mount eagerly.
 function PushNotificationBootstrap() {
+  if (Constants.appOwnership === 'expo') {
+    return null
+  }
+
+  const { usePushNotificationBootstrap } = require('../src/features/notification/hooks/usePushNotificationBootstrap') as typeof import('../src/features/notification/hooks/usePushNotificationBootstrap')
   usePushNotificationBootstrap()
   return null
 }

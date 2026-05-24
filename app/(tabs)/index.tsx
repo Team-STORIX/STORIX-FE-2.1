@@ -17,11 +17,9 @@ import {
   usePreferenceExploration,
 } from '../../src/features/preference'
 import { useTodayTopicRooms } from '../../src/features/topicroom'
-import {
-  NotificationConsentModal,
-  useNotificationConsentModal,
-  useUnreadNotificationCount,
-} from '../../src/features/notification'
+import { useNotificationConsentModal } from '../../src/features/notification/hooks/useNotificationConsentModal'
+import { useUnreadNotificationCount } from '../../src/features/notification/hooks/useNotifications'
+import { NotificationConsentModal } from '../../src/features/notification/ui/NotificationConsentModal'
 import { C } from '../../src/theme/colors'
 
 const HOME_PAD = 16

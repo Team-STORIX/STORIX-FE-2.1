@@ -1,24 +1,16 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
 import { Gray } from '../../../theme/colors'
-
-const searchIcon = require('../../../../assets/icons/common/search.svg')
-const addTopicRoomIcon = require('../../../../assets/topicroom/icon-add-topicroom.svg')
 
 export type FeedTab = 'works' | 'writers'
 
 type FeedTopbarProps = {
   activeTab: FeedTab
   onChange: (tab: FeedTab) => void
-  onPressSearch?: () => void
-  onPressAddTopicRoom?: () => void
 }
 
 export function FeedTopbar({
   activeTab,
   onChange,
-  onPressSearch,
-  onPressAddTopicRoom,
 }: FeedTopbarProps) {
   return (
     <View style={styles.bar}>
@@ -30,7 +22,7 @@ export function FeedTopbar({
               activeTab === 'works' ? styles.tabActive : styles.tabInactive,
             ]}
           >
-            관심 작품
+            관심 피드
           </Text>
         </Pressable>
         <Pressable onPress={() => onChange('writers')} hitSlop={8}>
@@ -43,45 +35,6 @@ export function FeedTopbar({
             토픽룸
           </Text>
         </Pressable>
-      </View>
-
-      <View style={styles.actions}>
-        {onPressSearch ? (
-          <Pressable
-            onPress={onPressSearch}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="토픽룸 검색"
-          >
-            <Image
-              source={searchIcon}
-              style={styles.actionIcon}
-              contentFit="contain"
-            />
-          </Pressable>
-        ) : null}
-        {onPressAddTopicRoom ? (
-          <Pressable
-            onPress={onPressAddTopicRoom}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="토픽룸 만들기"
-          >
-            <Image
-              source={addTopicRoomIcon}
-              style={styles.actionIcon}
-              contentFit="contain"
-            />
-          </Pressable>
-        ) : null}
       </View>
     </View>
   )
@@ -111,23 +64,5 @@ const styles = StyleSheet.create({
   },
   tabInactive: {
     color: Gray[200],
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  actionBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionIcon: {
-    width: 24,
-    height: 24,
-  },
-  actionPressed: {
-    opacity: 0.6,
   },
 })

@@ -19,7 +19,7 @@ export function BioStep({
       )}
 
       <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
-        <View style={styles.inputUnderline}>
+        <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: '#131112' }]}>
           <TextInput
             value={value}
             onChangeText={(next) => onChange(next.slice(0, 30))}

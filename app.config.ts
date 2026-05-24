@@ -7,6 +7,7 @@
 // evaluation in some commands, which would defeat our build-time guards.
 // `override: false` keeps real environment variables (CI, shell exports)
 // taking precedence over .env values.
+require("dotenv").config({ path: ".env.local", override: false });
 require("dotenv").config({ override: false });
 
 import { withEntitlementsPlist } from "@expo/config-plugins";

@@ -60,7 +60,7 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
             currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
-          나의 활동
+          내 활동
         </Text>
         <View
           style={[
@@ -76,7 +76,8 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 0,
     backgroundColor: '#ffffff',
   },
   tab: {
