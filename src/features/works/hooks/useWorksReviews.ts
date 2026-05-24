@@ -16,6 +16,7 @@ import {
   type UpdateMyReviewPayload,
 } from '../api/worksReview.api'
 import { useLikesStore } from '../../../store/likes.store'
+import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
 
 export const useWorksMyReview = (worksId: number) =>
   useQuery({
@@ -84,6 +85,7 @@ export const useUpdateMyReview = (params: { worksId: number }) => {
     qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
     qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
     qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
+    qc.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY })
   }, [m.isSuccess, qc, params.worksId])
   return m
 }
@@ -100,6 +102,7 @@ export const useDeleteMyReview = (params: { worksId: number }) => {
         qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] }),
         qc.invalidateQueries({ queryKey: ['works', 'detail', params.worksId] }),
         qc.invalidateQueries({ queryKey: ['works', 'review', 'detail', reviewId] }),
+        qc.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY }),
       ])
     },
   })

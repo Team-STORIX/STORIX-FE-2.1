@@ -13,7 +13,7 @@ import { BioStep } from '../../onboarding/ui/BioStep'
 import { ProfileEditNicknameField } from './ProfileEditNicknameField'
 import { ProfileEditTopBar } from './ProfileEditTopBar'
 
-const defaultProfileImage = require('../../../../assets/placeholders/profile-default.svg')
+const defaultProfileImage = require('../../../../assets/onboarding/profilephoto.svg')
 const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
 
 export function ProfileEditScreen() {
