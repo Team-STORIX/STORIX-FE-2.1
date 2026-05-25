@@ -69,8 +69,9 @@ const styles = StyleSheet.create({
   },
   title: {
     position: 'absolute',
-    left: '50%',
-    transform: [{ translateX: -44 }],
+    left: 0,
+    right: 0,
+    textAlign: 'center',
     ...Typography.body1Medium,
     color: Gray[900],
   },

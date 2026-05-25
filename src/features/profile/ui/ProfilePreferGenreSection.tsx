@@ -22,7 +22,7 @@ const GENRE_SVG: Record<string, string> = {
 
 const genreLabels: Record<string, string> = {
   FANTASY: '\uD310\uD0C0\uC9C0',
-  ACTION: '\uC561\uC158',
+  ACTION: '\uBB34\uD611',
   MODERN_FANTASY: '\uD604\uD310',
   ROMANCE: '\uB85C\uB9E8\uC2A4',
   ROFAN: '\uB85C\uD310',

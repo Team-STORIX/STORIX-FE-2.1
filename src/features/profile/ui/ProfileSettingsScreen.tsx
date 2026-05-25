@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -72,7 +72,7 @@ export function ProfileSettingsScreen() {
               rightLabelVariant: 'version',
               onPress: handleVersionPress,
             },
-            { label: '문의하기', hasArrow: true, onPress: () => {} },
+            { label: '문의하기', hasArrow: true, onPress: () => void Linking.openURL('https://www.notion.so/36be81f709488047bcaded14c994fcd4') },
             { label: '개인정보 처리 방침', hasArrow: true, onPress: () => router.push('/profile/privacy-policy') },
             { label: '서비스 이용약관', hasArrow: true, onPress: () => router.push('/profile/terms-of-service') },
           ]}
