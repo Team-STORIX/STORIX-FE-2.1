@@ -320,6 +320,7 @@ export function FeedPostCard({
       {/* ── Lightbox ──────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
+          {/* 이미지 스크롤 — ScrollView 터치 선점 영역 */}
           <View style={styles.lightboxBackdrop}>
             <ScrollView
               horizontal
@@ -343,13 +344,16 @@ export function FeedPostCard({
                 />
               ))}
             </ScrollView>
+          </View>
 
-            {lightboxControls && (
+          {/* 컨트롤 오버레이 — ScrollView 계층 밖, Modal 직계 자식 */}
+          {lightboxControls && (
+            <View style={[StyleSheet.absoluteFillObject, { pointerEvents: 'box-none' }]}>
               <View style={[styles.lightboxHeader, { top: topInset }]}>
                 <Pressable
                   onPress={() => setLightboxIndex(null)}
                   style={styles.lightboxCloseBtn}
-                  hitSlop={8}
+                  hitSlop={20}
                 >
                   <Image source={xIcon} style={styles.lightboxCloseIcon} contentFit="contain" tintColor="#ffffff" />
                 </Pressable>
@@ -357,8 +361,8 @@ export function FeedPostCard({
                   {lightboxCurrent + 1}/{images.slice(0, 3).length}
                 </Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </Modal>
       )}
 
@@ -783,10 +787,10 @@ const styles = StyleSheet.create({
   },
   lightboxCloseBtn: {
     position: 'absolute',
-    top: 12,
-    left: 16,
-    width: 24,
-    height: 24,
+    top: 2,
+    left: 6,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

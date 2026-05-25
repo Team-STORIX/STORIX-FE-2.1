@@ -76,7 +76,7 @@ export default function RootLayout() {
   // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
     if (fontsLoaded) {
-      const t = setTimeout(() => SplashScreen.hideAsync(), 150)
+      const t = setTimeout(() => SplashScreen.hideAsync(), 1500)
       return () => clearTimeout(t)
     }
   }, [fontsLoaded])
