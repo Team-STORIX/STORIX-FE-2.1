@@ -2,6 +2,7 @@ import { PermissionsAndroid, Platform } from 'react-native'
 import {
   AuthorizationStatus,
   getMessaging,
+  hasPermission,
   requestPermission,
 } from '@react-native-firebase/messaging'
 
@@ -91,3 +92,55 @@ export const requestPushPermission = async (): Promise<PushPermissionResult> => 
   // payload purposes since the bootstrap caller only uses `granted`.
   return { platform: 'ios', granted: false, status: 'denied' }
 }
+
+/**
+ * Reads the CURRENT push-permission status without ever prompting the user.
+ * Use this for passive UI (e.g. the "알림 수신" row) — entering a screen must
+ * not trigger the OS permission dialog. Never throws; failures map to denied.
+ */
+export const getPushPermissionStatus =
+  async (): Promise<PushPermissionResult> => {
+    if (Platform.OS === 'ios') {
+      try {
+        // hasPermission() reads the stored authorization status; it does not
+        // present the system prompt (requestPermission does that).
+        const status = await hasPermission(getMessaging())
+        return {
+          platform: 'ios',
+          granted: isIosGranted(status),
+          status: mapIosStatus(status),
+        }
+      } catch (err) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn('[push] iOS hasPermission failed', err)
+        }
+        return { platform: 'ios', granted: false, status: 'denied' }
+      }
+    }
+
+    if (Platform.OS === 'android') {
+      // Below API 33 notifications need no runtime permission → always granted.
+      if (typeof Platform.Version === 'number' && Platform.Version < 33) {
+        return { platform: 'android', granted: true, status: 'granted' }
+      }
+      try {
+        const granted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+        )
+        return {
+          platform: 'android',
+          granted,
+          status: granted ? 'granted' : 'denied',
+        }
+      } catch (err) {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn('[push] Android permission check failed', err)
+        }
+        return { platform: 'android', granted: false, status: 'denied' }
+      }
+    }
+
+    return { platform: 'ios', granted: false, status: 'denied' }
+  }

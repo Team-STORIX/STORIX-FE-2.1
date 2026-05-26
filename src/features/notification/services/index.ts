@@ -1,4 +1,7 @@
-export { requestPushPermission } from './pushPermission'
+export {
+  requestPushPermission,
+  getPushPermissionStatus,
+} from './pushPermission'
 export {
   getFcmDeviceToken,
   subscribeFcmTokenRefresh,
