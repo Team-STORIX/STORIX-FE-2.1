@@ -24,9 +24,9 @@ type ReasonItem = {
 
 const REASONS: ReasonItem[] = [
   { key: 'LACK_OF_CONTENT', label: '원하는 작품/장르가 부족해서' },
-  { key: 'COMMUNITY_MISMATCH', label: '커뮤니티 활동이 맞지 않아서' },
-  { key: 'DIFFICULT_TO_USE', label: '사용법이 어려워서' },
-  { key: 'LOW_FREQUENCY', label: '이용 빈도가 낮아서' },
+  { key: 'NOT_SUITABLE_COMMUNITY', label: '커뮤니티 활동이 맞지 않아서' },
+  { key: 'HARD_TO_USE', label: '사용법이 어려워서' },
+  { key: 'LOW_USAGE', label: '이용 빈도가 낮아서' },
   { key: 'OTHER', label: '기타' },
 ]
 

@@ -1,4 +1,5 @@
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -132,7 +133,7 @@ export function OnboardingScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.screen} behavior={undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
@@ -186,18 +187,16 @@ export function OnboardingScreen() {
         </ScrollView>
 
         {step === 4 ? (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.footerGradient,
-              { height: insets.bottom + 34 + 50 + 32 },
-            ]}
-          >
-            <View style={[styles.footerFadeBand, styles.footerFadeBand1]} />
-            <View style={[styles.footerFadeBand, styles.footerFadeBand2]} />
-            <View style={[styles.footerFadeBand, styles.footerFadeBand3]} />
-            <View style={[styles.footerFadeBand, styles.footerFadeBand4]} />
-            <View style={styles.footerSolidBand} />
+          <View pointerEvents="none" style={[styles.footerGradient, { height: insets.bottom + 34 + 50 + 32 }]}>
+            <Svg width="100%" height="100%" preserveAspectRatio="none">
+              <Defs>
+                <SvgLinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+                  <Stop offset="0.4257" stopColor="#ffffff" stopOpacity="1" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#fade)" />
+            </Svg>
           </View>
         ) : null}
 
@@ -254,25 +253,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1,
-  },
-  footerFadeBand: {
-    height: 8,
-  },
-  footerFadeBand1: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  footerFadeBand2: {
-    backgroundColor: 'rgba(255, 255, 255, 0.34)',
-  },
-  footerFadeBand3: {
-    backgroundColor: 'rgba(255, 255, 255, 0.62)',
-  },
-  footerFadeBand4: {
-    backgroundColor: 'rgba(255, 255, 255, 0.86)',
-  },
-  footerSolidBand: {
-    flex: 1,
-    backgroundColor: '#ffffff',
   },
   nextPressable: {
     width: '100%',

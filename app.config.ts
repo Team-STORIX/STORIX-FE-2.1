@@ -7,6 +7,7 @@
 // evaluation in some commands, which would defeat our build-time guards.
 // `override: false` keeps real environment variables (CI, shell exports)
 // taking precedence over .env values.
+require("dotenv").config({ path: ".env.local", override: false });
 require("dotenv").config({ override: false });
 
 import { withEntitlementsPlist } from "@expo/config-plugins";
@@ -51,7 +52,7 @@ const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
 // will fail loudly if Firebase is enabled and the file is missing. See
 // PUSH_NOTIFICATION_SETUP.md for placement instructions.
 const androidGoogleServicesFile =
-  process.env.GOOGLE_SERVICES_JSON ?? "./android/app/google-services.json";
+  process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json";
 const iosGoogleServicesPlist =
   process.env.GOOGLE_SERVICE_INFO_PLIST ??
   "./ios/STORIXFE21/GoogleService-Info.plist";

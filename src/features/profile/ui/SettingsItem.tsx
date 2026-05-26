@@ -31,7 +31,6 @@ export function SettingsItem({ label, hasArrow, rightLabel, rightLabelVariant, o
           <Image
             source={arrowIcon}
             style={styles.arrow}
-            tintColor={Gray[500]}
             contentFit="contain"
           />
         )}
@@ -81,8 +80,10 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   rightLabelSocial: {
+    fontFamily: 'SUIT',
     fontWeight: '700',
     color: Gray[400],
+    textAlign: 'center',
     marginRight: 4,
   },
   arrow: {

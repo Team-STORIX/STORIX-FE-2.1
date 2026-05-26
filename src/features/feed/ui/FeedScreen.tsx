@@ -268,8 +268,6 @@ export function FeedScreen() {
           setTab(t)
           setPick('all')
         }}
-        onPressSearch={handlePressSearchTopicRoom}
-        onPressAddTopicRoom={handlePressAddTopicRoom}
       />
       {tab === 'works' && (
         <FeedWorksPicker
