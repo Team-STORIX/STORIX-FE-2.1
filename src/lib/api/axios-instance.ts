@@ -118,7 +118,6 @@ apiClient.interceptors.request.use(
           "[api] Authorization attached",
           config.method?.toUpperCase(),
           config.url,
-          `Bearer ${token}`,
         );
       }
     }
