@@ -18,6 +18,11 @@ export const signup = async (
   data: SignupRequest,
   onboardingToken: string,
 ): Promise<SignupResponse> => {
+  if (__DEV__) {
+    console.log('[signup] request body:', data)
+    console.log('[signup] onboarding token present:', onboardingToken.trim().length > 0)
+  }
+
   const response = await apiClient.post(
     '/api/v1/auth/users/reader/signup',
     data,

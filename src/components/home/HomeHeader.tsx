@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 
 const logoBlack = require('../../../assets/icons/common/logo-black.svg')
@@ -8,12 +8,17 @@ const notificationIcon = require('../../../assets/icons/common/notification.svg'
 type HomeHeaderProps = {
   onSearchPress?: () => void
   onNotificationPress?: () => void
+  /** Unread notification count — renders a small badge when > 0. */
+  unreadCount?: number
 }
 
 export function HomeHeader({
   onSearchPress,
   onNotificationPress,
+  unreadCount = 0,
 }: HomeHeaderProps) {
+  const hasUnread = unreadCount > 0
+  const badgeLabel = unreadCount > 99 ? '99+' : String(unreadCount)
   return (
     <View style={styles.header}>
       <View style={styles.logoBox}>
@@ -43,6 +48,13 @@ export function HomeHeader({
             style={styles.icon}
             contentFit="contain"
           />
+          {hasUnread ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText} numberOfLines={1}>
+                {badgeLabel}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
       </View>
     </View>
@@ -80,5 +92,23 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#ff4093',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+    color: '#ffffff',
   },
 })

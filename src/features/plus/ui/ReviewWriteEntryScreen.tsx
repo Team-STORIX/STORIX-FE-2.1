@@ -19,6 +19,7 @@ import { C, Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import { useWorksDetail } from '../../works'
 import { useCreateReaderReview, usePlusReviewDuplicateCheck } from '../hooks'
+import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
 import { RatingInput } from './RatingInput'
 import { SpoilerToggleSection } from './SpoilerToggleSection'
 import { WriteTargetWorkCard } from './WriteTargetWorkCard'
@@ -89,6 +90,7 @@ export function ReviewWriteEntryScreen() {
       queryClient.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] })
       queryClient.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] })
       queryClient.invalidateQueries({ queryKey: ['works', 'detail', worksId] })
+      queryClient.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY })
       router.replace(`/works/${worksId}` as never)
     } catch (e) {
       Alert.alert(

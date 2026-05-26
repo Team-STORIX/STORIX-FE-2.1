@@ -18,14 +18,3 @@ export type PushPermissionResult = {
   granted: boolean
   status: PushPermissionStatus
 }
-
-// Payload accepted by POST /api/v1/notifications/device-tokens (placeholder
-// path — see notification.api.ts for the real spec lookup). Platform values
-// upper-cased because the BE side typically uses the JPA enum convention; the
-// API client lowercases if the contract differs.
-export type RegisterDeviceTokenPayload = {
-  deviceToken: string
-  platform: 'IOS' | 'ANDROID'
-  appVersion?: string
-  deviceType?: string
-}

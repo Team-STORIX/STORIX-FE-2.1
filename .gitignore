@@ -39,6 +39,7 @@ firebase-service-account*.json
 service-account*.json
 storix-*-firebase-adminsdk-*.json
 google-application-credentials*.json
+google-services.json
 
 # typescript
 *.tsbuildinfo

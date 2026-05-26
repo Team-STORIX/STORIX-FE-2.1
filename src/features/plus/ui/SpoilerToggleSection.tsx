@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
   },
   counterValue: {
-    color: Gray[400],
+    color: Gray[500],
   },
   counterWarning: {
     color: "#ef433e",

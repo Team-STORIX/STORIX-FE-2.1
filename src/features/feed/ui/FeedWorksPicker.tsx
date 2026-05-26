@@ -68,7 +68,7 @@ export function FeedWorksPicker({
             <View key={item.id} style={styles.itemWrapper}>
               <Pressable
                 onPress={() => handlePress(item)}
-                style={[styles.itemBtn, !isActive && styles.itemInactive]}
+                style={[styles.itemBtn, !isActive && !isAdd && styles.itemInactive]}
                 accessibilityRole="button"
                 aria-pressed={isActive}
               >
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   container: {
     height: 110,
     paddingLeft: 16,
-    paddingRight: 16,
+    paddingRight: 0,
     paddingBottom: 20,
     borderBottomWidth: 6,
     borderBottomColor: Gray[50],

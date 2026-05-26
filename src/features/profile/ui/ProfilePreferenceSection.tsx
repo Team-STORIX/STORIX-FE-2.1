@@ -1,56 +1,33 @@
-import { useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { C, Gray, Typography } from '../../../theme'
-import { useProfileFavoriteWorksPreview } from '../hooks'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { C, Gray, Typography } from "../../../theme";
+import { useProfileFavoriteWorksPreview } from "../hooks";
 
-const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
-const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
+const findWritersButton = require("../../../../assets/icons/profile/find-writers.svg");
+const findBooksButton = require("../../../../assets/icons/profile/find-books.svg");
+const nextArrowIcon = require("../../../../assets/icons/common/icon-arrow-gray.svg");
 
-const WORK_RENDER_LIMIT = 4
+const WORK_RENDER_LIMIT = 4;
 
 export function ProfilePreferenceSection() {
-  const router = useRouter()
-  const worksQuery = useProfileFavoriteWorksPreview()
+  const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const worksQuery = useProfileFavoriteWorksPreview();
 
   const works = useMemo(
     () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
     [worksQuery.data?.works],
-  )
+  );
 
-  const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length)
+  const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length);
+
+  const itemWidth = Math.floor((screenWidth - 32 - 4 * 3) / 4);
+  const thumbHeight = Math.round(itemWidth * (116 / 87));
 
   return (
     <View>
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.titleWrap}>
-            <Text style={styles.title}>관심 작가</Text>
-            <Text style={styles.count}>0</Text>
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/profile/likes?tab=writers')}
-            accessibilityRole="button"
-          >
-            <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
-          </Pressable>
-        </View>
-
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>아직 관심 작가가 없어요...</Text>
-          <Pressable
-            onPress={() => router.push('/search')}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="작가 찾기"
-          >
-            <Image source={findWritersButton} style={styles.emptyButtonImage} contentFit="contain" />
-          </Pressable>
-        </View>
-      </View>
-
       <View style={[styles.section, styles.worksSection]}>
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
@@ -59,71 +36,79 @@ export function ProfilePreferenceSection() {
           </View>
 
           <Pressable
-            onPress={() => router.push('/profile/likes')}
+            onPress={() => router.push("/profile/likes")}
             accessibilityRole="button"
           >
-            <Image source={nextArrowIcon} style={styles.moreIcon} contentFit="contain" />
+            <Image
+              source={nextArrowIcon}
+              style={styles.moreIcon}
+              contentFit="contain"
+              tintColor={Gray[300]}
+            />
           </Pressable>
         </View>
 
         {(worksQuery.data?.count ?? 0) > 0 ? (
           <View style={styles.worksContent}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.worksMinWidth}>
-                <View style={styles.worksRow}>
-                  {works.map((work) => (
-                    <View key={work.id} style={styles.workItem}>
-                      <View style={styles.workThumbWrap}>
-                        {work.imageUrl ? (
-                          <Image
-                            source={{ uri: work.imageUrl }}
-                            style={styles.workThumb}
-                            contentFit="cover"
-                          />
-                        ) : null}
-                      </View>
-                      <Text style={styles.workTitle} numberOfLines={1}>
-                        {work.title}
-                      </Text>
-                      <Text style={styles.workAuthor} numberOfLines={1}>
-                        {work.author}
-                      </Text>
-                    </View>
-                  ))}
-
-                  {Array.from({ length: emptySlots }).map((_, index) => (
-                    <View key={`empty-${index}`} style={[styles.workItem, styles.emptyWorkItem]}>
-                      <View style={styles.emptyWorkThumb} />
-                      <Text style={styles.emptyDot}>.</Text>
-                      <Text style={[styles.emptyDot, styles.emptyDotSmall]}>.</Text>
-                    </View>
-                  ))}
+            <View style={styles.worksRow}>
+              {works.map((work) => (
+                <View key={work.id} style={{ width: itemWidth }}>
+                  <View style={[styles.workThumbWrap, { width: itemWidth, height: thumbHeight }]}>
+                    {work.imageUrl ? (
+                      <Image
+                        source={{ uri: work.imageUrl }}
+                        style={{ width: itemWidth, height: thumbHeight }}
+                        contentFit="cover"
+                      />
+                    ) : null}
+                  </View>
+                  <Text style={[styles.workTitle, { width: itemWidth }]} numberOfLines={1}>
+                    {work.title}
+                  </Text>
+                  <Text style={[styles.workAuthor, { width: itemWidth }]} numberOfLines={1}>
+                    {work.author}
+                  </Text>
                 </View>
-              </View>
-            </ScrollView>
+              ))}
+
+              {Array.from({ length: emptySlots }).map((_, index) => (
+                <View
+                  key={`empty-${index}`}
+                  style={[{ width: itemWidth }, styles.emptyWorkItem]}
+                >
+                  <View style={[styles.emptyWorkThumb, { width: itemWidth, height: thumbHeight }]} />
+                  <Text style={styles.emptyDot}>.</Text>
+                  <Text style={[styles.emptyDot, styles.emptyDotSmall]}>.</Text>
+                </View>
+              ))}
+            </View>
           </View>
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>아직 관심 작품이 없어요...</Text>
             <Pressable
-              onPress={() => router.push('/search')}
+              onPress={() => router.push("/search")}
               style={({ pressed }) => [pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel="작품 찾기"
             >
-              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
+              <Image
+                source={findBooksButton}
+                style={styles.emptyButtonImage}
+                contentFit="contain"
+              />
             </Pressable>
           </View>
         )}
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 32,
+    paddingVertical: 28,
     backgroundColor: C.card,
   },
   worksSection: {
@@ -131,24 +116,24 @@ const styles = StyleSheet.create({
     borderBottomColor: C.border,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   titleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: C.text,
   },
   count: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: Gray[300],
   },
@@ -158,48 +143,31 @@ const styles = StyleSheet.create({
   },
   worksContent: {
     marginTop: 24,
-    width: '100%',
-  },
-  worksMinWidth: {
-    minWidth: 361,
+    width: "100%",
   },
   worksRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  workItem: {
-    width: 87,
+    flexDirection: "row",
+    gap: 4,
   },
   workThumbWrap: {
-    width: 87,
-    height: 116,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: C.border,
-  },
-  workThumb: {
-    width: 87,
-    height: 116,
   },
   workTitle: {
     ...Typography.body2Medium,
     marginTop: 7,
-    width: 87,
     color: C.text,
   },
   workAuthor: {
     ...Typography.caption1Medium,
     marginTop: 3,
-    width: 87,
     color: Gray[400],
   },
   emptyWorkItem: {
     opacity: 0,
   },
   emptyWorkThumb: {
-    width: 87,
-    height: 116,
     borderRadius: 4,
   },
   emptyDot: {
@@ -211,11 +179,11 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     marginTop: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 25,
     color: Gray[500],
   },
@@ -227,4 +195,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-})
+});

@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    marginTop: 24,
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 25,

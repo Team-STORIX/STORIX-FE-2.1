@@ -19,12 +19,12 @@ export function BioStep({
       )}
 
       <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
-        <View style={styles.inputUnderline}>
+        <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: '#131112' }]}>
           <TextInput
             value={value}
             onChangeText={(next) => onChange(next.slice(0, 30))}
             placeholder="나를 소개하는 글을 적어보세요"
-            placeholderTextColor="#B0A5AA"
+            placeholderTextColor="#CDC4C8"
             style={styles.input}
             autoCorrect={false}
             autoCapitalize="none"
@@ -57,22 +57,29 @@ const styles = StyleSheet.create({
     marginTop: 84,
     width: '100%',
   },
+  inputBlockEdit: {
+    marginTop: 0,
+    width: '100%',
+  },
   inputUnderline: {
+    height: 42,
     borderBottomWidth: 2,
     borderBottomColor: '#CDC4C8',
-    paddingTop: 12,
-    paddingBottom: 10,
-    paddingRight: 10,
-    paddingLeft: 8,
   },
   input: {
+    height: 42,
+    paddingTop: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingLeft: 8,
+    fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '500',
-    lineHeight: 22,
+    lineHeight: 22.4,
     color: '#131112',
   },
   counterWrap: {
-    marginTop: 8,
+    marginTop: 6,
     alignItems: 'flex-end',
     paddingRight: 8,
   },

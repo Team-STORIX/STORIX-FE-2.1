@@ -16,10 +16,15 @@ const idCheckGray = require('../../../../assets/onboarding/id-check-gray.svg')
 
 type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'
 
+const NICKNAME_RULE_MESSAGE = '한글,영문,숫자 2~10자까지 입력 가능해요'
+const NICKNAME_PATTERN = /^[가-힣A-Za-z0-9]+$/
+
+const isValidNicknameFormat = (nickname: string) =>
+  nickname.length >= 2 && nickname.length <= 10 && NICKNAME_PATTERN.test(nickname)
+
 export function NicknameStep({
   value,
   onChange,
-  verified,
   onVerifiedChange,
   status,
   onStatusChange,
@@ -58,10 +63,10 @@ export function NicknameStep({
   }
 
   const handleCheck = async () => {
-    if (normalized.length < 2 || normalized.length > 10) {
+    if (!isValidNicknameFormat(normalized)) {
       onVerifiedChange(false)
       onStatusChange('invalid')
-      onMessageChange('한글, 영문, 숫자, 밑줄(_) 2~10자까지 입력 가능해요')
+      onMessageChange(NICKNAME_RULE_MESSAGE)
       return
     }
 
@@ -97,7 +102,7 @@ export function NicknameStep({
 
   return (
     <View>
-      <Text style={styles.title}>닉네임을 입력해 주세요</Text>
+      <Text style={styles.title}>프로필을 설정해주세요</Text>
       <Text style={styles.subtitle}>닉네임과 프로필 사진을 설정해 주세요</Text>
 
       <View style={styles.profileWrap}>
@@ -124,11 +129,16 @@ export function NicknameStep({
               onMessageChange('')
             }}
             placeholder="닉네임을 입력하세요"
-            placeholderTextColor="#B0A5AA"
+            placeholderTextColor="#CDC4C8"
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
-            style={styles.input}
+            style={[
+              styles.input,
+              value.length > 0 && status === 'idle' && { borderBottomColor: '#131112' },
+              status === 'ok' && { borderBottomColor: '#009126' },
+              (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: '#EF433E' },
+            ]}
           />
 
           <Pressable onPress={() => void handleCheck()} style={styles.checkButton}>
@@ -196,18 +206,21 @@ const styles = StyleSheet.create({
     height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
   },
   input: {
     flex: 1,
-    marginRight: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    height: 42,
+    paddingTop: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingLeft: 8,
     borderBottomWidth: 2,
     borderBottomColor: '#CDC4C8',
+    fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '500',
-    lineHeight: 22,
+    lineHeight: 22.4,
     color: '#131112',
   },
   checkButton: {

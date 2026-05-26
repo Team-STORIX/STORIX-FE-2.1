@@ -1,17 +1,17 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAllBoards } from '../hooks/feed/useAllBoards'
 import { useBoardsByWorksId } from '../hooks/feed/useBoardsByWorksId'
@@ -21,12 +21,13 @@ import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
 import { Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
+import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
+import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
+import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
 import { ReportModal } from './ReportModal'
-
-const bigStarPinkIcon = require('../../../../assets/icons/common/big-star-pink.svg')
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 
@@ -35,13 +36,63 @@ export function FeedScreen() {
   const router = useRouter()
   const qc = useQueryClient()
 
-  const [tab, setTab] = useState<FeedTab>('works')
+  // `section=topicroom` lands the user on the TopicRoom (writers) tab when
+  // navigated here from Home's "실시간 작품 이야기" section.
+  const params = useLocalSearchParams<{ section?: string | string[] }>()
+  const sectionParam = Array.isArray(params.section)
+    ? params.section[0]
+    : params.section
+
+  const [tab, setTab] = useState<FeedTab>(
+    sectionParam === 'topicroom' ? 'writers' : 'works',
+  )
   const [pick, setPick] = useState<string>('all')
+
+  useEffect(() => {
+    if (sectionParam === 'topicroom') {
+      setTab('writers')
+      setPick('all')
+    }
+  }, [sectionParam])
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
     onConfirm: () => Promise<void>
   } | null>(null)
+
+  const [createSheetOpen, setCreateSheetOpen] = useState(false)
+
+  const handlePressSearchTopicRoom = useCallback(() => {
+    router.push('/(tabs)/two' as never)
+  }, [router])
+
+  const handlePressAddTopicRoom = useCallback(() => {
+    setCreateSheetOpen(true)
+  }, [])
+
+  const createWorksSheet = (
+    <TopicRoomCreateWorksBottomSheet
+      visible={createSheetOpen}
+      onClose={() => setCreateSheetOpen(false)}
+      onAdvance={(works) => {
+        setCreateSheetOpen(false)
+        router.push({
+          pathname: '/topicroom/create',
+          params: {
+            worksId: String(works.worksId),
+            worksName: works.worksName,
+            thumbnailUrl: works.thumbnailUrl ?? '',
+            artistName: works.artistName ?? '',
+            worksType: works.worksType ?? '',
+          },
+        } as never)
+      }}
+      onEnterExisting={(roomId) => {
+        setCreateSheetOpen(false)
+        router.push(`/topicroom/${roomId}` as const)
+      }}
+    />
+  )
 
   const worksId = pick !== 'all' ? Number(pick) : 0
 
@@ -193,7 +244,7 @@ export function FeedScreen() {
             isMine ? () => handleDelete(board.boardId) : undefined
           }
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
-          birthdayTheme={index % 2 === 0}
+          birthdayTheme={board.theme === 'BIRTHDAY'}
         />
       )
     },
@@ -209,23 +260,15 @@ export function FeedScreen() {
 
   const favoriteWorks = favoriteWorksQuery.data?.result?.content ?? []
 
-  const writersComingSoon = (
-    <View style={styles.comingSoon}>
-      <Image
-        source={bigStarPinkIcon}
-        style={styles.comingSoonIcon}
-        contentFit="contain"
-      />
-      <View style={styles.comingSoonText}>
-        <Text style={styles.comingSoonLine}>오픈 준비 중이에요</Text>
-        <Text style={styles.comingSoonLine}>조금만 기다려주세요</Text>
-      </View>
-    </View>
-  )
-
   const listHeader = (
     <View style={styles.listHeader}>
-      <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
+      <FeedTopbar
+        activeTab={tab}
+        onChange={(t) => {
+          setTab(t)
+          setPick('all')
+        }}
+      />
       {tab === 'works' && (
         <FeedWorksPicker
           works={favoriteWorks}
@@ -250,10 +293,25 @@ export function FeedScreen() {
     return (
       <>
         <View style={[styles.screen, { paddingTop: insets.top }]}>
-          <FeedTopbar activeTab={tab} onChange={(t) => { setTab(t); setPick('all') }} />
-          {writersComingSoon}
+          <FeedTopbar
+            activeTab={tab}
+            onChange={(t) => {
+              setTab(t)
+              setPick('all')
+            }}
+            onPressSearch={handlePressSearchTopicRoom}
+            onPressAddTopicRoom={handlePressAddTopicRoom}
+          />
+          <ScrollView
+            style={styles.screen}
+            contentContainerStyle={styles.topicroomContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <TopicRoomFeedSection />
+          </ScrollView>
         </View>
         {reportModal}
+        {createWorksSheet}
       </>
     )
   }
@@ -282,9 +340,7 @@ export function FeedScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>등록된 피드가 없습니다.</Text>
-          </View>
+          <WarningEmptyState description="등록된 피드가 없습니다." />
         )
       }
       ListFooterComponent={
@@ -310,6 +366,7 @@ export function FeedScreen() {
       }
     />
     {reportModal}
+    {createWorksSheet}
     </>
   )
 }
@@ -353,22 +410,7 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 16,
   },
-  comingSoon: {
-    alignItems: 'center',
-    marginTop: 196,
-  },
-  comingSoonIcon: {
-    width: 100,
-    height: 100,
-  },
-  comingSoonText: {
-    marginTop: 22,
-    alignItems: 'center',
-  },
-  comingSoonLine: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
-    color: Gray[900],
+  topicroomContent: {
+    paddingBottom: 128,
   },
 })

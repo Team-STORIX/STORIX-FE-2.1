@@ -1,4 +1,5 @@
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -132,7 +133,7 @@ export function OnboardingScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.screen} behavior={undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
@@ -185,6 +186,20 @@ export function OnboardingScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
+        {step === 4 ? (
+          <View pointerEvents="none" style={[styles.footerGradient, { height: insets.bottom + 34 + 50 + 32 }]}>
+            <Svg width="100%" height="100%" preserveAspectRatio="none">
+              <Defs>
+                <SvgLinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+                  <Stop offset="0.4257" stopColor="#ffffff" stopOpacity="1" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#fade)" />
+            </Svg>
+          </View>
+        ) : null}
+
         <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
           <Pressable
             onPress={() => void handleNext()}
@@ -209,12 +224,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   progressWrap: {
-    paddingHorizontal: 16,
     paddingTop: 16,
+    paddingLeft: 16,
+    alignItems: 'flex-start',
   },
   progressImage: {
+    width: 60,
     height: 8,
-    width: '100%',
   },
   scroll: {
     flex: 1,
@@ -229,6 +245,14 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     alignItems: 'center',
+    zIndex: 2,
+  },
+  footerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   nextPressable: {
     width: '100%',

@@ -17,6 +17,9 @@ import {
   usePreferenceExploration,
 } from '../../src/features/preference'
 import { useTodayTopicRooms } from '../../src/features/topicroom'
+import { useNotificationConsentModal } from '../../src/features/notification/hooks/useNotificationConsentModal'
+import { useUnreadNotificationCount } from '../../src/features/notification/hooks/useNotifications'
+import { NotificationConsentModal } from '../../src/features/notification/ui/NotificationConsentModal'
 import { C } from '../../src/theme/colors'
 
 const HOME_PAD = 16
@@ -40,6 +43,10 @@ export default function HomeScreen() {
     refetch: refetchExploration,
     isFetching: checkingExploration,
   } = usePreferenceExploration(false)
+  const { data: unreadCount } = useUnreadNotificationCount()
+
+  // One-time event/benefit consent overlay on first Home entry after onboarding.
+  const consent = useNotificationConsentModal()
 
   useEffect(() => {
     return () => {
@@ -105,21 +112,28 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader onSearchPress={() => router.push('/search' as never)} />
+        <HomeHeader
+          onSearchPress={() => router.push('/search' as never)}
+          onNotificationPress={() => router.push('/notifications' as never)}
+          unreadCount={unreadCount ?? 0}
+        />
 
         <View style={styles.stack}>
           <View>
+            {/* TODO: Upcoming TopicRoom UI redesign — Figma "STORIX 2.0 mid-fi > 소통(토픽룸) > 토픽룸 ver2" (node 8009:38269). */}
             <HomeSection
               title="실시간 작품 이야기!"
-              onArrowPress={() => router.push('/topicroom' as never)}
+              onArrowPress={() =>
+                router.push('/(tabs)/feed?section=topicroom' as never)
+              }
             >
               <TopicRoomCoverCarousel
                 data={todayRooms}
                 isLoading={todayLoading}
                 badgeLabel="HOT"
                 emptyText="오늘 참여중인 토픽룸이 아직 없어요"
-                onPressItem={(room) =>
-                  router.push(`/topicroom/${room.topicRoomId}` as const)
+                onPressItem={() =>
+                  router.push('/(tabs)/feed?section=topicroom' as never)
                 }
               />
             </HomeSection>
@@ -167,6 +181,8 @@ export default function HomeScreen() {
         position="bottom"
         bottomOffset={24}
       />
+
+      <NotificationConsentModal {...consent} />
     </View>
   )
 }

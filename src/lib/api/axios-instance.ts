@@ -42,10 +42,6 @@ const setAuthorizationHeader = (
   (headers as Record<string, unknown>)["Authorization"] = value;
 };
 
-const maskBearerToken = (token: string): string => {
-  return `Bearer: ${token}`;
-};
-
 // ---------- no-refresh endpoint list ----------
 // Requests matching these paths must never trigger a token refresh:
 //   - The refresh endpoint itself (would cause an infinite loop)
@@ -117,19 +113,15 @@ apiClient.interceptors.request.use(
       setAuthorizationHeader(config.headers, authorization);
       if (__DEV__) {
         // TODO: Remove this temporary auth header diagnostic before release.
+        // Never log the token value (or Bearer string) — path + method only.
         console.log(
           "[api] Authorization attached",
           config.method?.toUpperCase(),
           config.url,
-          maskBearerToken(token),
+          `Bearer ${token}`,
         );
       }
     }
-    // *******반드시 삭제********
-    console.log(
-      "[AUTH DEBUG] Bearer Token:",
-      token ? `Bearer ${token}` : "NO TOKEN",
-    );
 
     return config;
   },

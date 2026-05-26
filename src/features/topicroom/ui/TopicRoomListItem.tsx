@@ -1,34 +1,36 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import type { TopicRoomItem } from '../api/topicroom.schema'
-import { C } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
-import { formatTopicRoomSubtitle } from '../api/formatTopicRoomSubtitle'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
+import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
+import type { TopicRoomItem } from "../api/topicroom.schema";
 
 function formatTimeAgo(value?: string | null) {
-  if (!value) return ''
+  if (!value) return "";
   const diffSeconds = Math.max(
     0,
     Math.floor((Date.now() - new Date(value).getTime()) / 1000),
-  )
-  if (diffSeconds < 60) return '방금'
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}분 전`
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}시간 전`
-  return `${Math.floor(diffSeconds / 86400)}일 전`
+  );
+  if (diffSeconds < 60) return "방금";
+  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}분 전`;
+  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}시간 전`;
+  return `${Math.floor(diffSeconds / 86400)}일 전`;
 }
 
 type Props = {
-  item: TopicRoomItem
-  onPress: () => void
-}
+  item: TopicRoomItem;
+  onPress: () => void;
+};
 
 export function TopicRoomListItem({ item, onPress }: Props) {
-  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
+  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
   const rightText = item.lastChatTime
     ? `${item.activeUserNumber ?? 0}명 · ${formatTimeAgo(item.lastChatTime)}`
-    : `${item.activeUserNumber ?? 0}명`
-  const initial = (item.worksName || item.topicRoomName || '?').slice(0, 1).toUpperCase()
+    : `${item.activeUserNumber ?? 0}명`;
+  const initial = (item.worksName || item.topicRoomName || "?")
+    .slice(0, 1)
+    .toUpperCase();
 
   return (
     <Pressable
@@ -62,30 +64,28 @@ export function TopicRoomListItem({ item, onPress }: Props) {
           <Text style={styles.title} numberOfLines={1}>
             {item.topicRoomName}
           </Text>
-          {item.isJoined ? (
-            <View style={styles.joinedChip}>
-              <Text style={styles.joinedChipText}>참여 중</Text>
-            </View>
-          ) : null}
         </View>
       </View>
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomColor: C.divider,
+    borderBottomWidth: 1,
   },
   thumbnailWrap: {
     width: 60,
     height: 60,
     borderRadius: Radius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
     flexShrink: 0,
   },
   thumbnail: {
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   thumbnailFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primaryLight,
   },
   thumbnailFallbackText: {
@@ -107,8 +107,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
   },
   subtitle: {
@@ -122,8 +122,8 @@ const styles = StyleSheet.create({
     color: C.textMuted,
   },
   bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   title: {
@@ -144,4 +144,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-})
+});

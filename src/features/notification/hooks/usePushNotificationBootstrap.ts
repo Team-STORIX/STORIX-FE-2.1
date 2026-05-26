@@ -1,3 +1,4 @@
+import { getApps } from "@react-native-firebase/app";
 import {
   getInitialNotification,
   getMessaging,
@@ -5,70 +6,54 @@ import {
   onNotificationOpenedApp,
 } from "@react-native-firebase/messaging";
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
 
 import { useAuthStore } from "../../../store/auth.store";
-import { registerDeviceToken } from "../api/notification.api";
-import {
-  getFcmDeviceToken,
-  subscribeFcmTokenRefresh,
-} from "../services/fcmToken";
-import { requestPushPermission } from "../services/pushPermission";
-import type { RegisterDeviceTokenPayload } from "../types";
-
-// Module-level guards so the bootstrap flow runs exactly once per app
-// session, even if the host component re-mounts (e.g. theme toggle,
-// auth re-hydration). The map keys are per-token to allow re-registering
-// after a token rotation.
-let permissionFlowRan = false;
-const registeredTokens = new Set<string>();
-
-const platformForPayload = (): RegisterDeviceTokenPayload["platform"] =>
-  Platform.OS === "ios" ? "IOS" : "ANDROID";
-
-const safeRegister = async (token: string): Promise<void> => {
-  if (registeredTokens.has(token)) {
-    return;
-  }
-  try {
-    await registerDeviceToken({
-      deviceToken: token,
-      platform: platformForPayload(),
-    });
-    registeredTokens.add(token);
-  } catch (err) {
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.warn("[push] registerDeviceToken failed", err);
-    }
-  }
-};
+import { subscribeFcmTokenRefresh } from "../services/fcmToken";
+import { handleFcmTokenRefresh } from "../services/pushDeviceSync";
+import { usePushDeviceSync } from "./usePushDeviceSync";
 
 // Attaches the foreground / opened-from-bg / cold-start handlers. Returns a
 // single cleanup that detaches both subscriptions. The handlers are currently
 // no-ops — actual payload routing will land with PUSH-2-BACKGROUND and the
 // notification-centre UI work.
 const attachMessageListeners = (): (() => void) => {
-  const unsubMessage = onMessage(getMessaging(), async () => {
-    // Foreground messages: iOS/Android intentionally do not show an OS
-    // banner. In-app UI will be wired up in a later PUSH phase.
-  });
+  try {
+    if (getApps().length === 0) return () => {};
+    const msg = getMessaging();
 
-  const unsubOpened = onNotificationOpenedApp(getMessaging(), () => {
-    // Background → tap: deep-link routing lands with PUSH-4-UI.
-  });
+    const unsubMessage = onMessage(msg, async (remoteMessage) => {
+      // Foreground messages: iOS/Android intentionally do not show an OS
+      // banner. In-app UI will be wired up in a later PUSH phase.
+      if (__DEV__) {
+        // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
+        // Logs payload metadata only; never any token material.
+        // eslint-disable-next-line no-console
+        console.log("[NOTIFICATION_TEST_DEBUG] foreground push received", {
+          title: remoteMessage?.notification?.title,
+          body: remoteMessage?.notification?.body,
+          data: remoteMessage?.data,
+        });
+      }
+    });
 
-  void getInitialNotification(getMessaging()).catch((err) => {
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.warn("[push] getInitialNotification failed", err);
-    }
-  });
+    const unsubOpened = onNotificationOpenedApp(msg, () => {
+      // Background → tap: deep-link routing lands with PUSH-4-UI.
+    });
 
-  return () => {
-    unsubMessage();
-    unsubOpened();
-  };
+    void getInitialNotification(msg).catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] getInitialNotification failed", err);
+      }
+    });
+
+    return () => {
+      unsubMessage();
+      unsubOpened();
+    };
+  } catch {
+    return () => {};
+  }
 };
 
 /**
@@ -76,61 +61,37 @@ const attachMessageListeners = (): (() => void) => {
  * (after the auth store has hydrated and the user is signed in).
  *
  * Responsibilities:
- *  1. Ask the OS for push permission — once per app session.
- *  2. If granted, fetch the FCM token and register it with the backend.
- *  3. Listen for token rotation and re-register the new value.
- *  4. Attach foreground / opened / cold-start listeners.
+ *  1. Reconcile the device with the push-device backend (permission, FCM
+ *     token, installationId, device meta) on auth + app foreground — delegated
+ *     to usePushDeviceSync().
+ *  2. Listen for FCM token rotation and update the backend (PATCH /fcm-token,
+ *     falling back to a full /sync if needed).
+ *  3. Attach foreground / opened / cold-start message listeners.
  *
  * Never throws, never blocks rendering. If anything fails the hook simply
- * leaves the device unregistered — the user can retry from settings later.
+ * leaves the device unsynced — it retries on the next auth/foreground event.
  */
-
 export const usePushNotificationBootstrap = (): void => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   // useRef so cleanup can fire even after the component unmounts mid-bootstrap.
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // Backend reconcile (permission / token / meta) on auth + foreground.
+  usePushDeviceSync();
+
   useEffect(() => {
     if (!isAuthenticated) {
       return;
     }
-    if (permissionFlowRan) {
-      // Permission flow already ran this session — only (re)attach the
-      // refresh + message listeners.
-      const unsubRefresh = subscribeFcmTokenRefresh((newToken) => {
-        void safeRegister(newToken);
-      });
-      const unsubMessages = attachMessageListeners();
-      cleanupRef.current = () => {
-        unsubRefresh();
-        unsubMessages();
-      };
-      return () => {
-        cleanupRef.current?.();
-        cleanupRef.current = null;
-      };
+
+    try {
+      if (getApps().length === 0) return;
+    } catch {
+      return;
     }
 
-    permissionFlowRan = true;
-    let cancelled = false;
-
-    void (async () => {
-      const permission = await requestPushPermission();
-      if (cancelled) return;
-
-      if (!permission.granted) {
-        return;
-      }
-
-      const token = await getFcmDeviceToken();
-      if (cancelled) return;
-      if (!token) return;
-
-      await safeRegister(token);
-    })();
-
     const unsubRefresh = subscribeFcmTokenRefresh((newToken) => {
-      void safeRegister(newToken);
+      void handleFcmTokenRefresh(newToken);
     });
     const unsubMessages = attachMessageListeners();
     cleanupRef.current = () => {
@@ -139,7 +100,6 @@ export const usePushNotificationBootstrap = (): void => {
     };
 
     return () => {
-      cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
     };
