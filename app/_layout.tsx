@@ -11,7 +11,10 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
+import { Image } from 'expo-image'
+import Constants from 'expo-constants'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import 'react-native-reanimated'
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -26,13 +29,11 @@ import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
-import { usePushNotificationBootstrap } from '../src/features/notification'
 import { useMe } from '../src/features/profile'
 import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
-import { C } from '../src/theme/colors'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -71,23 +72,25 @@ export default function RootLayout() {
     ]).then(() => setAuthReady(true))
   }, [])
 
-  // Hide the splash screen only after both async gates pass.
+  // Hide the native splash once fonts are ready, with a short delay so
+  // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
-    if (fontsLoaded && authReady) {
-      SplashScreen.hideAsync()
+    if (fontsLoaded) {
+      const t = setTimeout(() => SplashScreen.hideAsync(), 1500)
+      return () => clearTimeout(t)
     }
-  }, [fontsLoaded, authReady])
+  }, [fontsLoaded])
 
-  // Show a branded screen while the native splash is visible (or as a JS-side
-  // fallback on Expo Go / warm starts where the native splash may not appear).
   if (!fontsLoaded || !authReady) {
     return <BrandedSplash />
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <RootLayoutNav />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   )
 }
 
@@ -157,16 +160,12 @@ function AuthGate() {
 // pending. On a normal native launch the native splash covers this entirely;
 // it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
 
+const logoWhite = require('../assets/icons/common/logo-white.png')
+
 function BrandedSplash() {
   return (
     <View style={splashStyles.container}>
-      <Text style={splashStyles.logo}>STORIX</Text>
-      <Text style={splashStyles.tagline}>웹툰과 웹소설의 이야기 공간</Text>
-      <ActivityIndicator
-        size="small"
-        color={C.primary}
-        style={splashStyles.spinner}
-      />
+      <Image source={logoWhite} style={splashStyles.logo} contentFit="contain" />
     </View>
   )
 }
@@ -174,23 +173,14 @@ function BrandedSplash() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.card,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
   },
   logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: C.primary,
-    letterSpacing: 4,
+    width: 120,
+    height: 120,
   },
-  tagline: {
-    fontSize: 14,
-    color: C.textMuted,
-    letterSpacing: 0.3,
-  },
-  spinner: { marginTop: 24 },
 })
 
 // ─── Root navigation ──────────────────────────────────────────────────────────
@@ -206,13 +196,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="feed" options={{ headerShown: false }} />
-        <Stack.Screen name="library" options={{ headerShown: false }} />
-        <Stack.Screen name="review" options={{ headerShown: false }} />
-        <Stack.Screen name="search" options={{ headerShown: false }} />
-        <Stack.Screen name="topicroom" options={{ headerShown: false }} />
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
-        <Stack.Screen name="works" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
     </ThemeProvider>
@@ -228,6 +212,11 @@ function ProfileBootstrap() {
 // access to React Query. The hook itself short-circuits until the auth
 // store reports an authenticated user, so this is safe to mount eagerly.
 function PushNotificationBootstrap() {
+  if (Constants.appOwnership === 'expo') {
+    return null
+  }
+
+  const { usePushNotificationBootstrap } = require('../src/features/notification/hooks/usePushNotificationBootstrap') as typeof import('../src/features/notification/hooks/usePushNotificationBootstrap')
   usePushNotificationBootstrap()
   return null
 }

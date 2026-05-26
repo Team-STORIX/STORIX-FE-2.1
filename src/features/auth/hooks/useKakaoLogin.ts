@@ -16,6 +16,8 @@ import {
   type KakaoLoginResponse,
 } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
+import { setItem } from '../../../lib/storage/async'
+import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useKakaoLogin = () => {
   const router = useRouter()
@@ -31,7 +33,10 @@ export const useKakaoLogin = () => {
 
       // Existing user — store tokens and go to the main app.
       if (isRegistered && loginTokens) {
-        await setLoginTokens(loginTokens)
+        await Promise.all([
+          setLoginTokens(loginTokens),
+          setItem(SOCIAL_PROVIDER_KEY, 'kakao'),
+        ])
         router.replace('/(tabs)')
         return
       }

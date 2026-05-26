@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -23,6 +23,7 @@ export function AgreementScreen() {
   const [agreement3, setAgreement3] = useState(false)
 
   const allAgreed = agreement1 && agreement2 && agreement3
+  const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 34 : 34
 
   const handleAllAgree = () => {
     const next = !allAgreed
@@ -109,7 +110,7 @@ export function AgreementScreen() {
         </View>
       </View>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
+      <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
         <Pressable onPress={handleNext} disabled={!allAgreed} style={styles.nextButtonPressable}>
           <Image
             source={allAgreed ? nextPink : nextGray}

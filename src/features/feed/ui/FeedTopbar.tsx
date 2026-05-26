@@ -17,8 +17,6 @@ type FeedTopbarProps = {
 export function FeedTopbar({
   activeTab,
   onChange,
-  onPressSearch,
-  onPressAddTopicRoom,
 }: FeedTopbarProps) {
   return (
     <View style={styles.bar}>

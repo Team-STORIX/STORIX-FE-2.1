@@ -30,7 +30,7 @@ Optional overrides — defaults are sensible for a local checkout:
 | ---------------------------- | --------------------------------------------- | ---------------------------------- |
 | `EXPO_IOS_BUNDLE_ID`         | `kr.storix.app`                               | iOS bundle identifier              |
 | `EXPO_ANDROID_PACKAGE`       | `kr.storix.app`                               | Android applicationId              |
-| `GOOGLE_SERVICES_JSON`       | `./android/app/google-services.json`          | Android Firebase client config     |
+| `GOOGLE_SERVICES_JSON`       | `./google-services.json`                      | Android Firebase client config     |
 | `GOOGLE_SERVICE_INFO_PLIST`  | `./ios/STORIXFE21/GoogleService-Info.plist`   | iOS Firebase client config         |
 
 > The two `GOOGLE_SERVICE*` files are normal Firebase client config — they may
@@ -43,7 +43,7 @@ Optional overrides — defaults are sensible for a local checkout:
 1. Firebase Console → STORIX project → **Add app → Android**.
 2. Package name: `kr.storix.app` (must match `EXPO_ANDROID_PACKAGE`).
 3. Download `google-services.json`.
-4. Place it at `android/app/google-services.json`.
+4. Place it at the project root as `google-services.json`.
 5. Run:
    ```bash
    npm run prebuild:android

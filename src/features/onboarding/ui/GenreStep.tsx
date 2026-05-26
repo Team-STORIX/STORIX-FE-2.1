@@ -17,7 +17,7 @@ const genreAssets: Record<GenreKey, any> = {
 
 const labels: Record<GenreKey, string> = {
   FANTASY: '판타지',
-  ACTION: '액션',
+  ACTION: '무협',
   MODERN_FANTASY: '현판',
   ROMANCE: '로맨스',
   ROFAN: '로판',
