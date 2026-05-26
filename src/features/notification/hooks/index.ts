@@ -13,6 +13,7 @@ export {
 export {
   useNotificationSettings,
   useUpdateNotificationSettings,
+  useUpdateEventBenefitConsent,
 } from './useNotificationSettings'
 export {
   useAdminTestDispatch,

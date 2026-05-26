@@ -12,20 +12,14 @@ import { Stack, useRouter } from 'expo-router'
 import { C, Gray } from '../../../theme'
 import {
   useNotificationSettings,
+  useUpdateEventBenefitConsent,
   useUpdateNotificationSettings,
 } from '../hooks'
-import type {
-  NotificationSettings,
-  UpdateNotificationSettingsPayload,
-} from '../api/notification.schema'
+import type { NotificationSettings } from '../api/notification.schema'
 import { NotificationHeader } from './NotificationHeader'
 
 const activeIcon = require('../../../../assets/icons/common/active.svg')
 const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
-
-// TODO(NOTIFICATION-CONSENT-UI): the marketing-consent modal flow
-// (useUpdateMarketingConsent) is intentionally NOT wired here — implement it in
-// the dedicated consent-UI phase.
 
 type ToggleKey = keyof NotificationSettings
 
@@ -52,8 +46,9 @@ const ROWS: { key: ToggleKey; label: string; description: string }[] = [
   },
 ]
 
-// eventBenefitEnabled is server-controlled and excluded from the PATCH body.
-const isReadOnly = (key: ToggleKey) => key === 'eventBenefitEnabled'
+// eventBenefitEnabled is not part of the settings PATCH — it is driven by the
+// marketing-consent endpoint (see useUpdateEventBenefitConsent).
+const isMarketingConsent = (key: ToggleKey) => key === 'eventBenefitEnabled'
 
 export function NotificationSettingsScreen() {
   const insets = useSafeAreaInsets()
@@ -61,6 +56,9 @@ export function NotificationSettingsScreen() {
 
   const { data: settings, isLoading, isError } = useNotificationSettings()
   const updateSettings = useUpdateNotificationSettings()
+  const updateEventBenefit = useUpdateEventBenefitConsent()
+
+  const isPending = updateSettings.isPending || updateEventBenefit.isPending
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
@@ -69,17 +67,21 @@ export function NotificationSettingsScreen() {
 
   const handleToggle = useCallback(
     (key: ToggleKey) => {
-      if (!settings || isReadOnly(key) || updateSettings.isPending) return
-      // PATCH excludes eventBenefitEnabled per the API contract.
-      const payload: UpdateNotificationSettingsPayload = {
-        myActivityEnabled: settings.myActivityEnabled,
-        contentCommunityEnabled: settings.contentCommunityEnabled,
-        operationPolicyEnabled: settings.operationPolicyEnabled,
-        [key]: !settings[key],
+      if (!settings || isPending) return
+      const next = !settings[key]
+
+      if (isMarketingConsent(key)) {
+        // PATCH /settings rejects eventBenefitEnabled, so the event/benefit
+        // preference goes through PUT /notifications/marketing-consent instead.
+        // No result modal and no first-home consent storage is touched here.
+        updateEventBenefit.mutate(next)
+        return
       }
-      updateSettings.mutate(payload)
+
+      // Send ONLY the changed field, e.g. { myActivityEnabled: next }.
+      updateSettings.mutate({ [key]: next })
     },
-    [settings, updateSettings],
+    [settings, isPending, updateSettings, updateEventBenefit],
   )
 
   return (
@@ -94,13 +96,12 @@ export function NotificationSettingsScreen() {
         </View>
       ) : isError || !settings ? (
         <View style={styles.centered}>
-          <Text style={styles.errorText}>알림 설정을 불러오지 못했어요.</Text>
+          <Text style={styles.errorText}>알림 설정을 불러올 수 없어요.</Text>
         </View>
       ) : (
         <View style={styles.content}>
           {ROWS.map((row) => {
             const enabled = settings[row.key]
-            const readOnly = isReadOnly(row.key)
             return (
               <View key={row.key} style={styles.row}>
                 <View style={styles.rowText}>
@@ -109,12 +110,12 @@ export function NotificationSettingsScreen() {
                 </View>
                 <Pressable
                   onPress={() => handleToggle(row.key)}
-                  disabled={readOnly}
+                  disabled={isPending}
                   accessibilityRole="switch"
-                  accessibilityState={{ checked: enabled, disabled: readOnly }}
+                  accessibilityState={{ checked: enabled, disabled: isPending }}
                   accessibilityLabel={`${row.label} 토글`}
                   hitSlop={6}
-                  style={readOnly && styles.readOnly}
+                  style={isPending && styles.pendingToggle}
                 >
                   <Image
                     source={enabled ? activeIcon : deactiveIcon}
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 18,
   },
-  readOnly: {
-    opacity: 0.4,
+  pendingToggle: {
+    opacity: 0.5,
   },
 })

@@ -133,9 +133,13 @@ export type AdminTestDispatchPayload = {
   content: string
 }
 
-/** PATCH request omits eventBenefitEnabled (server controls that field). */
+/**
+ * PATCH request body — partial update. Only the changed field(s) are sent.
+ * eventBenefitEnabled is intentionally excluded: it is controlled by the
+ * marketing-consent flow (PUT /notifications/marketing-consent), not here.
+ */
 export type UpdateNotificationSettingsPayload = {
-  myActivityEnabled: boolean
-  contentCommunityEnabled: boolean
-  operationPolicyEnabled: boolean
+  myActivityEnabled?: boolean
+  contentCommunityEnabled?: boolean
+  operationPolicyEnabled?: boolean
 }
