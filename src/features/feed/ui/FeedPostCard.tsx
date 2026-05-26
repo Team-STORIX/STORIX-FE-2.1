@@ -253,59 +253,50 @@ export function FeedPostCard({
 
       {/* ── Card content (above birthday theme) ───────────────── */}
       <View style={styles.cardContent}>
+        {/* ── Profile row ───────────────────────────────────────── */}
+        <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
+          <View style={styles.avatarWrap}>
+            <Image
+              source={
+                profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage
+              }
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          </View>
 
-      {/* ── Profile row ───────────────────────────────────────── */}
-      <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
-        <View style={styles.avatarWrap}>
-          <Image
-            source={
-              profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage
-            }
-            style={styles.avatar}
-            contentFit="cover"
-          />
-        </View>
+          <View style={styles.authorMeta}>
+            <Text style={styles.authorName}>{nickName}</Text>
+            {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
+          </View>
 
-        <View style={styles.authorMeta}>
-          <Text style={styles.authorName}>{nickName}</Text>
-          {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
-        </View>
-
-        {/* Menu button */}
-        <Pressable
-          ref={menuBtnRef}
-          hitSlop={8}
-          onPress={handleMenuPress}
-          style={styles.menuBtn}
-          accessibilityLabel="메뉴"
-        >
-          <Image
-            source={menuIcon}
-            style={styles.menuIcon}
-            contentFit="contain"
-          />
-        </Pressable>
-      </Pressable>
-
-      {/* ── Menu dropdown ─────────────────────────────────────── */}
-      {menuOpen && (
-        <Modal
-          transparent
-          visible
-          animationType="none"
-          onRequestClose={() => setMenuOpen(false)}
-        >
+          {/* Menu button */}
           <Pressable
-            style={StyleSheet.absoluteFillObject}
-            onPress={() => setMenuOpen(false)}
+            ref={menuBtnRef}
+            hitSlop={8}
+            onPress={handleMenuPress}
+            style={styles.menuBtn}
+            accessibilityLabel="메뉴"
+          >
+            <Image
+              source={menuIcon}
+              style={styles.menuIcon}
+              contentFit="contain"
+            />
+          </Pressable>
+        </Pressable>
+
+        {/* ── Menu dropdown ─────────────────────────────────────── */}
+        {menuOpen && (
+          <Modal
+            transparent
+            visible
+            animationType="none"
+            onRequestClose={() => setMenuOpen(false)}
           >
             <Pressable
-              style={[styles.menuDropdown, { top: menuDropdownTop }]}
-              onPress={() => {
-                setMenuOpen(false);
-                if (isMine) onOpenDelete?.();
-                else onOpenReport?.();
-              }}
+              style={StyleSheet.absoluteFillObject}
+              onPress={() => setMenuOpen(false)}
             >
               <Image
                 source={isMine ? deleteDropdown : commentDropdown}
@@ -392,21 +383,22 @@ export function FeedPostCard({
 
             {onClickWorksArrow && (
               <Pressable
-                onPress={onClickWorksArrow}
-                hitSlop={8}
-                style={styles.worksArrowBtn}
-                accessibilityLabel="작품 상세 보기"
+                style={[styles.menuDropdown, { top: menuDropdownTop }]}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (isMine) onOpenDelete?.();
+                  else onOpenReport?.();
+                }}
               >
                 <Image
-                  source={arrowSmallIcon}
-                  style={styles.arrowSmall}
+                  source={isMine ? deleteDropdown : commentDropdown}
+                  style={styles.menuDropdownImg}
                   contentFit="contain"
                 />
               </Pressable>
-            )}
-          </View>
-        </View>
-      )}
+            </Pressable>
+          </Modal>
+        )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
       <View style={styles.spoilerContainer}>
@@ -435,17 +427,36 @@ export function FeedPostCard({
                 style={styles.contentText}
                 numberOfLines={variant === 'detail' ? undefined : 3}
               >
-                {content}
-              </Text>
+                <Text
+                  style={styles.contentText}
+                  numberOfLines={variant === "detail" ? undefined : 3}
+                >
+                  {content}
+                </Text>
+              </View>
             </View>
           </View>
+
+          {isSpoilerHidden && (
+            <Pressable
+              style={styles.spoilerOverlay}
+              onPress={() => setSpoilerRevealed(true)}
+              accessibilityLabel="스포일러가 포함된 피드글 보기"
+            >
+              <Text style={styles.spoilerRevealText}>
+                {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
-        {isSpoilerHidden && (
+        {/* ── Reactions row ────────────────────────────────────── */}
+        <View style={styles.reactionRow}>
           <Pressable
-            style={styles.spoilerOverlay}
-            onPress={() => setSpoilerRevealed(true)}
-            accessibilityLabel="스포일러가 포함된 피드글 보기"
+            onPress={onToggleLike}
+            style={styles.reactionItem}
+            accessibilityLabel="좋아요"
+            hitSlop={8}
           >
             <Text style={styles.spoilerRevealText}>
               {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
@@ -454,37 +465,19 @@ export function FeedPostCard({
         )}
       </View>
 
-      {/* ── Reactions row ────────────────────────────────────── */}
-      <View style={styles.reactionRow}>
-        <Pressable
-          onPress={onToggleLike}
-          style={styles.reactionItem}
-          accessibilityLabel="좋아요"
-          hitSlop={8}
-        >
-          <Image
-            source={isLiked ? likePinkIcon : likeIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {likeCount > 0 && (
-            <Text style={styles.reactionCount}>{likeCount}</Text>
-          )}
-        </Pressable>
-
-        <View style={[styles.reactionItem, styles.commentItem]}>
-          <Image
-            source={commentIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {replyCount > 0 && (
-            <Text style={styles.reactionCount}>{replyCount}</Text>
-          )}
+          <View style={[styles.reactionItem, styles.commentItem]}>
+            <Image
+              source={commentIcon}
+              style={styles.reactionIcon}
+              contentFit="contain"
+            />
+            {replyCount > 0 && (
+              <Text style={styles.reactionCount}>{replyCount}</Text>
+            )}
+          </View>
         </View>
       </View>
-
-      </View>{/* end cardContent */}
+      {/* end cardContent */}
     </View>
   );
 
@@ -617,8 +610,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: Gray[50],
+    borderColor: "#EEEDED",
+    backgroundColor: "#F9F6F7",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -639,7 +632,7 @@ const styles = StyleSheet.create({
   worksInfo: {
     flex: 1,
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   worksName: {
     fontSize: 14,
@@ -695,7 +688,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   bodySection: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageScroll: {
     paddingHorizontal: 0,
@@ -732,12 +725,12 @@ const styles = StyleSheet.create({
     color: Gray[800],
   },
   spoilerOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     paddingHorizontal: 16,
     paddingTop: 0,
   },

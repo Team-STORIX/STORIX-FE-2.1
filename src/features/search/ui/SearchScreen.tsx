@@ -228,14 +228,9 @@ export function SearchScreen() {
         onChangeText={setInputValue}
         onSubmit={() => submitKeyword(inputValue)}
         onBackPress={() => router.back()}
-        onClearPress={() => {
-          setInputValue('')
-          if (submittedKeyword) {
-            setActiveTab('works')
-            router.replace('/search' as never)
-            void recentKeywordsQuery.refetch()
-          }
-        }}
+        showCancelIcon={
+          submittedKeyword.length > 0 && normalizeKeyword(inputValue) === submittedKeyword
+        }
       />
 
       {submittedKeyword ? (
