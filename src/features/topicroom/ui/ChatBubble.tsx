@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   rowOther: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     paddingHorizontal: 16,
     paddingVertical: 8,
   },

@@ -52,7 +52,7 @@ export const C = {
   // Text
   text: Gray[900], // #131112
   textSecondary: Gray[600], // #645c5f
-  textMuted: Gray[500], // #847b7f — placeholder / hint / timestamp
+  textMuted: Gray[300], // #847b7f — placeholder / hint / timestamp
 
   // Borders
   border: Gray[200], // #e3dcdf
