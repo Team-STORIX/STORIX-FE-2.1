@@ -1,12 +1,14 @@
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, Text, View } from "react-native";
 import type { WorksDetail } from "../../features/works/api/works.api";
 import { C } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
 import { Typography } from "../../theme/typography";
 
-const authorMark = require("../../../assets/icons/common/author-mark.svg");
 const littleStar = require("../../../assets/icons/common/littleStar.svg");
+
+const HERO_HEIGHT = 460;
 
 function worksTypeLabel(type?: string | null) {
   if (type === "WEBTOON") return "웹툰";
@@ -31,14 +33,30 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
 
   return (
     <View style={styles.wrapper}>
+      {/* Soft full-bleed background image spread across the entire hero. */}
       {works.thumbnailUrl ? (
         <Image
           source={{ uri: works.thumbnailUrl }}
-          style={StyleSheet.absoluteFillObject}
+          style={styles.heroBgImage}
           contentFit="cover"
         />
       ) : null}
-      <View style={styles.overlay} />
+      {/* Figma: linear-gradient(0deg, transparent 0%, #F9F6F7 100%) — #F9F6F7 at the top, fading down. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#F9F6F7", "rgba(255,255,255,0)"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      {/* Figma: linear-gradient(180deg, transparent 0%, #FFFFFF 100%) — white at the bottom. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(255,255,255,0)", "#FFFFFF"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       <View style={styles.content}>
         <View style={styles.coverCard}>
@@ -85,16 +103,24 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    height: 460,
+    height: HERO_HEIGHT,
     position: "relative",
     overflow: "hidden",
+    backgroundColor: "#F9F6F7",
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.84)",
+  heroBgImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0.3,
   },
   content: {
     flex: 1,
+    zIndex: 2,
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 16,

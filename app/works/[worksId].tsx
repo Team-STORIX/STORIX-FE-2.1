@@ -335,8 +335,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: C.divider,
     backgroundColor: C.card,
   },
   tabButton: {
@@ -355,7 +353,7 @@ const styles = StyleSheet.create({
   tabUnderline: {
     width: '100%',
     height: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: C.border,
   },
   tabUnderlineActive: {
     backgroundColor: C.text,
