@@ -196,6 +196,7 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
           statusBeforeConnect: statusRef.current,
           brokerURL: STORIX_STOMP_BROKER_URL,
           attempt,
+          forceBinaryWSFrames: true,
           hasStoreAccessToken: !!accessToken,
           hasSecureStoreAccessToken: !!secureToken,
           storeAccessTokenPreview: `Bearer ${maskToken(accessToken)}`,
@@ -208,6 +209,11 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
       const client = new Client({
         brokerURL: STORIX_STOMP_BROKER_URL,
         reconnectDelay: 3000,
+        // React Native's WebSocket can chop the STOMP NULL terminator off the
+        // tail of a text frame, so Spring's STOMP decoder never sees a complete
+        // CONNECT command (socket closes before CONNECTED). Sending frames as
+        // binary preserves the trailing 0x00 byte intact.
+        forceBinaryWSFrames: true,
         debug: (msg) => {
           if (!__DEV__) return
           // stompjs echoes raw frames here, including the CONNECT frame that

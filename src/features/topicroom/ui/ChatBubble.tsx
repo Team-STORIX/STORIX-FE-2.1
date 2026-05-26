@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C } from "../../../theme/colors";
+import { C, Gray } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
 
 const profileDefault = require("../../../../assets/placeholders/profile-default.png");
@@ -69,21 +69,22 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
 }
 
 const AVATAR_SIZE = 36;
-const BUBBLE_RADIUS = 18;
+const BUBBLE_MAX_WIDTH = 220;
+const TIME_WIDTH = 47;
 
 const styles = StyleSheet.create({
   rowMe: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "flex-end",
-    marginBottom: 8,
     paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   rowOther: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: 8,
+    alignItems: "flex-start",
     paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 
   avatar: {
@@ -102,8 +103,8 @@ const styles = StyleSheet.create({
 
   otherBody: { flexShrink: 1 },
   senderName: {
-    ...Typography.caption1Medium,
-    color: C.textSecondary,
+    ...Typography.body2Medium,
+    color: Gray[800],
     marginBottom: 4,
   },
   otherBubbleRow: {
@@ -112,36 +113,45 @@ const styles = StyleSheet.create({
   },
 
   bubble: {
-    maxWidth: 260,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: BUBBLE_RADIUS,
+    maxWidth: BUBBLE_MAX_WIDTH,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   bubbleMe: {
     backgroundColor: C.primary,
-    borderBottomRightRadius: 6,
-    marginLeft: 6,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   bubbleOther: {
-    backgroundColor: C.card,
-    borderBottomLeftRadius: 6,
+    backgroundColor: Gray[50],
+    borderWidth: 1,
+    borderColor: Gray[100],
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   pressed: {
     opacity: 0.7,
   },
 
-  textMe: { ...Typography.body2Medium, color: "#fff" },
-  textOther: { ...Typography.body2Medium, color: C.text },
+  textMe: { ...Typography.body1Semibold, color: "#fff" },
+  textOther: { ...Typography.body1Medium, color: Gray[800] },
 
   timeMe: {
-    ...Typography.caption2Medium,
-    color: C.textMuted,
+    ...Typography.caption1Medium,
+    color: Gray[400],
+    width: TIME_WIDTH,
+    textAlign: "right",
     marginRight: 6,
     marginBottom: 2,
   },
   timeOther: {
-    ...Typography.caption2Medium,
-    color: C.textMuted,
+    ...Typography.caption1Medium,
+    color: Gray[400],
+    width: TIME_WIDTH,
     marginLeft: 6,
     marginBottom: 2,
     flexShrink: 0,

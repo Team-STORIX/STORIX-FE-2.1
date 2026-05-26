@@ -177,9 +177,9 @@ export function TopicRoomCreateWorksBottomSheet({
 
   const buttonLabel =
     buttonState === "idle"
-      ? "작품을 선택해주세요"
+      ? "다음으로"
       : buttonState === "enter" || buttonState === "joining"
-        ? "토픽룸 입장하기"
+        ? "토픽룸으로 이동하기"
         : "다음으로";
 
   const buttonDisabled =
@@ -254,7 +254,7 @@ export function TopicRoomCreateWorksBottomSheet({
               <TextInput
                 value={keyword}
                 onChangeText={setKeyword}
-                placeholder="토픽룸을 만들고 싶은 작품을 검색하세요"
+                placeholder="토픽룸을 생성하고 싶은 작품을 검색하세요"
                 placeholderTextColor={C.textMuted}
                 style={styles.searchInput}
                 returnKeyType="search"
@@ -293,7 +293,7 @@ export function TopicRoomCreateWorksBottomSheet({
             <View style={styles.listWrap}>
               {!debouncedKeyword ? (
                 <View style={styles.stateWrap}>
-                  <Text style={styles.stateText}>검색어를 입력하세요</Text>
+                  <Text style={styles.stateText}></Text>
                 </View>
               ) : worksQuery.isLoading ? (
                 <View style={styles.stateWrap}>
@@ -315,6 +315,9 @@ export function TopicRoomCreateWorksBottomSheet({
                     <WorksItemRow
                       item={item}
                       selected={item.worksId === selectedId}
+                      hasExistingRoom={
+                        item.worksId === selectedId && existingRoomId != null
+                      }
                       onPress={() => handleToggleSelect(item)}
                     />
                   )}
@@ -361,10 +364,12 @@ export function TopicRoomCreateWorksBottomSheet({
 function WorksItemRow({
   item,
   selected,
+  hasExistingRoom,
   onPress,
 }: {
   item: WorksSearchItem;
   selected: boolean;
+  hasExistingRoom: boolean;
   onPress: () => void;
 }) {
   const meta = [item.artistName, item.worksType].filter(Boolean).join(" · ");
@@ -393,6 +398,9 @@ function WorksItemRow({
           <Text style={styles.itemMeta} numberOfLines={1}>
             {meta}
           </Text>
+        ) : null}
+        {hasExistingRoom ? (
+          <Text style={styles.existingRoomText}>이미 토픽룸이 있습니다</Text>
         ) : null}
       </View>
 
@@ -441,9 +449,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
+    backgroundColor: Gray[50],
     paddingLeft: 16,
     paddingRight: 44,
     paddingVertical: 14,
@@ -478,7 +484,7 @@ const styles = StyleSheet.create({
   itemThumbWrap: {
     width: 87,
     height: 116,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.xs,
     overflow: "hidden",
     backgroundColor: Gray[100],
   },
@@ -488,6 +494,11 @@ const styles = StyleSheet.create({
   itemMeta: {
     ...Typography.caption1Medium,
     color: C.textMuted,
+    marginTop: 2,
+  },
+  existingRoomText: {
+    ...Typography.caption1Semibold,
+    color: "#f00",
     marginTop: 2,
   },
   selectIcon: { width: 24, height: 24 },

@@ -52,7 +52,7 @@ export const C = {
   // Text
   text: Gray[900], // #131112
   textSecondary: Gray[600], // #645c5f
-  textMuted: Gray[500], // #847b7f — placeholder / hint / timestamp
+  textMuted: Gray[300], // #847b7f — placeholder / hint / timestamp
 
   // Borders
   border: Gray[200], // #e3dcdf
@@ -139,6 +139,11 @@ export const Typography = {
   caption1Medium: {
     fontSize: 12,
     fontWeight: FontWeight.medium,
+    lineHeight: 17,
+  } as TextStyle,
+  caption1Semibold: {
+    fontSize: 12,
+    fontWeight: FontWeight.semibold,
     lineHeight: 17,
   } as TextStyle,
   caption1Extrabold: {

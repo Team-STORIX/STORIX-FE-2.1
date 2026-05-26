@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Image } from "expo-image";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,37 +9,36 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray, Radius, Shadow, Typography } from '../../../theme'
-import type { TopicRoomMember } from '../api'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray, Radius, Shadow, Typography } from "../../../theme";
+import type { TopicRoomMember } from "../api";
 
-const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
-const profileDefault = require('../../../../assets/icons/profile/profile-default.svg')
-const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
-const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
+const profileDefault = require("../../../../assets/icons/profile/profile-default.svg");
+const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
+const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
 const REPORT_REASONS: { value: string; label: string }[] = [
-  { value: 'ABUSE', label: '욕설, 비방, 혐오 표현을 해요' },
-  { value: 'PHISHING', label: '보이스 피싱과 같이 다른 채널로 유도해요' },
-  { value: 'OTHER', label: '기타' },
-]
+  { value: "ABUSE", label: "욕설, 비방, 혐오 표현을 해요" },
+  { value: "PHISHING", label: "보이스 피싱과 같이 다른 채널로 유도해요" },
+  { value: "OTHER", label: "기타" },
+];
 
-const OTHER_REASON_MAX = 200
+const OTHER_REASON_MAX = 200;
 
 type Props = {
-  visible: boolean
-  members: TopicRoomMember[]
-  myUserId?: number | null
-  isSubmitting?: boolean
-  onClose: () => void
+  visible: boolean;
+  members: TopicRoomMember[];
+  myUserId?: number | null;
+  isSubmitting?: boolean;
+  onClose: () => void;
   onConfirm: (params: {
-    userId: number
-    reason: string
-    otherReason?: string | null
-  }) => void
-}
+    userId: number;
+    reason: string;
+    otherReason?: string | null;
+  }) => void;
+};
 
 export function TopicRoomReportSheet({
   visible,
@@ -48,39 +48,44 @@ export function TopicRoomReportSheet({
   onClose,
   onConfirm,
 }: Props) {
-  const insets = useSafeAreaInsets()
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  const [selectedReason, setSelectedReason] = useState<string | null>(null)
-  const [otherReason, setOtherReason] = useState('')
+  const insets = useSafeAreaInsets();
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [otherReason, setOtherReason] = useState("");
 
   useEffect(() => {
     if (!visible) {
-      setSelectedUserId(null)
-      setSelectedReason(null)
-      setOtherReason('')
+      setSelectedUserId(null);
+      setSelectedReason(null);
+      setOtherReason("");
     }
-  }, [visible])
+  }, [visible]);
 
   const reportable = useMemo(
     () => members.filter((m) => m.userId !== myUserId),
     [members, myUserId],
-  )
+  );
 
-  const trimmedOther = otherReason.trim()
-  const otherInvalid = selectedReason === 'OTHER' && trimmedOther.length === 0
+  const trimmedOther = otherReason.trim();
+  const otherInvalid = selectedReason === "OTHER" && trimmedOther.length === 0;
   const canSubmit =
     !isSubmitting &&
     selectedUserId != null &&
     selectedReason != null &&
-    !otherInvalid
+    !otherInvalid;
 
   return (
-    <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="slide"
+      visible={visible}
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <Pressable
           style={StyleSheet.absoluteFillObject}
           onPress={() => {
-            if (!isSubmitting) onClose()
+            if (!isSubmitting) onClose();
           }}
           accessibilityLabel="시트 닫기"
           accessibilityRole="button"
@@ -91,11 +96,15 @@ export function TopicRoomReportSheet({
             <Text style={styles.title}>신고하기</Text>
             <Pressable
               onPress={() => {
-                if (!isSubmitting) onClose()
+                if (!isSubmitting) onClose();
               }}
               style={styles.closeButton}
             >
-              <Image source={cancelIcon} style={styles.closeIcon} contentFit="contain" />
+              <Image
+                source={cancelIcon}
+                style={styles.closeIcon}
+                contentFit="contain"
+              />
             </Pressable>
           </View>
 
@@ -118,7 +127,7 @@ export function TopicRoomReportSheet({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.memberList}
               renderItem={({ item }) => {
-                const selected = item.userId === selectedUserId
+                const selected = item.userId === selectedUserId;
                 return (
                   <Pressable
                     style={({ pressed }) => [
@@ -131,23 +140,29 @@ export function TopicRoomReportSheet({
                     accessibilityState={selected ? { selected: true } : {}}
                   >
                     <Image
-                      source={item.profileImageUrl ? { uri: item.profileImageUrl } : profileDefault}
+                      source={
+                        item.profileImageUrl
+                          ? { uri: item.profileImageUrl }
+                          : profileDefault
+                      }
                       style={styles.memberAvatar}
                       contentFit="cover"
                     />
                     <Text style={styles.memberName} numberOfLines={1}>
-                      {item.nickName || '익명'}
+                      {item.nickName || "익명"}
                     </Text>
                   </Pressable>
-                )
+                );
               }}
             />
           )}
 
-          <Text style={[styles.sectionLabel, styles.reasonHeading]}>신고 사유</Text>
+          <Text style={[styles.sectionLabel, styles.reasonHeading]}>
+            신고 사유
+          </Text>
           <View style={styles.reasonList}>
             {REPORT_REASONS.map((reason) => {
-              const selected = reason.value === selectedReason
+              const selected = reason.value === selectedReason;
               return (
                 <Pressable
                   key={reason.value}
@@ -166,15 +181,17 @@ export function TopicRoomReportSheet({
                     contentFit="contain"
                   />
                 </Pressable>
-              )
+              );
             })}
           </View>
 
-          {selectedReason === 'OTHER' ? (
+          {selectedReason === "OTHER" ? (
             <View style={styles.otherWrap}>
               <TextInput
                 value={otherReason}
-                onChangeText={(t) => setOtherReason(t.slice(0, OTHER_REASON_MAX))}
+                onChangeText={(t) =>
+                  setOtherReason(t.slice(0, OTHER_REASON_MAX))
+                }
                 placeholder="신고 사유를 직접 입력해 주세요"
                 placeholderTextColor={C.textMuted}
                 multiline
@@ -190,13 +207,12 @@ export function TopicRoomReportSheet({
 
           <Pressable
             onPress={() => {
-              if (!canSubmit) return
+              if (!canSubmit) return;
               onConfirm({
                 userId: selectedUserId!,
                 reason: selectedReason!,
-                otherReason:
-                  selectedReason === 'OTHER' ? trimmedOther : null,
-              })
+                otherReason: selectedReason === "OTHER" ? trimmedOther : null,
+              });
             }}
             disabled={!canSubmit}
             style={({ pressed }) => [
@@ -215,14 +231,14 @@ export function TopicRoomReportSheet({
         </View>
       </View>
     </Modal>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: C.card,
@@ -233,9 +249,9 @@ const styles = StyleSheet.create({
     ...Shadow.lg,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   title: {
@@ -245,8 +261,8 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 28,
     height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeIcon: {
     width: 18,
@@ -280,17 +296,17 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: C.text,
     paddingVertical: 0,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   otherCounter: {
     ...Typography.caption2Medium,
     color: C.textMuted,
-    textAlign: 'right',
+    textAlign: "right",
     marginTop: 4,
   },
   emptyMembers: {
     paddingVertical: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyMembersText: {
     ...Typography.body2Medium,
@@ -302,7 +318,7 @@ const styles = StyleSheet.create({
   },
   memberCell: {
     width: 76,
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 6,
     paddingTop: 4,
     paddingBottom: 8,
@@ -321,19 +337,19 @@ const styles = StyleSheet.create({
   memberName: {
     ...Typography.caption1Medium,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   reasonList: {
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: C.divider,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   reasonRow: {
     minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
@@ -350,8 +366,8 @@ const styles = StyleSheet.create({
     marginTop: 18,
     height: 52,
     borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primary,
   },
   submitButtonDisabled: {
@@ -364,4 +380,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-})
+});
