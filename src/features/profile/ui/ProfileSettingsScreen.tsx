@@ -56,7 +56,11 @@ export function ProfileSettingsScreen() {
         <SettingsSection
           title="앱 설정"
           items={[
-            { label: '알림 설정', hasArrow: true, onPress: () => {} },
+            {
+              label: '알림 설정',
+              hasArrow: true,
+              onPress: () => router.push('/notifications/settings'),
+            },
           ]}
         />
 

@@ -1,5 +1,6 @@
 export { usePushNotificationBootstrap } from './usePushNotificationBootstrap'
 export { usePushDeviceSync } from './usePushDeviceSync'
+export { usePushPermissionStatus } from './usePushPermissionStatus'
 export {
   useNotificationConsentModal,
   type ConsentStep,
@@ -13,6 +14,7 @@ export {
 export {
   useNotificationSettings,
   useUpdateNotificationSettings,
+  useUpdateEventBenefitConsent,
 } from './useNotificationSettings'
 export {
   useAdminTestDispatch,
