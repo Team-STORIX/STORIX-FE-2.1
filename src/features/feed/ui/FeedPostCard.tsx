@@ -298,15 +298,23 @@ export function FeedPostCard({
               style={StyleSheet.absoluteFillObject}
               onPress={() => setMenuOpen(false)}
             >
-              <Image
-                source={isMine ? deleteDropdown : commentDropdown}
-                style={styles.menuDropdownImg}
-                contentFit="contain"
-              />
+              <Pressable
+                style={[styles.menuDropdown, { top: menuDropdownTop }]}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (isMine) onOpenDelete?.();
+                  else onOpenReport?.();
+                }}
+              >
+                <Image
+                  source={isMine ? deleteDropdown : commentDropdown}
+                  style={styles.menuDropdownImg}
+                  contentFit="contain"
+                />
+              </Pressable>
             </Pressable>
-          </Pressable>
-        </Modal>
-      )}
+          </Modal>
+        )}
 
       {/* ── Lightbox ──────────────────────────────────────────── */}
       {lightboxIndex !== null && (
@@ -383,22 +391,20 @@ export function FeedPostCard({
 
             {onClickWorksArrow && (
               <Pressable
-                style={[styles.menuDropdown, { top: menuDropdownTop }]}
-                onPress={() => {
-                  setMenuOpen(false);
-                  if (isMine) onOpenDelete?.();
-                  else onOpenReport?.();
-                }}
+                onPress={onClickWorksArrow}
+                style={styles.worksArrowBtn}
+                hitSlop={8}
               >
                 <Image
-                  source={isMine ? deleteDropdown : commentDropdown}
-                  style={styles.menuDropdownImg}
+                  source={arrowSmallIcon}
+                  style={styles.arrowSmall}
                   contentFit="contain"
                 />
               </Pressable>
-            </Pressable>
-          </Modal>
-        )}
+            )}
+          </View>
+        </View>
+      )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
       <View style={styles.spoilerContainer}>
@@ -425,15 +431,10 @@ export function FeedPostCard({
             <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
               <Text
                 style={styles.contentText}
-                numberOfLines={variant === 'detail' ? undefined : 3}
+                numberOfLines={variant === "detail" ? undefined : 3}
               >
-                <Text
-                  style={styles.contentText}
-                  numberOfLines={variant === "detail" ? undefined : 3}
-                >
-                  {content}
-                </Text>
-              </View>
+                {content}
+              </Text>
             </View>
           </View>
 
@@ -458,12 +459,15 @@ export function FeedPostCard({
             accessibilityLabel="좋아요"
             hitSlop={8}
           >
-            <Text style={styles.spoilerRevealText}>
-              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
-            </Text>
+            <Image
+              source={isLiked ? likePinkIcon : likeIcon}
+              style={styles.reactionIcon}
+              contentFit="contain"
+            />
+            {likeCount > 0 && (
+              <Text style={styles.reactionCount}>{likeCount}</Text>
+            )}
           </Pressable>
-        )}
-      </View>
 
           <View style={[styles.reactionItem, styles.commentItem]}>
             <Image
@@ -478,6 +482,7 @@ export function FeedPostCard({
         </View>
       </View>
       {/* end cardContent */}
+      </View>
     </View>
   );
 
