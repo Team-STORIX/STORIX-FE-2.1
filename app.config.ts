@@ -140,7 +140,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
         "@react-native-seoul/kakao-login",
         {
           kakaoAppKey,
-          overrideKakaoSDKVersion: "2.20.1",
+          overrideKakaoSDKVersion: "2.20.0",
           kotlinVersion: "2.1.20",
         },
       ],
