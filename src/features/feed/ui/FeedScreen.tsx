@@ -258,7 +258,7 @@ export function FeedScreen() {
     ],
   )
 
-  const favoriteWorks = favoriteWorksQuery.data?.result?.content ?? []
+  const favoriteWorks = favoriteWorksQuery.data ?? []
 
   const listHeader = (
     <View style={styles.listHeader}>
