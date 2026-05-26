@@ -183,7 +183,11 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: C.card,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
   },
   navWrap: {
     flex: 1,
