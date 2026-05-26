@@ -285,7 +285,7 @@ export function FeedWritePickerBottomSheet({
             <View style={styles.listWrap}>
               {!debouncedKeyword ? (
                 <View style={styles.stateWrap}>
-                  <Text style={styles.stateText}>검색어를 입력하세요</Text>
+                  <Text style={styles.stateText}></Text>
                 </View>
               ) : searchQuery.isLoading ? (
                 <View style={styles.stateWrap}>
@@ -436,8 +436,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   closeIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   searchWrap: {
     height: 47,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   itemThumbWrap: {
     width: 87,
     height: 116,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.xs,
     overflow: "hidden",
     backgroundColor: Gray[100],
   },
