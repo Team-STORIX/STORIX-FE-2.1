@@ -8,7 +8,7 @@ export function FinalStep() {
     <View style={styles.container}>
       <View style={styles.textWrap}>
         <Text style={styles.title}>준비완료!</Text>
-        <Text style={styles.subtitle}>이제 여행을 시작해볼까요?</Text>
+        <Text style={styles.subtitle}>이제 탐험을 시작해볼까요?</Text>
       </View>
 
       <View style={styles.imageWrap}>
@@ -43,6 +43,8 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     marginTop: 125,
+    width: 180,
+    height: 180,
   },
   image: {
     width: 180,

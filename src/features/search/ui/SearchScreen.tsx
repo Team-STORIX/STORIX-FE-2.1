@@ -203,14 +203,22 @@ export function SearchScreen() {
     router.push(`/works/${item.worksId}` as const)
   }
 
-  const handlePressTopicRoom = async (item: TopicRoomSearchItem) => {
-    if (joinTopicRoomMutation.isPending) return
-
-    if (!item.isJoined) {
-      await joinTopicRoomMutation.mutateAsync(item.topicRoomId)
-    }
-
-    router.push(`/topicroom/${item.topicRoomId}` as const)
+  const handlePressTopicRoom = (item: TopicRoomSearchItem) => {
+    // Do not join here — navigate to the preview/detail screen first. The
+    // preview screen handles join + entry into the chat room.
+    router.push({
+      pathname: '/topicroom/preview',
+      params: {
+        roomId: String(item.topicRoomId),
+        keyword: submittedKeyword,
+        topicRoomName: item.topicRoomName,
+        worksName: item.worksName,
+        worksType: item.worksType ?? '',
+        activeUserNumber: String(item.activeUserNumber ?? 0),
+        thumbnailUrl: item.thumbnailUrl ?? '',
+        lastChatTime: item.lastChatTime ?? '',
+      },
+    })
   }
 
   return (

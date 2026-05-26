@@ -5,7 +5,15 @@ import { C, Magenta, Typography } from '../../../theme'
 const starIcon = require('../../../../assets/icons/common/littleStar.svg')
 
 type Props = {
-  /** Room creation / join date (ISO). Bar is hidden when absent or invalid. */
+  /**
+   * Membership start date (ISO) — the day the user joined the room.
+   * Bar is hidden when absent or invalid.
+   *
+   * Requires BE to provide joinedAt/participatedAt. Do not use lastChatTime
+   * (that is last-activity only, not a membership date). The current TopicRoom
+   * Swagger exposes no such field, so this prop is effectively never populated
+   * and the bar renders null until the backend adds one.
+   */
   startDate?: string | null
 }
 

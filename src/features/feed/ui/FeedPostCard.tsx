@@ -6,8 +6,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gray, Magenta } from "../../../theme/colors";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
@@ -20,15 +24,10 @@ const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forwa
 const commentDropdown = require("../../../../assets/icons/common/comment-dropdown.svg");
 const deleteDropdown = require("../../../../assets/icons/common/delete-dropdown.svg");
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
+const xIcon = require("../../../../assets/icons/common/x.svg");
 
-const birthdayFeedThemes = {
-  article: require("../../../../assets/common/birthday/b_feed_article.svg"),
-  photo: require("../../../../assets/common/birthday/b_feed_photo.svg"),
-  photoArticle: require("../../../../assets/common/birthday/b_feed_photo_article.svg"),
-  contentlinkArticle: require("../../../../assets/common/birthday/b_feed_contentlink_article.svg"),
-  contentlinkPhoto: require("../../../../assets/common/birthday/b_feed_contentlink_photo.svg"),
-  contentlinkPhotoArticle: require("../../../../assets/common/birthday/b_feed_contentlink_photo_article.svg"),
-};
+const birthdayThemeUp = require("../../../../assets/common/birthday/brithdaytheme-up.svg");
+const birthdayThemeDown = require("../../../../assets/common/birthday/brithdaytheme-down.svg");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,26 +65,6 @@ type FeedPostCardProps = {
   onPressCard?: () => void;
   birthdayTheme?: boolean;
 };
-
-function getBirthdayThemeSource({
-  hasArticle,
-  hasPhoto,
-  hasContentlink,
-}: {
-  hasArticle: boolean;
-  hasPhoto: boolean;
-  hasContentlink: boolean;
-}) {
-  if (hasContentlink && hasPhoto && hasArticle)
-    return birthdayFeedThemes.contentlinkPhotoArticle;
-  if (hasContentlink && hasPhoto) return birthdayFeedThemes.contentlinkPhoto;
-  if (hasContentlink && hasArticle)
-    return birthdayFeedThemes.contentlinkArticle;
-  if (hasPhoto && hasArticle) return birthdayFeedThemes.photoArticle;
-  if (hasPhoto) return birthdayFeedThemes.photo;
-  if (hasArticle) return birthdayFeedThemes.article;
-  return null;
-}
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
 
@@ -145,6 +124,56 @@ function HashtagRow({ tags }: { tags: string[] }) {
   );
 }
 
+// ─── ZoomableImage ────────────────────────────────────────────────────────────
+
+function ZoomableImage({
+  src,
+  width,
+  isActive,
+  onTap,
+}: {
+  src: string
+  width: number
+  isActive: boolean
+  onTap: () => void
+}) {
+  const scale = useSharedValue(1)
+  const savedScale = useSharedValue(1)
+
+  useEffect(() => {
+    if (!isActive) {
+      scale.value = withSpring(1)
+      savedScale.value = 1
+    }
+  }, [isActive, scale, savedScale])
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      scale.value = Math.max(1, savedScale.value * e.scale)
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value
+      if (scale.value < 1.05) {
+        scale.value = withSpring(1)
+        savedScale.value = 1
+      }
+    })
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  return (
+    <Pressable onPress={onTap} style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <GestureDetector gesture={pinchGesture}>
+        <Animated.View style={[{ width, height: '100%' }, animatedStyle]}>
+          <Image source={{ uri: src }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+        </Animated.View>
+      </GestureDetector>
+    </Pressable>
+  )
+}
+
 // ─── FeedPostCard ─────────────────────────────────────────────────────────────
 
 export function FeedPostCard({
@@ -174,6 +203,11 @@ export function FeedPostCard({
   const [menuDropdownTop, setMenuDropdownTop] = useState(0);
   const menuBtnRef = useRef<any>(null);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxCurrent, setLightboxCurrent] = useState(0);
+  const [lightboxControls, setLightboxControls] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
+  const { top: topInset } = useSafeAreaInsets();
 
   const handleMenuPress = () => {
     if (menuOpen) {
@@ -203,28 +237,18 @@ export function FeedPostCard({
     !!works.thumbnailUrl &&
     !!works.worksName &&
     !!works.artistName;
-  const hasArticle = content.trim().length > 0;
-  const hasPhoto = images.some((src) => src.trim().length > 0);
-  const hasContentlink = works != null && !!works.worksName?.trim();
-  const birthdayThemeSource = birthdayTheme
-    ? getBirthdayThemeSource({
-        hasArticle,
-        hasPhoto,
-        hasContentlink,
-      })
-    : null;
-
   const cardBody = (
     <View style={styles.card}>
-      {/* ── Birthday theme background ─────────────────────────── */}
-      {birthdayThemeSource && (
-        <View pointerEvents="none" style={styles.birthdayThemeLayer}>
-          <Image
-            source={birthdayThemeSource}
-            style={styles.birthdayThemeImage}
-            contentFit="cover"
-          />
-        </View>
+      {/* ── Birthday theme decorations ────────────────────────── */}
+      {birthdayTheme && (
+        <>
+          <View pointerEvents="none" style={styles.birthdayThemeTop}>
+            <Image source={birthdayThemeUp} style={styles.birthdayThemeTopImg} contentFit="fill" />
+          </View>
+          <View pointerEvents="none" style={styles.birthdayThemeBottom}>
+            <Image source={birthdayThemeDown} style={styles.birthdayThemeBottomImg} contentFit="fill" />
+          </View>
+        </>
       )}
 
       {/* ── Card content (above birthday theme) ───────────────── */}
@@ -274,6 +298,90 @@ export function FeedPostCard({
               style={StyleSheet.absoluteFillObject}
               onPress={() => setMenuOpen(false)}
             >
+              <Image
+                source={isMine ? deleteDropdown : commentDropdown}
+                style={styles.menuDropdownImg}
+                contentFit="contain"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
+
+      {/* ── Lightbox ──────────────────────────────────────────── */}
+      {lightboxIndex !== null && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
+          {/* 이미지 스크롤 — ScrollView 터치 선점 영역 */}
+          <View style={styles.lightboxBackdrop}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentOffset={{ x: lightboxIndex * screenWidth, y: 0 }}
+              onScroll={(e) => {
+                const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                setLightboxCurrent(page);
+              }}
+              scrollEventThrottle={16}
+              style={{ flex: 1 }}
+            >
+              {images.slice(0, 3).map((src, idx) => (
+                <ZoomableImage
+                  key={idx}
+                  src={src}
+                  width={screenWidth}
+                  isActive={lightboxCurrent === idx}
+                  onTap={() => setLightboxControls((v) => !v)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* 컨트롤 오버레이 — ScrollView 계층 밖, Modal 직계 자식 */}
+          {lightboxControls && (
+            <View style={[StyleSheet.absoluteFillObject, { pointerEvents: 'box-none' }]}>
+              <View style={[styles.lightboxHeader, { top: topInset }]}>
+                <Pressable
+                  onPress={() => setLightboxIndex(null)}
+                  style={styles.lightboxCloseBtn}
+                  hitSlop={20}
+                >
+                  <Image source={xIcon} style={styles.lightboxCloseIcon} contentFit="contain" tintColor="#ffffff" />
+                </Pressable>
+                <Text style={styles.lightboxCounterText} pointerEvents="none">
+                  {lightboxCurrent + 1}/{images.slice(0, 3).length}
+                </Text>
+              </View>
+            </View>
+          )}
+        </Modal>
+      )}
+
+      {/* ── Works card ────────────────────────────────────────── */}
+      {showWorks && (
+        <View style={styles.worksSection}>
+          <View style={styles.worksCard}>
+            <View style={styles.worksThumbnailBox}>
+              <Image
+                source={{ uri: works!.thumbnailUrl }}
+                style={styles.worksThumbnail}
+                contentFit="cover"
+              />
+            </View>
+
+            <View style={styles.worksInfo}>
+              <Text style={styles.worksName} numberOfLines={1}>
+                {works!.worksName}
+              </Text>
+              <Text style={styles.worksMeta} numberOfLines={1}>
+                {[works!.artistName, works!.worksType, works!.genre]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Text>
+              <HashtagRow tags={works!.hashtags ?? []} />
+            </View>
+
+            {onClickWorksArrow && (
               <Pressable
                 style={[styles.menuDropdown, { top: menuDropdownTop }]}
                 onPress={() => {
@@ -292,82 +400,32 @@ export function FeedPostCard({
           </Modal>
         )}
 
-        {/* ── Works card ────────────────────────────────────────── */}
-        {showWorks && (
-          <View style={styles.worksSection}>
-            <View style={styles.worksCard}>
-              <View style={styles.worksThumbnailBox}>
-                <Image
-                  source={{ uri: works!.thumbnailUrl }}
-                  style={styles.worksThumbnail}
-                  contentFit="cover"
-                />
-              </View>
-
-              <View style={styles.worksInfo}>
-                <Text style={styles.worksName} numberOfLines={1}>
-                  {works!.worksName}
-                </Text>
-                <Text style={styles.worksMeta} numberOfLines={1}>
-                  {[works!.artistName, works!.worksType, works!.genre]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Text>
-                <HashtagRow tags={works!.hashtags ?? []} />
-              </View>
-
-              {onClickWorksArrow && (
-                <Pressable
-                  onPress={onClickWorksArrow}
-                  hitSlop={8}
-                  style={styles.worksArrowBtn}
-                  accessibilityLabel="작품 상세 보기"
-                >
-                  <Image
-                    source={arrowSmallIcon}
-                    style={styles.arrowSmall}
-                    contentFit="contain"
-                  />
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* ── Body: images + text ──────────────────────────────── */}
-        <View style={styles.spoilerContainer}>
-          <View style={styles.bodySection}>
-            <View
-              style={
-                isSpoilerHidden
-                  ? ({ filter: "blur(17px)", overflow: "hidden" } as any)
-                  : undefined
-              }
-            >
-              {images.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.imageScroll}
-                  contentContainerStyle={styles.imageContent}
-                >
-                  {images.slice(0, 3).map((src, idx) => (
-                    <View key={`${boardId}-img-${idx}`} style={styles.imageBox}>
-                      <Image
-                        source={{ uri: src }}
-                        style={styles.imageFill}
-                        contentFit="cover"
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
-
-              <View
-                style={[
-                  styles.textPad,
-                  images.length > 0 && styles.textPadAfterImage,
-                ]}
+      {/* ── Body: images + text ──────────────────────────────── */}
+      <View style={styles.spoilerContainer}>
+        <View style={styles.bodySection}>
+          <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
+            {images.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.imageScroll}
+                contentContainerStyle={styles.imageContent}
+              >
+                {images.slice(0, 3).map((src, idx) => (
+                  <Pressable key={`${boardId}-img-${idx}`} style={styles.imageBox} onPress={() => { setLightboxIndex(idx); setLightboxCurrent(idx); setLightboxControls(false); }}>
+                    <Image
+                      source={{ uri: src }}
+                      style={styles.imageFill}
+                      contentFit="cover"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+            <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
+              <Text
+                style={styles.contentText}
+                numberOfLines={variant === 'detail' ? undefined : 3}
               >
                 <Text
                   style={styles.contentText}
@@ -400,15 +458,12 @@ export function FeedPostCard({
             accessibilityLabel="좋아요"
             hitSlop={8}
           >
-            <Image
-              source={isLiked ? likePinkIcon : likeIcon}
-              style={styles.reactionIcon}
-              contentFit="contain"
-            />
-            {likeCount > 0 && (
-              <Text style={styles.reactionCount}>{likeCount}</Text>
-            )}
+            <Text style={styles.spoilerRevealText}>
+              {spoilerScript ?? '스포일러가 포함된 피드글 보기'}
+            </Text>
           </Pressable>
+        )}
+      </View>
 
           <View style={[styles.reactionItem, styles.commentItem]}>
             <Image
@@ -457,13 +512,25 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
-  birthdayThemeLayer: {
-    ...StyleSheet.absoluteFillObject,
+  birthdayThemeTop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
     zIndex: 0,
   },
-  birthdayThemeImage: {
-    width: "100%",
-    height: "100%",
+  birthdayThemeTopImg: {
+    width: 393,
+    height: 70,
+  },
+  birthdayThemeBottom: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  birthdayThemeBottomImg: {
+    width: 393,
+    height: 70,
   },
   cardContent: {
     zIndex: 1,
@@ -493,17 +560,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
-    lineHeight: 22,
+    lineHeight: 20,
     color: Gray[900],
   },
   timestamp: {
     marginTop: 2,
+    fontFamily: 'SUIT',
     fontSize: 12,
     fontWeight: "500",
-    lineHeight: 17,
-    color: Gray[300],
+    lineHeight: 16.8,
+    color: Gray[400],
   },
   menuBtn: {
     width: 24,
@@ -545,7 +613,8 @@ const styles = StyleSheet.create({
     borderColor: "#EEEDED",
     backgroundColor: "#F9F6F7",
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   worksThumbnailBox: {
@@ -566,9 +635,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   worksName: {
-    fontSize: 16,
-    fontWeight: "500",
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20,
     color: "#000000",
     marginBottom: 4,
   },
@@ -696,5 +765,41 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
     color: Gray[500],
+  },
+  lightboxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+  },
+  lightboxHeader: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 48,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 10,
+  },
+  lightboxCloseBtn: {
+    position: 'absolute',
+    top: 2,
+    left: 6,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxCloseIcon: {
+    width: 24,
+    height: 24,
+  },
+  lightboxCounterText: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: '#ffffff',
+    fontFamily: 'SUIT',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

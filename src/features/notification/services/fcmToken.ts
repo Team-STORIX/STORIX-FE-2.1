@@ -1,28 +1,33 @@
-import { Platform } from 'react-native'
-import { getApps } from '@react-native-firebase/app'
+import { getApps } from "@react-native-firebase/app";
 import {
   getMessaging,
   getToken,
   onTokenRefresh,
   registerDeviceForRemoteMessages,
-} from '@react-native-firebase/messaging'
+} from "@react-native-firebase/messaging";
+import { Platform } from "react-native";
 
 // Brief wait before retrying getToken() when APNs has not yet attached a token
 // to the app. Empirically RNFirebase resolves this within a few hundred ms,
 // but we leave headroom for slow simulators.
-const APNS_RETRY_DELAY_MS = 1_500
+const APNS_RETRY_DELAY_MS = 1_500;
 
 const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms))
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+// Never log a full FCM token — a usable credential. Keep a short head/tail
+// preview (first 8 + last 4) for correlation only.
+const maskToken = (token: string): string =>
+  token.length <= 12 ? "***" : `${token.slice(0, 8)}…${token.slice(-4)}`;
 
 const getFirebaseMessagingIfAvailable = () => {
   try {
-    if (getApps().length === 0) return null
-    return getMessaging()
+    if (getApps().length === 0) return null;
+    return getMessaging();
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 /**
  * Fetches the device's current FCM registration token, returning null if the
@@ -34,46 +39,57 @@ const getFirebaseMessagingIfAvailable = () => {
  * "apns-token-not-set yet" on first launch.
  */
 export const getFcmDeviceToken = async (): Promise<string | null> => {
-  const msg = getFirebaseMessagingIfAvailable()
-  if (!msg) return null
+  const msg = getFirebaseMessagingIfAvailable();
+  if (!msg) return null;
   try {
-    if (Platform.OS === 'ios') {
-      await registerDeviceForRemoteMessages(msg)
+    if (Platform.OS === "ios") {
+      await registerDeviceForRemoteMessages(msg);
     }
 
     try {
-      const token = await getToken(msg)
-      return typeof token === 'string' && token.length > 0 ? token : null
+      const token = await getToken(msg);
+      if (__DEV__ && typeof token === "string" && token.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log("[push] fcm token", maskToken(token));
+        // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
+        // eslint-disable-next-line no-console
+        console.log("[NOTIFICATION_TEST_DEBUG] fcm token ready true");
+      }
+      return typeof token === "string" && token.length > 0 ? token : null;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      if (Platform.OS === 'ios' && /apns|no apns token/i.test(message)) {
-        await sleep(APNS_RETRY_DELAY_MS)
+      const message = err instanceof Error ? err.message : String(err);
+      if (Platform.OS === "ios" && /apns|no apns token/i.test(message)) {
+        await sleep(APNS_RETRY_DELAY_MS);
         try {
-          const token = await getToken(msg)
-          return typeof token === 'string' && token.length > 0 ? token : null
+          const token = await getToken(msg);
+          if (__DEV__ && typeof token === "string" && token.length > 0) {
+            // eslint-disable-next-line no-console
+            console.log("[push] fcm token", maskToken(token));
+          }
+          return typeof token === "string" && token.length > 0 ? token : null;
         } catch (retryErr) {
           if (__DEV__) {
             // eslint-disable-next-line no-console
-            console.warn('[push] getToken retry failed', retryErr)
+            console.warn("[push] getToken retry failed", retryErr);
           }
-          return null
+          return null;
         }
       }
 
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.warn('[push] getToken failed', err)
+        console.warn("[push] getToken failed", err);
       }
-      return null
+      return null;
     }
   } catch (err) {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.warn('[push] registerDeviceForRemoteMessages failed', err)
+      console.warn("[push] registerDeviceForRemoteMessages failed", err);
     }
-    return null
+    return null;
   }
-}
+};
 
 /**
  * Subscribes to FCM token rotation. Returns an unsubscribe function suitable
@@ -83,12 +99,12 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
 export const subscribeFcmTokenRefresh = (
   onRefresh: (token: string) => void,
 ): (() => void) => {
-  const msg = getFirebaseMessagingIfAvailable()
-  if (!msg) return () => {}
+  const msg = getFirebaseMessagingIfAvailable();
+  if (!msg) return () => {};
   const unsubscribe = onTokenRefresh(msg, (token) => {
-    if (typeof token === 'string' && token.length > 0) {
-      onRefresh(token)
+    if (typeof token === "string" && token.length > 0) {
+      onRefresh(token);
     }
-  })
-  return unsubscribe
-}
+  });
+  return unsubscribe;
+};

@@ -6,6 +6,7 @@ import {
   unfavoriteWork,
 } from '../api/favorite.api'
 import { useFavoritesStore } from '../../../store/favorites.store'
+import { PROFILE_FAVORITE_WORKS_QUERY_KEY } from '../../profile/hooks/useProfileFavoriteWorksPreview'
 
 type UseFavoriteWorkOptions = {
   onAdded?: (worksId: number) => void
@@ -41,11 +42,15 @@ export function useFavoriteWork(
     if (addMutation.isSuccess) {
       optionsRef.current?.onAdded?.(worksId!)
       queryClient.invalidateQueries({ queryKey })
+      queryClient.invalidateQueries({ queryKey: ['feed', 'favoriteWorks'] })
+      queryClient.invalidateQueries({ queryKey: PROFILE_FAVORITE_WORKS_QUERY_KEY })
       addMutation.reset()
     }
     if (removeMutation.isSuccess) {
       optionsRef.current?.onRemoved?.(worksId!)
       queryClient.invalidateQueries({ queryKey })
+      queryClient.invalidateQueries({ queryKey: ['feed', 'favoriteWorks'] })
+      queryClient.invalidateQueries({ queryKey: PROFILE_FAVORITE_WORKS_QUERY_KEY })
       removeMutation.reset()
     }
   }, [

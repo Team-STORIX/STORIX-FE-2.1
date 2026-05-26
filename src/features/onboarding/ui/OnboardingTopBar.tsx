@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Gray } from '../../../theme/colors'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
@@ -49,9 +49,11 @@ const styles = StyleSheet.create({
     height: 24,
   },
   skipText: {
-    fontSize: 14,
+    fontFamily: 'SUIT',
+    fontSize: 16,
     fontWeight: '500',
+    lineHeight: 22.4,
     color: Gray[500],
-    lineHeight: 20,
+    textAlign: 'center',
   },
 })

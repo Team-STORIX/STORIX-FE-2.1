@@ -85,16 +85,17 @@ export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
               onChangeText={(text) => onChangeText(text.slice(0, MAX_LENGTH))}
               multiline
               maxLength={MAX_LENGTH}
-              style={styles.input}
+              style={[styles.input, value.length > 0 && styles.inputWithCounter]}
               placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
               placeholderTextColor={Gray[300]}
               textAlignVertical="top"
               scrollEnabled={false}
               onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
-              includeFontPadding={false}
             />
             {value.length > 0 && (
-              <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
+              <View style={[styles.counterWrap, isMultiLine ? styles.counterWrapMulti : styles.counterWrapSingle]}>
+                <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
+              </View>
             )}
           </View>
 
@@ -158,15 +159,30 @@ const styles = StyleSheet.create({
     color: Gray[800],
     padding: 0,
     margin: 0,
+    includeFontPadding: false,
+  },
+  inputWithCounter: {
+    paddingRight: 48,
+  },
+  counterWrap: {
+    position: 'absolute',
+    right: 16,
+    width: 44,
+  },
+  counterWrapSingle: {
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  counterWrapMulti: {
+    bottom: 8,
   },
   counter: {
-    position: 'absolute',
-    bottom: 8,
-    right: 16,
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
     color: '#CDC4C8',
+    textAlign: 'right',
   },
   submitButton: {
     width: 36,

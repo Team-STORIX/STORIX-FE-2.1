@@ -21,12 +21,10 @@ import {
   LeaveConfirmModal,
   TopicRoomDdayBar,
   TopicRoomMenuDropdown,
-  TopicRoomReportSheet,
   TopicRoomTopBar,
   formatTopicRoomSubtitle,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
-  useReportTopicRoomUser,
   useTopicRoomMembers,
   useTopicRoomStomp,
   type DisplayMsg,
@@ -85,11 +83,7 @@ export default function TopicRoomScreen() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
-  const [reportOpen, setReportOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
-  const [presetReportUserId, setPresetReportUserId] = useState<number | null>(
-    null,
-  );
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -128,7 +122,6 @@ export default function TopicRoomScreen() {
   const members = membersQuery.data ?? [];
   const memberCount = members.length;
   const leaveMutation = useLeaveTopicRoom();
-  const reportMutation = useReportTopicRoomUser();
 
   const memberAvatarById = useMemo(() => {
     const map = new Map<number, string | null>();
@@ -164,28 +157,28 @@ export default function TopicRoomScreen() {
     });
   }, [leaveMutation, roomId, router, showToast]);
 
-  const handleConfirmReport = useCallback(
-    async (params: {
+  // Report is now a full page (app/topicroom/report.tsx), not a bottom sheet.
+  const goToReport = useCallback(
+    (target?: {
       userId: number;
-      reason: string;
-      otherReason?: string | null;
+      userName?: string;
+      profileImageUrl?: string | null;
     }) => {
-      if (reportMutation.isPending) return;
-      try {
-        await reportMutation.mutateAsync({
-          roomId,
-          reportedUserId: params.userId,
-          reason: params.reason,
-          otherReason: params.otherReason ?? null,
-        });
-        setReportOpen(false);
-        setPresetReportUserId(null);
-        showToast("신고가 접수되었어요.");
-      } catch {
-        showToast("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
-      }
+      router.push({
+        pathname: "/topicroom/report",
+        params: {
+          roomId: String(roomId),
+          ...(target
+            ? {
+                reportedUserId: String(target.userId),
+                reportedUserName: target.userName ?? "",
+                reportedUserProfileImageUrl: target.profileImageUrl ?? "",
+              }
+            : {}),
+        },
+      });
     },
-    [reportMutation, roomId, showToast],
+    [router, roomId],
   );
 
   const historyDisplay: DisplayMsg[] = useMemo(() => {
@@ -271,10 +264,13 @@ export default function TopicRoomScreen() {
     (msg: DisplayMsg) => {
       if (typeof msg.senderId !== "number") return;
       if (msg.senderId === myUserId) return;
-      setPresetReportUserId(msg.senderId);
-      setReportOpen(true);
+      goToReport({
+        userId: msg.senderId,
+        userName: msg.senderName,
+        profileImageUrl: msg.profileImageUrl,
+      });
     },
-    [myUserId],
+    [myUserId, goToReport],
   );
 
   return (
@@ -355,26 +351,9 @@ export default function TopicRoomScreen() {
         visible={menuOpen}
         topOffset={headerHeight}
         onClose={() => setMenuOpen(false)}
-        onPressReport={() => {
-          setPresetReportUserId(null);
-          setReportOpen(true);
-        }}
+        onPressReport={() => goToReport()}
         onPressLeave={handleLeave}
         leaveDisabled={leaveMutation.isPending}
-      />
-
-      <TopicRoomReportSheet
-        visible={reportOpen}
-        members={members}
-        myUserId={myUserId ?? null}
-        isSubmitting={reportMutation.isPending}
-        onClose={() => {
-          if (reportMutation.isPending) return;
-          setReportOpen(false);
-          setPresetReportUserId(null);
-        }}
-        onConfirm={handleConfirmReport}
-        key={presetReportUserId ?? "report"}
       />
 
       <LeaveConfirmModal

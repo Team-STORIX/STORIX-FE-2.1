@@ -1,31 +1,38 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { C, Gray, Radius, Typography } from "../../../theme";
 
 type Props = {
-  visible: boolean
-  isPending?: boolean
-  title?: string
-  description?: string
-  cancelLabel?: string
-  confirmLabel?: string
-  onClose: () => void
-  onConfirm: () => void
-}
+  visible: boolean;
+  isPending?: boolean;
+  title?: string;
+  description?: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
+  onClose: () => void;
+  onConfirm: () => void;
+};
 
 export function LeaveConfirmModal({
   visible,
   isPending = false,
-  title = '채팅방을 나가시겠어요?',
-  description = '나가면 참여 중인 토픽룸 목록에서 사라져요.',
-  cancelLabel = '취소',
-  confirmLabel = '나가기',
+  title = "토픽룸 나가기",
+  description = "정말 토픽룸에서 퇴장하시겠습니까?",
+  cancelLabel = "취소",
+  confirmLabel = "나가기",
   onClose,
   onConfirm,
 }: Props) {
   const handleBackdrop = () => {
-    if (isPending) return
-    onClose()
-  }
+    if (isPending) return;
+    onClose();
+  };
 
   return (
     <Modal
@@ -42,7 +49,10 @@ export function LeaveConfirmModal({
 
             <View style={styles.actions}>
               <Pressable
-                style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.cancelBtn,
+                  pressed && styles.pressed,
+                ]}
                 onPress={onClose}
                 disabled={isPending}
                 accessibilityRole="button"
@@ -70,21 +80,21 @@ export function LeaveConfirmModal({
         </Pressable>
       </View>
     </Modal>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   backdropTouchable: {
     flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   card: {
     width: 306,
@@ -93,8 +103,8 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 16,
     paddingHorizontal: 24,
-    alignItems: 'center',
-    shadowColor: '#000000',
+    alignItems: "center",
+    shadowColor: "#000000",
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -103,19 +113,19 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.heading3,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     marginTop: 6,
     ...Typography.body2Medium,
     color: C.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   actions: {
     marginTop: 20,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    width: '100%',
+    width: "100%",
   },
   cancelBtn: {
     flex: 1,
@@ -124,8 +134,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Gray[200],
     backgroundColor: Gray[50],
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cancelText: {
     ...Typography.body1Medium,
@@ -135,9 +145,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: Radius.sm,
-    backgroundColor: C.error,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Gray[900],
+    alignItems: "center",
+    justifyContent: "center",
   },
   confirmBtnDisabled: {
     opacity: 0.6,
@@ -149,4 +159,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-})
+});

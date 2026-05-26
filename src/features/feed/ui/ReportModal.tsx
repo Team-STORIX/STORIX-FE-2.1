@@ -1,6 +1,6 @@
+import { Image } from 'expo-image'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
 import { Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 

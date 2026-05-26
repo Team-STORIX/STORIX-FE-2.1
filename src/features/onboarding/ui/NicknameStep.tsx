@@ -102,7 +102,7 @@ export function NicknameStep({
 
   return (
     <View>
-      <Text style={styles.title}>닉네임을 입력해 주세요</Text>
+      <Text style={styles.title}>프로필을 설정해주세요</Text>
       <Text style={styles.subtitle}>닉네임과 프로필 사진을 설정해 주세요</Text>
 
       <View style={styles.profileWrap}>
@@ -135,6 +135,7 @@ export function NicknameStep({
             maxLength={10}
             style={[
               styles.input,
+              value.length > 0 && status === 'idle' && { borderBottomColor: '#131112' },
               status === 'ok' && { borderBottomColor: '#009126' },
               (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: '#EF433E' },
             ]}

@@ -1,10 +1,8 @@
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -13,21 +11,20 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { WarningEmptyState } from "../../../components/common/WarningEmptyState";
-import { C } from "../../../theme/colors";
+import { C, Gray } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
-import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
+import { HotTopicRoomCard } from "./HotTopicRoomCard";
 import { TopicRoomListItem } from "./TopicRoomListItem";
 
-const fireIcon = require("../../../../assets/icons/common/fire.svg");
-const peopleIcon = require("../../../../assets/icons/common/icon-topicroom-people.svg");
-
-const PADDING_H = 16;
-const CARD_GAP = 12;
+const PADDING_H = 16; // section title horizontal padding
+const CAROUSEL_PAD = 20; // carousel horizontal padding (card start x)
+const PAGE_GAP = 16; // gap between page columns (creates next-page peek)
+const CARD_GAP = 12; // vertical gap between the 3 cards in a page
 const CARDS_PER_PAGE = 3;
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -42,7 +39,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 export function TopicRoomFeedSection() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const pageWidth = Math.max(0, width - PADDING_H * 2);
+  // Each page is a column of 3 cards, inset by CAROUSEL_PAD on both sides; the
+  // PAGE_GAP between pages lets the next page peek in (matches Figma).
+  const itemWidth = Math.max(0, width - CAROUSEL_PAD * 2);
+  const snapInterval = itemWidth + PAGE_GAP;
 
   const popularQuery = usePopularTopicRooms();
   const myQuery = useMyTopicRoomsAll();
@@ -75,8 +75,8 @@ export function TopicRoomFeedSection() {
 
   const [pageIndex, setPageIndex] = useState(0);
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (pageWidth <= 0) return;
-    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / pageWidth));
+    if (snapInterval <= 0) return;
+    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / snapInterval));
   };
 
   return (
@@ -104,20 +104,29 @@ export function TopicRoomFeedSection() {
             horizontal
             data={popularPages}
             keyExtractor={(_, i) => `popular_page_${i}`}
-            renderItem={({ item: pageRooms }) => (
-              <View style={[styles.page, { width: pageWidth }]}>
-                {pageRooms.map((room) => (
-                  <PopularTopicRoomRow
-                    key={room.topicRoomId}
-                    item={room}
-                    isJoining={joiningId === room.topicRoomId}
-                    onPress={() => handleEnter(room)}
-                  />
-                ))}
-              </View>
-            )}
+            renderItem={({ item: pageRooms, index: pageIdx }) => {
+              const isLast = pageIdx === popularPages.length - 1;
+              return (
+                <View
+                  style={[
+                    styles.page,
+                    { width: itemWidth, marginRight: isLast ? 0 : PAGE_GAP },
+                  ]}
+                >
+                  {pageRooms.map((room, i) => (
+                    <HotTopicRoomCard
+                      key={room.topicRoomId}
+                      item={room}
+                      rank={pageIdx * CARDS_PER_PAGE + i + 1}
+                      isJoining={joiningId === room.topicRoomId}
+                      onPress={() => handleEnter(room)}
+                    />
+                  ))}
+                </View>
+              );
+            }}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={pageWidth}
+            snapToInterval={snapInterval}
             decelerationRate="fast"
             disableIntervalMomentum
             onMomentumScrollEnd={onMomentumEnd}
@@ -174,93 +183,15 @@ export function TopicRoomFeedSection() {
   );
 }
 
-function PopularTopicRoomRow({
-  item,
-  isJoining,
-  onPress,
-}: {
-  item: TopicRoomItem;
-  isJoining: boolean;
-  onPress: () => void;
-}) {
-  const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
-  const initial = (item.worksName || item.topicRoomName || "?")
-    .slice(0, 1)
-    .toUpperCase();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={isJoining}
-      style={({ pressed }) => [
-        styles.popularCard,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
-    >
-      <View style={styles.popularThumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.popularThumb}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.popularThumb, styles.popularThumbFallback]}>
-            <Text style={styles.popularThumbFallbackText}>{initial}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.popularBody}>
-        <Text style={styles.popularSubtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-        <Text style={styles.popularTitle} numberOfLines={2}>
-          {item.topicRoomName}
-        </Text>
-        <View style={styles.chipRow}>
-          <View style={styles.hotChip}>
-            <Image
-              source={fireIcon}
-              style={styles.icon12}
-              contentFit="contain"
-            />
-            <Text style={styles.hotChipText}>HOT</Text>
-          </View>
-          <View style={styles.peopleChip}>
-            <Image
-              source={peopleIcon}
-              style={styles.icon12}
-              contentFit="contain"
-            />
-            <Text style={styles.peopleChipText}>
-              {item.activeUserNumber ?? 0}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {isJoining ? (
-        <ActivityIndicator
-          size="small"
-          color={C.primary}
-          style={styles.joiningSpinner}
-        />
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: C.card,
+    backgroundColor: Gray[50],
     paddingBottom: 24,
   },
   header: {
     paddingHorizontal: PADDING_H,
     paddingTop: 20,
-    paddingBottom: 14,
+    paddingBottom: 12,
   },
   headerSpaced: {
     paddingTop: 32,
@@ -280,10 +211,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   pageList: {
-    paddingHorizontal: 0,
+    paddingHorizontal: CAROUSEL_PAD,
   },
   page: {
-    paddingHorizontal: PADDING_H,
     gap: CARD_GAP,
   },
   dots: {
@@ -291,106 +221,18 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     alignItems: "center",
     gap: 6,
-    marginTop: 16,
+    marginTop: 20,
   },
   dot: {
-    width: 6,
-    height: 6,
+    width: 4,
+    height: 4,
     borderRadius: Radius.full,
-    backgroundColor: C.border,
+    backgroundColor: Gray[300],
   },
   dotActive: {
     backgroundColor: C.primary,
-    width: 16,
-  },
-
-  popularCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 120,
-    borderRadius: Radius.lg,
-    backgroundColor: C.bg,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 14,
-  },
-  cardPressed: {
-    opacity: 0.85,
-  },
-  popularThumbWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: Radius.md,
-    overflow: "hidden",
-    flexShrink: 0,
-  },
-  popularThumb: {
-    width: 96,
-    height: 96,
-    borderRadius: Radius.md,
-  },
-  popularThumbFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: C.primaryLight,
-  },
-  popularThumbFallbackText: {
-    ...Typography.heading2,
-    color: C.primary,
-  },
-  popularBody: {
-    flex: 1,
-    justifyContent: "center",
-    gap: 6,
-  },
-  popularSubtitle: {
-    ...Typography.caption1Medium,
-    color: C.textMuted,
-  },
-  popularTitle: {
-    ...Typography.body1Bold,
-    color: C.text,
-  },
-  chipRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  hotChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radius.full,
-    backgroundColor: C.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  hotChipText: {
-    ...Typography.caption2Extrabold,
-    color: C.card,
-    marginLeft: 2,
-  },
-  peopleChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radius.full,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  peopleChipText: {
-    ...Typography.caption2Extrabold,
-    color: C.primary,
-    marginLeft: 2,
-  },
-  icon12: {
-    width: 12,
-    height: 12,
-  },
-  joiningSpinner: {
-    position: "absolute",
-    right: 16,
-    top: 16,
+    width: 20,
+    height: 4,
   },
 
   myList: {

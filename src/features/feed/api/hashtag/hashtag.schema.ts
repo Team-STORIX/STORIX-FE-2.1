@@ -15,7 +15,7 @@ export const ApiEnvelopeSchema = <T extends z.ZodTypeAny>(result: T) =>
 export const RecommendedHashtagSchema = z.object({
   id: z.number(),
   name: z.string(),
-  count: z.number(),
+  score: z.number(),
 })
 
 export type RecommendedHashtag = z.infer<typeof RecommendedHashtagSchema>
