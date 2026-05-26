@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -11,35 +13,33 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray, Radius, S, Typography } from '../../../theme'
-import type { PlusWorksSearchItem } from '../api'
-import { usePlusReviewDuplicateCheck, usePlusWorksSearch } from '../hooks'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray, Radius, S, Typography } from "../../../theme";
+import type { PlusWorksSearchItem } from "../api";
+import { usePlusReviewDuplicateCheck, usePlusWorksSearch } from "../hooks";
 
-const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
-const checkGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
-const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
-const searchIcon = require('../../../../assets/icons/common/search.svg')
+const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
+const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
+const searchIcon = require("../../../../assets/icons/common/search.svg");
 
 type Props = {
-  visible: boolean
-  onClose: () => void
-}
+  visible: boolean;
+  onClose: () => void;
+};
 
 function WorkResultItem({
   item,
   selected,
   onPress,
 }: {
-  item: PlusWorksSearchItem
-  selected: boolean
-  onPress: () => void
+  item: PlusWorksSearchItem;
+  selected: boolean;
+  onPress: () => void;
 }) {
-  const summary = [item.artistName, item.worksType].filter(Boolean).join(' · ')
-  const detail = [item.platform, item.genre].filter(Boolean).join(' · ')
+  const summary = [item.artistName, item.worksType].filter(Boolean).join(" · ");
+  const detail = [item.platform, item.genre].filter(Boolean).join(" · ");
 
   return (
     <Pressable
@@ -50,11 +50,15 @@ function WorkResultItem({
     >
       <View style={styles.itemThumbWrap}>
         {item.thumbnailUrl ? (
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.itemThumb} contentFit="cover" />
+          <Image
+            source={{ uri: item.thumbnailUrl }}
+            style={styles.itemThumb}
+            contentFit="cover"
+          />
         ) : (
           <View style={styles.itemThumbFallback}>
             <Text style={styles.itemThumbFallbackText}>
-              {(item.worksName ?? '').trim().charAt(0) || '?'}
+              {(item.worksName ?? "").trim().charAt(0) || "?"}
             </Text>
           </View>
         )}
@@ -62,7 +66,7 @@ function WorkResultItem({
 
       <View style={styles.itemTextWrap}>
         <Text style={styles.itemTitle} numberOfLines={1}>
-          {item.worksName ?? '작품'}
+          {item.worksName ?? "작품"}
         </Text>
         {summary ? (
           <Text style={styles.itemSummary} numberOfLines={1}>
@@ -82,60 +86,60 @@ function WorkResultItem({
         contentFit="contain"
       />
     </Pressable>
-  )
+  );
 }
 
 export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const progress = useRef(new Animated.Value(0)).current
-  const [keyword, setKeyword] = useState('')
-  const [debouncedKeyword, setDebouncedKeyword] = useState('')
-  const [selectedWorkId, setSelectedWorkId] = useState<number>()
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const progress = useRef(new Animated.Value(0)).current;
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [selectedWorkId, setSelectedWorkId] = useState<number>();
 
   useEffect(() => {
     if (!visible) {
-      progress.setValue(0)
-      return
+      progress.setValue(0);
+      return;
     }
 
-    setKeyword('')
-    setDebouncedKeyword('')
-    setSelectedWorkId(undefined)
+    setKeyword("");
+    setDebouncedKeyword("");
+    setSelectedWorkId(undefined);
 
     Animated.timing(progress, {
       toValue: 1,
       duration: 220,
       useNativeDriver: true,
-    }).start()
-  }, [progress, visible])
+    }).start();
+  }, [progress, visible]);
 
   useEffect(() => {
-    if (!visible) return
+    if (!visible) return;
 
     const timeout = setTimeout(() => {
-      setDebouncedKeyword(keyword.trim())
-    }, 300)
+      setDebouncedKeyword(keyword.trim());
+    }, 300);
 
-    return () => clearTimeout(timeout)
-  }, [keyword, visible])
+    return () => clearTimeout(timeout);
+  }, [keyword, visible]);
 
   const searchQuery = usePlusWorksSearch({
     keyword: debouncedKeyword,
     size: 20,
-  })
+  });
 
   const works = useMemo(
     () => searchQuery.data?.pages.flatMap((page) => page.result.content) ?? [],
     [searchQuery.data?.pages],
-  )
+  );
 
   const selectedWork = useMemo(
     () => works.find((item) => item.worksId === selectedWorkId),
     [selectedWorkId, works],
-  )
+  );
 
-  const duplicateQuery = usePlusReviewDuplicateCheck(selectedWorkId)
+  const duplicateQuery = usePlusReviewDuplicateCheck(selectedWorkId);
 
   const handleClose = (afterClose?: () => void) => {
     Animated.timing(progress, {
@@ -144,30 +148,38 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
-        onClose()
-        afterClose?.()
+        onClose();
+        afterClose?.();
       }
-    })
-  }
+    });
+  };
 
-  const reviewBlocked = duplicateQuery.data?.result.isDuplicated ?? false
+  const reviewBlocked = duplicateQuery.data?.result.isDuplicated ?? false;
   const reviewButtonDisabled =
-    !selectedWork || duplicateQuery.isLoading || duplicateQuery.isFetching || reviewBlocked
+    !selectedWork ||
+    duplicateQuery.isLoading ||
+    duplicateQuery.isFetching ||
+    reviewBlocked;
 
   const reviewButtonLabel = !selectedWork
-    ? '작품을 선택해 주세요'
+    ? "작품을 선택해 주세요"
     : duplicateQuery.isLoading || duplicateQuery.isFetching
-      ? '리뷰 작성 여부를 확인 중이에요'
+      ? "리뷰 작성 여부를 확인 중이에요"
       : reviewBlocked
-        ? '이미 리뷰를 작성한 작품이에요'
-        : '리뷰 작성하러 가기'
+        ? "이미 리뷰를 작성한 작품이에요"
+        : "선택 작품 리뷰 쓰기";
 
   if (!visible) {
-    return null
+    return null;
   }
 
   return (
-    <Modal transparent animationType="none" visible onRequestClose={() => handleClose()}>
+    <Modal
+      transparent
+      animationType="none"
+      visible
+      onRequestClose={() => handleClose()}
+    >
       <Animated.View
         style={[
           styles.overlay,
@@ -179,7 +191,10 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
           },
         ]}
       >
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={() => handleClose()} />
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={() => handleClose()}
+        />
 
         <Animated.View
           style={[
@@ -198,13 +213,20 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
           ]}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.keyboardWrap}
           >
             <View style={styles.header}>
               <Text style={styles.title}>작품선택</Text>
-              <Pressable onPress={() => handleClose()} style={styles.closeButton}>
-                <Image source={cancelIcon} style={styles.closeIcon} contentFit="contain" />
+              <Pressable
+                onPress={() => handleClose()}
+                style={styles.closeButton}
+              >
+                <Image
+                  source={cancelIcon}
+                  style={styles.closeIcon}
+                  contentFit="contain"
+                />
               </Pressable>
             </View>
 
@@ -212,7 +234,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
               <TextInput
                 value={keyword}
                 onChangeText={setKeyword}
-                placeholder="어떤 이야기를 하고 싶은 작품을 검색해 주세요"
+                placeholder="함께 이야기하고 싶은 작품을 검색하세요"
                 placeholderTextColor={C.textMuted}
                 style={styles.searchInput}
                 returnKeyType="search"
@@ -224,26 +246,31 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                 <Pressable
                   style={styles.clearButton}
                   onPress={() => {
-                    setKeyword('')
-                    setSelectedWorkId(undefined)
+                    setKeyword("");
+                    setSelectedWorkId(undefined);
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="검색어 지우기"
                 >
-                  <Image source={cancelIcon} style={styles.clearIcon} contentFit="contain" />
+                  <Image
+                    source={cancelIcon}
+                    style={styles.clearIcon}
+                    contentFit="contain"
+                  />
                 </Pressable>
               ) : (
-                <Image source={searchIcon} style={styles.searchFieldIcon} contentFit="contain" />
+                <Image
+                  source={searchIcon}
+                  style={styles.searchFieldIcon}
+                  contentFit="contain"
+                />
               )}
             </View>
 
             <View style={styles.listWrap}>
               {!debouncedKeyword ? (
                 <View style={styles.stateWrap}>
-                  <Text style={styles.stateTitle}>리뷰를 작성할 작품을 검색해 주세요.</Text>
-                  <Text style={styles.stateBody}>
-                    작품을 선택하면 다음 단계에서 리뷰 작성 화면으로 이동해요.
-                  </Text>
+                  <Text style={styles.stateTitle}></Text>
                 </View>
               ) : searchQuery.isLoading ? (
                 <View style={styles.stateWrap}>
@@ -251,13 +278,19 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                 </View>
               ) : searchQuery.isError ? (
                 <View style={styles.stateWrap}>
-                  <Text style={styles.stateTitle}>작품을 불러오지 못했어요.</Text>
-                  <Text style={styles.stateBody}>검색어를 다시 확인해 주세요.</Text>
+                  <Text style={styles.stateTitle}>
+                    작품을 불러오지 못했어요.
+                  </Text>
+                  <Text style={styles.stateBody}>
+                    검색어를 다시 확인해 주세요.
+                  </Text>
                 </View>
               ) : works.length === 0 ? (
                 <View style={styles.stateWrap}>
                   <Text style={styles.stateTitle}>검색 결과가 없어요.</Text>
-                  <Text style={styles.stateBody}>다른 키워드로 다시 찾아보세요.</Text>
+                  <Text style={styles.stateBody}>
+                    다른 키워드로 다시 찾아보세요.
+                  </Text>
                 </View>
               ) : (
                 <FlatList
@@ -279,8 +312,11 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                   keyboardShouldPersistTaps="handled"
                   onEndReachedThreshold={0.5}
                   onEndReached={() => {
-                    if (searchQuery.hasNextPage && !searchQuery.isFetchingNextPage) {
-                      void searchQuery.fetchNextPage()
+                    if (
+                      searchQuery.hasNextPage &&
+                      !searchQuery.isFetchingNextPage
+                    ) {
+                      void searchQuery.fetchNextPage();
                     }
                   }}
                   ListFooterComponent={
@@ -298,9 +334,6 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
 
             {selectedWork ? (
               <View style={styles.footer}>
-                <Text style={styles.footerCaption} numberOfLines={1}>
-                  선택한 작품: {selectedWork.worksName ?? '작품'}
-                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.primaryButton,
@@ -309,11 +342,13 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                   ]}
                   disabled={reviewButtonDisabled}
                   onPress={() => {
-                    if (!selectedWork) return
+                    if (!selectedWork) return;
 
                     handleClose(() => {
-                      router.push(`/review/write?worksId=${selectedWork.worksId}` as never)
-                    })
+                      router.push(
+                        `/review/write?worksId=${selectedWork.worksId}` as never,
+                      );
+                    });
                   }}
                   accessibilityRole="button"
                 >
@@ -332,17 +367,17 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
         </Animated.View>
       </Animated.View>
     </Modal>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   sheet: {
-    height: '80%',
+    height: "80%",
     borderTopLeftRadius: Radius.lg,
     borderTopRightRadius: Radius.lg,
     backgroundColor: C.card,
@@ -352,9 +387,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 24,
     paddingBottom: 20,
   },
@@ -365,8 +400,8 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeIcon: {
     width: 20,
@@ -374,32 +409,30 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     marginBottom: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   searchInput: {
     borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: Gray[50],
     paddingLeft: 16,
     paddingRight: 44,
     paddingVertical: 14,
     color: C.text,
     ...Typography.body2Medium,
+    backgroundColor: Gray[50],
   },
   searchFieldIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     width: 20,
     height: 20,
   },
   clearButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 12,
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   clearIcon: {
     width: 16,
@@ -412,8 +445,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -423,7 +456,7 @@ const styles = StyleSheet.create({
     width: 87,
     height: 116,
     borderRadius: Radius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[100],
   },
   itemThumb: {
@@ -432,8 +465,8 @@ const styles = StyleSheet.create({
   },
   itemThumbFallback: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primaryLight,
   },
   itemThumbFallbackText: {
@@ -442,14 +475,14 @@ const styles = StyleSheet.create({
   },
   itemTextWrap: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   itemTitle: {
     ...Typography.body1Semibold,
     color: C.text,
   },
   itemSummary: {
-    ...Typography.body2Medium,
+    ...Typography.caption1Medium,
     color: C.textSecondary,
   },
   itemDetail: {
@@ -462,20 +495,20 @@ const styles = StyleSheet.create({
   },
   stateWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
     gap: 8,
   },
   stateTitle: {
     ...Typography.body1Semibold,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   stateBody: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   nextPageLoader: {
     marginVertical: 16,
@@ -489,10 +522,10 @@ const styles = StyleSheet.create({
     color: C.textSecondary,
   },
   primaryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: Radius.sm,
-    backgroundColor: C.primary,
+    backgroundColor: Gray[900],
     paddingVertical: 15,
   },
   primaryButtonDisabled: {
@@ -508,4 +541,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-})
+});

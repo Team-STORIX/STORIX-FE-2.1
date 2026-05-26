@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import * as ImageManipulator from "expo-image-manipulator";
 import type { ImagePickerAsset, ImagePickerResult } from "expo-image-picker";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import { Stack, router, useLocalSearchParams } from "expo-router";
@@ -7,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -38,24 +40,30 @@ const activeIcon = require("../../../../assets/icons/common/active.svg");
 const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
 const photoIcon = require("../../../../assets/icons/feed/icon-photo.svg");
 const arrowForwardIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 
 const MAX_CONTENT_LENGTH = 300;
 const MAX_IMAGE_COUNT = 3;
 const FEED_DEFAULT_SPOILER = "스포일러가 포함된 피드 보기";
 const ACCEPTED_IMAGE_TYPES = new Set([
   "image/jpeg",
-  "image/jpg",
   "image/png",
   "image/webp",
 ]);
+// iPhone camera default — not accepted by the backend, but losslessly
+// convertible to JPEG before upload (see resolveImageContentType).
+const CONVERTIBLE_IMAGE_EXTENSIONS = new Set(["heic", "heif"]);
+const CONVERTIBLE_IMAGE_MIME_TYPES = new Set(["image/heic", "image/heif"]);
 
 type PickedFeedImage = FeedWriteImage & {
   id: string;
+  // Local-only: derived for display/debugging; not sent to the API.
+  fileName: string;
 };
 
 type ImagePickerModule = {
   launchImageLibraryAsync: (options: {
-    mediaTypes: "images" | unknown;
+    mediaTypes: ("images" | "videos" | "livePhotos")[];
     allowsMultipleSelection: boolean;
     selectionLimit: number;
     orderedSelection: boolean;
@@ -72,16 +80,68 @@ function parseWorksId(raw?: string | string[]) {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
 }
 
-function normalizeContentType(asset: ImagePickerAsset) {
-  const fromPicker = asset.mimeType?.toLowerCase();
-  if (fromPicker === "image/jpg") return "image/jpeg";
-  if (fromPicker) return fromPicker;
+type ResolvedImage =
+  | { ok: true; contentType: string; extension: string; needsConversion: boolean }
+  | { ok: false; reason: "unsupported" };
 
-  const extension = asset.uri.split("?")[0]?.split(".").pop()?.toLowerCase();
+function getExtension(value?: string | null) {
+  if (!value) return undefined;
+  return value.split("?")[0]?.split("#")[0]?.split(".").pop()?.toLowerCase();
+}
+
+function extensionToContentType(extension?: string) {
   if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
   if (extension === "png") return "image/png";
   if (extension === "webp") return "image/webp";
-  return "image/jpeg";
+  return undefined;
+}
+
+function accepted(contentType: string): ResolvedImage {
+  return {
+    ok: true,
+    contentType,
+    extension: contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1],
+    needsConversion: false,
+  };
+}
+
+// HEIC/HEIF: accepted by the picker but converted to JPEG before upload.
+const CONVERTIBLE: ResolvedImage = {
+  ok: true,
+  contentType: "image/jpeg",
+  extension: "jpg",
+  needsConversion: true,
+};
+
+/**
+ * Resolve the upload content type for a picked asset.
+ *
+ * Resolution order (per asset): mimeType → fileName extension → uri extension.
+ * HEIC/HEIF (iPhone camera default) is flagged `needsConversion` so the caller
+ * transcodes it to JPEG before upload — it must never be uploaded as-is, since
+ * the backend rejects HEIC ("jpg,png,webp만 올릴 수 있습니다"). A truly
+ * extensionless but otherwise valid asset still falls back to JPEG.
+ */
+function resolveImageContentType(asset: ImagePickerAsset): ResolvedImage {
+  const mime = asset.mimeType?.toLowerCase();
+  if (mime) {
+    if (mime === "image/jpg") return accepted("image/jpeg");
+    if (CONVERTIBLE_IMAGE_MIME_TYPES.has(mime)) return CONVERTIBLE;
+    if (ACCEPTED_IMAGE_TYPES.has(mime)) return accepted(mime);
+    // Any other explicit image/* (gif, bmp, tiff, …) is unsupported.
+    if (mime.startsWith("image/")) return { ok: false, reason: "unsupported" };
+  }
+
+  const fileExtension = getExtension(asset.fileName) ?? getExtension(asset.uri);
+  if (fileExtension && CONVERTIBLE_IMAGE_EXTENSIONS.has(fileExtension)) {
+    return CONVERTIBLE;
+  }
+
+  const fromExtension = extensionToContentType(fileExtension);
+  if (fromExtension) return accepted(fromExtension);
+
+  // No negative signal — treat extensionless/unknown assets as JPEG.
+  return accepted("image/jpeg");
 }
 
 function loadImagePickerModule(): ImagePickerModule {
@@ -124,6 +184,27 @@ export function FeedWriteEntryScreen() {
   const [images, setImages] = useState<PickedFeedImage[]>([]);
   const [theme, setTheme] = useState<BoardTheme | undefined>(undefined);
   const [isThemeSheetOpen, setIsThemeSheetOpen] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // The count/limit bar sticks above the keyboard and only shows while typing.
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () =>
+      setIsKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () =>
+      setIsKeyboardVisible(false),
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const submitMutation = useCreateReaderBoard();
   const isSubmitting = submitMutation.isPending;
@@ -213,7 +294,8 @@ export function FeedWriteEntryScreen() {
       const ImagePicker = loadImagePickerModule();
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? "images",
+        // Expo SDK 54: MediaTypeOptions is deprecated — use a MediaType[].
+        mediaTypes: ["images"],
         allowsMultipleSelection: remaining > 1,
         selectionLimit: remaining,
         orderedSelection: true,
@@ -222,26 +304,90 @@ export function FeedWriteEntryScreen() {
 
       if (result.canceled) return;
 
-      const picked = result.assets
-        .map((asset, index) => {
-          const contentType = normalizeContentType(asset);
-          if (!ACCEPTED_IMAGE_TYPES.has(contentType)) return null;
+      let rejectedCount = 0;
+      let conversionFailed = false;
+      const picked: PickedFeedImage[] = [];
 
-          return {
-            id: `${asset.uri}-${Date.now()}-${index}`,
-            uri: asset.uri,
-            contentType,
-          };
-        })
-        .filter((asset): asset is PickedFeedImage => asset !== null);
+      for (let index = 0; index < result.assets.length; index += 1) {
+        const asset = result.assets[index];
+        const resolved = resolveImageContentType(asset);
+
+        if (__DEV__) {
+          console.log("[FeedWrite] picked asset", {
+            mimeType: asset.mimeType,
+            fileName: asset.fileName,
+            uriExtension: getExtension(asset.uri),
+            resolved,
+          });
+        }
+
+        if (!resolved.ok) {
+          rejectedCount += 1;
+          continue;
+        }
+
+        let uri = asset.uri;
+        let { contentType, extension } = resolved;
+        let fileName =
+          asset.fileName ?? `upload-${Date.now()}-${index}.${extension}`;
+
+        // HEIC/HEIF → transcode to JPEG before upload.
+        if (resolved.needsConversion) {
+          try {
+            const converted = await ImageManipulator.manipulateAsync(
+              asset.uri,
+              [],
+              { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
+            );
+            uri = converted.uri;
+            contentType = "image/jpeg";
+            extension = "jpg";
+            fileName = `upload-${Date.now()}-${index}.jpg`;
+
+            if (__DEV__) {
+              console.log("[FeedWrite] converted asset", {
+                fromUri: asset.uri,
+                toUri: uri,
+                contentType,
+                fileName,
+                extension,
+              });
+            }
+          } catch (err) {
+            if (__DEV__) console.log("[FeedWrite] conversion failed", err);
+            conversionFailed = true;
+            continue;
+          }
+        }
+
+        picked.push({
+          id: `${uri}-${Date.now()}-${index}`,
+          uri,
+          contentType,
+          fileName,
+        });
+      }
 
       if (picked.length === 0) {
-        Alert.alert("이미지 첨부", "JPG, PNG, WEBP 이미지만 첨부할 수 있어요.");
+        Alert.alert(
+          "이미지 첨부",
+          conversionFailed
+            ? "이미지를 변환하지 못했어요. 다른 사진을 선택해주세요."
+            : "jpg, png, webp 형식의 이미지만 업로드할 수 있어요.",
+        );
         return;
       }
 
-      if (picked.length < result.assets.length) {
-        Alert.alert("이미지 첨부", "지원하지 않는 형식의 이미지는 제외했어요.");
+      if (conversionFailed) {
+        Alert.alert(
+          "이미지 첨부",
+          "이미지를 변환하지 못했어요. 다른 사진을 선택해주세요.",
+        );
+      } else if (rejectedCount > 0) {
+        Alert.alert(
+          "이미지 첨부",
+          "jpg, png, webp 형식의 이미지만 업로드할 수 있어요. 지원하지 않는 이미지는 제외했어요.",
+        );
       }
 
       setImages((current) => [...current, ...picked].slice(0, MAX_IMAGE_COUNT));
@@ -381,6 +527,43 @@ export function FeedWriteEntryScreen() {
           <Text style={styles.sectionHeading}>게시글 작성</Text>
         </View>
 
+        {images.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.previewScroll}
+            contentContainerStyle={styles.previewList}
+            keyboardShouldPersistTaps="handled"
+          >
+            {images.map((image) => (
+              <View key={image.id} style={styles.previewItem}>
+                <Image
+                  source={{ uri: image.uri }}
+                  style={styles.previewImage}
+                  contentFit="cover"
+                />
+                <Pressable
+                  onPress={() => removeImage(image.id)}
+                  disabled={isSubmitting}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.removeImageButton,
+                    pressed && !isSubmitting && styles.pressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="이미지 삭제"
+                >
+                  <Image
+                    source={cancelIcon}
+                    style={styles.removeImageIcon}
+                    contentFit="contain"
+                  />
+                </Pressable>
+              </View>
+            ))}
+          </ScrollView>
+        ) : null}
+
         <View style={styles.textareaWrap}>
           <TextInput
             value={text}
@@ -438,13 +621,13 @@ export function FeedWriteEntryScreen() {
         </Pressable>
       </ScrollView>
 
-      <View
-        style={[
-          styles.bottomBar,
-          { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 },
-        ]}
-      >
-        <View style={styles.imageTool}>
+      {isKeyboardVisible ? (
+        <View
+          style={[
+            styles.bottomBar,
+            { paddingBottom: Platform.OS === "ios" ? 12 : 8 },
+          ]}
+        >
           <Pressable
             onPress={pickImages}
             disabled={isSubmitting || images.length >= MAX_IMAGE_COUNT}
@@ -468,51 +651,22 @@ export function FeedWriteEntryScreen() {
             </Text>
           </Pressable>
 
-          {images.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.previewScroll}
-              contentContainerStyle={styles.previewList}
+          <Text style={styles.contentCounter}>
+            <Text
+              style={
+                contentLength === MAX_CONTENT_LENGTH
+                  ? styles.contentCounterWarn
+                  : styles.contentCounterValue
+              }
             >
-              {images.map((image) => (
-                <View key={image.id} style={styles.previewItem}>
-                  <Image
-                    source={{ uri: image.uri }}
-                    style={styles.previewImage}
-                    contentFit="cover"
-                  />
-                  <Pressable
-                    onPress={() => removeImage(image.id)}
-                    disabled={isSubmitting}
-                    style={({ pressed }) => [
-                      styles.removeImageButton,
-                      pressed && !isSubmitting && styles.pressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="이미지 삭제"
-                  >
-                    <Text style={styles.removeImageText}>X</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </ScrollView>
-          ) : null}
-        </View>
-
-        <Text style={styles.contentCounter}>
-          <Text
-            style={
-              contentLength === MAX_CONTENT_LENGTH
-                ? styles.contentCounterWarn
-                : styles.contentCounterValue
-            }
-          >
-            {contentLength}
+              {contentLength}
+            </Text>
+            <Text style={styles.contentCounterTotal}>
+              /{MAX_CONTENT_LENGTH}
+            </Text>
           </Text>
-          <Text style={styles.contentCounterTotal}>/{MAX_CONTENT_LENGTH}</Text>
-        </Text>
-      </View>
+        </View>
+      ) : null}
 
       <FeedWritePickerBottomSheet
         visible={isPickerOpen}
@@ -681,10 +835,11 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   // Kept in normal flex flow (not absolute) so KeyboardAvoidingView lifts it
-  // directly above the keyboard while typing.
+  // directly above the keyboard while typing. Only mounted while the keyboard
+  // is visible (see isKeyboardVisible).
   bottomBar: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: C.card,
     borderTopWidth: 1,
@@ -692,14 +847,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  imageTool: {
-    flex: 1,
-    marginRight: 16,
-  },
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
     gap: 8,
   },
   photoIcon: {
@@ -710,19 +860,23 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: C.textMuted,
   },
+  // Image preview row — matches the feed post card (236 square, radius 12,
+  // gray-100 border, gap 12, left padding 16, horizontal scroll).
   previewScroll: {
-    marginTop: 12,
-    maxWidth: "100%",
+    marginHorizontal: -16,
+    marginTop: 16,
   },
   previewList: {
-    gap: 8,
-    paddingRight: 8,
+    gap: 12,
+    paddingHorizontal: 16,
   },
   previewItem: {
     position: "relative",
-    width: 64,
-    height: 64,
-    borderRadius: Radius.sm,
+    width: 236,
+    height: 236,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Gray[100],
     overflow: "hidden",
     backgroundColor: Gray[100],
   },
@@ -732,21 +886,19 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    minWidth: 24,
-    height: 20,
-    borderRadius: 10,
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: 7,
+    backgroundColor: "rgba(16, 15, 15, 0.6)",
   },
-  removeImageText: {
-    color: C.card,
-    fontSize: 10,
-    lineHeight: 12,
-    fontWeight: "700",
+  removeImageIcon: {
+    width: 16,
+    height: 16,
+    tintColor: C.card,
   },
   contentCounter: {
     ...Typography.body1Bold,
