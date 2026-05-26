@@ -1,18 +1,18 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Gray, Typography } from '../../../theme'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C, Gray, Typography } from "../../../theme";
 
-const backIcon = require('../../../../assets/icons/common/back.svg')
-const menuIcon = require('../../../../assets/icons/common/menu-3dots.svg')
+const backIcon = require("../../../../assets/icons/common/back.svg");
+const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
 
 type Props = {
-  topInset: number
-  title: string
-  subtitle?: string
-  memberCount?: number
-  onBack: () => void
-  onPressMenu?: () => void
-}
+  topInset: number;
+  title: string;
+  subtitle?: string;
+  memberCount?: number;
+  onBack: () => void;
+  onPressMenu?: () => void;
+};
 
 export function TopicRoomTopBar({
   topInset,
@@ -39,7 +39,7 @@ export function TopicRoomTopBar({
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {typeof memberCount === 'number' ? (
+          {typeof memberCount === "number" ? (
             <Text style={styles.memberText}>{memberCount}</Text>
           ) : null}
         </View>
@@ -52,7 +52,10 @@ export function TopicRoomTopBar({
 
       {onPressMenu ? (
         <Pressable
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.pressed,
+          ]}
           onPress={onPressMenu}
           hitSlop={8}
           accessibilityRole="button"
@@ -62,13 +65,13 @@ export function TopicRoomTopBar({
         </Pressable>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -77,8 +80,8 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   icon: {
     width: 24,
@@ -86,11 +89,11 @@ const styles = StyleSheet.create({
   },
   titleWrap: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   title: {
@@ -99,7 +102,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   memberText: {
-    ...Typography.body2Medium,
+    ...Typography.body2Bold,
     color: Gray[500],
     flexShrink: 0,
   },
@@ -111,4 +114,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.6,
   },
-})
+});

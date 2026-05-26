@@ -11,7 +11,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { WarningEmptyState } from "../../../components/common/WarningEmptyState";
-import { C } from "../../../theme/colors";
+import { C, Gray } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
 import type { TopicRoomItem } from "../api/topicroom.schema";
@@ -21,8 +21,10 @@ import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
 import { HotTopicRoomCard } from "./HotTopicRoomCard";
 import { TopicRoomListItem } from "./TopicRoomListItem";
 
-const PADDING_H = 16;
-const CARD_GAP = 12;
+const PADDING_H = 16; // section title horizontal padding
+const CAROUSEL_PAD = 20; // carousel horizontal padding (card start x)
+const PAGE_GAP = 16; // gap between page columns (creates next-page peek)
+const CARD_GAP = 12; // vertical gap between the 3 cards in a page
 const CARDS_PER_PAGE = 3;
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -37,7 +39,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 export function TopicRoomFeedSection() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const pageWidth = Math.max(0, width - PADDING_H * 2);
+  // Each page is a column of 3 cards, inset by CAROUSEL_PAD on both sides; the
+  // PAGE_GAP between pages lets the next page peek in (matches Figma).
+  const itemWidth = Math.max(0, width - CAROUSEL_PAD * 2);
+  const snapInterval = itemWidth + PAGE_GAP;
 
   const popularQuery = usePopularTopicRooms();
   const myQuery = useMyTopicRoomsAll();
@@ -70,8 +75,8 @@ export function TopicRoomFeedSection() {
 
   const [pageIndex, setPageIndex] = useState(0);
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (pageWidth <= 0) return;
-    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / pageWidth));
+    if (snapInterval <= 0) return;
+    setPageIndex(Math.round(e.nativeEvent.contentOffset.x / snapInterval));
   };
 
   return (
@@ -99,21 +104,29 @@ export function TopicRoomFeedSection() {
             horizontal
             data={popularPages}
             keyExtractor={(_, i) => `popular_page_${i}`}
-            renderItem={({ item: pageRooms, index: pageIdx }) => (
-              <View style={[styles.page, { width: pageWidth }]}>
-                {pageRooms.map((room, i) => (
-                  <HotTopicRoomCard
-                    key={room.topicRoomId}
-                    item={room}
-                    rank={pageIdx * CARDS_PER_PAGE + i + 1}
-                    isJoining={joiningId === room.topicRoomId}
-                    onPress={() => handleEnter(room)}
-                  />
-                ))}
-              </View>
-            )}
+            renderItem={({ item: pageRooms, index: pageIdx }) => {
+              const isLast = pageIdx === popularPages.length - 1;
+              return (
+                <View
+                  style={[
+                    styles.page,
+                    { width: itemWidth, marginRight: isLast ? 0 : PAGE_GAP },
+                  ]}
+                >
+                  {pageRooms.map((room, i) => (
+                    <HotTopicRoomCard
+                      key={room.topicRoomId}
+                      item={room}
+                      rank={pageIdx * CARDS_PER_PAGE + i + 1}
+                      isJoining={joiningId === room.topicRoomId}
+                      onPress={() => handleEnter(room)}
+                    />
+                  ))}
+                </View>
+              );
+            }}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={pageWidth}
+            snapToInterval={snapInterval}
             decelerationRate="fast"
             disableIntervalMomentum
             onMomentumScrollEnd={onMomentumEnd}
@@ -172,13 +185,13 @@ export function TopicRoomFeedSection() {
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: C.card,
+    backgroundColor: Gray[50],
     paddingBottom: 24,
   },
   header: {
     paddingHorizontal: PADDING_H,
     paddingTop: 20,
-    paddingBottom: 14,
+    paddingBottom: 12,
   },
   headerSpaced: {
     paddingTop: 32,
@@ -198,10 +211,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   pageList: {
-    paddingHorizontal: 0,
+    paddingHorizontal: CAROUSEL_PAD,
   },
   page: {
-    paddingHorizontal: PADDING_H,
     gap: CARD_GAP,
   },
   dots: {
@@ -209,17 +221,18 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     alignItems: "center",
     gap: 6,
-    marginTop: 16,
+    marginTop: 20,
   },
   dot: {
-    width: 6,
-    height: 6,
+    width: 4,
+    height: 4,
     borderRadius: Radius.full,
-    backgroundColor: C.border,
+    backgroundColor: Gray[300],
   },
   dotActive: {
     backgroundColor: C.primary,
-    width: 16,
+    width: 20,
+    height: 4,
   },
 
   myList: {

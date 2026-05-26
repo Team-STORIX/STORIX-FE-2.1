@@ -1,22 +1,34 @@
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Gray, Radius, Typography } from '../../../theme'
-import { formatTopicRoomSubtitle } from '../api/formatTopicRoomSubtitle'
-import type { TopicRoomItem } from '../api/topicroom.schema'
+import { Image } from "expo-image";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { C, Gray, Radius, Typography } from "../../../theme";
+import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
+import type { TopicRoomItem } from "../api/topicroom.schema";
 
-const peopleIcon = require('../../../../assets/icons/common/icon-topicroom-people.svg')
+const peopleIcon = require("../../../../assets/icons/common/icon-topicroom-people.svg");
 
 type Props = {
-  item: TopicRoomItem
+  item: TopicRoomItem;
   /** 1-based rank across the full popular list (not per carousel page). */
-  rank: number
-  isJoining: boolean
-  onPress: () => void
-}
+  rank: number;
+  isJoining: boolean;
+  onPress: () => void;
+};
 
 export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
-  const title = formatTopicRoomSubtitle(item.worksType, item.worksName)
-  const initial = (item.worksName || item.topicRoomName || '?').slice(0, 1).toUpperCase()
+  const title = formatTopicRoomSubtitle(item.worksType, item.worksName);
+  const initial = (item.worksName || item.topicRoomName || "?")
+    .slice(0, 1)
+    .toUpperCase();
+
+  const previewMessage = item.lastChatMessage?.trim();
+  const previewNick = item.lastChatSenderNickName?.trim();
 
   return (
     <Pressable
@@ -45,36 +57,65 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
 
       {/* Right content */}
       <View style={styles.body}>
-        <View style={styles.participantRow}>
-          <Image source={peopleIcon} style={styles.peopleIcon} contentFit="contain" />
-          <Text style={styles.participantText}>
-            {item.activeUserNumber ?? 0}명 참여중
+        <View style={styles.topGroup}>
+          <View style={styles.participantRow}>
+            <Image
+              source={peopleIcon}
+              style={styles.peopleIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.participantText}>
+              {item.activeUserNumber ?? 0}명 참여중
+            </Text>
+          </View>
+          <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+            {title}
+          </Text>
+          <Text style={styles.roomName} numberOfLines={1} ellipsizeMode="tail">
+            {item.topicRoomName}
           </Text>
         </View>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.roomName} numberOfLines={1}>
-          {item.topicRoomName}
-        </Text>
+
+        <View style={styles.previewBox}>
+          {previewMessage && previewNick ? (
+            <Text
+              style={styles.previewNick}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {previewNick}
+            </Text>
+          ) : null}
+          <Text
+            style={styles.previewMessage}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {previewMessage || "\u00a0"}
+          </Text>
+        </View>
       </View>
 
       {isJoining ? (
-        <ActivityIndicator size="small" color={C.primary} style={styles.joiningSpinner} />
+        <ActivityIndicator
+          size="small"
+          color={C.primary}
+          style={styles.joiningSpinner}
+        />
       ) : null}
     </Pressable>
-  )
+  );
 }
 
-const CARD_HEIGHT = 120
-const THUMB_WIDTH = 92
+const CARD_HEIGHT = 120;
+const THUMB_WIDTH = 92;
 
 const styles = StyleSheet.create({
   card: {
-    width: '100%',
+    width: "100%",
     height: CARD_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingRight: 12,
     backgroundColor: C.card,
@@ -96,7 +137,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     borderTopLeftRadius: Radius.sm,
     borderBottomLeftRadius: Radius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     flexShrink: 0,
   },
   thumb: {
@@ -104,8 +145,8 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
   },
   thumbFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primaryLight,
   },
   thumbFallbackText: {
@@ -113,30 +154,33 @@ const styles = StyleSheet.create({
     color: C.primary,
   },
   rankBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     width: 20,
     height: 20,
     borderTopLeftRadius: Radius.sm,
     backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   rankText: {
     ...Typography.caption1Extrabold,
-    color: '#fff',
+    color: "#fff",
   },
 
   body: {
     flex: 1,
     height: CARD_HEIGHT,
-    justifyContent: 'center',
+    justifyContent: "center",
+    gap: 12,
+  },
+  topGroup: {
     gap: 4,
   },
   participantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
   peopleIcon: {
@@ -156,9 +200,29 @@ const styles = StyleSheet.create({
     color: Gray[500],
   },
 
+  previewBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 8,
+    borderRadius: Radius.xs,
+    backgroundColor: Gray[50],
+  },
+  previewNick: {
+    ...Typography.caption2Medium,
+    color: Gray[700],
+    flexShrink: 0,
+    maxWidth: "45%",
+  },
+  previewMessage: {
+    ...Typography.caption2Medium,
+    color: Gray[500],
+    flex: 1,
+  },
+
   joiningSpinner: {
-    position: 'absolute',
+    position: "absolute",
     right: 12,
     top: 12,
   },
-})
+});

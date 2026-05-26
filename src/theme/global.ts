@@ -141,6 +141,11 @@ export const Typography = {
     fontWeight: FontWeight.medium,
     lineHeight: 17,
   } as TextStyle,
+  caption1Semibold: {
+    fontSize: 12,
+    fontWeight: FontWeight.semibold,
+    lineHeight: 17,
+  } as TextStyle,
   caption1Extrabold: {
     fontSize: 12,
     fontWeight: FontWeight.extrabold,

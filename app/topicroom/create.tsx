@@ -15,10 +15,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, {
   Defs,
-  LinearGradient as SvgLinearGradient,
   Path,
   Rect,
   Stop,
+  LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
 import { useCreateTopicRoom } from "../../src/features/topicroom";
 import { C, Gray, Magenta, Radius, Typography } from "../../src/theme";
@@ -80,7 +80,7 @@ export default function TopicRoomCreateScreen() {
   const helperOk = TOPIC_NAME_PATTERN.test(trimmed);
   const canCreate = worksValid && helperOk && !createMutation.isPending;
 
-  const showHelperWarning = trimmed.length > 0 && !helperOk;
+  const showHelperWarning = !helperOk;
 
   const goToFeedTopicRoom = () =>
     router.replace("/(tabs)/feed?section=topicroom" as never);
@@ -269,16 +269,11 @@ export default function TopicRoomCreateScreen() {
                 maxLength={MAX_NAME_LENGTH}
               />
               <View style={styles.inputMetaRow}>
-                <Text
-                  style={[
-                    styles.helperText,
-                    {
-                      color: showHelperWarning ? Magenta[300] : Gray[500],
-                    },
-                  ]}
-                >
-                  한글,영문,숫자 2~10자까지 입력 가능해요
-                </Text>
+                {showHelperWarning && (
+                  <Text style={styles.helperText}>
+                    한글,영문,숫자 2~10자까지 입력 가능해요
+                  </Text>
+                )}
                 <Text style={styles.counterText}>
                   {trimmed.length}/{COUNTER_MAX}자
                 </Text>
@@ -382,26 +377,23 @@ const styles = StyleSheet.create({
 
   completeIntro: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 40,
     gap: 5,
   },
   completeTitle: {
-    fontSize: 24,
-    fontWeight: "700",
+    ...Typography.heading1,
     color: Gray[900],
-    lineHeight: 34,
   },
   completeSubtitle: {
-    fontSize: 16,
-    fontWeight: "500",
+    ...Typography.body1Medium,
     color: Gray[500],
-    lineHeight: 22,
   },
   graphicWrap: {
     flex: 1,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "flex-end",
-    paddingTop: 16,
+    transform: [{ translateY: 92 }],
   },
   graphic: {
     width: 280,
@@ -417,20 +409,16 @@ const styles = StyleSheet.create({
 
   intro: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 40,
     gap: 5,
   },
   introTitle: {
-    fontSize: 24,
-    fontWeight: "700",
+    ...Typography.heading1,
     color: Gray[900],
-    lineHeight: 34,
   },
   introSubtitle: {
-    fontSize: 16,
-    fontWeight: "500",
+    ...Typography.body1Medium,
     color: Gray[500],
-    lineHeight: 22,
   },
 
   thumbWrap: {
@@ -475,15 +463,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   helperText: {
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 17,
+    ...Typography.caption1Medium,
+    color: C.error,
   },
   counterText: {
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 17,
     color: Magenta[300],
+    marginLeft: "auto",
   },
 
   warningBlock: {
@@ -508,15 +496,15 @@ const styles = StyleSheet.create({
     color: Gray[900],
   },
   warningBody: {
-    ...Typography.body2Medium,
-    color: Gray[700],
+    ...Typography.caption1Medium,
+    color: Gray[500],
   },
   warningBullets: {
     marginTop: 4,
     gap: 2,
   },
   warningBullet: {
-    ...Typography.body2Medium,
+    ...Typography.caption1Medium,
     color: Magenta[300],
   },
 
@@ -534,7 +522,7 @@ const styles = StyleSheet.create({
   primaryBtnActive: { backgroundColor: Gray[900] },
   primaryBtnActiveMagenta: { backgroundColor: C.primary },
   primaryBtnDisabled: { backgroundColor: Gray[200] },
-  primaryBtnText: { ...Typography.body1Semibold, color: C.card },
+  primaryBtnText: { ...Typography.body1Medium, color: C.card },
   primaryBtnTextDisabled: { color: Gray[500] },
   pressed: { opacity: 0.85 },
 });
