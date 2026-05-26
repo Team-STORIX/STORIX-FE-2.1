@@ -24,6 +24,10 @@ import { C } from '../../src/theme/colors'
 
 const HOME_PAD = 16
 const SECTION_GAP = 24
+// BottomNavBar floats at `80 + insets.bottom`; lift the toast above it so it
+// isn't hidden behind the tab bar.
+const TAB_BAR_HEIGHT = 80
+const TOAST_BOTTOM_GAP = 12
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets()
@@ -179,7 +183,7 @@ export default function HomeScreen() {
       <PreferenceToast
         message={toastMessage}
         position="bottom"
-        bottomOffset={24}
+        bottomOffset={insets.bottom + TAB_BAR_HEIGHT + TOAST_BOTTOM_GAP}
       />
 
       <NotificationConsentModal {...consent} />
