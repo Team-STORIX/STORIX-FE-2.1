@@ -39,7 +39,7 @@ export function TopicRoomEntryButton({
         accessibilityRole="button"
       >
         {isCheckingRoom ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={C.card} />
         ) : (
           <Image
             source={fireIcon}
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.body2Bold,
-    color: "#fff",
+    color: C.card,
     marginLeft: 4,
   },
   arrowIcon: {

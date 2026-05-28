@@ -71,7 +71,7 @@ export function TopicRoomCard({
 
       <View style={styles.entryButton}>
         {isJoining ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={C.card} />
         ) : (
           <Image source={arrowIcon} style={styles.entryIcon} contentFit="contain" />
         )}

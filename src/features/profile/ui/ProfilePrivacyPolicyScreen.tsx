@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { C, Gray } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const arrowDownIcon = require('../../../../assets/icons/common/arrow-down.svg')
@@ -137,12 +138,12 @@ export function ProfilePrivacyPolicyScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   topBarOuter: {
     paddingHorizontal: 16,
     paddingBottom: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   topBarInner: {
     position: 'relative',
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#131112',
+    color: C.text,
   },
   headerBox: {
     padding: 20,
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 25.2,
-    color: '#131112',
+    color: C.text,
     textAlign: 'left',
   },
   versionRow: {
@@ -188,14 +189,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E3DCDF',
+    borderBottomColor: C.border,
   },
   versionLabel: {
     fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#645C5F',
+    color: C.textSecondary,
   },
   arrowIcon: {
     width: 24,
@@ -207,8 +208,8 @@ const styles = StyleSheet.create({
     right: 16,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
-    shadowColor: '#131112',
+    backgroundColor: C.card,
+    shadowColor: C.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
@@ -219,18 +220,18 @@ const styles = StyleSheet.create({
   },
   dropdownDivider: {
     height: 1,
-    backgroundColor: '#F2EDEF',
+    backgroundColor: C.divider,
   },
   dropdownItem: {
     fontFamily: 'SUIT',
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,
-    color: '#B0A5AA',
+    color: Gray[400],
   },
   dropdownItemSelected: {
     fontWeight: '700',
-    color: '#FF4093',
+    color: C.primary,
   },
   scroll: {
     flex: 1,
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,
-    color: '#131112',
+    color: C.text,
   },
   pressed: {
     opacity: 0.7,

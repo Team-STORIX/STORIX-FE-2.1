@@ -15,7 +15,7 @@ import { Image } from 'expo-image'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Gray, Magenta } from '../../../theme/colors'
+import { C, Gray, Magenta } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { useMe } from '../../profile'
@@ -534,7 +534,7 @@ export function FeedDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   flex: {
     flex: 1,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   backButton: {
     width: 24,
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   warningIcon: {
     width: 100,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...Typography.body2Medium,
-    color: '#ffffff',
+    color: C.card,
   },
   loader: {
     paddingVertical: 16,

@@ -71,7 +71,7 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
         accessibilityLabel="전송"
       >
         {isSending ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={C.card} />
         ) : (
           <Image source={sendIcon} style={styles.sendIcon} contentFit="contain" />
         )}

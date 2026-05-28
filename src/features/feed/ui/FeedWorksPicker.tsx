@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWorkItem } from '../api/feed/readerFavoriteWorks.api'
-import { Gray, Magenta } from '../../../theme/colors'
+import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 
 const pickerPinkIcon = require('../../../../assets/icons/feed/picker-pink.svg')
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 6,
     borderBottomColor: Gray[50],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     justifyContent: 'center',
   },
   scrollContent: {

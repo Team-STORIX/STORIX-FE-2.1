@@ -29,6 +29,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
+import { C } from '../src/theme'
 import { useMe } from '../src/features/profile'
 import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
@@ -52,6 +53,9 @@ SplashScreen.preventAutoHideAsync()
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    // SUIT Variable TTF covers weights 100-900 via fontWeight.
+    // File: assets/fonts/SUIT-Variable.ttf (download from https://github.com/sunn-us/SUIT/releases)
+    SUIT: require('../assets/fonts/SUIT-Variable.ttf'),
     ...FontAwesome.font,
   })
 
@@ -160,7 +164,7 @@ function AuthGate() {
 // pending. On a normal native launch the native splash covers this entirely;
 // it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
 
-const logoWhite = require('../assets/icons/common/logo-white.png')
+const logoWhite = require('../assets/logos/logo-white.png')
 
 function BrandedSplash() {
   return (
@@ -173,7 +177,7 @@ function BrandedSplash() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },

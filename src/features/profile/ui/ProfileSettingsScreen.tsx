@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
-import { C } from '../../../theme'
+import { C, Gray } from '../../../theme'
 import { useLogoutAction, useSocialProvider } from '../hooks'
 import { SettingsSection } from './SettingsSection'
 
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#EEEDED',
+    backgroundColor: C.divider,
   },
   pressed: {
     opacity: 0.7,
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     borderRadius: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: C.card,
   },
   modalTitle: {
     paddingHorizontal: 24,
     fontSize: 20,
     fontWeight: '700',
     lineHeight: 28,
-    color: '#131112',
+    color: C.text,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16.8,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
     alignSelf: 'stretch',
   },
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
     height: 49,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E3DCDF',
-    backgroundColor: '#F9F6F7',
+    borderColor: C.border,
+    backgroundColor: C.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -265,13 +265,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#484245',
+    color: Gray[700],
   },
   logoutButton: {
     flex: 1,
     height: 49,
     borderRadius: 8,
-    backgroundColor: '#131112',
+    backgroundColor: C.text,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -279,13 +279,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#FFF',
+    color: C.card,
   },
   confirmButton: {
     flex: 1,
     height: 49,
     borderRadius: 8,
-    backgroundColor: '#131112',
+    backgroundColor: C.text,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -293,6 +293,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#FFF',
+    color: C.card,
   },
 })

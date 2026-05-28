@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { GenreKey } from '../../auth'
+import { C, Gray } from '../../../theme'
 
 const genreAssets: Record<GenreKey, any> = {
   ROMANCE: require('../../../../assets/onboarding/romance.svg'),
@@ -79,7 +80,7 @@ export function GenreStep({
             >
               <Image
                 source={genreAssets[genre]}
-                style={[styles.genreIcon, { tintColor: selected ? '#FF4093' : '#131112' }]}
+                style={[styles.genreIcon, { tintColor: selected ? C.primary : C.text }]}
                 contentFit="contain"
               />
               <Text style={[styles.genreLabel, selected && styles.genreLabelSelected]}>{labels[genre]}</Text>
@@ -96,20 +97,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
   },
   count: {
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#FF4093',
+    color: C.primary,
   },
   grid: {
     marginTop: 80,
@@ -130,11 +131,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#131112',
+    color: C.text,
     textAlign: 'center',
   },
   genreLabelSelected: {
-    color: '#FF4093',
+    color: C.primary,
   },
   disabled: {
     opacity: 0.3,

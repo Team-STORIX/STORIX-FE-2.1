@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import type { TopicRoomItem } from '../../features/topicroom'
 import { formatTopicRoomSubtitle } from '../../features/topicroom'
-import { Gray, Magenta } from '../../theme/colors'
+import { C, Gray, Magenta } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
 const fireIcon = require('../../../assets/icons/common/fire.svg')
@@ -94,7 +94,7 @@ export function TopicRoomCoverCard({
       </View>
 
       <View style={styles.enterButton}>
-        <Ionicons name="enter-outline" size={22} color="#ffffff" />
+        <Ionicons name="enter-outline" size={22} color={C.card} />
       </View>
     </Pressable>
   )
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: Magenta[500],
   },
   peopleChip: {
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   fireIcon: {
     width: 12,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   hotChipText: {
     ...Typography.caption2Extrabold,
-    color: '#ffffff',
+    color: C.card,
     marginLeft: 2,
   },
   peopleChipText: {
@@ -170,11 +170,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.heading2,
-    color: '#ffffff',
+    color: C.card,
   },
   title: {
     ...Typography.body1Medium,
-    color: '#ffffff',
+    color: C.card,
     marginTop: 2,
   },
   enterButton: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: Magenta[500],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
+    shadowColor: C.black,
     shadowOpacity: 0.25,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },

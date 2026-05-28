@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { TodayFeedItem } from '../../features/home'
-import { Gray } from '../../theme/colors'
+import { C, Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
 const likeIcon = require('../../../assets/icons/common/icon-like.svg')
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     paddingHorizontal: 12,
     paddingVertical: 16,
     gap: 12,
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
   },
   authorName: {
     ...Typography.body2Medium,
-    color: '#000000',
+    color: C.text,
     flexShrink: 1,
   },
   copy: {},
   title: {
     ...Typography.body1Medium,
-    color: '#000000',
+    color: C.text,
   },
   preview: {
     ...Typography.caption1Medium,

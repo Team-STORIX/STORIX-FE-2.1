@@ -1,6 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
+import { C, Gray } from '../../../theme'
 import type { Dispatch, SetStateAction } from 'react'
 import {
   checkNicknameValid,
@@ -129,15 +130,15 @@ export function NicknameStep({
               onMessageChange('')
             }}
             placeholder="닉네임을 입력하세요"
-            placeholderTextColor="#CDC4C8"
+            placeholderTextColor={Gray[300]}
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
             style={[
               styles.input,
-              value.length > 0 && status === 'idle' && { borderBottomColor: '#131112' },
-              status === 'ok' && { borderBottomColor: '#009126' },
-              (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: '#EF433E' },
+              value.length > 0 && status === 'idle' && { borderBottomColor: C.text },
+              status === 'ok' && { borderBottomColor: C.activeDot },
+              (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: C.error },
             ]}
           />
 
@@ -165,14 +166,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
   },
   profileWrap: {
     marginTop: 42,
@@ -216,12 +217,12 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingLeft: 8,
     borderBottomWidth: 2,
-    borderBottomColor: '#CDC4C8',
+    borderBottomColor: Gray[300],
     fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#131112',
+    color: C.text,
   },
   checkButton: {
     width: 102,
@@ -239,9 +240,9 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   messageOk: {
-    color: '#009126',
+    color: C.activeDot,
   },
   messageError: {
-    color: '#EF433E',
+    color: C.error,
   },
 })

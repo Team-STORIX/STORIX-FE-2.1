@@ -217,8 +217,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.heading2,
-    color: "#000000",
-    fontFamily: "SUIT",
+    color: C.text,
   },
   closeButton: {
     width: 24,
@@ -252,8 +251,7 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     ...Typography.body1Medium,
-    color: "#000000",
-    fontFamily: "SUIT",
+    color: C.text,
   },
   sortCheckIcon: {
     width: 20,
@@ -272,8 +270,7 @@ const styles = StyleSheet.create({
   },
   checkLabel: {
     ...Typography.body1Medium,
-    color: "#000000",
-    fontFamily: "SUIT",
+    color: C.text,
   },
   footer: {
     flexDirection: "row",
@@ -291,8 +288,7 @@ const styles = StyleSheet.create({
   },
   resetLabel: {
     ...Typography.body1Bold,
-    color: "#000000",
-    fontFamily: "SUIT",
+    color: C.text,
   },
   applyButton: {
     flex: 1,
@@ -300,11 +296,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#000000",
+    backgroundColor: C.black,
   },
   applyLabel: {
     ...Typography.body1Bold,
-    color: "#ffffff",
+    color: C.card,
     fontFamily: "SUIT",
   },
   pressed: {

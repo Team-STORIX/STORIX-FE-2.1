@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#FFF',
+    color: C.card,
   },
   pressed: {
     opacity: 0.7,

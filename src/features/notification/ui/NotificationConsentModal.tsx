@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 16,
     alignItems: "center",
-    shadowColor: "#000000",
+    shadowColor: C.black,
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   existingRoomText: {
     ...Typography.caption1Semibold,
-    color: "#f00",
+    color: C.error,
     marginTop: 2,
   },
   selectIcon: { width: 24, height: 24 },

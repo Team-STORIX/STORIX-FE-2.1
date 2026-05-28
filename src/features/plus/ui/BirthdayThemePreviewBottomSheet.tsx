@@ -203,7 +203,7 @@ export function BirthdayThemePreviewBottomSheet({
                 style={[
                   styles.toggleIcon,
                   {
-                    tintColor: previewBirthdayEnabled ? "#ffffff" : Gray[400],
+                    tintColor: previewBirthdayEnabled ? C.card : Gray[400],
                   },
                 ]}
                 contentFit="contain"
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toggleButtonOff: {
-    backgroundColor: "#ffffff",
+    backgroundColor: C.card,
     borderColor: Gray[200],
   },
   toggleButtonOn: {

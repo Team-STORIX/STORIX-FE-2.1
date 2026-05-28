@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { C } from '../../theme'
 
 const logoBlack = require('../../../assets/icons/common/logo-black.svg')
 const searchIcon = require('../../../assets/icons/common/search.svg')
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     paddingHorizontal: 4,
-    backgroundColor: '#ff4093',
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -109,6 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     lineHeight: 14,
-    color: '#ffffff',
+    color: C.card,
   },
 })

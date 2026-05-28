@@ -167,7 +167,7 @@ function LoginAssetButton({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: C.card,
     alignItems: "center",
   },
   hero: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     marginTop: 64,
-    gap: 8,
+    gap: 4,
     alignSelf: "stretch",
     paddingHorizontal: 16,
   },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   devButtonText: {
     ...Typography.body2Bold,
-    color: "#ffffff",
+    color: C.card,
   },
   pressed: {
     opacity: 0.82,

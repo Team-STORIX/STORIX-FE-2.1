@@ -270,23 +270,20 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.heading2,
-    color: '#000000',
+    color: C.text,
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   subtitle: {
     ...Typography.body2Medium,
     color: Gray[500],
     textAlign: 'center',
     marginTop: 8,
-    fontFamily: 'SUIT',
   },
   captionCenter: {
     ...Typography.caption1Medium,
     color: Gray[500],
     textAlign: 'center',
     marginTop: 8,
-    fontFamily: 'SUIT',
   },
   warnGroup: {
     marginTop: 12,
@@ -297,7 +294,6 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: Gray[400],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   warnIconWrap: {
     paddingTop: 16,
@@ -312,7 +308,6 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: Magenta[300],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   inputWrap: {
     marginTop: 20,
@@ -325,12 +320,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: C.text,
     ...Typography.body2Medium,
-    fontFamily: 'SUIT',
   },
   helperText: {
     ...Typography.caption1Medium,
     marginTop: 8,
-    fontFamily: 'SUIT',
   },
   primaryButton: {
     height: 48,
@@ -341,15 +334,14 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   primaryButtonActive: {
-    backgroundColor: '#000000',
+    backgroundColor: C.black,
   },
   primaryButtonDisabled: {
     backgroundColor: Gray[200],
   },
   primaryButtonLabel: {
     ...Typography.body1Medium,
-    color: '#ffffff',
-    fontFamily: 'SUIT',
+    color: C.card,
   },
   primaryButtonLabelDisabled: {
     color: Gray[400],
