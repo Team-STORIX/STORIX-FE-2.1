@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: C.text,
     fontFamily: 'SUIT',
   },
   progressWrap: {
@@ -319,7 +319,6 @@ const styles = StyleSheet.create({
     ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   pressed: {
     opacity: 0.7,

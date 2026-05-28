@@ -8,7 +8,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native'
 import type { TopicRoomItem } from '../../features/topicroom'
-import { Gray } from '../../theme/colors'
+import { C, Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 import {
   TOPICROOM_CARD_W,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     paddingHorizontal: 16,
     paddingVertical: 18,
   },

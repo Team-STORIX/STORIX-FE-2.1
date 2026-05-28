@@ -34,14 +34,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 50,
     borderRadius: Radius.sm,
-    backgroundColor: '#000000',
+    backgroundColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
     ...Typography.body1Medium,
     color: C.card,
-    fontFamily: 'SUIT',
   },
   disabled: {
     opacity: 0.45,

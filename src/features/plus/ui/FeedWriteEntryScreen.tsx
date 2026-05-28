@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     ...Typography.body1Medium,
   },
   submitTextActive: {
-    color: "#f80078",
+    color: Magenta[500],
   },
   submitTextDisabled: {
     color: C.textMuted,
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     color: Gray[400],
   },
   contentCounterWarn: {
-    color: "#ef433e",
+    color: C.error,
   },
   contentCounterTotal: {
     color: C.textMuted,

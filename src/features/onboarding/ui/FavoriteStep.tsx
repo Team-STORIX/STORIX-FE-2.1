@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { OnboardingWork } from '../api/onboarding.api'
+import { C, Gray } from '../../../theme'
 
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 
@@ -67,7 +68,7 @@ export function FavoriteStep({
                     contentFit="cover"
                   />
                 ) : (
-                  <View style={{ width: cardWidth, height: thumbHeight, backgroundColor: '#F2EDEF' }} />
+                  <View style={{ width: cardWidth, height: thumbHeight, backgroundColor: C.divider }} />
                 )}
                 {selected ? (
                   <>
@@ -97,14 +98,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
   },
   countRow: {
     marginTop: 5,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#FF4093',
+    color: C.primary,
   },
   grid: {
     marginTop: 64,
@@ -131,14 +132,14 @@ const styles = StyleSheet.create({
   },
   thumbWrap: {
     borderRadius: 8,
-    backgroundColor: '#F2EDEF',
+    backgroundColor: C.divider,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   thumbWrapSelected: {
-    borderColor: '#FF4093',
+    borderColor: C.primary,
   },
   thumbOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -159,14 +160,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-    color: '#000000',
+    color: C.text,
   },
   workAuthor: {
     marginTop: 3,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#B0A5AA',
+    color: Gray[400],
   },
   disabled: {
     opacity: 0.4,

@@ -372,7 +372,7 @@ export default function TopicRoomScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff" },
+  container: { flex: 1, backgroundColor: C.card },
 
   centeredLoader: { flex: 1, alignSelf: "center", marginTop: 40 },
   errorText: {

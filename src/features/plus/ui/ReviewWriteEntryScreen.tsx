@@ -15,7 +15,7 @@ import { Image } from 'expo-image'
 import { useQueryClient } from '@tanstack/react-query'
 import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme/colors'
+import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import { useWorksDetail } from '../../works'
 import { useCreateReaderReview, usePlusReviewDuplicateCheck } from '../hooks'
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     ...Typography.body1Medium,
   },
   submitTextActive: {
-    color: '#f80078',
+    color: Magenta[500],
   },
   submitTextDisabled: {
     color: C.textMuted,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     ...Typography.caption1Medium,
-    color: '#ef433e',
+    color: C.error,
   },
   // 2.0 “리뷰 작성” heading-2 mt-6 pl-1
   sectionHeading: {

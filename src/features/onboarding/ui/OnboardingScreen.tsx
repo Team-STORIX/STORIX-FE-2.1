@@ -16,6 +16,7 @@ import { GenreStep } from './GenreStep'
 import { FavoriteStep } from './FavoriteStep'
 import { FinalStep } from './FinalStep'
 import { OnboardingTopBar } from './OnboardingTopBar'
+import { C, Gray } from '../../../theme'
 
 const progress1 = require('../../../../assets/onboarding/progress-indicater-1.svg')
 const progress2 = require('../../../../assets/onboarding/progress-indicater-2.svg')
@@ -191,8 +192,8 @@ export function OnboardingScreen() {
             <Svg width="100%" height="100%" preserveAspectRatio="none">
               <Defs>
                 <SvgLinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor="#ffffff" stopOpacity="0" />
-                  <Stop offset="0.4257" stopColor="#ffffff" stopOpacity="1" />
+                  <Stop offset="0" stopColor={C.card} stopOpacity="0" />
+                  <Stop offset="0.4257" stopColor={C.card} stopOpacity="1" />
                 </SvgLinearGradient>
               </Defs>
               <Rect width="100%" height="100%" fill="url(#fade)" />
@@ -221,7 +222,7 @@ export function OnboardingScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   progressWrap: {
     paddingTop: 16,
@@ -266,12 +267,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#EF433E',
+    color: C.error,
   },
   missingScreen: {
     flex: 1,
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -279,14 +280,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   missingBody: {
     marginTop: 8,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
   resetButton: {
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 44,
     borderRadius: 8,
-    backgroundColor: '#FF4093',
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -302,6 +303,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22,
-    color: '#ffffff',
+    color: C.card,
   },
 })

@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { C, Gray } from '../../../theme'
 
 export function BioStep({
   value,
@@ -19,12 +20,12 @@ export function BioStep({
       )}
 
       <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
-        <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: '#131112' }]}>
+        <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: C.text }]}>
           <TextInput
             value={value}
             onChangeText={(next) => onChange(next.slice(0, 30))}
             placeholder="나를 소개하는 글을 적어보세요"
-            placeholderTextColor="#CDC4C8"
+            placeholderTextColor={Gray[300]}
             style={styles.input}
             autoCorrect={false}
             autoCapitalize="none"
@@ -44,14 +45,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
   },
   inputBlock: {
     marginTop: 84,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   inputUnderline: {
     height: 42,
     borderBottomWidth: 2,
-    borderBottomColor: '#CDC4C8',
+    borderBottomColor: Gray[300],
   },
   input: {
     height: 42,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#131112',
+    color: C.text,
   },
   counterWrap: {
     marginTop: 6,
@@ -87,6 +88,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#FF4093',
+    color: C.primary,
   },
 })

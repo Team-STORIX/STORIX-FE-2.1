@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { OnboardingTopBar } from './OnboardingTopBar'
+import { C, Gray } from '../../../theme'
 
 const manualImages = [
   require('../../../../assets/manual/manual-1.png'),
@@ -89,7 +90,7 @@ export function ManualScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   scroll: {
     flex: 1,
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
     textAlign: 'center',
   },
   desc: {
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
   progress: {

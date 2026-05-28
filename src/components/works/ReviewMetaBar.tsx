@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     backgroundColor: C.card,
     minHeight: 28,
-    shadowColor: "#131112",
+    shadowColor: C.text,
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { C, Gray } from '../../../theme'
 
 const bigStarPink = require('../../../../assets/icons/common/big-star-pink.svg')
 
@@ -31,14 +32,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
   imageWrap: {

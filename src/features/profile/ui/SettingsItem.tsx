@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Gray, Magenta } from '../../../theme'
+import { C, Gray, Magenta } from '../../../theme'
 
 const arrowIcon = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
 
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#131112',
+    color: C.text,
   },
   rightGroup: {
     flexDirection: 'row',

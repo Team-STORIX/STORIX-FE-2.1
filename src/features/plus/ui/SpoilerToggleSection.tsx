@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     color: Gray[500],
   },
   counterWarning: {
-    color: "#ef433e",
+    color: C.error,
   },
   counterTotal: {
     color: C.textMuted,

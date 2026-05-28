@@ -69,12 +69,10 @@ const styles = StyleSheet.create({
   dislikeLabel: {
     ...Typography.body1Semibold,
     color: Magenta[300],
-    fontFamily: 'SUIT',
   },
   likeLabel: {
     ...Typography.body1Semibold,
     color: C.card,
-    fontFamily: 'SUIT',
   },
   disabled: {
     opacity: 0.45,

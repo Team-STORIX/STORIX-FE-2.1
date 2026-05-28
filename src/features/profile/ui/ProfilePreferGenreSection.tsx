@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
-import { C } from '../../../theme'
+import { C, Gray } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 25,
-    color: '#131112',
+    color: C.text,
   },
   content: {
     marginTop: 24,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 25,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
   findButton: {
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
-    color: '#131112',
+    color: C.text,
     textAlign: 'center',
   },
   genreScore: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
 
@@ -250,14 +250,14 @@ const styles = StyleSheet.create({
   },
   barBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F9F6F7',
+    backgroundColor: C.bg,
   },
   barPink: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#FDBCD9',
+    backgroundColor: C.primaryMid,
   },
   barContent: {
     ...StyleSheet.absoluteFillObject,
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-    color: '#131112',
+    color: C.text,
   },
   barScore: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'right',
   },
 })
