@@ -4,8 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useAuthStore } from '../../../store/auth.store'
-import { C } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+import { C, Gray } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
@@ -166,12 +165,12 @@ function AgreementAgeRow({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   missingScreen: {
     flex: 1,
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -179,14 +178,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   missingBody: {
     marginTop: 8,
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
   },
   resetButton: {
@@ -194,7 +193,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 44,
     borderRadius: 8,
-    backgroundColor: '#FF4093',
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -202,7 +201,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22,
-    color: '#ffffff',
+    color: C.card,
   },
   topBar: {
     height: 56,
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22,
-    color: '#100F0F',
+    color: C.text,
   },
   content: {
     flex: 1,
@@ -236,23 +235,23 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
   allAgreeButton: {
     marginTop: 32,
     height: 56,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E1E0E0',
-    backgroundColor: '#F8F7F7',
+    borderColor: Gray[300],
+    backgroundColor: C.bg,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 8,
   },
   allAgreeButtonActive: {
-    borderColor: '#FDBCD9',
-    backgroundColor: '#FFEEF6',
+    borderColor: C.primaryMid,
+    backgroundColor: C.primaryLight,
   },
   allAgreeCheckIcon: {
     width: 24,
@@ -262,10 +261,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 19.6,
-    color: '#888787',
+    color: Gray[500],
   },
   allAgreeTextActive: {
-    color: '#FF4093',
+    color: C.primary,
   },
   termsBlock: {
     marginTop: 20,
@@ -287,17 +286,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,
-    color: '#888787',
+    color: Gray[500],
     textDecorationLine: 'underline',
   },
   termAgeText: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,
-    color: '#888787',
+    color: Gray[500],
   },
   termLinkActive: {
-    color: '#FF4093',
+    color: C.primary,
   },
   footer: {
     paddingHorizontal: 16,

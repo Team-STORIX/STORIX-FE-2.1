@@ -12,7 +12,7 @@ import {
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Gray, Magenta } from "../../../theme/colors";
+import { C, Gray, Magenta } from "../../../theme/colors";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
@@ -354,7 +354,7 @@ export function FeedPostCard({
                   style={styles.lightboxCloseBtn}
                   hitSlop={20}
                 >
-                  <Image source={xIcon} style={styles.lightboxCloseIcon} contentFit="contain" tintColor="#ffffff" />
+                  <Image source={xIcon} style={styles.lightboxCloseIcon} contentFit="contain" tintColor={C.card} />
                 </Pressable>
                 <Text style={styles.lightboxCounterText} pointerEvents="none">
                   {lightboxCurrent + 1}/{images.slice(0, 3).length}
@@ -378,14 +378,16 @@ export function FeedPostCard({
             </View>
 
             <View style={styles.worksInfo}>
-              <Text style={styles.worksName} numberOfLines={1}>
-                {works!.worksName}
-              </Text>
-              <Text style={styles.worksMeta} numberOfLines={1}>
-                {[works!.artistName, works!.worksType, works!.genre]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
+              <View>
+                <Text style={styles.worksName} numberOfLines={1}>
+                  {works!.worksName}
+                </Text>
+                <Text style={styles.worksMeta} numberOfLines={1}>
+                  {[works!.artistName, works!.worksType, works!.genre]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              </View>
               <HashtagRow tags={works!.hashtags ?? []} />
             </View>
 
@@ -513,7 +515,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
-    backgroundColor: "#ffffff",
+    backgroundColor: C.card,
     position: "relative",
     overflow: "hidden",
   },
@@ -594,8 +596,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     borderRadius: 4,
-    backgroundColor: "#ffffff",
-    shadowColor: "#131112",
+    backgroundColor: C.card,
+    shadowColor: C.text,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -615,8 +617,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#EEEDED",
-    backgroundColor: "#F9F6F7",
+    borderColor: Gray[200],
+    backgroundColor: C.bg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -636,14 +638,16 @@ const styles = StyleSheet.create({
   },
   worksInfo: {
     flex: 1,
+    height: 83,
     minWidth: 0,
     overflow: "hidden",
+    justifyContent: "space-between",
   },
   worksName: {
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 20,
-    color: "#000000",
+    color: C.text,
     marginBottom: 4,
   },
   worksMeta: {
@@ -670,21 +674,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "nowrap",
     gap: 4,
-    marginTop: "auto",
   },
   hashtagChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#E3DCDF",
-    backgroundColor: "#F2EDEF",
+    borderColor: C.border,
+    backgroundColor: C.divider,
   },
   hashtagText: {
     fontSize: 10,
     fontWeight: "500",
     lineHeight: 14,
-    color: "#847B7F",
+    color: Gray[500],
   },
 
   // Body
@@ -802,7 +805,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    color: '#ffffff',
+    color: C.card,
     fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '600',

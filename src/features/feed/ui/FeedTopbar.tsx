@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Gray } from "../../../theme/colors";
+import { C, Gray } from "../../../theme/colors";
 
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 const addTopicRoomIcon = require("../../../../assets/topicroom/icon-add-topicroom.svg");
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#ffffff",
+    backgroundColor: C.card,
   },
   tabs: {
     flexDirection: "row",

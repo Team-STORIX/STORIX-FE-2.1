@@ -1,8 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
-
-const PROFILE_TAB_ACTIVE = '#100F0F'
-const PROFILE_TAB_INACTIVE = '#A9A8A8'
+import { C, Gray } from '../../../theme'
 
 export type ProfilePreferenceTab = 'analysis' | 'activity'
 
@@ -78,7 +76,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingTop: 8,
     paddingBottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   tab: {
     flex: 1,
@@ -91,19 +89,19 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tabLabelActive: {
-    color: PROFILE_TAB_ACTIVE,
+    color: C.text,
   },
   tabLabelInactive: {
-    color: PROFILE_TAB_INACTIVE,
+    color: Gray[400],
   },
   tabIndicator: {
-    width: '100%',
     height: 2,
+    alignSelf: 'stretch',
   },
   tabIndicatorActive: {
-    backgroundColor: PROFILE_TAB_ACTIVE,
+    backgroundColor: C.text,
   },
   tabIndicatorInactive: {
-    backgroundColor: PROFILE_TAB_INACTIVE,
+    backgroundColor: 'transparent',
   },
 })

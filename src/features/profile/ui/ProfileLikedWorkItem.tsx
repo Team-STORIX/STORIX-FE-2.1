@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
   },
@@ -112,7 +112,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewLabel: {
-    fontFamily: 'SUIT-Medium',
+    fontFamily: 'SUIT',
+    fontWeight: '500',
     fontSize: 12,
     lineHeight: 14,
     letterSpacing: 0.2,
@@ -125,7 +126,8 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     marginLeft: 2,
-    fontFamily: 'SUIT-Medium',
+    fontFamily: 'SUIT',
+    fontWeight: '500',
     fontSize: 10,
     lineHeight: 14,
     color: Magenta[300],

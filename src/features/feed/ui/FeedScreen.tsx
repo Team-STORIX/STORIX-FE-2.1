@@ -19,7 +19,7 @@ import { useFavoriteWorks } from '../hooks/feed/useFavoriteWorks'
 import { toggleBoardLike, reportBoard, deleteBoard } from '../api/feed/readerBoard.api'
 import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
-import { Gray, Magenta } from '../../../theme/colors'
+import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
 import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
@@ -374,13 +374,13 @@ export function FeedScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   content: {
     paddingBottom: 128,
   },
   listHeader: {
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   center: {
     alignItems: 'center',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...Typography.body2Medium,
-    color: '#ffffff',
+    color: C.card,
     fontWeight: '600',
   },
   emptyText: {

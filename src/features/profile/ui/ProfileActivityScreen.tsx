@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { useMe } from '../hooks'
 import { ProfileActivityContent } from './ProfileActivityContent'
 import { ProfilePreferenceTabs } from './ProfilePreferenceTabs'
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   errorText: {
     ...Typography.body1Medium,

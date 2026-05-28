@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { Gray, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import type {
   ProfileActivityBoardItem,
   ProfileActivityReplyItem,
@@ -178,7 +178,7 @@ function getEmptyMessage(tab: ProfileActivityTab) {
 const styles = StyleSheet.create({
   list: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   footer: {
     paddingHorizontal: 16,

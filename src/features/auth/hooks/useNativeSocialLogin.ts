@@ -12,6 +12,7 @@ import { AxiosError } from "axios";
 import { useRouter } from "expo-router";
 
 import type { SocialProviderId } from "../../../lib/auth/social/types";
+import { nativeSocialAuthProvider } from "../../../lib/auth/social/native";
 import { useAuthStore } from "../../../store/auth.store";
 import {
   extractLoginTokens,
@@ -27,10 +28,6 @@ import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
 const callBackend = async (
   provider: SocialProviderId,
 ): Promise<SocialLoginResponse> => {
-  const { nativeSocialAuthProvider } = await import(
-    "../../../lib/auth/social/native"
-  );
-
   if (provider === "kakao") {
     // idToken is optional — only present when OpenID Connect is enabled in
     // the Kakao developer console.

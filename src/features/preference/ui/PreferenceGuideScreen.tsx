@@ -76,16 +76,14 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.heading1,
-    color: '#000000',
+    color: C.text,
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   body: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   illustration: {
     width: 280,

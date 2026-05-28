@@ -1,7 +1,7 @@
 import { Image } from 'expo-image'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Gray } from '../../../theme/colors'
+import { C, Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 
 const reportDoneIcon = require('../../../../assets/icons/feed/report-done.svg')
@@ -135,13 +135,13 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 306,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingTop: 28,
     paddingBottom: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowColor: '#000000',
+    shadowColor: C.black,
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 49,
     borderRadius: 8,
-    backgroundColor: '#EF433E',
+    backgroundColor: C.error,
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmText: {
     ...Typography.body1Medium,
-    color: '#ffffff',
+    color: C.card,
   },
   pressed: {
     opacity: 0.8,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 88,
     alignSelf: 'center',
-    shadowColor: '#000000',
+    shadowColor: C.black,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -241,6 +241,6 @@ const styles = StyleSheet.create({
   },
   toastText: {
     ...Typography.body2Medium,
-    color: '#ffffff',
+    color: C.card,
   },
 })

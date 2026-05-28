@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { deleteFavoriteWork } from '../../favorite/api/toggleFavorite.api'
 import type { FavoriteWork } from '../types'
 import { useProfileFavoriteWorks } from '../hooks/useProfileFavoriteWorks'
@@ -148,7 +148,7 @@ export function ProfileLikesScreen() {
 const styles = StyleSheet.create({
   list: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   inlineState: {
     paddingTop: 148,

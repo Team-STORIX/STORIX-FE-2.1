@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useRouter } from 'expo-router'
-import { C } from '../../../theme'
+import { C, Gray } from '../../../theme'
 import {
   useNotificationSettings,
   usePushPermissionStatus,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2edef',
+    borderBottomColor: C.divider,
     gap: 16,
   },
   rowPressed: {
@@ -275,13 +275,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22.4,
-    color: '#131112',
+    color: C.text,
   },
   rowDesc: {
     fontSize: 11,
     fontWeight: '500',
     lineHeight: 15.4,
-    color: '#847b7f',
+    color: Gray[500],
   },
   rowRight: {
     flexDirection: 'row',
@@ -318,14 +318,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     borderRadius: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: C.card,
   },
   modalTitle: {
     paddingHorizontal: 24,
     fontSize: 20,
     fontWeight: '700',
     lineHeight: 28,
-    color: '#131112',
+    color: C.text,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,
-    color: '#847B7F',
+    color: Gray[500],
     textAlign: 'center',
     alignSelf: 'stretch',
   },
@@ -350,8 +350,8 @@ const styles = StyleSheet.create({
     height: 49,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E3DCDF',
-    backgroundColor: '#F9F6F7',
+    borderColor: C.border,
+    backgroundColor: C.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -359,13 +359,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#484245',
+    color: Gray[700],
   },
   confirmButton: {
     flex: 1,
     height: 49,
     borderRadius: 8,
-    backgroundColor: '#131112',
+    backgroundColor: C.text,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     lineHeight: 22.4,
-    color: '#FFF',
+    color: C.card,
   },
   pressed: {
     opacity: 0.7,

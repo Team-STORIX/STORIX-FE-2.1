@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Radius } from '../../../theme/radius'
+import { C } from '../../../theme'
 
 type Props = {
   label: string
@@ -16,7 +17,7 @@ export function SocialLoginButton({
   label,
   icon,
   backgroundColor,
-  textColor = '#fff',
+  textColor = C.card,
   spinnerColor,
   onPress,
   isLoading,

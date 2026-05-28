@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Gray, Radius, Typography } from '../../../theme'
+import { C, Gray, Radius, Typography } from '../../../theme'
 
 const commentBlackIcon = require('../../../../assets/icons/feed/comment-black.svg')
 const commentDisabledIcon = require('../../../../assets/icons/feed/upload-comment.svg')
@@ -108,7 +108,7 @@ export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
           </Pressable>
         </View>
         {!keyboardVisible ? (
-          <View style={{ height: navBarHeight, backgroundColor: '#ffffff' }} />
+          <View style={{ height: navBarHeight, backgroundColor: C.card }} />
         ) : null}
       </View>
     )
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     borderTopWidth: 1,
     borderTopColor: Gray[100],
   },
@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
     minHeight: 36,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E1E0E0',
-    backgroundColor: '#F8F7F7',
+    borderColor: Gray[200],
+    backgroundColor: C.bg,
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 8,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
-    color: '#CDC4C8',
+    color: Gray[300],
     textAlign: 'right',
   },
   submitButton: {

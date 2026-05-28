@@ -302,16 +302,14 @@ const styles = StyleSheet.create({
   },
   completeTitle: {
     ...Typography.heading1,
-    color: '#000000',
+    color: C.text,
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   completeBody: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   completeImage: {
     width: '100%',
@@ -327,16 +325,14 @@ const styles = StyleSheet.create({
   },
   finishTitle: {
     ...Typography.heading1,
-    color: '#000000',
+    color: C.text,
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   finishBody: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
-    fontFamily: 'SUIT',
   },
   finishImage: {
     width: 180,
@@ -364,13 +360,11 @@ const styles = StyleSheet.create({
   },
   listHeaderTitle: {
     ...Typography.body1Medium,
-    color: '#000000',
-    fontFamily: 'SUIT',
+    color: C.text,
   },
   completeLabel: {
     ...Typography.body1Medium,
     color: Magenta[300],
-    fontFamily: 'SUIT',
   },
   tabsWrap: {
     position: 'relative',
@@ -387,7 +381,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...Typography.body1Medium,
-    fontFamily: 'SUIT',
   },
   tabActive: {
     color: Gray[900],
@@ -400,7 +393,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 2,
     width: '50%',
-    backgroundColor: '#000000',
+    backgroundColor: C.black,
   },
   tabUnderlineLeft: {
     left: '0%',
@@ -445,20 +438,17 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     ...Typography.body1Semibold,
-    color: '#000000',
-    fontFamily: 'SUIT',
+    color: C.text,
   },
   listMeta: {
     marginTop: 4,
     ...Typography.body2Medium,
     color: Gray[500],
-    fontFamily: 'SUIT',
   },
   ratingText: {
     marginTop: 4,
     ...Typography.caption1Medium,
     color: Magenta[300],
-    fontFamily: 'SUIT',
   },
   favoriteButton: {
     width: 24,

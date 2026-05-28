@@ -165,8 +165,8 @@ export const PreferenceCard = forwardRef<
         <Svg style={styles.overlayBottom} pointerEvents="none">
           <Defs>
             <LinearGradient id="preferenceShade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#131112" stopOpacity={0} />
-              <Stop offset="1" stopColor="#131112" stopOpacity={0.6} />
+              <Stop offset="0" stopColor={C.text} stopOpacity={0} />
+              <Stop offset="1" stopColor={C.text} stopOpacity={0.6} />
             </LinearGradient>
           </Defs>
           <Rect
@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
   typeBadgeLabel: {
     ...Typography.body2Bold,
     color: C.card,
-    fontFamily: "SUIT",
   },
   genreBadge: {
     paddingHorizontal: 12,
@@ -347,19 +346,16 @@ const styles = StyleSheet.create({
   genreBadgeLabel: {
     ...Typography.body2Bold,
     color: Magenta[300],
-    fontFamily: "SUIT",
   },
   title: {
     ...Typography.heading1,
     color: C.card,
-    fontFamily: "SUIT",
     letterSpacing: -0.48,
   },
   description: {
     marginTop: 8,
     ...Typography.body1Semibold,
     color: C.card,
-    fontFamily: "SUIT",
   },
   hashtagRow: {
     flexDirection: "row",
@@ -378,6 +374,5 @@ const styles = StyleSheet.create({
   hashtagLabel: {
     ...Typography.body2Bold,
     color: "rgba(255, 255, 255, 0.95)",
-    fontFamily: "SUIT",
   },
 });

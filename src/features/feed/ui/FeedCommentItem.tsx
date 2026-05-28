@@ -222,8 +222,8 @@ const styles = StyleSheet.create({
     top: 28,
     zIndex: 12,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
-    shadowColor: '#131112',
+    backgroundColor: C.card,
+    shadowColor: C.text,
     shadowOpacity: 0.20,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16.8,
-    color: '#847B7F',
+    color: Gray[500],
   },
   pressed: {
     opacity: 0.7,
   },
   writerName: {
-    color: '#FF4093',
+    color: C.primary,
     fontWeight: '700',
     lineHeight: 19.6,
   },
@@ -274,9 +274,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 19.6,
-    color: '#FF4093',
+    color: C.primary,
   },
   replyCardHighlighted: {
-    backgroundColor: '#FFEEF6',
+    backgroundColor: C.primaryLight,
   },
 })

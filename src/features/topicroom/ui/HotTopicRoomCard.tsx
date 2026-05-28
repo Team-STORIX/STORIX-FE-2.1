@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   rankText: {
     ...Typography.caption1Extrabold,
-    color: "#fff",
+    color: C.card,
   },
 
   body: {

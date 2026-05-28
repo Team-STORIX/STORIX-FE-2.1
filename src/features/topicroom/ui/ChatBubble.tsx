@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
 
-  textMe: { ...Typography.body1Semibold, color: "#fff" },
+  textMe: { ...Typography.body1Semibold, color: C.card },
   textOther: { ...Typography.body1Medium, color: Gray[800] },
 
   timeMe: {
