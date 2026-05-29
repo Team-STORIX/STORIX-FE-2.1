@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 
 export type ProfilePreferenceTab = 'analysis' | 'activity'
 
@@ -34,38 +34,22 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={() => handlePress('analysis')} style={styles.tab}>
-        <Text
-          style={[
-            styles.tabLabel,
-            currentTab === 'analysis' ? styles.tabLabelActive : styles.tabLabelInactive,
-          ]}
-        >
+      <Pressable
+        onPress={() => handlePress('analysis')}
+        style={[styles.tab, currentTab === 'analysis' ? styles.tabActive : styles.tabInactive]}
+      >
+        <Text style={[styles.tabLabel, currentTab === 'analysis' ? styles.tabLabelActive : styles.tabLabelInactive]}>
           취향 분석
         </Text>
-        <View
-          style={[
-            styles.tabIndicator,
-            currentTab === 'analysis' ? styles.tabIndicatorActive : styles.tabIndicatorInactive,
-          ]}
-        />
       </Pressable>
 
-      <Pressable onPress={() => handlePress('activity')} style={styles.tab}>
-        <Text
-          style={[
-            styles.tabLabel,
-            currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive,
-          ]}
-        >
+      <Pressable
+        onPress={() => handlePress('activity')}
+        style={[styles.tab, currentTab === 'activity' ? styles.tabActive : styles.tabInactive]}
+      >
+        <Text style={[styles.tabLabel, currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive]}>
           내 활동
         </Text>
-        <View
-          style={[
-            styles.tabIndicator,
-            currentTab === 'activity' ? styles.tabIndicatorActive : styles.tabIndicatorInactive,
-          ]}
-        />
       </Pressable>
     </View>
   )
@@ -74,34 +58,29 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingTop: 8,
-    paddingBottom: 0,
     backgroundColor: C.card,
   },
   tab: {
     flex: 1,
+    height: 50,
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
+    borderBottomWidth: 2,
+  },
+  tabActive: {
+    borderBottomColor: C.text,
+  },
+  tabInactive: {
+    borderBottomColor: Gray[200],
   },
   tabLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
+    lineHeight: 22.4,
   },
   tabLabelActive: {
     color: C.text,
   },
   tabLabelInactive: {
     color: Gray[400],
-  },
-  tabIndicator: {
-    height: 2,
-    alignSelf: 'stretch',
-  },
-  tabIndicatorActive: {
-    backgroundColor: C.text,
-  },
-  tabIndicatorInactive: {
-    backgroundColor: 'transparent',
   },
 })

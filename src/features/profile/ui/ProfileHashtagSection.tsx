@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { C, Gray, Magenta } from '../../../theme'
+import { C, Gray, Magenta , FontFamily, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
 
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
@@ -61,13 +61,14 @@ export function ProfileHashtagSection() {
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 32,
+    paddingVertical: 28,
+    borderBottomWidth: 6,
+    borderBottomColor: C.bg,
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
+    lineHeight: 25.2,
     color: C.text,
   },
   canvas: {
@@ -85,9 +86,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 40,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -102,42 +101,42 @@ const styles = StyleSheet.create({
   rank4: {
     left: 205,
     top: 0,
+    fontFamily: FontFamily.bold,
     fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    lineHeight: 22.4,
     color: Gray[500],
+    opacity: 0.5,
   },
   rank3: {
     left: 90,
     top: 22.4,
+    fontFamily: FontFamily.semibold,
     fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 26,
+    lineHeight: 25.2,
     color: Magenta[200],
+    opacity: 0.5,
   },
   rank1: {
     left: 138,
     top: 47.6,
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: Magenta[300],
+    ...Typography.heading1,
+    lineHeight: 33.6,
+    color: Magenta[400],
   },
   rank2: {
     left: 211,
     top: 81.2,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: Magenta[300],
+    opacity: 0.7,
   },
   rank5: {
     left: 120,
     top: 109.2,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
+    lineHeight: 19.6,
     color: Gray[400],
+    opacity: 0.5,
   },
   pressed: {
     opacity: 0.8,
