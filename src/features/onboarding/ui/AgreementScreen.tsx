@@ -65,13 +65,18 @@ export function AgreementScreen() {
         </Text>
 
         {/* 전체동의 카드 */}
-        <Pressable onPress={handleAllAgree} style={styles.allAgreeCard}>
+        <Pressable
+          onPress={handleAllAgree}
+          style={[styles.allAgreeCard, allAgreed ? styles.allAgreeCardActive : styles.allAgreeCardInactive]}
+        >
           <Image
             source={allAgreed ? checkPink : checkGray}
             style={styles.checkIcon}
             contentFit="contain"
           />
-          <Text style={styles.allAgreeText}>전체동의</Text>
+          <Text style={[styles.allAgreeText, allAgreed ? styles.allAgreeTextActive : styles.allAgreeTextInactive]}>
+            전체동의
+          </Text>
         </Pressable>
 
         {/* 개별 약관 목록 */}
@@ -108,7 +113,7 @@ export function AgreementScreen() {
           style={[styles.ctaButton, allAgreed ? styles.ctaActive : styles.ctaDisabled]}
         >
           <Text style={[styles.ctaText, allAgreed ? styles.ctaTextActive : styles.ctaTextDisabled]}>
-            다음
+            다음으로
           </Text>
         </Pressable>
       </View>
@@ -137,7 +142,9 @@ function AgreementRow({
         />
       </Pressable>
       <Pressable onPress={onOpenLink} style={styles.termTextWrap}>
-        <Text style={styles.termLinkText}>{label}</Text>
+        <Text style={[styles.termLinkText, checked ? styles.termTextActive : styles.termTextInactive]}>
+          {label}
+        </Text>
       </Pressable>
     </View>
   )
@@ -157,7 +164,9 @@ function AgreementAgeRow({
         style={styles.termCheckIcon}
         contentFit="contain"
       />
-      <Text style={styles.termPlainText}>(필수) 14세 이상입니다.</Text>
+      <Text style={[styles.termPlainText, checked ? styles.termTextActive : styles.termTextInactive]}>
+        (필수) 14세 이상입니다.
+      </Text>
     </Pressable>
   )
 }
@@ -235,11 +244,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Magenta[100],
-    backgroundColor: Magenta[20],
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  allAgreeCardInactive: {
+    borderColor: Gray[300],
+    backgroundColor: C.bg,
+  },
+  allAgreeCardActive: {
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
   },
   checkIcon: {
     width: 24,
@@ -247,6 +262,11 @@ const styles = StyleSheet.create({
   },
   allAgreeText: {
     ...Typography.body2Bold,
+  },
+  allAgreeTextInactive: {
+    color: Gray[500],
+  },
+  allAgreeTextActive: {
     color: Magenta[300],
   },
   termsBlock: {
@@ -268,11 +288,15 @@ const styles = StyleSheet.create({
   },
   termLinkText: {
     ...Typography.body2Medium,
-    color: Magenta[300],
     textDecorationLine: 'underline',
   },
   termPlainText: {
     ...Typography.body2Medium,
+  },
+  termTextInactive: {
+    color: Gray[500],
+  },
+  termTextActive: {
     color: Magenta[300],
   },
   footer: {

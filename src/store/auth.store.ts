@@ -6,6 +6,7 @@ import {
   getOnboardingToken,
   setOnboardingToken as persistOnboardingToken,
   removeOnboardingToken,
+  removeAccessToken,
   removeRefreshToken,
   clearAuthTokens,
 } from '../lib/storage/secure'
@@ -135,7 +136,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   },
 
   setOnboardingToken: async (token) => {
-    await persistOnboardingToken(token)
+    await Promise.all([
+      persistOnboardingToken(token),
+      removeAccessToken(),
+      removeRefreshToken(),
+    ])
 
     set({
       onboardingToken: token,

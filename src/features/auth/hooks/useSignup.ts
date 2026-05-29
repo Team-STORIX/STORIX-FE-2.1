@@ -14,6 +14,7 @@ import { useAuthStore } from '../../../store/auth.store'
 
 export const useSignup = () => {
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
 
   return useMutation({
     mutationFn: async (data: SignupRequest) => {
@@ -32,11 +33,20 @@ export const useSignup = () => {
 
     onError: (error) => {
       if (isAxiosError(error)) {
+        const code =
+          typeof error.response?.data === 'object' && error.response?.data
+            ? (error.response.data as { code?: unknown }).code
+            : undefined
+
         console.log('[useSignup] failed:', {
           message: error.message,
           status: error.response?.status,
           data: error.response?.data,
         })
+
+        if (code === 'TOKEN_ERROR_001' || code === 'TOKEN_ERROR_002') {
+          void clearAuth()
+        }
         return
       }
 

@@ -30,6 +30,24 @@ const getAuthorizationHeader = (
   return typeof val === "string" && val.length > 0 ? val : undefined;
 };
 
+const getOnboardingHeader = (
+  headers: InternalAxiosRequestConfig["headers"],
+): string | undefined => {
+  if (!headers) return undefined;
+  if (typeof (headers as any).get === "function") {
+    const hyphen = (headers as any).get("Onboarding-Token");
+    const camel = (headers as any).get("onboardingToken");
+    const value = hyphen ?? camel;
+    return typeof value === "string" && value.length > 0 ? value : undefined;
+  }
+  const h = headers as Record<string, unknown>;
+  const val =
+    h["Onboarding-Token"] ??
+    h["onboarding-token"] ??
+    h["onboardingToken"];
+  return typeof val === "string" && val.length > 0 ? val : undefined;
+};
+
 const setAuthorizationHeader = (
   headers: InternalAxiosRequestConfig["headers"],
   value: string,
@@ -104,8 +122,13 @@ apiClient.interceptors.request.use(
     if (!config.headers) return config;
 
     const existing = getAuthorizationHeader(config.headers);
-    if (existing) {
+    const onboarding = getOnboardingHeader(config.headers);
+    if (existing || onboarding) {
       return config; // Caller-supplied header takes precedence.
+    }
+
+    if (isNoRefreshEndpoint(config.url)) {
+      return config;
     }
 
     const token = await getAccessToken();

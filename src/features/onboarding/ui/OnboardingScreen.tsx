@@ -1,6 +1,5 @@
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
-import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -16,17 +15,10 @@ import { GenreStep } from './GenreStep'
 import { FavoriteStep } from './FavoriteStep'
 import { FinalStep } from './FinalStep'
 import { OnboardingTopBar } from './OnboardingTopBar'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Radius, Typography } from '../../../theme'
 
-const progress1 = require('../../../../assets/onboarding/progress-indicater-1.svg')
-const progress2 = require('../../../../assets/onboarding/progress-indicater-2.svg')
-const progress3 = require('../../../../assets/onboarding/progress-indicater-3.svg')
-const progress4 = require('../../../../assets/onboarding/progress-indicater-4.svg')
-const nextPink = require('../../../../assets/onboarding/next.svg')
-const nextGray = require('../../../../assets/onboarding/next-gray.svg')
-
-const progressAssets = [progress1, progress2, progress3, progress4] as const
 const genreOptions = GenreKeySchema.options
+const ONBOARDING_PROGRESS_STEPS = 4
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
@@ -51,6 +43,7 @@ export function OnboardingScreen() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([])
   const [profileImageUri, setProfileImageUri] = useState<string | undefined>()
   const [error, setError] = useState('')
+  const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
   const handleBack = () => {
     if (step > 1) setStep((current) => current - 1)
@@ -138,9 +131,17 @@ export function OnboardingScreen() {
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
 
-        {step <= 4 ? (
+        {step <= ONBOARDING_PROGRESS_STEPS ? (
           <View style={styles.progressWrap}>
-            <Image source={progressAssets[step - 1]} style={styles.progressImage} contentFit="contain" />
+            {Array.from({ length: ONBOARDING_PROGRESS_STEPS }).map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  index === step - 1 ? styles.progressDotActive : styles.progressDotInactive,
+                ]}
+              />
+            ))}
           </View>
         ) : null}
 
@@ -148,7 +149,7 @@ export function OnboardingScreen() {
           style={styles.scroll}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: 134 },
+            { paddingBottom: footerBottomPadding + 100 },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -188,7 +189,7 @@ export function OnboardingScreen() {
         </ScrollView>
 
         {step === 4 ? (
-          <View pointerEvents="none" style={[styles.footerGradient, { height: insets.bottom + 34 + 50 + 32 }]}>
+          <View pointerEvents="none" style={[styles.footerGradient, { height: footerBottomPadding + 82 }]}>
             <Svg width="100%" height="100%" preserveAspectRatio="none">
               <Defs>
                 <SvgLinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
@@ -201,17 +202,23 @@ export function OnboardingScreen() {
           </View>
         ) : null}
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
+        <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
           <Pressable
             onPress={() => void handleNext()}
             disabled={!canProceed() || signupMutation.isPending}
-            style={styles.nextPressable}
+            style={[
+              styles.nextButton,
+              canProceed() ? styles.nextButtonActive : styles.nextButtonInactive,
+            ]}
           >
-            <Image
-              source={canProceed() ? nextPink : nextGray}
-              style={styles.nextImage}
-              contentFit="contain"
-            />
+            <Text
+              style={[
+                styles.nextButtonText,
+                canProceed() ? styles.nextButtonTextActive : styles.nextButtonTextInactive,
+              ]}
+            >
+              {'\ub2e4\uc74c\uc73c\ub85c'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -224,21 +231,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.card,
   },
-  progressWrap: {
-    paddingTop: 16,
-    paddingLeft: 16,
-    alignItems: 'flex-start',
-  },
-  progressImage: {
-    width: 60,
-    height: 8,
-  },
   scroll: {
     flex: 1,
   },
+  progressWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  progressDot: {
+    height: 8,
+    borderRadius: 2,
+  },
+  progressDotActive: {
+    width: 24,
+    backgroundColor: C.primary,
+  },
+  progressDotInactive: {
+    width: 8,
+    backgroundColor: Gray[200],
+  },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingTop: 0,
   },
   footer: {
     position: 'absolute',
@@ -255,12 +271,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 1,
   },
-  nextPressable: {
-    width: '100%',
-  },
-  nextImage: {
+  nextButton: {
     width: '100%',
     height: 50,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextButtonActive: {
+    backgroundColor: C.text,
+  },
+  nextButtonInactive: {
+    backgroundColor: Gray[200],
+  },
+  nextButtonText: {
+    ...Typography.body1Medium,
+  },
+  nextButtonTextActive: {
+    color: C.card,
+  },
+  nextButtonTextInactive: {
+    color: Gray[500],
   },
   errorText: {
     marginTop: 16,
