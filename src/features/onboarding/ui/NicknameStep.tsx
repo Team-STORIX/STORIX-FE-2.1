@@ -1,7 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
-import { C, Gray } from '../../../theme'
+import { C, FontFamily, Gray, Magenta, Radius, Typography } from '../../../theme'
 import type { Dispatch, SetStateAction } from 'react'
 import {
   checkNicknameValid,
@@ -10,11 +10,6 @@ import {
   extractIsForbiddenFromValidResponse,
 } from '../../auth/api/nickname.api'
 
-const profilePhoto = require('../../../../assets/onboarding/profilephoto.svg')
-const profileChange = require('../../../../assets/icons/profile/profile-change.svg')
-const idCheckPink = require('../../../../assets/onboarding/id-check-pink.svg')
-const idCheckGray = require('../../../../assets/onboarding/id-check-gray.svg')
-
 type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'
 
 const NICKNAME_RULE_MESSAGE = '한글,영문,숫자 2~10자까지 입력 가능해요'
@@ -22,6 +17,45 @@ const NICKNAME_PATTERN = /^[가-힣A-Za-z0-9]+$/
 
 const isValidNicknameFormat = (nickname: string) =>
   nickname.length >= 2 && nickname.length <= 10 && NICKNAME_PATTERN.test(nickname)
+
+function StepIndicator({
+  currentStep,
+  totalSteps,
+}: {
+  currentStep: number
+  totalSteps: number
+}) {
+  return (
+    <View style={stepStyles.row}>
+      {Array.from({ length: totalSteps }).map((_, i) => (
+        <View
+          key={i}
+          style={[stepStyles.dot, i === currentStep - 1 ? stepStyles.dotActive : stepStyles.dotInactive]}
+        />
+      ))}
+    </View>
+  )
+}
+
+const stepStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 32,
+  },
+  dot: {
+    height: 8,
+    borderRadius: 2,
+  },
+  dotActive: {
+    width: 24,
+    backgroundColor: Magenta[300],
+  },
+  dotInactive: {
+    width: 8,
+    backgroundColor: Gray[200],
+  },
+})
 
 export function NicknameStep({
   value,
@@ -33,6 +67,8 @@ export function NicknameStep({
   onMessageChange,
   profileImageUri,
   onProfileImageChange,
+  stepIndex = 1,
+  totalSteps = 5,
 }: {
   value: string
   onChange: (value: string) => void
@@ -44,6 +80,8 @@ export function NicknameStep({
   onMessageChange: Dispatch<SetStateAction<string>>
   profileImageUri?: string
   onProfileImageChange: (uri: string) => void
+  stepIndex?: number
+  totalSteps?: number
 }) {
   const normalized = value.trim()
 
@@ -101,24 +139,41 @@ export function NicknameStep({
     }
   }
 
+  const inputBorderColor =
+    status === 'ok'
+      ? C.activeDot
+      : status === 'taken' || status === 'invalid' || status === 'forbidden'
+        ? C.error
+        : normalized.length > 0
+          ? C.text
+          : Gray[300]
+
   return (
     <View>
-      <Text style={styles.title}>프로필을 설정해주세요</Text>
-      <Text style={styles.subtitle}>닉네임과 프로필 사진을 설정해 주세요</Text>
+      <StepIndicator currentStep={stepIndex} totalSteps={totalSteps} />
 
+      <Text style={styles.title}>프로필을 설정해주세요</Text>
+      <Text style={styles.subtitle}>닉네임과 프로필 사진을 정해주세요</Text>
+
+      {/* 프로필 사진 */}
       <View style={styles.profileWrap}>
         <View style={styles.profileImageWrap}>
-          <Image
-            source={profileImageUri ? { uri: profileImageUri } : profilePhoto}
-            style={styles.profileImage}
-            contentFit="cover"
-          />
-          <Pressable style={styles.profileChangeButton} onPress={() => void handlePickImage()}>
-            <Image source={profileChange} style={styles.profileChangeIcon} contentFit="contain" />
+          {profileImageUri ? (
+            <Image
+              source={{ uri: profileImageUri }}
+              style={styles.profileImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.profilePlaceholder} />
+          )}
+          <Pressable style={styles.cameraButton} onPress={() => void handlePickImage()}>
+            <Text style={styles.cameraText}>+</Text>
           </Pressable>
         </View>
       </View>
 
+      {/* 닉네임 입력 */}
       <View style={styles.inputSection}>
         <View style={styles.inputRow}>
           <TextInput
@@ -134,20 +189,15 @@ export function NicknameStep({
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
-            style={[
-              styles.input,
-              value.length > 0 && status === 'idle' && { borderBottomColor: C.text },
-              status === 'ok' && { borderBottomColor: C.activeDot },
-              (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: C.error },
-            ]}
+            style={[styles.input, { borderBottomColor: inputBorderColor }]}
           />
 
-          <Pressable onPress={() => void handleCheck()} style={styles.checkButton}>
-            <Image
-              source={normalized ? idCheckPink : idCheckGray}
-              style={styles.checkImage}
-              contentFit="contain"
-            />
+          <Pressable
+            onPress={() => void handleCheck()}
+            disabled={!normalized}
+            style={styles.checkButton}
+          >
+            <Text style={styles.checkButtonText}>중복확인</Text>
           </Pressable>
         </View>
 
@@ -163,16 +213,12 @@ export function NicknameStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   profileWrap: {
@@ -186,58 +232,71 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: Radius.full,
   },
-  profileChangeButton: {
+  profilePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: Radius.full,
+    backgroundColor: Gray[200],
+  },
+  cameraButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
     width: 32,
     height: 32,
+    borderRadius: Radius.full,
+    backgroundColor: Gray[700],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  profileChangeIcon: {
-    width: 32,
-    height: 32,
+  cameraText: {
+    marginTop: -2,
+    fontFamily: FontFamily.medium,
+    fontSize: 24,
+    lineHeight: 28,
+    color: C.card,
   },
   inputSection: {
     marginTop: 36,
     width: '100%',
   },
   inputRow: {
-    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 5,
   },
   input: {
     flex: 1,
-    height: 42,
     paddingTop: 10,
     paddingRight: 10,
     paddingBottom: 10,
     paddingLeft: 8,
     borderBottomWidth: 2,
-    borderBottomColor: Gray[300],
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.text,
   },
   checkButton: {
     width: 102,
-    height: 38,
+    height: 36,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Gray[200],
+    backgroundColor: Gray[50],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  checkImage: {
-    width: 102,
-    height: 38,
+  checkButtonText: {
+    ...Typography.body1Medium,
+    color: Gray[400],
   },
   message: {
     marginTop: 6,
-    marginLeft: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    paddingHorizontal: 8,
+    ...Typography.caption1Medium,
   },
   messageOk: {
     color: C.activeDot,
