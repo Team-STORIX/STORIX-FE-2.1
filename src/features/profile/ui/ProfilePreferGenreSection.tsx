@@ -1,8 +1,8 @@
-﻿import { Image } from 'expo-image'
+import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
-import { C, Gray, Typography } from '../../../theme'
+import { C, Gray } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -166,14 +166,15 @@ export function ProfilePreferGenreSection() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 28,
-    borderBottomWidth: 6,
-    borderBottomColor: C.bg,
+    paddingVertical: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
     backgroundColor: C.card,
   },
   title: {
-    ...Typography.heading3,
-    lineHeight: 25.2,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 25,
     color: C.text,
   },
   content: {
@@ -184,7 +185,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    ...Typography.heading3,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 25,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -220,17 +223,17 @@ const styles = StyleSheet.create({
   },
   genreName: {
     marginTop: 8,
-    ...Typography.body2Bold,
-    lineHeight: 19.6,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
     color: C.text,
     textAlign: 'center',
   },
   genreScore: {
     marginTop: 2,
-    fontFamily: 'SUIT',
     fontSize: 12,
     fontWeight: '500',
-    lineHeight: 16.8,
+    lineHeight: 17,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -270,11 +273,15 @@ const styles = StyleSheet.create({
   barName: {
     marginLeft: 8,
     flex: 1,
-        ...Typography.body2Medium,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
     color: C.text,
   },
   barScore: {
-    ...Typography.body2Medium,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
     color: Gray[500],
     textAlign: 'right',
   },

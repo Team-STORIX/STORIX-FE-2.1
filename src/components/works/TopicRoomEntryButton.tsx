@@ -48,7 +48,11 @@ export function TopicRoomEntryButton({
           />
         )}
         <Text style={styles.label}>
-          {isCheckingRoom ? "확인 중..." : "토픽룸 입장"}
+          {isCheckingRoom
+            ? "확인 중..."
+            : hasTopicRoom
+              ? "토픽룸 입장"
+              : "토픽룸 생성하기"}
         </Text>
         <Image
           source={arrowSmallIcon}
