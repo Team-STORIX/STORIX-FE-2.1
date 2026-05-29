@@ -16,6 +16,7 @@ export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const [agreement1, setAgreement1] = useState(false)
   const [agreement2, setAgreement2] = useState(false)
@@ -29,6 +30,15 @@ export function AgreementScreen() {
     setAgreement1(next)
     setAgreement2(next)
     setAgreement3(next)
+  }
+
+  const handleBack = async () => {
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+
+    await clearAuth()
   }
 
   const handleNext = async () => {
@@ -55,7 +65,7 @@ export function AgreementScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={handleBack} style={styles.backButton}>
           <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
         </Pressable>
         <Text style={styles.topBarTitle}>약관동의</Text>
