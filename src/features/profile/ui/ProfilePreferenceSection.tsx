@@ -2,7 +2,7 @@
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { C, Gray, Typography , FontFamily} from "../../../theme";
+import { C, Gray, Typography } from "../../../theme";
 import { useProfileFavoriteWorksPreview } from "../hooks";
 
 const findWritersButton = require("../../../../assets/icons/profile/find-writers.svg");
@@ -131,8 +131,9 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   count: {
-    fontFamily: FontFamily.semibold,
+    fontFamily: 'SUIT',
     fontSize: 18,
+    fontWeight: '600',
     lineHeight: 25.2,
     color: Gray[300],
   },
@@ -154,8 +155,9 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[100],
   },
   workTitle: {
-    fontFamily: FontFamily.medium,
+    fontFamily: 'SUIT',
     fontSize: 12,
+    fontWeight: '500',
     lineHeight: 16.8,
     marginTop: 7,
     color: C.text,

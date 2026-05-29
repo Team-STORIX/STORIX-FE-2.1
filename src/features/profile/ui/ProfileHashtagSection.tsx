@@ -2,7 +2,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { C, Gray, Magenta , FontFamily, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
 
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
@@ -101,8 +101,9 @@ const styles = StyleSheet.create({
   rank4: {
     left: 205,
     top: 0,
-    fontFamily: FontFamily.bold,
+    fontFamily: 'SUIT',
     fontSize: 16,
+    fontWeight: '700',
     lineHeight: 22.4,
     color: Gray[500],
     opacity: 0.5,
@@ -110,8 +111,9 @@ const styles = StyleSheet.create({
   rank3: {
     left: 90,
     top: 22.4,
-    fontFamily: FontFamily.semibold,
+    fontFamily: 'SUIT',
     fontSize: 18,
+    fontWeight: '600',
     lineHeight: 25.2,
     color: Magenta[200],
     opacity: 0.5,

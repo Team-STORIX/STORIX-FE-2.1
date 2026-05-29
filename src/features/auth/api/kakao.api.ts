@@ -49,14 +49,14 @@ export const kakaoLogin = async (code: string): Promise<KakaoLoginResponse> => {
  */
 export const kakaoNativeLogin = async (args: {
   accessToken: string
-  idToken?: string
+  idToken: string
 }): Promise<SocialLoginResponse> => {
-  const body: Record<string, string> = { accessToken: args.accessToken }
-  if (args.idToken) body.idToken = args.idToken
-
   const response = await apiClient.post(
     '/api/v1/auth/oauth/kakao-native/login',
-    body,
+    {
+      accessToken: args.accessToken,
+      idToken: args.idToken,
+    },
   )
   return SocialLoginResponseSchema.parse(response.data)
 }

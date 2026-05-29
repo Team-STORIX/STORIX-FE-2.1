@@ -53,12 +53,9 @@ SplashScreen.preventAutoHideAsync()
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    SUIT: require('../assets/fonts/SUIT-Regular.ttf'),
-    SUITRegular: require('../assets/fonts/SUIT-Regular.ttf'),
-    SUITMedium: require('../assets/fonts/SUIT-Medium.ttf'),
-    SUITSemiBold: require('../assets/fonts/SUIT-SemiBold.ttf'),
-    SUITBold: require('../assets/fonts/SUIT-Bold.ttf'),
-    SUITExtraBold: require('../assets/fonts/SUIT-ExtraBold.ttf'),
+    // SUIT Variable TTF covers weights 100-900 via fontWeight.
+    // File: assets/fonts/SUIT-Variable.ttf (download from https://github.com/sunn-us/SUIT/releases)
+    SUIT: require('../assets/fonts/SUIT-Variable.ttf'),
     ...FontAwesome.font,
   })
 

@@ -18,6 +18,7 @@ import { resetToLogin } from '../lib/navigation/navigationRef'
 
 // AsyncStorage key for the non-sensitive marketing consent flag.
 const TERMS_AGREE_KEY = 'termsAgree'
+const MARKETING_AGREE_KEY = 'marketingAgree'
 
 // ---------- types ----------
 
@@ -33,6 +34,7 @@ type AuthState = {
   // UI / UX.
   isLoading: boolean
   termsAgree: boolean
+  marketingAgree: boolean
 }
 
 type AuthActions = {
@@ -66,6 +68,9 @@ type AuthActions = {
   /** Persists the terms agreement flag to AsyncStorage. */
   setTermsAgree: (agree: boolean) => Promise<void>
 
+  /** Persists the marketing consent flag to AsyncStorage. */
+  setMarketingAgree: (agree: boolean) => Promise<void>
+
   /**
    * Full sign-out.
    * Wipes SecureStore, resets in-memory state, and clears the profile cache.
@@ -88,13 +93,15 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   isAuthenticated: false,
   isLoading: false,
   termsAgree: false,
+  marketingAgree: false,
 
   hydrateAuth: async () => {
     // Run SecureStore reads in parallel to minimise splash delay.
-    const [accessToken, onboardingToken, termsAgree] = await Promise.all([
+    const [accessToken, onboardingToken, termsAgree, marketingAgree] = await Promise.all([
       getAccessToken(),
       getOnboardingToken(),
       getItem<boolean>(TERMS_AGREE_KEY),
+      getItem<boolean>(MARKETING_AGREE_KEY),
     ])
 
     set({
@@ -102,6 +109,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       onboardingToken,
       isAuthenticated: !!accessToken,
       termsAgree: termsAgree ?? false,
+      marketingAgree: marketingAgree ?? false,
     })
   },
 
@@ -141,6 +149,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     set({ termsAgree: agree })
   },
 
+  setMarketingAgree: async (agree) => {
+    await setItem(MARKETING_AGREE_KEY, agree)
+    set({ marketingAgree: agree })
+  },
+
   clearAuth: async () => {
     await clearAuthTokens()
 
@@ -157,6 +170,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       onboardingToken: null,
       isAuthenticated: false,
       termsAgree: false,
+      marketingAgree: false,
     })
 
     // Navigate to login after state is reset.

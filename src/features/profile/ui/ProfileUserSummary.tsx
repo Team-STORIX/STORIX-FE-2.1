@@ -2,7 +2,7 @@
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
-import { C, FontFamily, Gray, Magenta, Radius, Typography } from '../../../theme'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
@@ -87,14 +87,16 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   nickname: {
-    fontFamily: FontFamily.semibold,
+    fontFamily: 'SUIT',
     fontSize: 18,
+    fontWeight: '600',
     lineHeight: 25.2,
     color: C.text,
   },
   bio: {
-    fontFamily: FontFamily.medium,
+    fontFamily: 'SUIT',
     fontSize: 12,
+    fontWeight: '500',
     lineHeight: 16.8,
     maxWidth: 200,
     color: Gray[600],

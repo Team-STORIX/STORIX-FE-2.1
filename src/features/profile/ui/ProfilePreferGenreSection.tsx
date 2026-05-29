@@ -2,7 +2,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
-import { C, Gray , FontFamily, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -227,8 +227,9 @@ const styles = StyleSheet.create({
   },
   genreScore: {
     marginTop: 2,
-    fontFamily: FontFamily.medium,
+    fontFamily: 'SUIT',
     fontSize: 12,
+    fontWeight: '500',
     lineHeight: 16.8,
     color: Gray[500],
     textAlign: 'center',

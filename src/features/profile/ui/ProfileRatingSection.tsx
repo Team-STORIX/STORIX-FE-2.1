@@ -1,7 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C, FontFamily, Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
 import { useProfileRatings } from '../hooks'
 import type { RatingCountsMap } from '../types'
@@ -220,8 +220,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartLabel: {
-    fontFamily: FontFamily.bold,
+    fontFamily: 'SUIT',
     fontSize: 16,
+    fontWeight: '700',
     lineHeight: 22.4,
   },
   chartBar: {
@@ -239,8 +240,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontFamily: FontFamily.bold,
+    fontFamily: 'SUIT',
     fontSize: 16,
+    fontWeight: '700',
     lineHeight: 22.4,
     color: C.text,
   },

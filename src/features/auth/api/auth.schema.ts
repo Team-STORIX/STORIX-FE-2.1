@@ -49,7 +49,7 @@ export const RegularLoginResponseSchema = z.object({
  */
 export const ReaderLoginResponseSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string().optional(),
+  refreshToken: z.string(),
 })
 
 /**
@@ -94,16 +94,16 @@ export const KakaoLoginResponseSchema = SocialLoginResponseSchema
 export const extractLoginTokens = (
   result: SocialLoginResult,
 ): { accessToken: string; refreshToken?: string } | undefined => {
-  if (result.regularLoginResponse?.accessToken) {
-    return {
-      accessToken: result.regularLoginResponse.accessToken,
-      refreshToken: result.regularLoginResponse.refreshToken,
-    }
-  }
   if (result.readerLoginResponse?.accessToken) {
     return {
       accessToken: result.readerLoginResponse.accessToken,
       refreshToken: result.readerLoginResponse.refreshToken,
+    }
+  }
+  if (result.regularLoginResponse?.accessToken) {
+    return {
+      accessToken: result.regularLoginResponse.accessToken,
+      refreshToken: result.regularLoginResponse.refreshToken,
     }
   }
   return undefined
@@ -122,8 +122,7 @@ export const SignupRequestSchema = z.object({
 export const SignupResponseSchema = ApiResponseSchema(
   z.object({
     accessToken: z.string(),
-    // refreshToken will be added once the signup endpoint is updated server-side.
-    refreshToken: z.string().optional(),
+    refreshToken: z.string(),
   }),
 )
 
