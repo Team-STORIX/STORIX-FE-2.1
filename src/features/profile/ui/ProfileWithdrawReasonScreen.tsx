@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+﻿import { useRef, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 import { useWithdrawAccount } from '../hooks'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
@@ -227,9 +227,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   keyboardAvoid: {
@@ -247,15 +245,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+        ...Typography.heading2,
     color: C.text,
   },
   subtitle: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 19.6,
     color: Gray[500],
   },
@@ -273,9 +268,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   reasonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[900],
   },
   detailContainer: {
@@ -289,17 +282,13 @@ const styles = StyleSheet.create({
   },
   detailInput: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+    ...Typography.body2Medium,
     color: Gray[900],
     padding: 0,
     margin: 0,
   },
   charCount: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+    ...Typography.body2Medium,
     color: Gray[500],
     textAlign: 'right',
     alignSelf: 'flex-end',
@@ -322,9 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
   },
   nextLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
   nextLabelDisabled: {
@@ -349,9 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: C.text,
     textAlign: 'center',
   },
@@ -361,9 +346,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   modalBulletText: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -384,9 +367,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   withdrawLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[700],
   },
   keepButton: {
@@ -398,9 +379,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   keepLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
 })

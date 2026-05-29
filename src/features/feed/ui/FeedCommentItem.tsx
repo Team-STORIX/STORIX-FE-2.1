@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import { C, Gray, Radius, Typography , FontFamily} from '../../../theme'
 
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../../assets/icons/common/icon-like-pink.svg')
@@ -257,9 +257,7 @@ const styles = StyleSheet.create({
     height: 16,
   },
   count: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   pressed: {
@@ -267,13 +265,11 @@ const styles = StyleSheet.create({
   },
   writerName: {
     color: C.primary,
-    fontWeight: '700',
+    ...Typography.body2Bold,
     lineHeight: 19.6,
   },
   writerBadge: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 19.6,
+    fontFamily: FontFamily.bold,
     color: C.primary,
   },
   replyCardHighlighted: {

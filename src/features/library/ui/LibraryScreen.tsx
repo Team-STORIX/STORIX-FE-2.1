@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,7 @@ import {
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import { C, Gray, Radius, Typography , FontFamily} from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
 import { type LibraryReviewSort } from '../api'
 import { useLibraryReviewInfinite } from '../hooks'
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   sortMenuTextActive: {
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   rightControls: {
     flexDirection: 'row',

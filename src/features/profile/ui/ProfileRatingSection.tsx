@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
 import { useProfileRatings } from '../hooks'
 import type { RatingCountsMap } from '../types'
@@ -177,16 +177,13 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+   
+    ...Typography.heading3,
     color: C.text,
   },
   errorText: {
     marginTop: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   emptyState: {
@@ -194,9 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
   },
   writeReviewImage: {
@@ -219,9 +214,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   chartBar: {
@@ -240,16 +233,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body2Medium,
     color: C.text,
   },
   statLabel: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   pressed: {

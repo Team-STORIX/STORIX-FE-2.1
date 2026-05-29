@@ -1,1 +1,1 @@
-export { Typography, FontWeight } from './global'
+export { Typography, FontWeight, FontFamily } from './global'

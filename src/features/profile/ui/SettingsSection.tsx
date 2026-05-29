@@ -1,6 +1,6 @@
-import { StyleSheet, Text, TextStyle, View } from 'react-native'
+﻿import { StyleSheet, Text, View } from 'react-native'
 import { SettingsItem } from './SettingsItem'
-import { C } from '../../../theme'
+import { C , Typography } from '../../../theme'
 
 export type SettingsItemConfig = {
   label: string
@@ -41,9 +41,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600' as TextStyle['fontWeight'],
-    lineHeight: 25.2,
+    ...Typography.heading3,
     color: C.text,
     marginBottom: 24,
   },

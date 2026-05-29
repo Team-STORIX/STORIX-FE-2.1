@@ -1,10 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { OnboardingTopBar } from './OnboardingTopBar'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 const manualImages = [
   require('../../../../assets/manual/manual-1.png'),
@@ -101,17 +101,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: C.text,
     textAlign: 'center',
   },
   desc: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
   },

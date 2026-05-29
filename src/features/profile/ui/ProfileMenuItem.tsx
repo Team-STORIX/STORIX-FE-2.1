@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { FontFamily } from '../../../theme/typography';
 import { C } from '../../../theme/colors'
 
 type Props = {
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   itemBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
   itemPressed: { backgroundColor: C.divider },
 
-  label: { fontSize: 15, color: C.text, fontWeight: '500' },
+  label: { fontSize: 15, color: C.text, fontFamily: FontFamily.medium },
   labelDestructive: { color: C.error },
   labelDisabled: { color: C.textMuted },
 

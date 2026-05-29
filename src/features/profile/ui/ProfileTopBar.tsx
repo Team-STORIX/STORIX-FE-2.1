@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Gray, Typography } from '../../../theme'
+import { C, Gray, Typography , FontFamily} from '../../../theme'
 
 const settingsIcon = require('../../../../assets/icons/common/settings.svg')
 
@@ -62,9 +62,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   profileCardButtonText: {
-    fontFamily: 'SUIT',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     lineHeight: 16.8,
     color: C.textSecondary,
   },

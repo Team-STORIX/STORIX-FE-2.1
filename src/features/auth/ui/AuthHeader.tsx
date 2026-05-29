@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+﻿import { StyleSheet, Text, View } from 'react-native'
+import { FontFamily } from '../../../theme/typography';
 import { C } from '../../../theme/colors'
 
 type Props = { tagline?: string }
@@ -16,7 +17,7 @@ const styles = StyleSheet.create({
   container: { alignItems: 'center' },
   logo: {
     fontSize: 40,
-    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     color: C.primary,
     letterSpacing: 4,
     marginBottom: 10,

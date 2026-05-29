@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { C, Gray, Shadow, Typography } from '../../../theme'
+﻿import { StyleSheet, Text, View } from 'react-native'
+import { C, Gray, Shadow, Typography , FontFamily} from '../../../theme'
 
 type PreferenceToastProps = {
   message?: string | null
@@ -53,6 +53,5 @@ const styles = StyleSheet.create({
   text: {
     ...Typography.body2Medium,
     color: C.card,
-    fontFamily: 'SUIT',
   },
 })

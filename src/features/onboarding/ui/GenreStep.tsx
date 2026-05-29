@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { GenreKey } from '../../auth'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 const genreAssets: Record<GenreKey, any> = {
   ROMANCE: require('../../../../assets/onboarding/romance.svg'),
@@ -94,22 +94,16 @@ export function GenreStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   count: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.primary,
   },
   grid: {
@@ -128,9 +122,7 @@ const styles = StyleSheet.create({
   },
   genreLabel: {
     marginTop: 12,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
     textAlign: 'center',
   },

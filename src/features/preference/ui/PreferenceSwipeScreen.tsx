@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
@@ -11,7 +11,7 @@ import {
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { C, Gray, Typography } from '../../../theme'
+import { C, Gray, Typography , FontFamily} from '../../../theme'
 import {
   type PreferenceWork,
   usePreferenceFlow,
@@ -275,9 +275,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: C.text,
-    fontFamily: 'SUIT',
   },
   progressWrap: {
     paddingHorizontal: 16,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+﻿import { useCallback, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   ActivityIndicator,
@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 import {
   useNotificationSettings,
   usePushPermissionStatus,
@@ -246,8 +246,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   errorText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...Typography.body2Medium,
     color: C.textMuted,
     textAlign: 'center',
   },
@@ -272,14 +271,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rowLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22.4,
+    ...Typography.body1Bold,
     color: C.text,
   },
   rowDesc: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 15.4,
     color: Gray[500],
   },
@@ -290,7 +287,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: C.primary,
   },
   chevron: {
@@ -322,18 +319,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     paddingHorizontal: 24,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: C.text,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
   modalBody: {
     paddingHorizontal: 24,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+    ...Typography.body2Medium,
     color: Gray[500],
     textAlign: 'center',
     alignSelf: 'stretch',
@@ -356,9 +349,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[700],
   },
   confirmButton: {
@@ -370,9 +361,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
   pressed: {

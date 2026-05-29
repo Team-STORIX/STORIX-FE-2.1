@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+﻿import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useRouter } from 'expo-router'
-import { C } from '../../../theme'
+import { C , Typography } from '../../../theme'
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -151,8 +151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   errorText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...Typography.body2Medium,
     color: C.textMuted,
     textAlign: 'center',
   },

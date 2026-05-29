@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { C, Gray, Magenta } from '../../../theme'
+import { C, Gray, Magenta , FontFamily, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
 
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
@@ -65,9 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   canvas: {
@@ -85,9 +83,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 40,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -102,41 +98,33 @@ const styles = StyleSheet.create({
   rank4: {
     left: 205,
     top: 0,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   rank3: {
     left: 90,
     top: 22.4,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     lineHeight: 26,
     color: Magenta[200],
   },
   rank1: {
     left: 138,
     top: 47.6,
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: Magenta[300],
   },
   rank2: {
     left: 211,
     top: 81.2,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: Magenta[300],
   },
   rank5: {
     left: 120,
     top: 109.2,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Gray[400],
   },
   pressed: {

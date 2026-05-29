@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWork } from '../types'
@@ -112,10 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewLabel: {
-    fontFamily: 'SUIT',
-    fontWeight: '500',
-    fontSize: 12,
-    lineHeight: 14,
+    ...Typography.caption1Medium,
     letterSpacing: 0.2,
     color: Magenta[300],
   },
@@ -126,10 +123,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     marginLeft: 2,
-    fontFamily: 'SUIT',
-    fontWeight: '500',
-    fontSize: 10,
-    lineHeight: 14,
+    ...Typography.caption2Medium,
     color: Magenta[300],
   },
   reviewSpacer: {

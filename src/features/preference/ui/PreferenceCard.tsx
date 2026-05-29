@@ -1,4 +1,4 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import React, {
   forwardRef,
   useEffect,
@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { Animated, PanResponder, StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import { C, Gray, Magenta, Radius, Typography } from "../../../theme";
+import { C, Gray, Magenta, Radius, Typography , FontFamily} from "../../../theme";
 import type { PreferenceWork } from "../hooks/usePreferenceFlow";
 
 export type PreferenceSwipeDir = "like" | "dislike";
@@ -305,8 +305,7 @@ const styles = StyleSheet.create({
   actionStampText: {
     fontSize: 32,
     lineHeight: 44,
-    fontWeight: "700",
-    fontFamily: "SUIT",
+    fontFamily: FontFamily.bold,
     letterSpacing: 1,
   },
   likeStampText: {

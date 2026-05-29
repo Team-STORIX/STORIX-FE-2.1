@@ -1,8 +1,8 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { C, Gray, Typography } from "../../../theme";
+import { C, Gray, Typography , FontFamily} from "../../../theme";
 import { useProfileFavoriteWorksPreview } from "../hooks";
 
 const findWritersButton = require("../../../../assets/icons/profile/find-writers.svg");
@@ -126,14 +126,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   count: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontFamily: FontFamily.semibold,
     lineHeight: 25,
     color: Gray[300],
   },
@@ -182,9 +179,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
   },
   emptyButtonImage: {

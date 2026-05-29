@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { C, Gray, Magenta } from '../../../theme'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { C, Gray, Magenta , Typography } from '../../../theme'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
 import type { NotificationItem } from '../api/notification.schema'
 import { NotificationIcon } from './NotificationIcon'
@@ -66,22 +66,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+        ...Typography.body2Medium,
     color: Gray[900], // #131112
   },
   body: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[600], // #645c5f
   },
   date: {
     marginTop: 4,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[400], // #b0a5aa
   },
   pressed: {

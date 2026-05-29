@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+
+import { C , FontFamily} from '../../../theme'
 import { Radius } from '../../../theme/radius'
-import { C } from '../../../theme'
 
 type Props = {
   label: string
@@ -64,5 +65,5 @@ const styles = StyleSheet.create({
   btnPressed: { opacity: 0.82 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   icon: { fontSize: 18 },
-  label: { fontSize: 15, fontWeight: '600' },
+  label: { fontSize: 15, fontFamily: FontFamily.semibold },
 })

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../theme'
+import { C , FontFamily} from '../../theme'
 
 const logoBlack = require('../../../assets/icons/common/logo-black.svg')
 const searchIcon = require('../../../assets/icons/common/search.svg')
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     lineHeight: 14,
     color: C.card,
   },

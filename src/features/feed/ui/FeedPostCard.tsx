@@ -1,4 +1,4 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal,
@@ -12,7 +12,10 @@ import {
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Typography } from '../../../theme/typography';
 import { C, Gray, Magenta } from "../../../theme/colors";
+
+    ;
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
@@ -567,17 +570,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    fontSize: 14,
-    fontWeight: "500",
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Gray[900],
   },
   timestamp: {
     marginTop: 2,
-    fontFamily: 'SUIT',
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
     color: Gray[400],
   },
   menuBtn: {
@@ -644,16 +642,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   worksName: {
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
+    ...Typography.body2Bold,
     color: C.text,
     marginBottom: 4,
   },
   worksMeta: {
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   worksArrowBtn: {
@@ -684,9 +678,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.divider,
   },
   hashtagText: {
-    fontSize: 10,
-    fontWeight: "500",
-    lineHeight: 14,
+    ...Typography.caption2Medium,
     color: Gray[500],
   },
 
@@ -727,9 +719,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   contentText: {
-    fontSize: 14,
-    fontWeight: "500",
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Gray[800],
   },
   spoilerOverlay: {
@@ -743,9 +733,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   spoilerRevealText: {
-    fontSize: 14,
-    fontWeight: "500",
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Magenta[300],
   },
 
@@ -769,9 +757,7 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     marginLeft: 4,
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
+    ...Typography.body2Bold,
     color: Gray[500],
   },
   lightboxBackdrop: {
@@ -806,8 +792,6 @@ const styles = StyleSheet.create({
     right: 0,
     textAlign: 'center',
     color: C.card,
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '600',
+    ...Typography.body1Semibold,
   },
 });

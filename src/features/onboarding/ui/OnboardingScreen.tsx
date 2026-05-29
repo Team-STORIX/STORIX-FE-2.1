@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+﻿import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -16,7 +16,7 @@ import { GenreStep } from './GenreStep'
 import { FavoriteStep } from './FavoriteStep'
 import { FinalStep } from './FinalStep'
 import { OnboardingTopBar } from './OnboardingTopBar'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 const progress1 = require('../../../../assets/onboarding/progress-indicater-1.svg')
 const progress2 = require('../../../../assets/onboarding/progress-indicater-2.svg')
@@ -264,9 +264,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 16,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: C.error,
   },
   missingScreen: {
@@ -277,16 +275,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   missingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   missingBody: {
     marginTop: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -300,9 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
+    ...Typography.body1Bold,
     color: C.card,
   },
 })

@@ -84,105 +84,98 @@ export const FontWeight = {
   extrabold: "800" as TextStyle["fontWeight"],
 };
 
+export const FontFamily = {
+  regular: "SUITRegular",
+  medium: "SUITMedium",
+  semibold: "SUITSemiBold",
+  bold: "SUITBold",
+  extrabold: "SUITExtraBold",
+} as const;
+
 // ─── Typography scale ─────────────────────────────────────────────────────────
 // 2.0 globals.css: .heading-* / .body-* / .caption-* utility classes
 // lineHeight = round(fontSize × 1.4)  (2.0 --line-height-tight: 140%)
 
 export const Typography = {
   heading1: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.bold,
     fontSize: 24,
-    fontWeight: FontWeight.bold,
     lineHeight: 34,
   } as TextStyle,
   heading2: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.bold,
     fontSize: 20,
-    fontWeight: FontWeight.bold,
     lineHeight: 28,
   } as TextStyle,
   heading3: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.semibold,
     fontSize: 18,
-    fontWeight: FontWeight.semibold,
     lineHeight: 26,
   } as TextStyle,
   heading4: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.semibold,
     fontSize: 16,
-    fontWeight: FontWeight.semibold,
     lineHeight: 22,
   } as TextStyle,
 
   body1Medium: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.medium,
     fontSize: 16,
-    fontWeight: FontWeight.medium,
     lineHeight: 22,
   } as TextStyle,
   body1Semibold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.semibold,
     fontSize: 16,
-    fontWeight: FontWeight.semibold,
     lineHeight: 22,
   } as TextStyle,
   body1Bold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.bold,
     fontSize: 16,
-    fontWeight: FontWeight.bold,
     lineHeight: 22,
   } as TextStyle,
 
   body2Medium: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.medium,
     fontSize: 14,
-    fontWeight: FontWeight.medium,
     lineHeight: 20,
   } as TextStyle,
   body2Bold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.bold,
     fontSize: 14,
-    fontWeight: FontWeight.bold,
     lineHeight: 20,
   } as TextStyle,
 
   caption1Medium: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.medium,
     fontSize: 12,
-    fontWeight: FontWeight.medium,
     lineHeight: 17,
   } as TextStyle,
   caption1Semibold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.semibold,
     fontSize: 12,
-    fontWeight: FontWeight.semibold,
     lineHeight: 17,
   } as TextStyle,
   caption1Extrabold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.extrabold,
     fontSize: 12,
-    fontWeight: FontWeight.extrabold,
     lineHeight: 17,
   } as TextStyle,
 
   caption2Medium: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.medium,
     fontSize: 10,
-    fontWeight: FontWeight.medium,
     lineHeight: 14,
   } as TextStyle,
   caption2Extrabold: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.extrabold,
     fontSize: 10,
-    fontWeight: FontWeight.extrabold,
     lineHeight: 14,
   } as TextStyle,
 
   // 2.0 .date-text
   dateText: {
-    fontFamily: 'SUIT',
+    fontFamily: FontFamily.bold,
     fontSize: 16,
-    fontWeight: FontWeight.bold,
     lineHeight: 22,
     color: Gray[500],
   } as TextStyle,

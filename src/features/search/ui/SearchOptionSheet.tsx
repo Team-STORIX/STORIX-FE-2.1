@@ -1,4 +1,4 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import {
   Modal,
@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, Gray, Typography } from "../../../theme";
+import { C, Gray, Typography , FontFamily} from "../../../theme";
 
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const checkIcon = require("../../../../assets/icons/search/icon-check.svg");
@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
   applyLabel: {
     ...Typography.body1Bold,
     color: C.card,
-    fontFamily: "SUIT",
   },
   pressed: {
     opacity: 0.85,

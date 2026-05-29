@@ -1,6 +1,9 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Typography } from '../../../theme/typography';
 import { C, Gray } from "../../../theme/colors";
+
+    ;
 
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 const addTopicRoomIcon = require("../../../../assets/topicroom/icon-add-topicroom.svg");
@@ -104,9 +107,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   tab: {
-    fontSize: 24,
-    fontWeight: "700",
-    lineHeight: 34,
+    ...Typography.heading1,
   },
   tabActive: {
     color: Gray[900],

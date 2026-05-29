@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native'
+﻿import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { MeProfileResult } from '../../../types/profile'
+import { FontFamily, Typography } from '../../../theme/typography';
 import { C } from '../../../theme/colors'
 
 function roleLabel(role: string): string {
@@ -64,11 +65,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   avatarImg: { width: AVATAR_SIZE, height: AVATAR_SIZE },
-  avatarInitial: { fontSize: 34, fontWeight: '800', color: C.primary },
+  avatarInitial: { fontSize: 34, fontFamily: FontFamily.extrabold, color: C.primary },
 
   nickName: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     color: C.text,
     marginBottom: 6,
   },
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginBottom: 10,
   },
-  roleBadgeText: { fontSize: 12, fontWeight: '600', color: C.badgeText },
+  roleBadgeText: { ...Typography.caption1Semibold, color: C.badgeText },
 
   description: {
     fontSize: 13,

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 export type ProfilePreferenceTab = 'analysis' | 'activity'
 
@@ -84,9 +84,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   tabLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
   },
   tabLabelActive: {
     color: C.text,

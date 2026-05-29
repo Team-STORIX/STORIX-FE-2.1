@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+﻿import { StyleSheet, Text, View } from 'react-native'
+import { FontFamily, Typography } from '../../../theme/typography';
 import { C } from '../../../theme/colors'
 
 type Stat = { label: string; value: string | number }
@@ -41,13 +42,12 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 22,
-    fontWeight: '800',
+    ...Typography.caption1Extrabold,
     color: C.primary,
     marginBottom: 4,
   },
   label: {
-    fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
   },
 })

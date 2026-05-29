@@ -1,8 +1,8 @@
-import { Image } from 'expo-image'
+﻿import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -172,9 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   content: {
@@ -185,9 +183,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -223,17 +219,13 @@ const styles = StyleSheet.create({
   },
   genreName: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
+    ...Typography.body2Bold,
     color: C.text,
     textAlign: 'center',
   },
   genreScore: {
     marginTop: 2,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -273,14 +265,11 @@ const styles = StyleSheet.create({
   barName: {
     marginLeft: 8,
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+        ...Typography.body2Medium,
     color: C.text,
   },
   barScore: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 20,
     color: Gray[500],
     textAlign: 'right',

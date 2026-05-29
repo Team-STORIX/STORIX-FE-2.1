@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { OnboardingWork } from '../api/onboarding.api'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 
@@ -95,16 +95,12 @@ export function FavoriteStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   countRow: {
@@ -117,9 +113,7 @@ const styles = StyleSheet.create({
   },
   count: {
     marginLeft: 4,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.primary,
   },
   grid: {
@@ -157,16 +151,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   workName: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+        ...Typography.body2Medium,
     color: C.text,
   },
   workAuthor: {
     marginTop: 3,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[400],
   },
   disabled: {

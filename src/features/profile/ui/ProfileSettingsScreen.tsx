@@ -1,10 +1,10 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 import { useLogoutAction, useSocialProvider } from '../hooks'
 import { SettingsSection } from './SettingsSection'
 
@@ -195,9 +195,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   content: {
@@ -228,18 +226,14 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     paddingHorizontal: 24,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: C.text,
     textAlign: 'center',
     alignSelf: 'stretch',
   },
   modalBody: {
     paddingHorizontal: 24,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
     color: Gray[500],
     textAlign: 'center',
     alignSelf: 'stretch',
@@ -262,9 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[700],
   },
   logoutButton: {
@@ -276,9 +268,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
   confirmButton: {
@@ -290,9 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
 })

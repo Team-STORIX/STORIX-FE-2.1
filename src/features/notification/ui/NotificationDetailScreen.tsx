@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo } from 'react'
+﻿import { useCallback, useEffect, useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
 import { useMarkNotificationRead, useNotificationsInfinite } from '../hooks'
 import type { NotificationItem } from '../api/notification.schema'
@@ -100,35 +100,26 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   category: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+        ...Typography.caption1Medium,
     color: Gray[500],
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 22,
+    ...Typography.caption1Semibold,
     color: Gray[900],
     marginTop: 4,
   },
   date: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.body2Medium,
     color: Gray[400],
   },
   body: {
     marginTop: 12,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Gray[700],
   },
   fallback: {
     marginTop: 40,
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     color: C.textMuted,
     textAlign: 'center',
   },

@@ -1,6 +1,6 @@
-import { Image } from 'expo-image'
+﻿import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { C } from '../../../theme'
+import { C , Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const menuIcon = require('../../../../assets/icons/common/menu-3dots.svg')
@@ -68,9 +68,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   pressed: {

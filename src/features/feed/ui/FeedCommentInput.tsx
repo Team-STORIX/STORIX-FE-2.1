@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+﻿import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import {
   Keyboard,
   Pressable,
@@ -178,9 +178,7 @@ const styles = StyleSheet.create({
     bottom: 8,
   },
   counter: {
-    fontSize: 10,
-    fontWeight: '500',
-    lineHeight: 14,
+    ...Typography.caption2Medium,
     color: Gray[300],
     textAlign: 'right',
   },

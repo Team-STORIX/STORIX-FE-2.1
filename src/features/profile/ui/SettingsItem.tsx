@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Gray, Magenta } from '../../../theme'
+import { C, Gray, Magenta , FontFamily, Typography } from '../../../theme'
 
 const arrowIcon = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
 
@@ -61,9 +61,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.text,
   },
   rightGroup: {
@@ -72,16 +70,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   rightLabel: {
-    fontSize: 14,
-    lineHeight: 19.6,
   },
   rightLabelVersion: {
-    fontWeight: '500',
+    ...Typography.body2Medium,
     color: Magenta[300],
   },
   rightLabelSocial: {
-    fontFamily: 'SUIT',
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Gray[400],
     textAlign: 'center',
     marginRight: 4,

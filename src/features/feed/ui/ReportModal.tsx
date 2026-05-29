@@ -1,8 +1,9 @@
-import { Image } from 'expo-image'
+﻿import { Image } from 'expo-image'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+
+import { Typography , FontFamily} from '../../../theme/typography'
 import { C, Gray } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
 
 const reportDoneIcon = require('../../../../assets/icons/feed/report-done.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     lineHeight: 25,
     color: Gray[900],
   },

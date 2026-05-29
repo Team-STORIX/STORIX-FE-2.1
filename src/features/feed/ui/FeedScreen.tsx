@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -19,8 +19,8 @@ import { useFavoriteWorks } from '../hooks/feed/useFavoriteWorks'
 import { toggleBoardLike, reportBoard, deleteBoard } from '../api/feed/readerBoard.api'
 import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
-import { C, Gray, Magenta } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+
+import { Typography , FontFamily} from '../../../theme/typography'
 import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
 import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
@@ -28,6 +28,7 @@ import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
 import { ReportModal } from './ReportModal'
+import { C, Gray, Magenta } from '../../../theme/colors'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   retryText: {
     ...Typography.body2Medium,
     color: C.card,
-    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   emptyText: {
     ...Typography.body2Medium,

@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const logoIcon = require('../../../../assets/icons/common/big-star-pink.svg')
@@ -103,9 +103,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   content: {
@@ -117,9 +115,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   infoTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    ...Typography.heading2,
     color: Gray[900],
     textAlign: 'center',
   },
@@ -127,9 +123,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   bulletText: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -160,9 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   continueLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[700],
   },
   cancelButton: {
@@ -174,9 +166,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.card,
   },
   pressed: {

@@ -1,10 +1,10 @@
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useAuthStore } from '../../../store/auth.store'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
@@ -185,16 +185,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   missingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   missingBody: {
     marginTop: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
@@ -208,9 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
+    ...Typography.body1Bold,
     color: C.card,
   },
   topBar: {
@@ -231,9 +225,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   content: {
@@ -242,9 +234,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     marginTop: 40,
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: C.text,
   },
   allAgreeButton: {
@@ -268,9 +258,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   allAgreeText: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 19.6,
+    ...Typography.body2Bold,
     color: Gray[500],
   },
   allAgreeTextActive: {
@@ -293,15 +281,12 @@ const styles = StyleSheet.create({
     height: 20,
   },
   termLink: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+        ...Typography.body2Medium,
     color: Gray[500],
     textDecorationLine: 'underline',
   },
   termAgeText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 19.6,
     color: Gray[500],
   },

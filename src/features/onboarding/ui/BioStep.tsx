@@ -1,5 +1,5 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native'
-import { C, Gray } from '../../../theme'
+﻿import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { C, Gray , Typography } from '../../../theme'
 
 export function BioStep({
   value,
@@ -42,16 +42,12 @@ export function BioStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   inputBlock: {
@@ -73,10 +69,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingBottom: 10,
     paddingLeft: 8,
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.text,
   },
   counterWrap: {
@@ -85,9 +78,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   counter: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: C.primary,
   },
 })

@@ -1,8 +1,8 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily} from '../../../theme'
 import { useMe } from '../hooks'
 import { ProfileActivityContent } from './ProfileActivityContent'
 import { ProfileHashtagSection } from './ProfileHashtagSection'
@@ -97,14 +97,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 21,
     color: C.error,
   },
   errorHint: {
     marginTop: 6,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: FontFamily.medium,
     lineHeight: 18,
     color: Gray[500],
   },

@@ -1,7 +1,7 @@
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+﻿import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
-import { C, Gray } from '../../../theme'
+import { C, Gray , Typography } from '../../../theme'
 import type { Dispatch, SetStateAction } from 'react'
 import {
   checkNicknameValid,
@@ -163,16 +163,12 @@ export function NicknameStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+        ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   profileWrap: {
@@ -218,10 +214,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     borderBottomWidth: 2,
     borderBottomColor: Gray[300],
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.text,
   },
   checkButton: {
@@ -235,9 +228,7 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 6,
     marginLeft: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
   },
   messageOk: {
     color: C.activeDot,

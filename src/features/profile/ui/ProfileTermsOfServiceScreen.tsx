@@ -1,9 +1,9 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
+import { C, Gray , FontFamily, Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const arrowDownIcon = require('../../../../assets/icons/common/arrow-down.svg')
@@ -163,9 +163,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
   },
   headerBox: {
@@ -174,10 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontFamily: 'SUIT',
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25.2,
+    ...Typography.heading3,
     color: C.text,
     textAlign: 'left',
   },
@@ -191,10 +186,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.border,
   },
   versionLabel: {
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.textSecondary,
   },
   arrowIcon: {
@@ -222,14 +214,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.divider,
   },
   dropdownItem: {
-    fontFamily: 'SUIT',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+    ...Typography.body2Medium,
     color: Gray[400],
   },
   dropdownItemSelected: {
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: C.primary,
   },
   scroll: {
@@ -243,10 +232,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   contentText: {
-    fontFamily: 'SUIT',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
+    ...Typography.body2Medium,
     color: C.text,
   },
   pressed: {

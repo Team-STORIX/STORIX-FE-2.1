@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
 import { checkProfileNicknameValid } from '../api/profile-nickname.api'
-import { C, Gray, Typography } from '../../../theme'
+import { C, Gray, Typography , FontFamily} from '../../../theme'
 
 const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
 const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 6,
     marginLeft: 8,
-    fontFamily: 'SUIT',
     ...Typography.caption1Medium,
   },
   pressed: {

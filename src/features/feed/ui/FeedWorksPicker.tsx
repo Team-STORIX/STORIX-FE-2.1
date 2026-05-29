@@ -1,9 +1,10 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
+﻿import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWorkItem } from '../api/feed/readerFavoriteWorks.api'
+
+import { Typography , FontFamily} from '../../../theme/typography'
 import { C, Gray, Magenta } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
 
 const pickerPinkIcon = require('../../../../assets/icons/feed/picker-pink.svg')
 const pickerGrayIcon = require('../../../../assets/icons/feed/picker-gray.svg')
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: Magenta[300],
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
   },
   dividerWrapper: {
     flexDirection: 'row',

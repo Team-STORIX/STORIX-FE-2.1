@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
-import { C, Gray, Magenta, Radius } from '../../../theme'
+import { C, Gray, Magenta, Radius , Typography } from '../../../theme'
 
 const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
@@ -83,24 +83,18 @@ const styles = StyleSheet.create({
     backgroundColor: Magenta[200],
   },
   levelBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    lineHeight: 14,
+    ...Typography.caption2Extrabold,
     letterSpacing: 0.2,
     color: C.text,
   },
   nickname: {
     marginTop: 7,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   bio: {
     marginTop: 7,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
     color: Gray[600],
   },
   bioPlaceholder: {

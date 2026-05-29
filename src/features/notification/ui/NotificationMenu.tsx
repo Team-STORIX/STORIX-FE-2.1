@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { C, Magenta, Gray, Radius } from '../../../theme'
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { C, Magenta, Gray, Radius , Typography } from '../../../theme'
 
 type Props = {
   visible: boolean
@@ -76,9 +76,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   itemText: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
   },
   markAll: {
     color: Magenta[300],

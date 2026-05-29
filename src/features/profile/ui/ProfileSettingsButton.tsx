@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
-import { C } from '../../../theme'
+﻿import { Pressable, StyleSheet, Text } from 'react-native'
+import { C , Typography } from '../../../theme'
 
 type Props = {
   label: string
@@ -49,9 +49,7 @@ const styles = StyleSheet.create({
     borderColor: C.error,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
   },
   labelDefault: {
     color: C.text,

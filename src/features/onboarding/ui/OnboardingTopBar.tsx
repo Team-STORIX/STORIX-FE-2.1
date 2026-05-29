@@ -1,5 +1,6 @@
-import { Image } from 'expo-image'
+﻿import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Typography } from '../../../theme/typography';
 import { C, Gray } from '../../../theme/colors'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
@@ -49,10 +50,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   skipText: {
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: Gray[500],
     textAlign: 'center',
   },
