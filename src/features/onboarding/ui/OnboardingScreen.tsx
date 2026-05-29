@@ -32,7 +32,7 @@ export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
-  const marketingAgree = useAuthStore((s) => s.marketingAgree)
+  const termsAgree = useAuthStore((s) => s.termsAgree)
   const signupMutation = useSignup()
   const onboardingWorksQuery = useQuery({
     queryKey: ['onboarding', 'works'],
@@ -103,7 +103,7 @@ export function OnboardingScreen() {
 
     try {
       await signupMutation.mutateAsync({
-        marketingAgree,
+        termsAgree,
         nickName: nickname.trim(),
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,

@@ -50,6 +50,7 @@ const setAuthorizationHeader = (
 const NO_REFRESH_PATHS = [
   "/api/v1/auth/tokens/refresh",
   "/api/v1/auth/users/reader/signup",
+  "/api/v2/auth/users/reader/signup",
   "/api/v1/onboarding/works",
   "/api/v1/auth/login",
   "/api/v1/auth/oauth",

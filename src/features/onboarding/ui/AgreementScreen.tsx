@@ -15,7 +15,7 @@ const nextGray = require('../../../../assets/onboarding/next-gray.svg')
 export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
+  const setTermsAgree = useAuthStore((s) => s.setTermsAgree)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const [agreement1, setAgreement1] = useState(false)
   const [agreement2, setAgreement2] = useState(false)
@@ -33,7 +33,7 @@ export function AgreementScreen() {
 
   const handleNext = async () => {
     if (!allAgreed || !onboardingToken) return
-    await setMarketingAgree(true)
+    await setTermsAgree(true)
     router.replace('/(auth)/onboarding')
   }
 

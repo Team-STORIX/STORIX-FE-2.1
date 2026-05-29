@@ -24,7 +24,7 @@ export const signup = async (
   }
 
   const response = await apiClient.post(
-    '/api/v1/auth/users/reader/signup',
+    '/api/v2/auth/users/reader/signup',
     data,
     {
       headers: {

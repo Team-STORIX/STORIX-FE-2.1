@@ -17,7 +17,7 @@ import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
 
 // AsyncStorage key for the non-sensitive marketing consent flag.
-const MARKETING_AGREE_KEY = 'marketingAgree'
+const TERMS_AGREE_KEY = 'termsAgree'
 
 // ---------- types ----------
 
@@ -32,7 +32,7 @@ type AuthState = {
 
   // UI / UX.
   isLoading: boolean
-  marketingAgree: boolean
+  termsAgree: boolean
 }
 
 type AuthActions = {
@@ -63,8 +63,8 @@ type AuthActions = {
    */
   setOnboardingToken: (token: string) => Promise<void>
 
-  /** Persists the marketing consent flag to AsyncStorage. */
-  setMarketingAgree: (agree: boolean) => Promise<void>
+  /** Persists the terms agreement flag to AsyncStorage. */
+  setTermsAgree: (agree: boolean) => Promise<void>
 
   /**
    * Full sign-out.
@@ -87,21 +87,21 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   onboardingToken: null,
   isAuthenticated: false,
   isLoading: false,
-  marketingAgree: false,
+  termsAgree: false,
 
   hydrateAuth: async () => {
     // Run SecureStore reads in parallel to minimise splash delay.
-    const [accessToken, onboardingToken, marketingAgree] = await Promise.all([
+    const [accessToken, onboardingToken, termsAgree] = await Promise.all([
       getAccessToken(),
       getOnboardingToken(),
-      getItem<boolean>(MARKETING_AGREE_KEY),
+      getItem<boolean>(TERMS_AGREE_KEY),
     ])
 
     set({
       accessToken,
       onboardingToken,
       isAuthenticated: !!accessToken,
-      marketingAgree: marketingAgree ?? false,
+      termsAgree: termsAgree ?? false,
     })
   },
 
@@ -136,9 +136,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     })
   },
 
-  setMarketingAgree: async (agree) => {
-    await setItem(MARKETING_AGREE_KEY, agree)
-    set({ marketingAgree: agree })
+  setTermsAgree: async (agree) => {
+    await setItem(TERMS_AGREE_KEY, agree)
+    set({ termsAgree: agree })
   },
 
   clearAuth: async () => {
@@ -156,7 +156,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       accessToken: null,
       onboardingToken: null,
       isAuthenticated: false,
-      marketingAgree: false,
+      termsAgree: false,
     })
 
     // Navigate to login after state is reset.
