@@ -6,6 +6,7 @@ import {
   getOnboardingToken,
   setOnboardingToken as persistOnboardingToken,
   removeOnboardingToken,
+  removeAccessToken,
   removeRefreshToken,
   clearAuthTokens,
 } from '../lib/storage/secure'
@@ -17,6 +18,7 @@ import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
 
 // AsyncStorage key for the non-sensitive marketing consent flag.
+const TERMS_AGREE_KEY = 'termsAgree'
 const MARKETING_AGREE_KEY = 'marketingAgree'
 
 // ---------- types ----------
@@ -32,6 +34,7 @@ type AuthState = {
 
   // UI / UX.
   isLoading: boolean
+  termsAgree: boolean
   marketingAgree: boolean
 }
 
@@ -63,6 +66,9 @@ type AuthActions = {
    */
   setOnboardingToken: (token: string) => Promise<void>
 
+  /** Persists the terms agreement flag to AsyncStorage. */
+  setTermsAgree: (agree: boolean) => Promise<void>
+
   /** Persists the marketing consent flag to AsyncStorage. */
   setMarketingAgree: (agree: boolean) => Promise<void>
 
@@ -87,13 +93,15 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   onboardingToken: null,
   isAuthenticated: false,
   isLoading: false,
+  termsAgree: false,
   marketingAgree: false,
 
   hydrateAuth: async () => {
     // Run SecureStore reads in parallel to minimise splash delay.
-    const [accessToken, onboardingToken, marketingAgree] = await Promise.all([
+    const [accessToken, onboardingToken, termsAgree, marketingAgree] = await Promise.all([
       getAccessToken(),
       getOnboardingToken(),
+      getItem<boolean>(TERMS_AGREE_KEY),
       getItem<boolean>(MARKETING_AGREE_KEY),
     ])
 
@@ -101,6 +109,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       accessToken,
       onboardingToken,
       isAuthenticated: !!accessToken,
+      termsAgree: termsAgree ?? false,
       marketingAgree: marketingAgree ?? false,
     })
   },
@@ -127,13 +136,22 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   },
 
   setOnboardingToken: async (token) => {
-    await persistOnboardingToken(token)
+    await Promise.all([
+      persistOnboardingToken(token),
+      removeAccessToken(),
+      removeRefreshToken(),
+    ])
 
     set({
       onboardingToken: token,
       accessToken: null,
       isAuthenticated: false,
     })
+  },
+
+  setTermsAgree: async (agree) => {
+    await setItem(TERMS_AGREE_KEY, agree)
+    set({ termsAgree: agree })
   },
 
   setMarketingAgree: async (agree) => {
@@ -156,6 +174,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       accessToken: null,
       onboardingToken: null,
       isAuthenticated: false,
+      termsAgree: false,
       marketingAgree: false,
     })
 

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
 import { useProfileRatings } from '../hooks'
 import type { RatingCountsMap } from '../types'
@@ -87,6 +87,13 @@ export function ProfileRatingSection() {
     return (count / maxCount) * MAX_HEIGHT
   }
 
+  const getBarColor = (count: number, isMaxBar: boolean): string => {
+    if (!count) return Magenta[100]
+    if (isMaxBar) return Magenta[300]
+    if (maxCount > 0 && count >= maxCount / 2) return Magenta[200]
+    return Magenta[100]
+  }
+
   return (
     <>
       <View style={styles.section}>
@@ -115,12 +122,11 @@ export function ProfileRatingSection() {
                 {ratingData.map((item) => {
                   const hasData = item.count > 0
                   const isMaxBar = hasData && item.count === maxCount
-                  const opacity = isMaxBar ? 1 : 0.4
 
                   return (
                     <View key={item.key} style={styles.chartItem}>
                       {hasData ? (
-                        <Text style={[styles.chartLabel, { opacity }]}>
+                        <Text style={[styles.chartLabel, { color: isMaxBar ? C.text : Gray[400] }]}>
                           {String(item.rating)}
                         </Text>
                       ) : null}
@@ -130,7 +136,7 @@ export function ProfileRatingSection() {
                           styles.chartBar,
                           {
                             height: getBarHeight(item.count),
-                            opacity: hasData ? opacity : 0.4,
+                            backgroundColor: getBarColor(item.count, isMaxBar),
                           },
                         ]}
                       />
@@ -171,22 +177,19 @@ export function ProfileRatingSection() {
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    paddingVertical: 28,
+    borderBottomWidth: 6,
+    borderBottomColor: C.bg,
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
+    lineHeight: 25.2,
     color: C.text,
   },
   errorText: {
     marginTop: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   emptyState: {
@@ -194,9 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
   },
   writeReviewImage: {
@@ -219,16 +220,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chartLabel: {
+    fontFamily: 'SUIT',
     fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: C.text,
+    fontWeight: '700',
+    lineHeight: 22.4,
   },
   chartBar: {
     width: 28,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
-    backgroundColor: C.primary,
   },
   statsRow: {
     marginTop: 32,
@@ -240,16 +240,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
+    fontFamily: 'SUIT',
     fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    fontWeight: '700',
+    lineHeight: 22.4,
     color: C.text,
   },
   statLabel: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.body2Medium,
+    lineHeight: 19.6,
     color: Gray[500],
   },
   pressed: {

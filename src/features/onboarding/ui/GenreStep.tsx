@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { GenreKey } from '../../auth'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 
 const genreAssets: Record<GenreKey, any> = {
   ROMANCE: require('../../../../assets/onboarding/romance.svg'),
@@ -76,14 +76,24 @@ export function GenreStep({
             <Pressable
               key={genre}
               onPress={() => !disabled && toggle(genre)}
-              style={({ pressed }) => [styles.genreButton, pressed && styles.pressed, disabled && styles.disabled]}
+              style={({ pressed }) => [styles.genreButton, pressed && !disabled && styles.pressed]}
             >
               <Image
                 source={genreAssets[genre]}
-                style={[styles.genreIcon, { tintColor: selected ? C.primary : C.text }]}
+                style={[
+                  styles.genreIcon,
+                  { tintColor: disabled ? Gray[400] : selected ? C.primary : C.text },
+                ]}
                 contentFit="contain"
               />
-              <Text style={[styles.genreLabel, selected && styles.genreLabelSelected]}>{labels[genre]}</Text>
+              <Text
+                style={[
+                  styles.genreLabel,
+                  { color: disabled ? Gray[400] : selected ? C.primary : C.text },
+                ]}
+              >
+                {labels[genre]}
+              </Text>
             </Pressable>
           )
         })}
@@ -94,22 +104,16 @@ export function GenreStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   count: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.primary,
   },
   grid: {
@@ -128,17 +132,9 @@ const styles = StyleSheet.create({
   },
   genreLabel: {
     marginTop: 12,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: C.text,
     textAlign: 'center',
-  },
-  genreLabelSelected: {
-    color: C.primary,
-  },
-  disabled: {
-    opacity: 0.3,
   },
   pressed: {
     opacity: 0.8,

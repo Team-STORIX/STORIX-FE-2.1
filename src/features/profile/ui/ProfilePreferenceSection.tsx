@@ -1,4 +1,4 @@
-import { Image } from "expo-image";
+﻿import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   worksSection: {
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomWidth: 8,
+    borderBottomColor: C.bg,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -126,15 +126,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 25,
+    ...Typography.heading3,
+    lineHeight: 25.2,
     color: C.text,
   },
   count: {
+    fontFamily: 'SUIT',
     fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 25,
+    fontWeight: '600',
+    lineHeight: 25.2,
     color: Gray[300],
   },
   moreIcon: {
@@ -150,17 +150,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   workThumbWrap: {
-    borderRadius: 4,
+    borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: C.border,
+    backgroundColor: Gray[100],
   },
   workTitle: {
-    ...Typography.body2Medium,
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16.8,
     marginTop: 7,
     color: C.text,
   },
   workAuthor: {
-    ...Typography.caption1Medium,
+    ...Typography.caption2Medium,
     marginTop: 3,
     color: Gray[400],
   },
@@ -182,9 +185,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    lineHeight: 25,
+    ...Typography.heading3,
     color: Gray[500],
   },
   emptyButtonImage: {

@@ -1,7 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Radius, Typography } from '../../../theme'
 import type { Dispatch, SetStateAction } from 'react'
 import {
   checkNicknameValid,
@@ -10,10 +10,9 @@ import {
   extractIsForbiddenFromValidResponse,
 } from '../../auth/api/nickname.api'
 
-const profilePhoto = require('../../../../assets/onboarding/profilephoto.svg')
-const profileChange = require('../../../../assets/icons/profile/profile-change.svg')
-const idCheckPink = require('../../../../assets/onboarding/id-check-pink.svg')
-const idCheckGray = require('../../../../assets/onboarding/id-check-gray.svg')
+const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
+const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
+const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
 
 type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'
 
@@ -46,6 +45,7 @@ export function NicknameStep({
   onProfileImageChange: (uri: string) => void
 }) {
   const normalized = value.trim()
+  const canCheckNickname = normalized.length > 0 && status === 'idle'
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -101,24 +101,40 @@ export function NicknameStep({
     }
   }
 
+  const inputBorderColor =
+    status === 'ok'
+      ? C.activeDot
+      : status === 'taken' || status === 'invalid' || status === 'forbidden'
+        ? C.error
+        : normalized.length > 0
+          ? C.text
+          : Gray[300]
+
   return (
     <View>
-      <Text style={styles.title}>프로필을 설정해주세요</Text>
-      <Text style={styles.subtitle}>닉네임과 프로필 사진을 설정해 주세요</Text>
 
+      <Text style={styles.title}>프로필을 설정해주세요</Text>
+      <Text style={styles.subtitle}>닉네임과 프로필 사진을 정해주세요</Text>
+
+      {/* 프로필 사진 */}
       <View style={styles.profileWrap}>
         <View style={styles.profileImageWrap}>
-          <Image
-            source={profileImageUri ? { uri: profileImageUri } : profilePhoto}
-            style={styles.profileImage}
-            contentFit="cover"
-          />
-          <Pressable style={styles.profileChangeButton} onPress={() => void handlePickImage()}>
-            <Image source={profileChange} style={styles.profileChangeIcon} contentFit="contain" />
+          {profileImageUri ? (
+            <Image
+              source={{ uri: profileImageUri }}
+              style={styles.profileImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.profilePlaceholder} />
+          )}
+          <Pressable style={styles.cameraButton} onPress={() => void handlePickImage()}>
+            <Image source={profileChangeIcon} style={styles.cameraIcon} contentFit="contain" />
           </Pressable>
         </View>
       </View>
 
+      {/* 닉네임 입력 */}
       <View style={styles.inputSection}>
         <View style={styles.inputRow}>
           <TextInput
@@ -134,18 +150,17 @@ export function NicknameStep({
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
-            style={[
-              styles.input,
-              value.length > 0 && status === 'idle' && { borderBottomColor: C.text },
-              status === 'ok' && { borderBottomColor: C.activeDot },
-              (status === 'taken' || status === 'invalid' || status === 'forbidden') && { borderBottomColor: C.error },
-            ]}
+            style={[styles.input, { borderBottomColor: inputBorderColor }]}
           />
 
-          <Pressable onPress={() => void handleCheck()} style={styles.checkButton}>
+          <Pressable
+            onPress={() => void handleCheck()}
+            disabled={!canCheckNickname}
+            style={({ pressed }) => [pressed && canCheckNickname && styles.pressed]}
+          >
             <Image
-              source={normalized ? idCheckPink : idCheckGray}
-              style={styles.checkImage}
+              source={canCheckNickname ? nicknameCheckActive : nicknameCheckInactive}
+              style={styles.checkButton}
               contentFit="contain"
             />
           </Pressable>
@@ -163,16 +178,12 @@ export function NicknameStep({
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
+    ...Typography.heading1,
     color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    ...Typography.body1Medium,
     color: Gray[500],
   },
   profileWrap: {
@@ -186,16 +197,22 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: Radius.full,
   },
-  profileChangeButton: {
+  profilePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: Radius.full,
+    backgroundColor: Gray[200],
+  },
+  cameraButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
     width: 32,
     height: 32,
   },
-  profileChangeIcon: {
+  cameraIcon: {
     width: 32,
     height: 32,
   },
@@ -204,45 +221,36 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputRow: {
-    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 5,
   },
   input: {
     flex: 1,
-    height: 42,
     paddingTop: 10,
     paddingRight: 10,
     paddingBottom: 10,
     paddingLeft: 8,
     borderBottomWidth: 2,
-    borderBottomColor: Gray[300],
-    fontFamily: 'SUIT',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
+    ...Typography.body1Medium,
     color: C.text,
   },
   checkButton: {
     width: 102,
     height: 38,
   },
-  checkImage: {
-    width: 102,
-    height: 38,
-  },
   message: {
     marginTop: 6,
-    marginLeft: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    paddingHorizontal: 8,
+    ...Typography.caption1Medium,
   },
   messageOk: {
     color: C.activeDot,
   },
   messageError: {
     color: C.error,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 })

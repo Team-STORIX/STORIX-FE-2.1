@@ -69,12 +69,15 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
       throw new Error('[KakaoLogin] SDK returned an empty accessToken.')
     }
 
+    if (!token.idToken) {
+      throw new Error(
+        '[KakaoLogin] SDK returned an empty idToken. Enable OpenID Connect in the Kakao developer console.',
+      )
+    }
+
     return {
       accessToken: token.accessToken,
-      // idToken is typed as string by the SDK but will be '' when Kakao
-      // "OpenID Connect" is disabled. Normalise to undefined in that case so
-      // the backend endpoint (which accepts idToken as optional) stays clean.
-      idToken: token.idToken.length > 0 ? token.idToken : undefined,
+      idToken: token.idToken,
     }
   },
 

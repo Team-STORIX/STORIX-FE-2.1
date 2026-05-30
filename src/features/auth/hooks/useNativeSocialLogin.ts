@@ -33,6 +33,9 @@ const callBackend = async (
     // the Kakao developer console.
     const { accessToken, idToken } =
       await nativeSocialAuthProvider.loginWithKakao();
+    if (!idToken) {
+      throw new Error("[KakaoLogin] idToken is required for native Kakao login.");
+    }
     return kakaoNativeLogin({ accessToken, idToken });
   }
   const { accessToken } = await nativeSocialAuthProvider.loginWithNaver();
