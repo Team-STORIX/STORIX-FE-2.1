@@ -1,16 +1,16 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text } from "react-native";
+import { C, Gray } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
 
-const arrowDownIcon = require('../../../../assets/icons/common/arrow-down.svg')
+const arrowDownIcon = require("../../../../assets/icons/common/arrow-down.svg");
 
 type Props = {
-  label: string
-  selected: boolean
-  onPress: () => void
-}
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+};
 
 export function SearchFilterChip({ label, selected, onPress }: Props) {
   return (
@@ -30,36 +30,35 @@ export function SearchFilterChip({ label, selected, onPress }: Props) {
         contentFit="contain"
       />
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: C.border,
-    paddingLeft: 10,
-    paddingRight: 6,
-    paddingVertical: 4,
+    padding: 4,
   },
   containerSelected: {
     borderColor: C.textSecondary,
+    backgroundColor: Gray[50],
   },
   label: {
     ...Typography.caption1Medium,
-    color: C.textSecondary,
-    marginRight: 4,
+    color: Gray[800],
+    marginLeft: 6,
   },
   icon: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
   },
   iconSelected: {
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: "180deg" }],
   },
   pressed: {
     opacity: 0.75,
   },
-})
+});

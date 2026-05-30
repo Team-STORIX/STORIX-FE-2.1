@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -6,50 +8,83 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useFavoriteWork } from '../../favorite/hooks/useFavoriteWork'
-import { C, Gray, Magenta, Typography } from '../../../theme'
-import { usePreferenceFlow, type PreferenceWork } from '../hooks/usePreferenceFlow'
-import { PreferencePrimaryButton } from './PreferencePrimaryButton'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray, Magenta, Typography } from "../../../theme";
+import { useFavoriteWork } from "../../favorite/hooks/useFavoriteWork";
+import { useWorksMyReview } from "../../works/hooks/useWorksReviews";
+import {
+  usePreferenceFlow,
+  type PreferenceWork,
+} from "../hooks/usePreferenceFlow";
+import { PreferencePrimaryButton } from "./PreferencePrimaryButton";
 
-const backIcon = require('../../../../assets/icons/common/back.svg')
-const favoriteActiveIcon = require('../../../../assets/icons/common/icon-add-active.svg')
-const favoriteInactiveIcon = require('../../../../assets/icons/common/icon-add-deactive.svg')
-const preferenceGuideComplete = require('../../../../assets/preference/preferenceGuide-2.webp')
-const finishStar = require('../../../../assets/preference/finishStar.webp')
+const backIcon = require("../../../../assets/icons/common/back.svg");
+const favoriteActiveIcon = require("../../../../assets/icons/common/icon-add-active.svg");
+const favoriteInactiveIcon = require("../../../../assets/icons/common/icon-add-deactive.svg");
+const littleStarIcon = require("../../../../assets/icons/common/littleStar.svg");
+const preferenceGuideComplete = require("../../../../assets/preference/preferenceGuide-2.webp");
+const finishStar = require("../../../../assets/preference/finishStar.webp");
 
-type ResultStage = 'complete' | 'list' | 'finish'
-type Tab = 'like' | 'dislike'
+type ResultStage = "complete" | "list" | "finish";
+type Tab = "like" | "dislike";
 
 function parseStage(raw?: string | string[]): ResultStage {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  if (value === 'list' || value === 'finish') return value
-  return 'complete'
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === "list" || value === "finish") return value;
+  return "complete";
 }
 
 function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
-  const { onFavoriteAdded, onFavoriteRemoved } = usePreferenceFlow()
-  const { isFavorite, isMutating, toggleFavorite } = useFavoriteWork(work.id, {
-    onAdded: onFavoriteAdded,
-    onRemoved: onFavoriteRemoved,
-  })
+  const { onFavoriteAdded, onFavoriteRemoved } = usePreferenceFlow();
+  const { isFavorite, isLoading, isMutating, toggleFavorite } = useFavoriteWork(
+    work.id,
+    {
+      onAdded: onFavoriteAdded,
+      onRemoved: onFavoriteRemoved,
+    },
+  );
+
+  // Snapshot of the favorite status at the moment the list first sees a
+  // confirmed server value. The "이미 추가된 관심 작품입니다" label is reserved
+  // for works that were already in the user's favorites before this screen
+  // opened — newly-added items in this session should not get the label.
+  const [wasInitiallyFavorite, setWasInitiallyFavorite] = useState<
+    boolean | null
+  >(null);
+  useEffect(() => {
+    if (wasInitiallyFavorite !== null) return;
+    if (isLoading) return;
+    setWasInitiallyFavorite(isFavorite);
+  }, [isFavorite, isLoading, wasInitiallyFavorite]);
+
+  const myReviewQuery = useWorksMyReview(work.id);
+  const myRating =
+    myReviewQuery.isSuccess && typeof myReviewQuery.data?.rating === "number"
+      ? myReviewQuery.data.rating
+      : null;
+  const hasMyReview = myReviewQuery.isSuccess && myReviewQuery.data != null;
+
+  const isAlreadyFavorite =
+    wasInitiallyFavorite === true && isFavorite === true;
 
   const illustrator =
     work.originalAuthor && work.illustrator === work.originalAuthor
-      ? ''
-      : work.illustrator
+      ? ""
+      : work.illustrator;
   const meta = [work.originalAuthor, illustrator, work.worksType]
     .filter(Boolean)
-    .join(' · ')
+    .join(" · ");
 
   return (
     <View style={styles.listRow}>
       <View style={styles.thumbnailWrap}>
         {work.imageUrl ? (
-          <Image source={work.imageUrl} style={styles.thumbnail} contentFit="cover" />
+          <Image
+            source={work.imageUrl}
+            style={styles.thumbnail}
+            contentFit="cover"
+          />
         ) : (
           <View style={styles.thumbnailFallback} />
         )}
@@ -62,8 +97,25 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
         <Text style={styles.listMeta} numberOfLines={1}>
           {meta}
         </Text>
-        {work.ratingText ? (
-          <Text style={styles.ratingText}>{work.ratingText}</Text>
+        {isAlreadyFavorite ? (
+          <Text style={styles.alreadyFavoriteLabel} numberOfLines={1}>
+            이미 추가된 관심 작품입니다
+          </Text>
+        ) : null}
+        {hasMyReview ? (
+          <View style={styles.reviewedRow}>
+            <Text style={styles.reviewedLabel}>평가함</Text>
+            {myRating !== null ? (
+              <>
+                <Image
+                  source={littleStarIcon}
+                  style={styles.reviewedStar}
+                  contentFit="contain"
+                />
+                <Text style={styles.reviewedRating}>{myRating}</Text>
+              </>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
@@ -75,7 +127,7 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
           (pressed || isMutating) && styles.pressed,
         ]}
         accessibilityRole="button"
-        accessibilityLabel={isFavorite ? '관심 해제' : '관심 추가'}
+        accessibilityLabel={isFavorite ? "관심 해제" : "관심 추가"}
       >
         <Image
           source={isFavorite ? favoriteActiveIcon : favoriteInactiveIcon}
@@ -84,29 +136,27 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
         />
       </Pressable>
     </View>
-  )
+  );
 }
 
 function PreferenceListStage({
   tab,
   onTabChange,
 }: {
-  tab: Tab
-  onTabChange: (next: Tab) => void
+  tab: Tab;
+  onTabChange: (next: Tab) => void;
 }) {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const { likedWorks, dislikedWorks, isResultsLoading } = usePreferenceFlow()
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { likedWorks, dislikedWorks, isResultsLoading } = usePreferenceFlow();
 
   const items = useMemo(
-    () => (tab === 'like' ? likedWorks : dislikedWorks),
+    () => (tab === "like" ? likedWorks : dislikedWorks),
     [dislikedWorks, likedWorks, tab],
-  )
+  );
 
   const showLoading =
-    isResultsLoading &&
-    likedWorks.length === 0 &&
-    dislikedWorks.length === 0
+    isResultsLoading && likedWorks.length === 0 && dislikedWorks.length === 0;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -115,25 +165,33 @@ function PreferenceListStage({
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="뒤로가기"
-          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.pressed,
+          ]}
         >
-          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+          <Image
+            source={backIcon}
+            style={styles.backIcon}
+            contentFit="contain"
+          />
         </Pressable>
 
         <Text style={styles.listHeaderTitle}>취향 저격 작품 탐색</Text>
 
         <Pressable
           onPress={() =>
-            router.push(
-              {
-                pathname: '/home/preference/result',
-                params: { stage: 'finish' },
-              } as never,
-            )
+            router.push({
+              pathname: "/home/preference/result",
+              params: { stage: "finish" },
+            } as never)
           }
           accessibilityRole="button"
           accessibilityLabel="완료"
-          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.pressed,
+          ]}
         >
           <Text style={styles.completeLabel}>완료</Text>
         </Pressable>
@@ -142,38 +200,46 @@ function PreferenceListStage({
       <View style={styles.tabsWrap}>
         <View style={styles.tabsRow}>
           <Pressable
-            onPress={() => onTabChange('like')}
-            style={styles.tabButton}
+            onPress={() => onTabChange("like")}
+            style={({ pressed }) => [
+              styles.tabButton,
+              tab === "like" && styles.tabButtonActive,
+              pressed && styles.pressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="좋아요 탭"
-          >
-            <Text style={[styles.tabLabel, tab === 'like' ? styles.tabActive : styles.tabInactive]}>
-              좋아요
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => onTabChange('dislike')}
-            style={styles.tabButton}
-            accessibilityRole="button"
-            accessibilityLabel="별로에요 탭"
+            accessibilityState={tab === "like" ? { selected: true } : {}}
           >
             <Text
               style={[
                 styles.tabLabel,
-                tab === 'dislike' ? styles.tabActive : styles.tabInactive,
+                tab === "like" ? styles.tabActive : styles.tabInactive,
+              ]}
+            >
+              좋아요
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => onTabChange("dislike")}
+            style={({ pressed }) => [
+              styles.tabButton,
+              tab === "dislike" && styles.tabButtonActive,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="별로에요 탭"
+            accessibilityState={tab === "dislike" ? { selected: true } : {}}
+          >
+            <Text
+              style={[
+                styles.tabLabel,
+                tab === "dislike" ? styles.tabActive : styles.tabInactive,
               ]}
             >
               별로에요
             </Text>
           </Pressable>
         </View>
-
-        <View
-          style={[
-            styles.tabUnderline,
-            tab === 'like' ? styles.tabUnderlineLeft : styles.tabUnderlineRight,
-          ]}
-        />
       </View>
 
       {showLoading ? (
@@ -197,12 +263,12 @@ function PreferenceListStage({
         </ScrollView>
       )}
     </View>
-  )
+  );
 }
 
 function PreferenceCompleteStage() {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -210,7 +276,7 @@ function PreferenceCompleteStage() {
         <View style={styles.completeCopy}>
           <Text style={styles.completeTitle}>탐색 완료!</Text>
           <Text style={styles.completeBody}>
-            탐색결과를 확인하고,{'\n'}
+            탐색결과를 확인하고,{"\n"}
             마음에 드는 작품을 관심작품으로 등록해봐요
           </Text>
         </View>
@@ -226,23 +292,21 @@ function PreferenceCompleteStage() {
         <PreferencePrimaryButton
           label="다음으로"
           onPress={() =>
-            router.push(
-              {
-                pathname: '/home/preference/result',
-                params: { stage: 'list' },
-              } as never,
-            )
+            router.push({
+              pathname: "/home/preference/result",
+              params: { stage: "list" },
+            } as never)
           }
         />
       </View>
     </View>
-  )
+  );
 }
 
 function PreferenceFinishStage() {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const { likedSuccessCount } = usePreferenceFlow()
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { likedSuccessCount } = usePreferenceFlow();
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -250,38 +314,42 @@ function PreferenceFinishStage() {
         <View style={styles.finishCopy}>
           <Text style={styles.finishTitle}>축하해요!</Text>
           <Text style={styles.finishBody}>
-            {likedSuccessCount}개의 새로운 관심 작품이 등록됐어요!{'\n'}
+            {likedSuccessCount}개의 새로운 관심 작품이 등록됐어요!{"\n"}
             피드에서 작품의 소식을 확인해봐요!
           </Text>
         </View>
 
-        <Image source={finishStar} style={styles.finishImage} contentFit="contain" />
+        <Image
+          source={finishStar}
+          style={styles.finishImage}
+          contentFit="contain"
+        />
       </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
         <PreferencePrimaryButton
           label="홈으로 돌아가기"
-          onPress={() => router.replace('/(tabs)' as never)}
+          onPress={() => router.replace("/(tabs)" as never)}
         />
       </View>
     </View>
-  )
+  );
 }
 
 export function PreferenceResultScreen() {
-  const params = useLocalSearchParams<{ stage?: string | string[] }>()
-  const [tab, setTab] = useState<Tab>('like')
-  const stage = parseStage(params.stage)
+  const params = useLocalSearchParams<{ stage?: string | string[] }>();
+  const [tab, setTab] = useState<Tab>("like");
+  const stage = parseStage(params.stage);
 
-  if (stage === 'list') {
-    return <PreferenceListStage tab={tab} onTabChange={setTab} />
+  if (stage === "list") {
+    return <PreferenceListStage tab={tab} onTabChange={setTab} />;
   }
 
-  if (stage === 'finish') {
-    return <PreferenceFinishStage />
+  if (stage === "finish") {
+    return <PreferenceFinishStage />;
   }
 
-  return <PreferenceCompleteStage />
+  return <PreferenceCompleteStage />;
 }
 
 const styles = StyleSheet.create({
@@ -298,21 +366,21 @@ const styles = StyleSheet.create({
   },
   completeCopy: {
     marginTop: 96,
-    alignItems: 'center',
+    alignItems: "center",
   },
   completeTitle: {
     ...Typography.heading1,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   completeBody: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
-    textAlign: 'center',
+    textAlign: "center",
   },
   completeImage: {
-    width: '100%',
+    width: "100%",
     flex: 1,
   },
   finishContent: {
@@ -321,38 +389,38 @@ const styles = StyleSheet.create({
   },
   finishCopy: {
     marginTop: 96,
-    alignItems: 'center',
+    alignItems: "center",
   },
   finishTitle: {
     ...Typography.heading1,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   finishBody: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
-    textAlign: 'center',
+    textAlign: "center",
   },
   finishImage: {
     width: 180,
     height: 180,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: 72,
     marginBottom: 184,
   },
   listHeader: {
     height: 52,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   headerButton: {
     minWidth: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   backIcon: {
     width: 24,
@@ -367,17 +435,23 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   tabsWrap: {
-    position: 'relative',
+    position: "relative",
   },
   tabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: Gray[200],
+    flexDirection: "row",
+    borderBottomWidth: 2,
+    borderBottomColor: C.divider,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: -2,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabButtonActive: {
+    borderBottomColor: C.text,
   },
   tabLabel: {
     ...Typography.body1Medium,
@@ -388,19 +462,6 @@ const styles = StyleSheet.create({
   tabInactive: {
     color: Gray[400],
   },
-  tabUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    height: 2,
-    width: '50%',
-    backgroundColor: C.black,
-  },
-  tabUnderlineLeft: {
-    left: '0%',
-  },
-  tabUnderlineRight: {
-    left: '50%',
-  },
   listScroll: {
     flex: 1,
   },
@@ -408,8 +469,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   listRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -419,10 +480,10 @@ const styles = StyleSheet.create({
   },
   thumbnailWrap: {
     width: 62,
-    height: 84,
-    borderRadius: 6,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    height: 83,
+    borderRadius: 4,
+    overflow: "hidden",
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
   },
   thumbnail: {
     width: 62,
@@ -445,16 +506,35 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: Gray[500],
   },
-  ratingText: {
+  alreadyFavoriteLabel: {
     marginTop: 4,
+    ...Typography.caption2Extrabold,
+    color: "#EF433E",
+  },
+  reviewedRow: {
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  reviewedLabel: {
+    ...Typography.caption1Medium,
+    color: Magenta[300],
+    marginRight: 2,
+  },
+  reviewedStar: {
+    width: 9,
+    height: 10,
+  },
+  reviewedRating: {
     ...Typography.caption1Medium,
     color: Magenta[300],
   },
   favoriteButton: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 28,
   },
   favoriteIcon: {
@@ -463,10 +543,10 @@ const styles = StyleSheet.create({
   },
   loadingListWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   pressed: {
     opacity: 0.7,
   },
-})
+});

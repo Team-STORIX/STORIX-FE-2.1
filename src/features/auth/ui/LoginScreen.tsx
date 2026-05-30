@@ -26,6 +26,12 @@ const DEV_LOGIN_ENABLED =
 const DEV_LOGIN_PENDING_ID =
   process.env.EXPO_PUBLIC_DEV_LOGIN_PENDING_ID ?? "It9znl2a";
 
+// Optional direct-token fallback for when the backend dev-login endpoint is
+// unavailable. Tokens are read from env (never hardcoded) and only used in
+// __DEV__ builds. Both must be EXPO_PUBLIC_* to be inlined by Metro.
+const DEV_LOGIN_ACCESS_TOKEN = process.env.EXPO_PUBLIC_DEV_ACCESS_TOKEN;
+const DEV_LOGIN_REFRESH_TOKEN = process.env.EXPO_PUBLIC_DEV_REFRESH_TOKEN;
+
 const logoWord = require("../../../../assets/logos/logo-word.svg");
 const kakaoButton = require("../../../../assets/icons/login/login-kakao.svg");
 const naverButton = require("../../../../assets/icons/login/login-naver.svg");
@@ -43,22 +49,50 @@ export function LoginScreen() {
   const pending = mutation.isPending || devPending;
 
   const handleDevLogin = async () => {
+    // Hard guard: never run in production, even if something bypasses the
+    // gating on the rendered button.
+    if (!__DEV__) return;
+
+    if (__DEV__) console.log("[dev-login] started");
     setDevPending(true);
     try {
+      // Preferred path: env-provided access token (works when the backend
+      // dev-login endpoint is unreachable or rejecting the pendingId).
+      if (DEV_LOGIN_ACCESS_TOKEN) {
+        if (__DEV__) console.log("[dev-login] using env access token");
+        await setLoginTokens({
+          accessToken: DEV_LOGIN_ACCESS_TOKEN,
+          refreshToken: DEV_LOGIN_REFRESH_TOKEN || undefined,
+        });
+        if (__DEV__) console.log("[dev-login] success (env token)");
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // Fallback: backend dev-login endpoint.
       const res = await developerLogin(DEV_LOGIN_PENDING_ID);
       const accessToken = res?.result?.accessToken;
       if (!accessToken) {
-        Alert.alert("오류", "개발자 로그인 응답에 토큰이 없어요.");
+        Alert.alert(
+          "개발자 로그인 실패",
+          "개발자 로그인 응답에 토큰이 없어요.",
+        );
         return;
       }
+      if (__DEV__) console.log("[dev-login] access token present");
       // Stores accessToken in SecureStore, clears any onboardingToken, and flips
       // isAuthenticated → AuthGate then routes out of (auth). We also navigate
       // explicitly to match the social-login flow.
       await setLoginTokens({ accessToken });
+      if (__DEV__) console.log("[dev-login] success (endpoint)");
       router.replace("/(tabs)");
-    } catch {
+    } catch (err) {
       // Failure leaves existing auth state untouched (setLoginTokens never ran).
-      Alert.alert("오류", "개발자 로그인에 실패했어요.");
+      if (__DEV__) console.log("[dev-login] failed", err);
+      Alert.alert(
+        "개발자 로그인 실패",
+        "백엔드 dev-login이 거절했어요. EXPO_PUBLIC_DEV_ACCESS_TOKEN 환경변수를 설정해 보세요.",
+      );
     } finally {
       setDevPending(false);
     }

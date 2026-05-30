@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -44,12 +45,36 @@ export function SearchOptionSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<string[]>(value);
+  const [mounted, setMounted] = useState(visible);
+  const transition = useRef(new Animated.Value(visible ? 1 : 0)).current;
 
   useEffect(() => {
     if (visible) {
       setDraft(value);
     }
   }, [value, visible]);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(transition, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    Animated.timing(transition, {
+      toValue: 0,
+      duration: 160,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setMounted(false);
+      }
+    });
+  }, [transition, visible]);
 
   const handleToggle = (optionValue: string) => {
     if (multiple) {
@@ -73,14 +98,27 @@ export function SearchOptionSheet({
     onClose();
   };
 
+  const backdropOpacity = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.4],
+  });
+  const sheetTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [32, 0],
+  });
+
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <View style={styles.modalRoot}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+        />
         <Pressable
           style={StyleSheet.absoluteFillObject}
           onPress={onClose}
@@ -88,7 +126,15 @@ export function SearchOptionSheet({
           accessibilityLabel="시트 닫기"
         />
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 36 }]}>
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              paddingBottom: insets.bottom + 36,
+              transform: [{ translateY: sheetTranslateY }],
+            },
+          ]}
+        >
           <View style={styles.titleRow}>
             <Text style={styles.title}>{title}</Text>
             <Pressable
@@ -190,7 +236,7 @@ export function SearchOptionSheet({
               <Text style={styles.applyLabel}>적용하기</Text>
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -200,7 +246,10 @@ const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: C.black,
   },
   sheet: {
     backgroundColor: C.card,
