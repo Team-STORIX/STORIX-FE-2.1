@@ -112,7 +112,7 @@ export const extractLoginTokens = (
 // ─── Signup ───────────────────────────────────────────────────────────────────
 
 export const SignupRequestSchema = z.object({
-  termsAgree: z.boolean(),
+  marketingAgree: z.boolean(),
   nickName: z.string().min(1),
   favoriteGenreList: z.array(GenreKeySchema),
   favoriteWorksIdList: z.array(z.number()),
@@ -122,7 +122,7 @@ export const SignupRequestSchema = z.object({
 export const SignupResponseSchema = ApiResponseSchema(
   z.object({
     accessToken: z.string(),
-    refreshToken: z.string(),
+    refreshToken: z.string().optional(),
   }),
 )
 

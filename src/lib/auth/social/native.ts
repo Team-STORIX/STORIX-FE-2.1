@@ -82,15 +82,16 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
       throw new Error('[KakaoLogin] SDK returned an empty accessToken.')
     }
 
-    if (!token.idToken) {
-      throw new Error(
-        '[KakaoLogin] SDK returned an empty idToken. Enable OpenID Connect in the Kakao developer console.',
-      )
+    if (__DEV__) {
+      console.log('[KakaoLogin] SDK token received:', {
+        hasAccessToken: !!token.accessToken,
+        hasIdToken: !!token.idToken,
+      })
     }
 
     return {
       accessToken: token.accessToken,
-      idToken: token.idToken,
+      idToken: token.idToken || undefined,
     }
   },
 
