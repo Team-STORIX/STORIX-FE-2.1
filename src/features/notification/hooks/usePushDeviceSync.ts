@@ -1,20 +1,12 @@
-import { getApps } from '@react-native-firebase/app'
 import { useEffect, useRef } from 'react'
 import { AppState, type AppStateStatus } from 'react-native'
 
 import { useAuthStore } from '../../../store/auth.store'
+import { isFirebaseNativeAvailable } from '../services/firebaseNative'
 import {
   reconcilePushDevice,
   resetPushDeviceSyncCache,
 } from '../services/pushDeviceSync'
-
-const firebaseReady = (): boolean => {
-  try {
-    return getApps().length > 0
-  } catch {
-    return false
-  }
-}
 
 /**
  * Drives push-device backend reconciliation against the app/auth lifecycle:
@@ -37,7 +29,7 @@ export const usePushDeviceSync = (): void => {
       resetPushDeviceSyncCache()
       return
     }
-    if (!firebaseReady()) return
+    if (!isFirebaseNativeAvailable()) return
 
     // Initial reconcile on becoming authenticated.
     void reconcilePushDevice()

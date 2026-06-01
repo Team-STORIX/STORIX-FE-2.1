@@ -1,26 +1,26 @@
 import { PermissionsAndroid, Platform } from 'react-native'
-import {
-  AuthorizationStatus,
-  getMessaging,
-  hasPermission,
-  requestPermission,
-} from '@react-native-firebase/messaging'
 
 import type {
   PushPermissionResult,
   PushPermissionStatus,
 } from '../types'
+import {
+  getFirebaseMessagingIfAvailable,
+  loadFirebaseMessaging,
+} from './firebaseNative'
 
 // iOS authorization-status → our internal status string.
 const mapIosStatus = (status: number): PushPermissionStatus => {
+  const messagingModule = loadFirebaseMessaging()
+  const AuthorizationStatus = messagingModule?.AuthorizationStatus
   switch (status) {
-    case AuthorizationStatus.AUTHORIZED:
+    case AuthorizationStatus?.AUTHORIZED:
       return 'authorized'
-    case AuthorizationStatus.PROVISIONAL:
+    case AuthorizationStatus?.PROVISIONAL:
       return 'provisional'
-    case AuthorizationStatus.DENIED:
+    case AuthorizationStatus?.DENIED:
       return 'denied'
-    case AuthorizationStatus.NOT_DETERMINED:
+    case AuthorizationStatus?.NOT_DETERMINED:
     default:
       return 'not-determined'
   }
@@ -30,8 +30,8 @@ const mapIosStatus = (status: number): PushPermissionStatus => {
 // quietly in Notification Centre without alerting). Both are "granted" for
 // our purposes — the backend still receives the token and can deliver.
 const isIosGranted = (status: number): boolean =>
-  status === AuthorizationStatus.AUTHORIZED ||
-  status === AuthorizationStatus.PROVISIONAL
+  status === loadFirebaseMessaging()?.AuthorizationStatus.AUTHORIZED ||
+  status === loadFirebaseMessaging()?.AuthorizationStatus.PROVISIONAL
 
 /**
  * Requests (or reads, if already prompted) the OS push-notification permission
@@ -41,7 +41,9 @@ const isIosGranted = (status: number): boolean =>
 export const requestPushPermission = async (): Promise<PushPermissionResult> => {
   if (Platform.OS === 'ios') {
     try {
-      const status = await requestPermission(getMessaging())
+      const firebase = getFirebaseMessagingIfAvailable()
+      if (!firebase) return { platform: 'ios', granted: false, status: 'denied' }
+      const status = await firebase.messagingModule.requestPermission(firebase.messaging)
       return {
         platform: 'ios',
         granted: isIosGranted(status),
@@ -104,7 +106,9 @@ export const getPushPermissionStatus =
       try {
         // hasPermission() reads the stored authorization status; it does not
         // present the system prompt (requestPermission does that).
-        const status = await hasPermission(getMessaging())
+        const firebase = getFirebaseMessagingIfAvailable()
+        if (!firebase) return { platform: 'ios', granted: false, status: 'denied' }
+        const status = await firebase.messagingModule.hasPermission(firebase.messaging)
         return {
           platform: 'ios',
           granted: isIosGranted(status),
