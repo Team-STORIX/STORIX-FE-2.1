@@ -1,11 +1,5 @@
-import { getApps } from "@react-native-firebase/app";
-import {
-  getMessaging,
-  getToken,
-  onTokenRefresh,
-  registerDeviceForRemoteMessages,
-} from "@react-native-firebase/messaging";
 import { Platform } from "react-native";
+import { getFirebaseMessagingIfAvailable } from "./firebaseNative";
 
 // Brief wait before retrying getToken() when APNs has not yet attached a token
 // to the app. Empirically RNFirebase resolves this within a few hundred ms,
@@ -20,15 +14,6 @@ const sleep = (ms: number): Promise<void> =>
 const maskToken = (token: string): string =>
   token.length <= 12 ? "***" : `${token.slice(0, 8)}…${token.slice(-4)}`;
 
-const getFirebaseMessagingIfAvailable = () => {
-  try {
-    if (getApps().length === 0) return null;
-    return getMessaging();
-  } catch {
-    return null;
-  }
-};
-
 /**
  * Fetches the device's current FCM registration token, returning null if the
  * token cannot be obtained (permission denied, APNs not ready, simulator
@@ -39,15 +24,16 @@ const getFirebaseMessagingIfAvailable = () => {
  * "apns-token-not-set yet" on first launch.
  */
 export const getFcmDeviceToken = async (): Promise<string | null> => {
-  const msg = getFirebaseMessagingIfAvailable();
-  if (!msg) return null;
+  const firebase = getFirebaseMessagingIfAvailable();
+  if (!firebase) return null;
+  const { messagingModule, messaging } = firebase;
   try {
     if (Platform.OS === "ios") {
-      await registerDeviceForRemoteMessages(msg);
+      await messagingModule.registerDeviceForRemoteMessages(messaging);
     }
 
     try {
-      const token = await getToken(msg);
+      const token = await messagingModule.getToken(messaging);
       if (__DEV__ && typeof token === "string" && token.length > 0) {
         // eslint-disable-next-line no-console
         console.log("[push] fcm token", maskToken(token));
@@ -61,7 +47,7 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
       if (Platform.OS === "ios" && /apns|no apns token/i.test(message)) {
         await sleep(APNS_RETRY_DELAY_MS);
         try {
-          const token = await getToken(msg);
+          const token = await messagingModule.getToken(messaging);
           if (__DEV__ && typeof token === "string" && token.length > 0) {
             // eslint-disable-next-line no-console
             console.log("[push] fcm token", maskToken(token));
@@ -99,9 +85,9 @@ export const getFcmDeviceToken = async (): Promise<string | null> => {
 export const subscribeFcmTokenRefresh = (
   onRefresh: (token: string) => void,
 ): (() => void) => {
-  const msg = getFirebaseMessagingIfAvailable();
-  if (!msg) return () => {};
-  const unsubscribe = onTokenRefresh(msg, (token) => {
+  const firebase = getFirebaseMessagingIfAvailable();
+  if (!firebase) return () => {};
+  const unsubscribe = firebase.messagingModule.onTokenRefresh(firebase.messaging, (token) => {
     if (typeof token === "string" && token.length > 0) {
       onRefresh(token);
     }

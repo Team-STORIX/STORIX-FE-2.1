@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomWidth: 6,
+    borderBottomColor: Gray[50],
     backgroundColor: C.card,
   },
   title: {

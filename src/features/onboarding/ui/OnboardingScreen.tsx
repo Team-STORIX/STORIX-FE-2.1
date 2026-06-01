@@ -96,7 +96,7 @@ export function OnboardingScreen() {
 
     try {
       await signupMutation.mutateAsync({
-        termsAgree,
+        marketingAgree: termsAgree,
         nickName: nickname.trim(),
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,

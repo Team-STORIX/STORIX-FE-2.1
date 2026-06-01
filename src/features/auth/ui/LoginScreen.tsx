@@ -41,6 +41,10 @@ export function LoginScreen() {
 
   const pendingProvider = mutation.variables;
   const pending = mutation.isPending || devPending;
+  const loginErrorMessage =
+    mutation.error instanceof Error
+      ? mutation.error.message
+      : "로그인에 실패했습니다. 다시 시도해주세요.";
 
   const handleDevLogin = async () => {
     setDevPending(true);
@@ -116,10 +120,11 @@ export function LoginScreen() {
         {mutation.isError ? (
           <Text style={styles.errorText}>
             {pendingProvider === "kakao"
-              ? "카카오 로그인에 실패했습니다. 다시 시도해 주세요."
-              : "로그인에 실패했습니다. 다시 시도해 주세요."}
+              ? `카카오 로그인에 실패했습니다. ${loginErrorMessage}`
+              : `로그인에 실패했습니다. ${loginErrorMessage}`}
           </Text>
         ) : null}
+
       </View>
     </View>
   );
