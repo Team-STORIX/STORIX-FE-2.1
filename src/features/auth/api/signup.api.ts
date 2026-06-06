@@ -10,8 +10,8 @@ import {
  * Completes signup for a new user.
  *
  * The onboarding token (obtained during social pre-login) is passed in the
- * header. The current backend contract is the deprecated v1 endpoint, which
- * expects marketingAgree instead of the v2 termsAgree field.
+ * header. Uses the v2 endpoint which requires three mandatory consent fields:
+ * serviceTermsAgree, privacyPolicyAgree, and ageOver14 (all must be true).
  *
  * No withCredentials — tokens are managed via SecureStore, not cookies.
  */
@@ -47,7 +47,7 @@ export const signup = async (
       }
 
       const response = await apiClient.post(
-        '/api/v1/auth/users/reader/signup',
+        '/api/v2/auth/users/reader/signup',
         data,
         { headers: attempt.headers },
       )

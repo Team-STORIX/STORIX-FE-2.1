@@ -112,7 +112,9 @@ export const extractLoginTokens = (
 // ─── Signup ───────────────────────────────────────────────────────────────────
 
 export const SignupRequestSchema = z.object({
-  marketingAgree: z.boolean(),
+  serviceTermsAgree: z.boolean(),
+  privacyPolicyAgree: z.boolean(),
+  ageOver14: z.boolean(),
   nickName: z.string().min(1),
   favoriteGenreList: z.array(GenreKeySchema),
   favoriteWorksIdList: z.array(z.number()),

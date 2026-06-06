@@ -17,8 +17,10 @@ import { useLikesStore } from './likes.store'
 import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
 
-// AsyncStorage key for the non-sensitive marketing consent flag.
-const TERMS_AGREE_KEY = 'termsAgree'
+// AsyncStorage keys for non-sensitive consent flags.
+const SERVICE_TERMS_AGREE_KEY = 'serviceTermsAgree'
+const PRIVACY_POLICY_AGREE_KEY = 'privacyPolicyAgree'
+const AGE_OVER_14_KEY = 'ageOver14'
 const MARKETING_AGREE_KEY = 'marketingAgree'
 
 // ---------- types ----------
@@ -34,7 +36,9 @@ type AuthState = {
 
   // UI / UX.
   isLoading: boolean
-  termsAgree: boolean
+  serviceTermsAgree: boolean
+  privacyPolicyAgree: boolean
+  ageOver14: boolean
   marketingAgree: boolean
 }
 
@@ -66,11 +70,27 @@ type AuthActions = {
    */
   setOnboardingToken: (token: string) => Promise<void>
 
-  /** Persists the terms agreement flag to AsyncStorage. */
-  setTermsAgree: (agree: boolean) => Promise<void>
+  /** Persists the service terms agreement flag to AsyncStorage. */
+  setServiceTermsAgree: (agree: boolean) => Promise<void>
+
+  /** Persists the privacy policy agreement flag to AsyncStorage. */
+  setPrivacyPolicyAgree: (agree: boolean) => Promise<void>
+
+  /** Persists the age over 14 agreement flag to AsyncStorage. */
+  setAgeOver14: (agree: boolean) => Promise<void>
 
   /** Persists the marketing consent flag to AsyncStorage. */
   setMarketingAgree: (agree: boolean) => Promise<void>
+
+  /**
+   * Convenience method to set all three mandatory consent fields at once.
+   * Used by the agreement screen after user accepts all required terms.
+   */
+  setMandatoryConsents: (consents: {
+    serviceTermsAgree: boolean
+    privacyPolicyAgree: boolean
+    ageOver14: boolean
+  }) => Promise<void>
 
   /**
    * Full sign-out.
@@ -93,15 +113,19 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   onboardingToken: null,
   isAuthenticated: false,
   isLoading: false,
-  termsAgree: false,
+  serviceTermsAgree: false,
+  privacyPolicyAgree: false,
+  ageOver14: false,
   marketingAgree: false,
 
   hydrateAuth: async () => {
     // Run SecureStore reads in parallel to minimise splash delay.
-    const [accessToken, onboardingToken, termsAgree, marketingAgree] = await Promise.all([
+    const [accessToken, onboardingToken, serviceTermsAgree, privacyPolicyAgree, ageOver14, marketingAgree] = await Promise.all([
       getAccessToken(),
       getOnboardingToken(),
-      getItem<boolean>(TERMS_AGREE_KEY),
+      getItem<boolean>(SERVICE_TERMS_AGREE_KEY),
+      getItem<boolean>(PRIVACY_POLICY_AGREE_KEY),
+      getItem<boolean>(AGE_OVER_14_KEY),
       getItem<boolean>(MARKETING_AGREE_KEY),
     ])
 
@@ -109,7 +133,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       accessToken,
       onboardingToken,
       isAuthenticated: !!accessToken,
-      termsAgree: termsAgree ?? false,
+      serviceTermsAgree: serviceTermsAgree ?? false,
+      privacyPolicyAgree: privacyPolicyAgree ?? false,
+      ageOver14: ageOver14 ?? false,
       marketingAgree: marketingAgree ?? false,
     })
   },
@@ -149,14 +175,33 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     })
   },
 
-  setTermsAgree: async (agree) => {
-    await setItem(TERMS_AGREE_KEY, agree)
-    set({ termsAgree: agree })
+  setServiceTermsAgree: async (agree) => {
+    await setItem(SERVICE_TERMS_AGREE_KEY, agree)
+    set({ serviceTermsAgree: agree })
+  },
+
+  setPrivacyPolicyAgree: async (agree) => {
+    await setItem(PRIVACY_POLICY_AGREE_KEY, agree)
+    set({ privacyPolicyAgree: agree })
+  },
+
+  setAgeOver14: async (agree) => {
+    await setItem(AGE_OVER_14_KEY, agree)
+    set({ ageOver14: agree })
   },
 
   setMarketingAgree: async (agree) => {
     await setItem(MARKETING_AGREE_KEY, agree)
     set({ marketingAgree: agree })
+  },
+
+  setMandatoryConsents: async ({ serviceTermsAgree, privacyPolicyAgree, ageOver14 }) => {
+    await Promise.all([
+      setItem(SERVICE_TERMS_AGREE_KEY, serviceTermsAgree),
+      setItem(PRIVACY_POLICY_AGREE_KEY, privacyPolicyAgree),
+      setItem(AGE_OVER_14_KEY, ageOver14),
+    ])
+    set({ serviceTermsAgree, privacyPolicyAgree, ageOver14 })
   },
 
   clearAuth: async () => {
@@ -174,7 +219,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       accessToken: null,
       onboardingToken: null,
       isAuthenticated: false,
-      termsAgree: false,
+      serviceTermsAgree: false,
+      privacyPolicyAgree: false,
+      ageOver14: false,
       marketingAgree: false,
     })
 
