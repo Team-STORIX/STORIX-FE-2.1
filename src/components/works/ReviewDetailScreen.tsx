@@ -361,7 +361,9 @@ function TopBar({
         <Image source={backIcon} style={topBarStyles.icon} contentFit="contain" />
       </Pressable>
 
-      <Text style={topBarStyles.title}>리뷰</Text>
+      <View style={[topBarStyles.titleWrapper, { top: topInset + 8 }]}>
+        <Text style={topBarStyles.title}>리뷰</Text>
+      </View>
 
       <View style={topBarStyles.rightActions}>
         {showRecordCard && onPressRecordCard && (
@@ -418,14 +420,20 @@ const topBarStyles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  title: {
-    ...Typography.body1Medium,
-    color: C.text,
+  titleWrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  title: {
+    ...Typography.body1Medium,
+    color: C.text,
     textAlign: 'center',
-    zIndex: -1,
+    lineHeight: 32,
   },
   rightActions: {
     flexDirection: 'row',

@@ -26,7 +26,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { routeName: 'index', label: '홈' },
-  { routeName: 'feed', label: '피드' },
+  { routeName: 'feed', label: '소통' },
   { routeName: 'library', label: '서재' },
   { routeName: 'profile', label: '프로필' },
 ]

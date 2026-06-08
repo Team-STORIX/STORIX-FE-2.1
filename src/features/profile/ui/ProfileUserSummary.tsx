@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
   },
   textWrap: {
     width: 200,
+    alignItems: 'flex-start',
     gap: 6,
   },
   levelBadge: {
@@ -87,17 +88,15 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   nickname: {
-    fontFamily: 'SUIT',
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25.2,
+    ...Typography.heading3,
+    width: '100%',
+    textAlign: 'left',
     color: C.text,
   },
   bio: {
-    fontFamily: 'SUIT',
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
+    width: '100%',
+    textAlign: 'left',
     maxWidth: 200,
     color: Gray[600],
   },

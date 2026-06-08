@@ -99,21 +99,21 @@ export function ProfileCardModal({
             {/* 별점평균 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>별점평균</Text>
+              <Text style={styles.statLabel}>별점 평균</Text>
               <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
             </View>
 
             {/* 최애장르 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{topGenreName}</Text>
-              <Text style={styles.statLabel}>최애장르</Text>
+              <Text style={styles.statLabel}>최애 장르</Text>
               <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
             </View>
 
             {/* 작품 리뷰 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>작품 리뷰</Text>
+              <Text style={styles.statLabel}>리뷰 작품</Text>
               <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
             </View>
           </View>

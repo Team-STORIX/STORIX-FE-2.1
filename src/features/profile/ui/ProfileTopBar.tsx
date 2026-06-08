@@ -39,8 +39,8 @@ export function ProfileTopBar({ onPressSettings, onPressProfileCard }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

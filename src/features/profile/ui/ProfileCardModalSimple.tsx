@@ -1,6 +1,6 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, Image as RNImage } from 'react-native'
 import { Image } from 'expo-image'
-import { SvgXml } from 'react-native-svg'
+import { SvgUri, SvgXml } from 'react-native-svg'
 import { useMemo, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BlurView } from 'expo-blur'
@@ -16,6 +16,8 @@ const libraryIcon = require('../../../../assets/icons/profile/icon-library.svg')
 const downloadIcon = require('../../../../assets/icons/common/icon-download.svg')
 const shareIcon = require('../../../../assets/icons/common/icon-share.svg')
 const twitterIcon = require('../../../../assets/icons/common/icon-twitter.svg')
+
+const resolveAssetUri = (asset: number) => RNImage.resolveAssetSource(asset)?.uri
 
 export type ProfileCardModalProps = {
   visible: boolean
@@ -83,7 +85,7 @@ export function ProfileCardModal({
           <View style={styles.topRow}>
             {/* 왼쪽 핑크 영역 */}
             <View style={styles.pinkSection}>
-              <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
+              <SvgUri uri={resolveAssetUri(idCardTitle)} width={137} height={72} />
 
               <View style={styles.nicknameBadge}>
                 <Text style={styles.nicknameText} numberOfLines={1}>
@@ -114,21 +116,27 @@ export function ProfileCardModal({
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
               <Text style={styles.statLabel}>별점평균</Text>
-              <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
+              <View style={styles.statIconWrap}>
+                <SvgUri uri={resolveAssetUri(reviewIcon)} width={24} height={24} />
+              </View>
             </View>
 
             {/* 최애장르 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{topGenreName}</Text>
               <Text style={styles.statLabel}>최애장르</Text>
-              <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
+              <View style={styles.statIconWrap}>
+                <SvgUri uri={resolveAssetUri(likedIcon)} width={24} height={24} />
+              </View>
             </View>
 
             {/* 작품 리뷰 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewCount}</Text>
               <Text style={styles.statLabel}>작품 리뷰</Text>
-              <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
+              <View style={styles.statIconWrap}>
+                <SvgUri uri={resolveAssetUri(libraryIcon)} width={24} height={24} />
+              </View>
             </View>
           </View>
             </Pressable>
@@ -321,8 +329,9 @@ const styles = StyleSheet.create({
     color: Magenta[200],
     textAlign: 'center',
     marginTop: 4,
+    includeFontPadding: false,
   },
-  statIcon: {
+  statIconWrap: {
     width: 24,
     height: 24,
     marginTop: 16,

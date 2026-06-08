@@ -13,6 +13,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray, Magenta } from "../../../theme/colors";
+import { Typography } from "../../../theme/typography";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
@@ -644,16 +645,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   worksName: {
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
-    color: C.text,
+    ...Typography.body2Bold,
+    color: Gray[800],
     marginBottom: 4,
   },
   worksMeta: {
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   worksArrowBtn: {
@@ -684,9 +681,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.divider,
   },
   hashtagText: {
-    fontSize: 10,
-    fontWeight: "500",
-    lineHeight: 14,
+    ...Typography.caption2Medium,
     color: Gray[500],
   },
 

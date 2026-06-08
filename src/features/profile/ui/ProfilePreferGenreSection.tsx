@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findGenreButton = require('../../../../assets/icons/profile/find-genre.svg')
@@ -172,9 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   content: {

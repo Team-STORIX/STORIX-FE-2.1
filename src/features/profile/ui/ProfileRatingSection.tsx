@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.heading3,
-    lineHeight: 25.2,
     color: C.text,
   },
   errorText: {
