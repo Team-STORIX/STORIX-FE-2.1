@@ -1,4 +1,4 @@
-﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
@@ -38,7 +38,7 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         onPress={() => router.push('/profile/fix')}
         style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={'\ud504\ub85c\ud544 \uc218\uc815'}
+        accessibilityLabel={'프로필 수정'}
       >
         <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
       </Pressable>

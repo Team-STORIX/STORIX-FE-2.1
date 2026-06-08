@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +23,7 @@ import { C } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
 import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
+import { RecordCardModal } from './RecordCardModal'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
 const reviewProfileIcon = require('../../../assets/icons/common/reviewProfile.svg')
@@ -29,6 +31,7 @@ const littleStarIcon = require('../../../assets/icons/common/littleStar.svg')
 const likeIcon = require('../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
 const menuDotsIcon = require('../../../assets/icons/common/menu-3dots.svg')
+const savedToast = require('../../../assets/common/cardshare/image-gallery-saved.svg')
 
 type Props = {
   reviewId: number
@@ -48,6 +51,8 @@ const formatKoreanDate = (iso?: string) => {
 export function ReviewDetailScreen({ reviewId }: Props) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const [showRecordCard, setShowRecordCard] = useState(false)
+  const [showSavedToast, setShowSavedToast] = useState(false)
 
   const isValidReviewId = Number.isFinite(reviewId) && reviewId > 0
   const { data, isLoading, isError } = useWorksReviewDetail(
@@ -195,6 +200,8 @@ export function ReviewDetailScreen({ reviewId }: Props) {
         onBack={handleBack}
         onPressMenu={isMine ? onConfirmDelete : undefined}
         showMenu={isMine}
+        onPressRecordCard={() => setShowRecordCard(true)}
+        showRecordCard={isMine}
       />
 
       <ScrollView
@@ -296,6 +303,31 @@ export function ReviewDetailScreen({ reviewId }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* 기록카드 모달 */}
+      <RecordCardModal
+        visible={showRecordCard}
+        onClose={() => setShowRecordCard(false)}
+        coverImageUrl={ui.coverSrc}
+        nickname={ui.userName}
+        createdAt={data?.lastCreatedTime ?? data?.createdAt ?? ''}
+        reviewContent={ui.content}
+        worksTitle={ui.worksTitle}
+        rating={ui.rating ?? 0}
+        onSaveSuccess={() => {
+          setShowSavedToast(true)
+          setTimeout(() => setShowSavedToast(false), 1500)
+        }}
+      />
+
+      {/* 저장 완료 토스트 */}
+      {showSavedToast && (
+        <Modal visible transparent animationType="none" statusBarTranslucent>
+          <View style={[styles.toastContainer, { bottom: 88 }]} pointerEvents="none">
+            <Image source={savedToast} style={styles.toastImage} contentFit="contain" />
+          </View>
+        </Modal>
+      )}
     </View>
   )
 }
@@ -305,11 +337,15 @@ function TopBar({
   onBack,
   onPressMenu,
   showMenu = false,
+  onPressRecordCard,
+  showRecordCard = false,
 }: {
   topInset: number
   onBack: () => void
   onPressMenu?: () => void
   showMenu?: boolean
+  onPressRecordCard?: () => void
+  showRecordCard?: boolean
 }) {
   return (
     <View style={[topBarStyles.container, { paddingTop: topInset + 8 }]}>
@@ -327,7 +363,20 @@ function TopBar({
 
       <Text style={topBarStyles.title}>리뷰</Text>
 
-      <View style={topBarStyles.rightSpacer}>
+      <View style={topBarStyles.rightActions}>
+        {showRecordCard && onPressRecordCard && (
+          <Pressable
+            style={({ pressed }) => [
+              topBarStyles.recordCardButton,
+              pressed && topBarStyles.pressed,
+            ]}
+            onPress={onPressRecordCard}
+            accessibilityRole="button"
+            accessibilityLabel="기록카드"
+          >
+            <Text style={topBarStyles.recordCardText}>기록카드</Text>
+          </Pressable>
+        )}
         {showMenu && onPressMenu ? (
           <Pressable
             style={({ pressed }) => [
@@ -344,7 +393,7 @@ function TopBar({
               contentFit="contain"
             />
           </Pressable>
-        ) : null}
+        ) : <View style={{ width: 32, height: 32 }} />}
       </View>
     </View>
   )
@@ -372,12 +421,33 @@ const topBarStyles = StyleSheet.create({
   title: {
     ...Typography.body1Medium,
     color: C.text,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    zIndex: -1,
   },
-  rightSpacer: {
-    width: 32,
-    height: 32,
-    alignItems: 'flex-end',
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  recordCardButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E3DCDF',
+    backgroundColor: '#FFF',
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  recordCardText: {
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16.8,
+    color: '#645C5F',
   },
   pressed: {
     opacity: 0.7,
@@ -530,5 +600,18 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+    elevation: 100,
+  },
+  toastImage: {
+    width: 320,
+    height: 82,
   },
 })
