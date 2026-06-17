@@ -23,9 +23,11 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         </View>
 
         <View style={styles.textWrap}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>Lv.{me.level}</Text>
-          </View>
+          {me.title ? (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{me.title}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.nickname}>{me.nickName}</Text>
           <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>

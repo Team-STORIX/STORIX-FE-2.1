@@ -127,12 +127,17 @@ function AuthGate() {
     const group = segmentList[0]
     const screen = segmentList[1]
     const inAuthGroup = group === '(auth)'
+    const inOAuthCallback = group === 'oauth'
     const hasOnboardingToken =
       typeof onboardingToken === 'string' && onboardingToken.trim().length > 0
     const isLoginRoute = inAuthGroup && screen === 'login'
     const isAgreementRoute = inAuthGroup && screen === 'agreement'
     const isOnboardingRoute = inAuthGroup && screen === 'onboarding'
     const isMidSignupRoute = isAgreementRoute || isOnboardingRoute
+
+    if (inOAuthCallback) {
+      return
+    }
 
     if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)')
@@ -145,11 +150,11 @@ function AuthGate() {
       }
 
       if (isLoginRoute || !inAuthGroup) {
-        router.replace('/(auth)/agreement')
+        router.replace('/agreement')
         return
       }
 
-      router.replace('/(auth)/agreement')
+      router.replace('/agreement')
       return
     }
 
@@ -203,6 +208,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="oauth/x" options={{ headerShown: false }} />
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>

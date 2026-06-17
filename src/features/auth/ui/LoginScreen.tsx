@@ -14,7 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "../../../store/auth.store";
 import { C, Typography } from "../../../theme";
 import { developerLogin } from "../api";
-import { useNativeSocialLogin } from "../hooks";
+import { useNativeSocialLogin, useXLogin } from "../hooks";
+import { openXAuthorizationPage } from "../lib/xOAuth";
 
 // Dev-only login entry. Gated behind BOTH __DEV__ (stripped from release builds)
 // and an explicit opt-in env flag, so it can never surface in a production build.
@@ -36,11 +37,13 @@ export function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const mutation = useNativeSocialLogin();
+  const xLoginMutation = useXLogin();
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens);
   const [devPending, setDevPending] = useState(false);
+  const [xLoginPending, setXLoginPending] = useState(false);
 
   const pendingProvider = mutation.variables;
-  const pending = mutation.isPending || devPending;
+  const pending = mutation.isPending || devPending || xLoginPending || xLoginMutation.isPending;
 
   const handleDevLogin = async () => {
     setDevPending(true);
@@ -61,6 +64,18 @@ export function LoginScreen() {
       Alert.alert("오류", "개발자 로그인에 실패했어요.");
     } finally {
       setDevPending(false);
+    }
+  };
+
+  const handleXLogin = async () => {
+    setXLoginPending(true);
+    try {
+      await openXAuthorizationPage();
+
+    } catch (error) {
+      Alert.alert("오류", "X 로그인에 실패했어요.");
+    } finally {
+      setXLoginPending(false);
     }
   };
 
@@ -98,9 +113,8 @@ export function LoginScreen() {
         />
         <LoginAssetButton
           source={twitterButton}
-          onPress={() =>
-            Alert.alert("안내", "트위터 로그인은 아직 지원되지 않아요.")
-          }
+          onPress={handleXLogin}
+          loading={xLoginPending}
           disabled={pending}
         />
         {Platform.OS === "ios" && (

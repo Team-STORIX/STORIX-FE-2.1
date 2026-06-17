@@ -96,11 +96,13 @@ export function OnboardingScreen() {
 
     try {
       await signupMutation.mutateAsync({
-        termsAgree,
+        serviceTermsAgree: termsAgree,
+        privacyPolicyAgree: termsAgree,
+        ageOver14: termsAgree,
         nickName: nickname.trim(),
+        profileDescription: bio,
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,
-        profileDescription: bio,
       })
       if (profileImageUri) {
         await uploadAndSetProfileImage(profileImageUri).catch(() => {})

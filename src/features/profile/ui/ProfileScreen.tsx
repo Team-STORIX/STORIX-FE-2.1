@@ -167,10 +167,12 @@ export function ProfileScreen() {
               </View>
               <ProfileUserSummary me={me} />
               <LevelProgress
-                level="1단계"
-                nextTitle="신입 독자"
-                currentPoints={150}
-                progress={0.6}
+                level={me.stage}
+                nextTitle={me.nextStage}
+                remainingPoints={me.remainingScore}
+                progress={me.progressPercentage / 100}
+                topGenre={me.topGenre}
+                title={me.title}
               />
               <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
             </>
@@ -180,9 +182,9 @@ export function ProfileScreen() {
           visible={showCardModal}
           onClose={() => setShowCardModal(false)}
           nickname={me.nickName}
-          title={getLevelTitle(me.level)}
+          title={me.title ?? getLevelTitle(me.level ?? 0)}
           averageRating={averageRating}
-          topGenreName={topGenre?.name ?? '장르없음'}
+          topGenreName={topGenre?.name ?? me.topGenre}
           reviewCount={totalReviews}
           topGenreIconSvg={topGenre?.svg}
           onSaveSuccess={() => {
@@ -212,10 +214,12 @@ export function ProfileScreen() {
 
       <ProfileUserSummary me={me} />
       <LevelProgress
-        level="1단계"
-        nextTitle="신입 독자"
-        currentPoints={150}
-        progress={0.6}
+        level={me.stage}
+        nextTitle={me.nextStage}
+        remainingPoints={me.remainingScore}
+        progress={me.progressPercentage / 100}
+        topGenre={me.topGenre}
+        title={me.title}
       />
       <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <ProfilePreferenceSection />
@@ -227,9 +231,9 @@ export function ProfileScreen() {
       visible={showCardModal}
       onClose={() => setShowCardModal(false)}
       nickname={me.nickName}
-      title={getLevelTitle(me.level)}
+      title={me.title ?? getLevelTitle(me.level ?? 0)}
       averageRating={averageRating}
-      topGenreName={topGenre?.name ?? '장르없음'}
+      topGenreName={topGenre?.name ?? me.topGenre}
       reviewCount={totalReviews}
       topGenreIconSvg={topGenre?.svg}
       onSaveSuccess={() => {

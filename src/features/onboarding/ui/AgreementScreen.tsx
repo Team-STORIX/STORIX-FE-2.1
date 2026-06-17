@@ -32,7 +32,7 @@ export function AgreementScreen() {
   const handleNext = async () => {
     if (!allAgreed || !onboardingToken) return
     await setTermsAgree(true)
-    router.replace('/(auth)/onboarding')
+    router.replace('/onboarding')
   }
 
   if (!onboardingToken) {
