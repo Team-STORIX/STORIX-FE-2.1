@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
+import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
 import { C, Gray, Radius, Typography } from '../../../theme'
 
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
@@ -21,6 +22,7 @@ type BaseProps = {
   onToggleLike: () => void
   onOpenDelete: () => void
   onOpenReport: () => void
+  onOpenBlock: () => void
 }
 
 type ReplyProps = BaseProps & {
@@ -37,11 +39,12 @@ type SubReplyProps = BaseProps & {
 type Props = ReplyProps | SubReplyProps
 
 export function FeedCommentItem(props: Props) {
-  const { myUserId, writerUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport } =
+  const { myUserId, writerUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport, onOpenBlock } =
     props
   const isMine = myUserId != null && item.reply.userId === myUserId
   const isWriter = writerUserId != null && item.reply.userId === writerUserId
   const isReplyTarget = props.variant === 'reply' && props.isReplyTarget
+  const displayCreatedAt = formatCreatedAtLabel(item.reply.lastCreatedTime)
 
   const card = (
     <View style={[
@@ -61,7 +64,7 @@ export function FeedCommentItem(props: Props) {
           <View style={styles.metaRow}>
             <Text style={[styles.name, isWriter && styles.writerName]}>{item.profile.nickName}{isWriter ? <Text style={styles.writerBadge}>(글쓴이)</Text> : null}</Text>
             <Text style={styles.dot}>·</Text>
-            <Text style={styles.time}>{item.reply.lastCreatedTime}</Text>
+            <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
         </View>
 
@@ -74,20 +77,46 @@ export function FeedCommentItem(props: Props) {
           </Pressable>
 
           {isMenuOpen ? (
-            <Pressable
-              onPress={() => {
-                onToggleMenu()
-                if (isMine) onOpenDelete()
-                else onOpenReport()
-              }}
-              style={styles.dropdownButton}
-            >
-              <Image
-                source={isMine ? deleteDropdown : commentDropdown}
-                style={styles.dropdownImage}
-                contentFit="contain"
-              />
-            </Pressable>
+            <View style={styles.dropdownButton}>
+              {isMine ? (
+                <View style={styles.menuTextWrapper}>
+                  <Pressable
+                    style={styles.menuTextItem}
+                    onPress={() => {
+                      onToggleMenu()
+                      onOpenDelete()
+                    }}
+                  >
+                    <Text style={styles.menuTextItemText}>삭제하기</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.menuTextWrapper}>
+                  {/* 신고하기 */}
+                  <Pressable
+                    style={styles.menuTextItem}
+                    onPress={() => {
+                      onToggleMenu()
+                      onOpenReport()
+                    }}
+                  >
+                    <Text style={styles.menuTextItemText}>신고하기</Text>
+                  </Pressable>
+                  {/* 구분선 */}
+                  <View style={styles.menuDivider} />
+                  {/* 차단하기 */}
+                  <Pressable
+                    style={styles.menuTextItem}
+                    onPress={() => {
+                      onToggleMenu()
+                      onOpenBlock()
+                    }}
+                  >
+                    <Text style={styles.menuTextItemText}>차단하기</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           ) : null}
         </View>
       </View>
@@ -228,10 +257,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+    overflow: 'hidden',
   },
   dropdownImage: {
     width: 96,
     height: 36,
+  },
+  menuTextWrapper: {
+    width: 96,
+    padding: 8,
+  },
+  menuTextItem: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  menuTextItemText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Gray[200],
+    marginVertical: 6,
   },
   commentText: {
     ...Typography.body2Medium,

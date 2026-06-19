@@ -12,6 +12,7 @@ import {
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
 import { C, Gray, Magenta } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
 
@@ -234,6 +235,7 @@ export function FeedPostCard({
 
   const isMine = currentUserId != null && writerUserId === currentUserId;
   const isSpoilerHidden = isSpoiler && !spoilerRevealed;
+  const displayCreatedAt = formatCreatedAtLabel(createdAt);
 
   const showWorks =
     works != null &&
@@ -270,7 +272,9 @@ export function FeedPostCard({
 
           <View style={styles.authorMeta}>
             <Text style={styles.authorName}>{nickName}</Text>
-            {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
+            {!!displayCreatedAt && (
+              <Text style={styles.timestamp}>{displayCreatedAt}</Text>
+            )}
           </View>
 
           {/* Menu button */}
@@ -303,16 +307,19 @@ export function FeedPostCard({
             >
               <View style={[styles.menuDropdown, { top: menuDropdownTop }]}>
                 {isMine ? (
-                  <Pressable
-                    onPress={() => {
-                      setMenuOpen(false);
-                      onOpenDelete?.();
-                    }}
-                  >
-                    <Image source={deleteDropdown} style={styles.menuDropdownImg} contentFit="contain" />
-                  </Pressable>
+                  <View style={styles.menuTextWrapper}>
+                    <Pressable
+                      style={styles.menuTextItem}
+                      onPress={() => {
+                        setMenuOpen(false);
+                        onOpenDelete?.();
+                      }}
+                    >
+                      <Text style={styles.menuTextItemText}>삭제하기</Text>
+                    </Pressable>
+                  </View>
                 ) : (
-                  <>
+                  <View style={styles.menuTextWrapper}>
                     {/* 신고하기 */}
                     <Pressable
                       style={styles.menuTextItem}
@@ -335,7 +342,7 @@ export function FeedPostCard({
                     >
                       <Text style={styles.menuTextItemText}>차단하기</Text>
                     </Pressable>
-                  </>
+                  </View>
                 )}
               </View>
             </Pressable>
@@ -621,8 +628,6 @@ const styles = StyleSheet.create({
   menuDropdown: {
     position: "absolute",
     right: 16,
-    width: 96,
-    padding: 8,
     borderRadius: 4,
     backgroundColor: C.card,
     shadowColor: C.text,
@@ -634,7 +639,11 @@ const styles = StyleSheet.create({
   },
   menuDropdownImg: {
     width: 96,
-    height: 68,
+    height: 36,
+  },
+  menuTextWrapper: {
+    width: 96,
+    padding: 8,
   },
   menuTextItem: {
     justifyContent: "center",

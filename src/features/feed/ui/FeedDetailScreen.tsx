@@ -29,10 +29,11 @@ import {
 } from '../api/feed/readerBoardDetail.api'
 import { deleteBoard, reportBoard, toggleBoardLike } from '../api/feed/readerBoard.api'
 import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
+import { blockUser } from '../../users/api/users.api'
 import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
-import { ReportModal } from './ReportModal'
+import { UserActionModal } from './BlockConfirmModal'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -82,6 +83,12 @@ export function FeedDetailScreen() {
   const [replyCountDelta, setReplyCountDelta] = useState(0)
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
   const [reportTarget, setReportTarget] = useState<{
+    profileImageUrl?: string | null
+    nickname: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
+
+  const [blockTarget, setBlockTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
     onConfirm: () => Promise<void>
@@ -213,6 +220,24 @@ export function FeedDetailScreen() {
     })
   }, [boardId, profile])
 
+  const onBlockBoard = useCallback(() => {
+    if (!profile) return
+    setBlockTarget({
+      profileImageUrl: profile.profileImageUrl,
+      nickname: profile.nickName,
+      onConfirm: async () => {
+        await blockUser(profile.userId)
+        // 차단 후 쿼리 새로고침
+        qc.invalidateQueries({ queryKey: ['allBoards'] })
+        qc.invalidateQueries({ queryKey: ['boardsByWorksId'] })
+        qc.invalidateQueries({ queryKey: ['boardComments'] })
+        qc.invalidateQueries({ queryKey: ['topicroom'] })
+        qc.invalidateQueries({ queryKey: ['worksReviews'] })
+        router.back()
+      },
+    })
+  }, [profile, qc, router])
+
   const onDeleteReply = useCallback(
     (replyId: number, parentReplyId?: number) => {
       if (!boardId) return
@@ -259,6 +284,29 @@ export function FeedDetailScreen() {
       })
     },
     [boardId],
+  )
+
+  const onBlockReply = useCallback(
+    (
+      blockedUserId: number,
+      authorProfile: { profileImageUrl?: string | null; nickName: string },
+    ) => {
+      setBlockTarget({
+        profileImageUrl: authorProfile.profileImageUrl,
+        nickname: authorProfile.nickName,
+        onConfirm: async () => {
+          await blockUser(blockedUserId)
+          // 차단 후 쿼리 새로고침
+          qc.invalidateQueries({ queryKey: ['allBoards'] })
+          qc.invalidateQueries({ queryKey: ['boardsByWorksId'] })
+          qc.invalidateQueries({ queryKey: ['boardComments'] })
+          qc.invalidateQueries({ queryKey: ['topicroom'] })
+          qc.invalidateQueries({ queryKey: ['worksReviews'] })
+          await detailQuery.refetch()
+        },
+      })
+    },
+    [qc, detailQuery],
   )
 
   const onSubmitComment = useCallback(async () => {
@@ -426,6 +474,7 @@ export function FeedDetailScreen() {
                   board.isWorksSelected && board.worksId ? () => router.push(`/works/${board.worksId}` as const) : undefined
                 }
                 onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
+                onOpenBlock={profile.userId !== myUserId ? onBlockBoard : undefined}
                 onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
                 birthdayTheme={board.theme === 'BIRTHDAY'}
               />
@@ -464,6 +513,7 @@ export function FeedDetailScreen() {
                       }}
                       onOpenDelete={() => onDeleteReply(item.reply.replyId)}
                       onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId, item.profile)}
+                      onOpenBlock={() => onBlockReply(item.reply.userId, item.profile)}
                     />
 
                     {[...(item.childReplies ?? []), ...(subRepliesMap[item.reply.replyId] ?? [])].map((subReply) => {
@@ -498,6 +548,7 @@ export function FeedDetailScreen() {
                           onOpenReport={() =>
                             onReportReply(subReply.reply.replyId, subReply.reply.userId, subReply.profile)
                           }
+                          onOpenBlock={() => onBlockReply(subReply.reply.userId, subReply.profile)}
                         />
                       )
                     })}
@@ -520,12 +571,21 @@ export function FeedDetailScreen() {
             />
           </KeyboardAvoidingView>
         )}
-      <ReportModal
+      <UserActionModal
+        type="report"
         visible={reportTarget != null}
         profileImageUrl={reportTarget?.profileImageUrl}
         nickname={reportTarget?.nickname ?? ''}
         onClose={() => setReportTarget(null)}
         onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
+      />
+      <UserActionModal
+        type="block"
+        visible={blockTarget != null}
+        profileImageUrl={blockTarget?.profileImageUrl}
+        nickname={blockTarget?.nickname ?? ''}
+        onClose={() => setBlockTarget(null)}
+        onConfirm={blockTarget?.onConfirm ?? (() => Promise.resolve())}
       />
     </View>
   )
