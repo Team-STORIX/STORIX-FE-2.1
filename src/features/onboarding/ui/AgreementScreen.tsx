@@ -13,26 +13,26 @@ const checkGray = require('../../../../assets/icons/common/check-gray.svg')
 export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const setTermsAgree = useAuthStore((s) => s.setTermsAgree)
+  const setMandatoryConsents = useAuthStore((s) => s.setMandatoryConsents)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
-  const [agreement1, setAgreement1] = useState(false)
-  const [agreement2, setAgreement2] = useState(false)
-  const [agreement3, setAgreement3] = useState(false)
+  const [serviceTermsAgree, setServiceTermsAgree] = useState(false)
+  const [privacyPolicyAgree, setPrivacyPolicyAgree] = useState(false)
+  const [ageOver14, setAgeOver14] = useState(false)
 
-  const allAgreed = agreement1 && agreement2 && agreement3
+  const allAgreed = serviceTermsAgree && privacyPolicyAgree && ageOver14
   const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
   const handleAllAgree = () => {
     const next = !allAgreed
-    setAgreement1(next)
-    setAgreement2(next)
-    setAgreement3(next)
+    setServiceTermsAgree(next)
+    setPrivacyPolicyAgree(next)
+    setAgeOver14(next)
   }
 
   const handleNext = async () => {
     if (!allAgreed || !onboardingToken) return
-    await setTermsAgree(true)
-    router.replace('/onboarding')
+    await setMandatoryConsents({ serviceTermsAgree, privacyPolicyAgree, ageOver14 })
+    router.replace('/(auth)/onboarding')
   }
 
   if (!onboardingToken) {
@@ -82,9 +82,9 @@ export function AgreementScreen() {
         {/* 개별 약관 목록 */}
         <View style={styles.termsBlock}>
           <AgreementRow
-            checked={agreement1}
+            checked={serviceTermsAgree}
             label="(필수) 서비스 이용약관 동의"
-            onToggle={() => setAgreement1((v) => !v)}
+            onToggle={() => setServiceTermsAgree((v) => !v)}
             onOpenLink={() =>
               void Linking.openURL(
                 'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link',
@@ -92,16 +92,16 @@ export function AgreementScreen() {
             }
           />
           <AgreementRow
-            checked={agreement2}
+            checked={privacyPolicyAgree}
             label="(필수) 개인정보 수집·이용 동의"
-            onToggle={() => setAgreement2((v) => !v)}
+            onToggle={() => setPrivacyPolicyAgree((v) => !v)}
             onOpenLink={() =>
               void Linking.openURL(
                 'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a',
               )
             }
           />
-          <AgreementAgeRow checked={agreement3} onToggle={() => setAgreement3((v) => !v)} />
+          <AgreementAgeRow checked={ageOver14} onToggle={() => setAgeOver14((v) => !v)} />
         </View>
       </View>
 
