@@ -61,7 +61,8 @@ export function ProfileHashtagSection() {
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 28,
+    paddingTop: 28,
+    paddingBottom: 48,
     borderBottomWidth: 6,
     borderBottomColor: C.bg,
     backgroundColor: C.card,

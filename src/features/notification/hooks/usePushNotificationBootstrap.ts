@@ -1,10 +1,3 @@
-import { getApps } from "@react-native-firebase/app";
-import {
-  getInitialNotification,
-  getMessaging,
-  onMessage,
-  onNotificationOpenedApp,
-} from "@react-native-firebase/messaging";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 
@@ -13,6 +6,10 @@ import { useAuthStore } from "../../../store/auth.store";
 import { markNotificationRead } from "../api/notification.api";
 import { notificationKeys } from "../api/notification.keys";
 import { subscribeFcmTokenRefresh } from "../services/fcmToken";
+import {
+  getFirebaseMessagingIfAvailable,
+  isFirebaseNativeAvailable,
+} from "../services/firebaseNative";
 import { handleFcmTokenRefresh } from "../services/pushDeviceSync";
 import {
   getNotificationRoute,
@@ -97,10 +94,11 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
 // single cleanup that detaches both subscriptions.
 const attachMessageListeners = (): (() => void) => {
   try {
-    if (getApps().length === 0) return () => {};
-    const msg = getMessaging();
+    const firebase = getFirebaseMessagingIfAvailable();
+    if (!firebase) return () => {};
+    const { messagingModule, messaging } = firebase;
 
-    const unsubMessage = onMessage(msg, async (remoteMessage) => {
+    const unsubMessage = messagingModule.onMessage(messaging, async (remoteMessage) => {
       // Foreground messages. iOS does NOT automatically show a banner for a
       // foreground remote message, and Android only shows one in the
       // background; so to surface a foreground notification we must display a
@@ -127,12 +125,12 @@ const attachMessageListeners = (): (() => void) => {
       }
     });
 
-    const unsubOpened = onNotificationOpenedApp(msg, (remoteMessage) => {
+    const unsubOpened = messagingModule.onNotificationOpenedApp(messaging, (remoteMessage) => {
       // Background → tap.
       void handleNotificationOpen(remoteMessage?.data);
     });
 
-    void getInitialNotification(msg)
+    void messagingModule.getInitialNotification(messaging)
       .then((remoteMessage) => {
         // Cold start from a tapped notification.
         if (remoteMessage) void handleNotificationOpen(remoteMessage.data);
@@ -181,9 +179,7 @@ export const usePushNotificationBootstrap = (): void => {
       return;
     }
 
-    try {
-      if (getApps().length === 0) return;
-    } catch {
+    if (!isFirebaseNativeAvailable()) {
       return;
     }
 
