@@ -19,6 +19,7 @@ import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import { useWorksDetail } from '../../works'
 import { useCreateReaderReview, usePlusReviewDuplicateCheck } from '../hooks'
+import { LIBRARY_REVIEW_QUERY_KEY } from '../../library/hooks'
 import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
 import { RatingInput } from './RatingInput'
 import { SpoilerToggleSection } from './SpoilerToggleSection'
@@ -87,10 +88,16 @@ export function ReviewWriteEntryScreen() {
         spoilerScript: spoiler ? spoilerMessage.trim() : '',
         content,
       })
-      queryClient.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] })
-      queryClient.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] })
-      queryClient.invalidateQueries({ queryKey: ['works', 'detail', worksId] })
-      queryClient.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: LIBRARY_REVIEW_QUERY_KEY,
+          refetchType: 'all',
+        }),
+        queryClient.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] }),
+        queryClient.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] }),
+        queryClient.invalidateQueries({ queryKey: ['works', 'detail', worksId] }),
+        queryClient.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY }),
+      ])
       router.replace(`/works/${worksId}` as never)
     } catch (e) {
       Alert.alert(

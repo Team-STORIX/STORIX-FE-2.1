@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import type { LibraryUiWork } from './types'
 
 const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
@@ -82,9 +82,9 @@ export function LibraryWorksList({
 const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: C.divider,
+    borderBottomColor: Gray[100],
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -105,34 +105,34 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   title: {
-    ...Typography.body1Medium,
-    color: C.text,
+    ...Typography.body2Medium,
+    color: Gray[900],
   },
   meta: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
+    ...Typography.caption1Medium,
+    color: Gray[500],
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   star: {
     width: 9,
     height: 10,
   },
   rating: {
-    ...Typography.caption1Extrabold,
+    ...Typography.caption1Medium,
     color: C.primary,
   },
   footer: {
     paddingVertical: 16,
   },
   footerSpacer: {
-    height: 32,
+    height: 100,
   },
   pressed: {
     opacity: 0.78,

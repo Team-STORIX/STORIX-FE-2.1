@@ -20,6 +20,7 @@ import {
 } from "../api/auth.schema";
 import { kakaoNativeLogin } from "../api/kakao.api";
 import { naverNativeLogin } from "../api/naver.api";
+import { appleLogin } from "../api/apple.api";
 import { setItem } from "../../../lib/storage/async";
 import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
 
@@ -41,6 +42,16 @@ const callBackend = async (
     }
     return kakaoNativeLogin({ accessToken, idToken });
   }
+  if (provider === "apple") {
+    // The 2.0 backend contract takes a single `code` param — authorizationCode
+    // is preferred; fall back to identityToken when Apple omits the code.
+    const { authorizationCode, identityToken } =
+      await nativeSocialAuthProvider.loginWithApple();
+    const code = authorizationCode ?? identityToken;
+    return appleLogin(code);
+  }
+  const { accessToken } = await nativeSocialAuthProvider.loginWithNaver();
+  return naverNativeLogin({ accessToken });
   const { accessToken, refreshToken } = await nativeSocialAuthProvider.loginWithNaver();
   return naverNativeLogin({ accessToken, refreshToken });
 };

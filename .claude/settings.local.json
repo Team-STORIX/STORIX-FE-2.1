@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /tmp/topicroom_chat.png \"https://www.figma.com/api/mcp/asset/597a7079-8ba3-4b5c-b0fa-8d38eda359f4\")",
+      "Bash(grep -n \"TopicRoomSearchItem\" src/features/search/api/search.schema.ts; echo \"---\"; sed -n '/TopicRoomSearchItem/,/^}/p' src/features/search/api/search.schema.ts | head -40)",
+      "Bash(curl -s -o tr_home.png \"https://www.figma.com/api/mcp/asset/d5a79e2f-0f65-495d-a318-02050b1b470d\")",
+      "Bash(curl -s -o storix_write.png \"https://www.figma.com/api/mcp/asset/2876d01e-6207-40b9-8978-9c5105ae1d18\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/expo-image-manipulator/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/expo-image-picker/package.json'\\).version\\)\")",
+      "Bash(echo \"EXPORT EXIT: $?\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(pod --version)",
+      "Bash(npx pod-install *)",
+      "Bash(ls /Users/JULGISELL/)",
+      "Read(//Users/JULGISELL/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/JULGISELL/STORIX-FE-2.1/src/features/search/api"
+    ]
+  }
+}
