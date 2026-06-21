@@ -5,7 +5,7 @@
 // Requires a Development Build (Expo Go will crash on import).
 // Run `npx expo run:ios` / `npx expo run:android` before testing.
 
-import { Platform } from 'react-native'
+import { NativeModules, Platform } from 'react-native'
 import { login as kakaoLogin, logout as kakaoLogout } from '@react-native-seoul/kakao-login'
 import NaverLogin from '@react-native-seoul/naver-login'
 import { appleAuth } from '@invertase/react-native-apple-authentication'
@@ -22,6 +22,16 @@ import type {
 // login(). Subsequent calls are silently ignored by the guard.
 
 let naverInitialized = false
+
+const assertKakaoNativeModule = (): void => {
+  if (NativeModules.RNKakaoLogins) return
+
+  throw new Error(
+    '[KakaoLogin] Native module RNKakaoLogins is not installed in this app build. ' +
+      'Run npm run android or npx expo run:android after prebuild, then open the newly installed development build. ' +
+      'Expo Go / an old dev build cannot run native Kakao login.',
+  )
+}
 
 const ensureNaverInitialized = (): void => {
   if (naverInitialized) return
@@ -58,6 +68,8 @@ const ensureNaverInitialized = (): void => {
 export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
   // ── Kakao ──────────────────────────────────────────────────────────────────
   loginWithKakao: async (): Promise<KakaoNativeTokens> => {
+    assertKakaoNativeModule()
+
     if (!process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY) {
       throw new Error(
         '[KakaoLogin] Missing env var: EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY\n' +
@@ -72,19 +84,22 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
       throw new Error('[KakaoLogin] SDK returned an empty accessToken.')
     }
 
-    if (!token.idToken) {
-      throw new Error(
-        '[KakaoLogin] SDK returned an empty idToken. Enable OpenID Connect in the Kakao developer console.',
-      )
+    if (__DEV__) {
+      console.log('[KakaoLogin] SDK token received:', {
+        hasAccessToken: !!token.accessToken,
+        hasIdToken: !!token.idToken,
+      })
     }
 
     return {
       accessToken: token.accessToken,
-      idToken: token.idToken,
+      idToken: token.idToken || undefined,
     }
   },
 
   logoutKakao: async (): Promise<void> => {
+    if (!NativeModules.RNKakaoLogins) return
+
     try {
       await kakaoLogout()
     } catch (err) {
@@ -113,13 +128,21 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
     }
 
     const accessToken = response.successResponse?.accessToken
+    const refreshToken = response.successResponse?.refreshToken
+
     if (!accessToken) {
       throw new Error(
         '[NaverLogin] isSuccess was true but successResponse.accessToken is missing.',
       )
     }
 
-    return { accessToken }
+    if (!refreshToken) {
+      throw new Error(
+        '[NaverLogin] isSuccess was true but successResponse.refreshToken is missing.',
+      )
+    }
+
+    return { accessToken, refreshToken }
   },
 
   logoutNaver: async (): Promise<void> => {

@@ -43,6 +43,10 @@ export const useSignup = () => {
           status: error.response?.status,
           data: error.response?.data,
         })
+        console.log(
+          '[useSignup] failed detail:',
+          JSON.stringify(error.response?.data, null, 2),
+        )
 
         if (code === 'TOKEN_ERROR_001' || code === 'TOKEN_ERROR_002') {
           void clearAuth()

@@ -127,14 +127,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.heading3,
-    lineHeight: 25.2,
     color: C.text,
   },
   count: {
-    fontFamily: 'SUIT',
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25.2,
+    ...Typography.heading3,
     color: Gray[300],
   },
   moreIcon: {

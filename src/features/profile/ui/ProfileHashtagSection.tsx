@@ -61,14 +61,14 @@ export function ProfileHashtagSection() {
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 28,
+    paddingTop: 28,
+    paddingBottom: 100,
     borderBottomWidth: 6,
     borderBottomColor: C.bg,
     backgroundColor: C.card,
   },
   title: {
     ...Typography.heading3,
-    lineHeight: 25.2,
     color: C.text,
   },
   canvas: {
@@ -82,10 +82,9 @@ const styles = StyleSheet.create({
   emptyOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   emptyText: {
-    marginTop: 40,
     ...Typography.heading3,
     color: Gray[500],
     textAlign: 'center',
@@ -94,6 +93,7 @@ const styles = StyleSheet.create({
     width: 131,
     height: 36,
     marginTop: 12,
+    marginBottom: 40,
   },
   absolute: {
     position: 'absolute',

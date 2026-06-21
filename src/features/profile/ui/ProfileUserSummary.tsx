@@ -1,4 +1,4 @@
-﻿import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
@@ -23,9 +23,11 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         </View>
 
         <View style={styles.textWrap}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>Lv.{me.level}</Text>
-          </View>
+          {me.title ? (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{me.title}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.nickname}>{me.nickName}</Text>
           <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>
@@ -38,7 +40,7 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         onPress={() => router.push('/profile/fix')}
         style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={'\ud504\ub85c\ud544 \uc218\uc815'}
+        accessibilityLabel={'프로필 수정'}
       >
         <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
       </Pressable>
@@ -72,6 +74,7 @@ const styles = StyleSheet.create({
   },
   textWrap: {
     width: 200,
+    alignItems: 'flex-start',
     gap: 6,
   },
   levelBadge: {
@@ -87,17 +90,15 @@ const styles = StyleSheet.create({
     color: Magenta[300],
   },
   nickname: {
-    fontFamily: 'SUIT',
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25.2,
+    ...Typography.heading3,
+    width: '100%',
+    textAlign: 'left',
     color: C.text,
   },
   bio: {
-    fontFamily: 'SUIT',
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.caption1Medium,
+    width: '100%',
+    textAlign: 'left',
     maxWidth: 200,
     color: Gray[600],
   },

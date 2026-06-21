@@ -24,7 +24,9 @@ export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
-  const termsAgree = useAuthStore((s) => s.termsAgree)
+  const serviceTermsAgree = useAuthStore((s) => s.serviceTermsAgree)
+  const privacyPolicyAgree = useAuthStore((s) => s.privacyPolicyAgree)
+  const ageOver14 = useAuthStore((s) => s.ageOver14)
   const signupMutation = useSignup()
   const onboardingWorksQuery = useQuery({
     queryKey: ['onboarding', 'works'],
@@ -96,11 +98,13 @@ export function OnboardingScreen() {
 
     try {
       await signupMutation.mutateAsync({
-        termsAgree,
+        serviceTermsAgree,
+        privacyPolicyAgree,
+        ageOver14,
         nickName: nickname.trim(),
+        profileDescription: bio,
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,
-        profileDescription: bio,
       })
       if (profileImageUri) {
         await uploadAndSetProfileImage(profileImageUri).catch(() => {})

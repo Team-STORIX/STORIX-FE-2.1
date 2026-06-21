@@ -18,6 +18,7 @@ export interface KakaoNativeTokens {
 
 export interface NaverNativeTokens {
   accessToken: string
+  refreshToken: string
 }
 
 // Apple Sign In response — the backend endpoint accepts a single `code` value

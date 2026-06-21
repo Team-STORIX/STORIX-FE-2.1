@@ -12,7 +12,9 @@ import {
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
 import { C, Gray, Magenta } from "../../../theme/colors";
+import { Typography } from "../../../theme/typography";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +64,7 @@ type FeedPostCardProps = {
   onClickWorksArrow?: () => void;
   onOpenReport?: () => void;
   onOpenDelete?: () => void;
+  onOpenBlock?: () => void;
   onPressCard?: () => void;
   birthdayTheme?: boolean;
 };
@@ -196,6 +199,7 @@ export function FeedPostCard({
   onClickWorksArrow,
   onOpenReport,
   onOpenDelete,
+  onOpenBlock,
   onPressCard,
   birthdayTheme = false,
 }: FeedPostCardProps) {
@@ -231,6 +235,7 @@ export function FeedPostCard({
 
   const isMine = currentUserId != null && writerUserId === currentUserId;
   const isSpoilerHidden = isSpoiler && !spoilerRevealed;
+  const displayCreatedAt = formatCreatedAtLabel(createdAt);
 
   const showWorks =
     works != null &&
@@ -267,7 +272,9 @@ export function FeedPostCard({
 
           <View style={styles.authorMeta}>
             <Text style={styles.authorName}>{nickName}</Text>
-            {!!createdAt && <Text style={styles.timestamp}>{createdAt}</Text>}
+            {!!displayCreatedAt && (
+              <Text style={styles.timestamp}>{displayCreatedAt}</Text>
+            )}
           </View>
 
           {/* Menu button */}
@@ -298,20 +305,46 @@ export function FeedPostCard({
               style={StyleSheet.absoluteFillObject}
               onPress={() => setMenuOpen(false)}
             >
-              <Pressable
-                style={[styles.menuDropdown, { top: menuDropdownTop }]}
-                onPress={() => {
-                  setMenuOpen(false);
-                  if (isMine) onOpenDelete?.();
-                  else onOpenReport?.();
-                }}
-              >
-                <Image
-                  source={isMine ? deleteDropdown : commentDropdown}
-                  style={styles.menuDropdownImg}
-                  contentFit="contain"
-                />
-              </Pressable>
+              <View style={[styles.menuDropdown, { top: menuDropdownTop }]}>
+                {isMine ? (
+                  <View style={styles.menuTextWrapper}>
+                    <Pressable
+                      style={styles.menuTextItem}
+                      onPress={() => {
+                        setMenuOpen(false);
+                        onOpenDelete?.();
+                      }}
+                    >
+                      <Text style={styles.menuTextItemText}>삭제하기</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.menuTextWrapper}>
+                    {/* 신고하기 */}
+                    <Pressable
+                      style={styles.menuTextItem}
+                      onPress={() => {
+                        setMenuOpen(false);
+                        onOpenReport?.();
+                      }}
+                    >
+                      <Text style={styles.menuTextItemText}>신고하기</Text>
+                    </Pressable>
+                    {/* 구분선 */}
+                    <View style={styles.menuDivider} />
+                    {/* 차단하기 */}
+                    <Pressable
+                      style={styles.menuTextItem}
+                      onPress={() => {
+                        setMenuOpen(false);
+                        onOpenBlock?.();
+                      }}
+                    >
+                      <Text style={styles.menuTextItemText}>차단하기</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             </Pressable>
           </Modal>
         )}
@@ -602,10 +635,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
+    overflow: "hidden",
   },
   menuDropdownImg: {
     width: 96,
     height: 36,
+  },
+  menuTextWrapper: {
+    width: 96,
+    padding: 8,
+  },
+  menuTextItem: {
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+  menuTextItemText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Gray[200],
+    marginVertical: 6,
   },
 
   // Works section
@@ -644,16 +695,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   worksName: {
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
-    color: C.text,
+    ...Typography.body2Bold,
+    color: Gray[800],
     marginBottom: 4,
   },
   worksMeta: {
-    fontSize: 12,
-    fontWeight: "500",
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
   },
   worksArrowBtn: {
@@ -684,9 +731,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.divider,
   },
   hashtagText: {
-    fontSize: 10,
-    fontWeight: "500",
-    lineHeight: 14,
+    ...Typography.caption2Medium,
     color: Gray[500],
   },
 

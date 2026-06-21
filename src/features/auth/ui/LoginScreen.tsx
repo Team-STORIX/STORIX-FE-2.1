@@ -14,7 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "../../../store/auth.store";
 import { C, Typography } from "../../../theme";
 import { developerLogin } from "../api";
-import { useNativeSocialLogin } from "../hooks";
+import { useNativeSocialLogin, useXLogin } from "../hooks";
+import { openXAuthorizationPage } from "../lib/xOAuth";
 
 // Dev-only login entry. Gated behind BOTH __DEV__ (stripped from release builds)
 // and an explicit opt-in env flag, so it can never surface in a production build.
@@ -42,11 +43,17 @@ export function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const mutation = useNativeSocialLogin();
+  const xLoginMutation = useXLogin();
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens);
   const [devPending, setDevPending] = useState(false);
+  const [xLoginPending, setXLoginPending] = useState(false);
 
   const pendingProvider = mutation.variables;
-  const pending = mutation.isPending || devPending;
+  const pending = mutation.isPending || devPending || xLoginPending || xLoginMutation.isPending;
+  const loginErrorMessage =
+    mutation.error instanceof Error
+      ? mutation.error.message
+      : "로그인에 실패했습니다. 다시 시도해주세요.";
 
   const handleDevLogin = async () => {
     // Hard guard: never run in production, even if something bypasses the
@@ -98,6 +105,18 @@ export function LoginScreen() {
     }
   };
 
+  const handleXLogin = async () => {
+    setXLoginPending(true);
+    try {
+      await openXAuthorizationPage();
+
+    } catch (error) {
+      Alert.alert("오류", "X 로그인에 실패했어요.");
+    } finally {
+      setXLoginPending(false);
+    }
+  };
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.hero}>
@@ -132,9 +151,8 @@ export function LoginScreen() {
         />
         <LoginAssetButton
           source={twitterButton}
-          onPress={() =>
-            Alert.alert("안내", "트위터 로그인은 아직 지원되지 않아요.")
-          }
+          onPress={handleXLogin}
+          loading={xLoginPending}
           disabled={pending}
         />
         {Platform.OS === "ios" && (
@@ -148,13 +166,14 @@ export function LoginScreen() {
 
         {mutation.isError ? (
           <Text style={styles.errorText}>
-            {pendingProvider === "kakao"
-              ? "카카오 로그인에 실패했습니다. 다시 시도해 주세요."
-              : pendingProvider === "apple"
-                ? "Apple 로그인에 실패했습니다. 다시 시도해 주세요."
-                : "로그인에 실패했습니다. 다시 시도해 주세요."}
+           {pendingProvider === "kakao"
+  ? `카카오 로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`
+  : pendingProvider === "apple"
+    ? `Apple 로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`
+    : `로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`}
           </Text>
         ) : null}
+
       </View>
     </View>
   );

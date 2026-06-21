@@ -8,7 +8,7 @@
 // See src/lib/auth/social/native.ts for setup instructions.
 
 import { useMutation } from "@tanstack/react-query";
-import { AxiosError } from "axios";
+import { isAxiosError } from "axios";
 import { useRouter } from "expo-router";
 
 import type { SocialProviderId } from "../../../lib/auth/social/types";
@@ -34,8 +34,11 @@ const callBackend = async (
     // the Kakao developer console.
     const { accessToken, idToken } =
       await nativeSocialAuthProvider.loginWithKakao();
-    if (!idToken) {
-      throw new Error("[KakaoLogin] idToken is required for native Kakao login.");
+    if (__DEV__) {
+      console.log("[useNativeSocialLogin] Kakao SDK result:", {
+        hasAccessToken: !!accessToken,
+        hasIdToken: !!idToken,
+      });
     }
     return kakaoNativeLogin({ accessToken, idToken });
   }
@@ -49,6 +52,8 @@ const callBackend = async (
   }
   const { accessToken } = await nativeSocialAuthProvider.loginWithNaver();
   return naverNativeLogin({ accessToken });
+  const { accessToken, refreshToken } = await nativeSocialAuthProvider.loginWithNaver();
+  return naverNativeLogin({ accessToken, refreshToken });
 };
 
 // ─── hook ─────────────────────────────────────────────────────────────────────
@@ -64,6 +69,14 @@ export const useNativeSocialLogin = () => {
     onSuccess: async (data: SocialLoginResponse, provider: SocialProviderId) => {
       const { isRegistered, readerPreLoginResponse } = data.result;
       const loginTokens = extractLoginTokens(data.result);
+      if (__DEV__) {
+        console.log("[useNativeSocialLogin] backend result:", {
+          provider,
+          isRegistered,
+          hasLoginTokens: !!loginTokens,
+          hasOnboardingToken: !!readerPreLoginResponse?.onboardingToken,
+        });
+      }
 
       // Existing user — store tokens and go to the main app.
       if (isRegistered && loginTokens) {
@@ -84,16 +97,17 @@ export const useNativeSocialLogin = () => {
 
       // Neither branch matched — log for debugging.
       console.error("[useNativeSocialLogin] unexpected response shape:", data);
+      throw new Error("[SocialLogin] Unexpected backend response shape.");
     },
 
-    onError: (error: AxiosError) => {
+    onError: (error: unknown) => {
       // Do NOT use Alert.alert here — on iOS, calling alert() immediately after
       // a WKWebView / SafariViewController dismissal can cause a crash.
       // The calling screen should observe mutation.isError and render its own UI.
       console.error("[useNativeSocialLogin] failed:", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
+        message: error instanceof Error ? error.message : String(error),
+        status: isAxiosError(error) ? error.response?.status : undefined,
+        data: isAxiosError(error) ? error.response?.data : undefined,
       });
     },
   });

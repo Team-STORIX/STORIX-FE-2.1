@@ -43,6 +43,7 @@ export function useFavoriteWork(
       optionsRef.current?.onAdded?.(worksId!)
       queryClient.invalidateQueries({ queryKey })
       queryClient.invalidateQueries({ queryKey: ['feed', 'favoriteWorks'] })
+      queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] })
       queryClient.invalidateQueries({ queryKey: PROFILE_FAVORITE_WORKS_QUERY_KEY })
       addMutation.reset()
     }
@@ -50,6 +51,7 @@ export function useFavoriteWork(
       optionsRef.current?.onRemoved?.(worksId!)
       queryClient.invalidateQueries({ queryKey })
       queryClient.invalidateQueries({ queryKey: ['feed', 'favoriteWorks'] })
+      queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] })
       queryClient.invalidateQueries({ queryKey: PROFILE_FAVORITE_WORKS_QUERY_KEY })
       removeMutation.reset()
     }

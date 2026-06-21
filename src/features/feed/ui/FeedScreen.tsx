@@ -27,7 +27,8 @@ import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
-import { ReportModal } from './ReportModal'
+import { UserActionModal } from './BlockConfirmModal'
+import { blockUser } from '../../users/api/users.api'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 
@@ -55,6 +56,12 @@ export function FeedScreen() {
     }
   }, [sectionParam])
   const [reportTarget, setReportTarget] = useState<{
+    profileImageUrl?: string | null
+    nickname: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
+
+  const [blockTarget, setBlockTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
     onConfirm: () => Promise<void>
@@ -136,7 +143,7 @@ export function FeedScreen() {
     [],
   )
 
-  // ── Report / Delete ──────────────────────────────────────────────────────────
+  // ── Report / Delete / Block ──────────────────────────────────────────────────
   const handleReport = useCallback(
     (boardId: number, writerUserId: number, reportedProfile: { profileImageUrl?: string | null; nickName: string }) => {
       setReportTarget({
@@ -151,6 +158,27 @@ export function FeedScreen() {
       })
     },
     [],
+  )
+
+  const handleBlock = useCallback(
+    (writerUserId: number, blockedProfile: { profileImageUrl?: string | null; nickName: string }) => {
+      setBlockTarget({
+        profileImageUrl: blockedProfile.profileImageUrl,
+        nickname: blockedProfile.nickName,
+        onConfirm: async () => {
+          await blockUser(writerUserId)
+          // 차단 후 모든 관련 쿼리 새로고침
+          qc.invalidateQueries({ queryKey: ['allBoards'] })
+          qc.invalidateQueries({ queryKey: ['boardsByWorksId'] })
+          qc.invalidateQueries({ queryKey: ['boardComments'] })
+          qc.invalidateQueries({ queryKey: ['topicroom'] })
+          qc.invalidateQueries({ queryKey: ['worksReviews'] })
+          // 즉시 피드 새로고침
+          await activeQuery.refetch()
+        },
+      })
+    },
+    [qc, activeQuery],
   )
 
   const handleDelete = useCallback(
@@ -240,6 +268,11 @@ export function FeedScreen() {
               ? () => handleReport(board.boardId, profile.userId, profile)
               : undefined
           }
+          onOpenBlock={
+            !isMine
+              ? () => handleBlock(profile.userId, profile)
+              : undefined
+          }
           onOpenDelete={
             isMine ? () => handleDelete(board.boardId) : undefined
           }
@@ -252,6 +285,7 @@ export function FeedScreen() {
       currentUserId,
       handleDelete,
       handleReport,
+      handleBlock,
       handleToggleLike,
       likeOverrides,
       router,
@@ -280,12 +314,24 @@ export function FeedScreen() {
   )
 
   const reportModal = (
-    <ReportModal
+    <UserActionModal
+      type="report"
       visible={reportTarget != null}
       profileImageUrl={reportTarget?.profileImageUrl}
       nickname={reportTarget?.nickname ?? ''}
       onClose={() => setReportTarget(null)}
       onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
+    />
+  )
+
+  const blockModal = (
+    <UserActionModal
+      type="block"
+      visible={blockTarget != null}
+      profileImageUrl={blockTarget?.profileImageUrl}
+      nickname={blockTarget?.nickname ?? ''}
+      onClose={() => setBlockTarget(null)}
+      onConfirm={blockTarget?.onConfirm ?? (() => Promise.resolve())}
     />
   )
 
@@ -311,6 +357,7 @@ export function FeedScreen() {
           </ScrollView>
         </View>
         {reportModal}
+        {blockModal}
         {createWorksSheet}
       </>
     )
@@ -366,6 +413,7 @@ export function FeedScreen() {
       }
     />
     {reportModal}
+    {blockModal}
     {createWorksSheet}
     </>
   )
