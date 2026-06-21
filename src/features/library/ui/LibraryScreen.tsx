@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -22,28 +23,36 @@ import type { LibraryUiWork } from './types'
 const arrowDownIcon = require('../../../../assets/icons/common/arrow-down.svg')
 const galleryIcon = require('../../../../assets/icons/library/icon-gallery.svg')
 const listIcon = require('../../../../assets/icons/library/icon-list.svg')
+const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
+const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 
-type SortKey = 'DEFAULT' | 'RATING' | 'RATING_ASC'
+type SortKey = 'DEFAULT' | 'RATING' | 'REVIEWS'
 type ViewMode = 'list' | 'gallery'
 
 const SORT_LABELS: Record<SortKey, string> = {
-  DEFAULT: '전체 작품',
+  DEFAULT: '기본순',
   RATING: '별점 높은 순',
-  RATING_ASC: '별점 낮은 순',
+  REVIEWS: '리뷰 많은 순',
 }
 
-const SORT_OPTIONS: SortKey[] = ['DEFAULT', 'RATING', 'RATING_ASC']
+const SORT_OPTIONS: SortKey[] = ['DEFAULT', 'RATING', 'REVIEWS']
+
+const API_SORT: Record<SortKey, LibraryReviewSort> = {
+  DEFAULT: 'LATEST',
+  RATING: 'DESC_RATING',
+  REVIEWS: 'LATEST',
+}
 
 export function LibraryScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [mode, setMode] = useState<ViewMode>('list')
   const [sort, setSort] = useState<SortKey>('DEFAULT')
+  const [pendingSort, setPendingSort] = useState<SortKey>('DEFAULT')
   const [sortOpen, setSortOpen] = useState(false)
   const [showReviewSheet, setShowReviewSheet] = useState(false)
 
-  const apiSort: LibraryReviewSort =
-    sort === 'DEFAULT' ? 'LATEST' : 'DESC_RATING'
+  const apiSort = API_SORT[sort]
 
   const reviewQuery = useLibraryReviewInfinite({ sort: apiSort })
 
@@ -55,17 +64,23 @@ export function LibraryScreen() {
       return {
         id: item.worksId,
         title: item.worksName ?? '',
-        meta: [item.artistName ?? '', item.worksType ?? '', item.genre ?? '']
+        meta: [item.artistName ?? '', item.worksType ?? '']
           .filter(Boolean)
           .join(' · '),
         thumb: item.thumbnailUrl ?? '',
         rating: Number(ratingRaw ?? 0),
-        reviewCount: item.reviewId ? 1 : 0,
+        reviewCount: item.reviewCount ?? (item.reviewId ? 1 : 0),
       }
     })
 
-    if (sort === 'RATING_ASC') {
-      return [...mapped].reverse()
+    if (sort === 'REVIEWS') {
+      return mapped
+        .map((work, index) => ({ work, index }))
+        .sort((a, b) => {
+          const diff = b.work.reviewCount - a.work.reviewCount
+          return diff !== 0 ? diff : a.index - b.index
+        })
+        .map((entry) => entry.work)
     }
 
     return mapped
@@ -73,64 +88,33 @@ export function LibraryScreen() {
 
   const worksCount = reviewQuery.data?.pages?.[0]?.totalReviewCount ?? works.length
 
+  const openSort = () => {
+    setPendingSort(sort)
+    setSortOpen(true)
+  }
+
+  const closeSort = () => setSortOpen(false)
+
+  const applySort = () => {
+    setSort(pendingSort)
+    setSortOpen(false)
+  }
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {sortOpen ? (
-        <Pressable
-          style={styles.sortOverlay}
-          onPress={() => setSortOpen(false)}
-          accessibilityRole="button"
-        />
-      ) : null}
-
       <View style={styles.headerLayer}>
         <LibraryHeader onSearchPress={() => router.push('/library/search' as never)} />
 
         <View style={styles.controlsWrap}>
-          <View style={styles.sortWrap}>
-            <Pressable
-              style={({ pressed }) => [styles.sortButton, pressed && styles.pressed]}
-              onPress={() => setSortOpen((prev) => !prev)}
-              accessibilityRole="button"
-              accessibilityLabel="정렬"
-            >
-              <Text style={styles.sortButtonText}>{SORT_LABELS[sort]}</Text>
-              <Image
-                source={arrowDownIcon}
-                style={[styles.arrowIcon, sortOpen && styles.arrowIconOpen]}
-                contentFit="contain"
-              />
-            </Pressable>
-
-            {sortOpen ? (
-              <View style={styles.sortMenu}>
-                {SORT_OPTIONS.map((option, index) => (
-                  <Pressable
-                    key={option}
-                    style={({ pressed }) => [
-                      styles.sortMenuItem,
-                      index !== SORT_OPTIONS.length - 1 && styles.sortMenuDivider,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => {
-                      setSort(option)
-                      setSortOpen(false)
-                    }}
-                    accessibilityRole="button"
-                  >
-                    <Text
-                      style={[
-                        styles.sortMenuText,
-                        sort === option && styles.sortMenuTextActive,
-                      ]}
-                    >
-                      {SORT_LABELS[option]}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.sortButton, pressed && styles.pressed]}
+            onPress={openSort}
+            accessibilityRole="button"
+            accessibilityLabel="정렬"
+          >
+            <Text style={styles.sortButtonText}>{SORT_LABELS[sort]}</Text>
+            <Image source={arrowDownIcon} style={styles.arrowIcon} contentFit="contain" />
+          </Pressable>
 
           <View style={styles.rightControls}>
             <Text style={styles.countText}>{worksCount}개</Text>
@@ -191,6 +175,82 @@ export function LibraryScreen() {
         )}
       </View>
 
+      <Modal
+        visible={sortOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSort}
+      >
+        <Pressable style={styles.sheetOverlay} onPress={closeSort}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: insets.bottom }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>정렬</Text>
+              <Pressable
+                style={({ pressed }) => [styles.sheetClose, pressed && styles.pressed]}
+                onPress={closeSort}
+                accessibilityRole="button"
+                accessibilityLabel="닫기"
+              >
+                <Image source={cancelIcon} style={styles.sheetCloseIcon} contentFit="contain" />
+              </Pressable>
+            </View>
+
+            <View style={styles.sheetOptions}>
+              {SORT_OPTIONS.map((option) => {
+                const selected = pendingSort === option
+                return (
+                  <Pressable
+                    key={option}
+                    style={({ pressed }) => [
+                      styles.sheetOption,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => setPendingSort(option)}
+                    accessibilityRole="button"
+                  >
+                    <Text
+                      style={[
+                        styles.sheetOptionText,
+                        selected && styles.sheetOptionTextActive,
+                      ]}
+                    >
+                      {SORT_LABELS[option]}
+                    </Text>
+                    {selected ? (
+                      <Image
+                        source={checkPinkIcon}
+                        style={styles.sheetCheckIcon}
+                        contentFit="contain"
+                      />
+                    ) : null}
+                  </Pressable>
+                )
+              })}
+            </View>
+
+            <View style={styles.sheetButtons}>
+              <Pressable
+                style={({ pressed }) => [styles.resetButton, pressed && styles.pressed]}
+                onPress={() => setPendingSort('DEFAULT')}
+                accessibilityRole="button"
+              >
+                <Text style={styles.resetButtonText}>초기화</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}
+                onPress={applySort}
+                accessibilityRole="button"
+              >
+                <Text style={styles.applyButtonText}>적용하기</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <ReviewWriteBottomSheet
         visible={showReviewSheet}
         onClose={() => setShowReviewSheet(false)}
@@ -204,69 +264,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.card,
   },
-  sortOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
   headerLayer: {
-    zIndex: 2,
     backgroundColor: C.card,
   },
   controlsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 60,
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomColor: Gray[200],
     backgroundColor: C.card,
-  },
-  sortWrap: {
-    position: 'relative',
   },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
   },
   sortButtonText: {
     ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
     marginRight: 2,
   },
   arrowIcon: {
-    width: 16,
-    height: 16,
-  },
-  arrowIconOpen: {
-    transform: [{ rotate: '180deg' }],
-  },
-  sortMenu: {
-    position: 'absolute',
-    top: 30,
-    left: 0,
-    width: 96,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: C.divider,
-    backgroundColor: C.card,
-  },
-  sortMenuItem: {
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 6,
-  },
-  sortMenuDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: C.divider,
-  },
-  sortMenuText: {
-    ...Typography.body2Medium,
-    color: C.text,
-  },
-  sortMenuTextActive: {
-    fontWeight: '600',
+    width: 24,
+    height: 24,
   },
   rightControls: {
     flexDirection: 'row',
@@ -275,7 +298,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     ...Typography.body2Medium,
-    color: Gray[400],
+    color: Gray[500],
   },
   modeIcon: {
     width: 24,
@@ -297,5 +320,91 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(19, 17, 18, 0.6)',
+  },
+  sheet: {
+    backgroundColor: C.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Gray[200],
+  },
+  sheetTitle: {
+    ...Typography.heading2,
+    color: C.text,
+  },
+  sheetClose: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetCloseIcon: {
+    width: 24,
+    height: 24,
+  },
+  sheetOptions: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    gap: 20,
+  },
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetOptionText: {
+    ...Typography.body1Medium,
+    color: C.text,
+  },
+  sheetOptionTextActive: {
+    color: C.primary,
+  },
+  sheetCheckIcon: {
+    width: 24,
+    height: 24,
+  },
+  sheetButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  resetButton: {
+    width: 105,
+    height: 50,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Gray[100],
+  },
+  resetButtonText: {
+    ...Typography.body1Medium,
+    color: C.black,
+  },
+  applyButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Gray[900],
+  },
+  applyButtonText: {
+    ...Typography.body1Medium,
+    color: C.card,
   },
 })
