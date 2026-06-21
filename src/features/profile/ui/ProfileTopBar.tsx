@@ -6,15 +6,21 @@ const settingsIcon = require('../../../../assets/icons/common/settings.svg')
 
 type Props = {
   onPressSettings: () => void
+  onPressProfileCard?: () => void
 }
 
-export function ProfileTopBar({ onPressSettings }: Props) {
+export function ProfileTopBar({ onPressSettings, onPressProfileCard }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>프로필</Text>
 
       <View style={styles.actions}>
-        <Pressable disabled style={styles.profileCardButton} accessibilityRole="button">
+        <Pressable
+          onPress={onPressProfileCard}
+          disabled={!onPressProfileCard}
+          style={({ pressed }) => [styles.profileCardButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+        >
           <Text style={styles.profileCardButtonText}>프로필 카드</Text>
         </Pressable>
 
@@ -33,8 +39,8 @@ export function ProfileTopBar({ onPressSettings }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

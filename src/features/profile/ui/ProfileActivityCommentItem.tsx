@@ -7,6 +7,7 @@ import { deleteReply, toggleReplyLike } from '../../feed/api/feed/readerBoardDet
 import { reportReply } from '../../feed/api/feed/readerReply.api'
 import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
 import { ReportModal } from '../../feed/ui/ReportModal'
+import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
 import { C, Gray, Radius, Typography } from '../../../theme'
 
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -33,6 +34,7 @@ export function ProfileActivityCommentItem({
   const qc = useQueryClient()
   const isMine = currentUserId != null && item.reply.userId === currentUserId
   const [reportModalVisible, setReportModalVisible] = useState(false)
+  const displayCreatedAt = formatCreatedAtLabel(item.reply.lastCreatedTime)
 
   const syncReplyItem = (
     replyId: number,
@@ -136,7 +138,7 @@ export function ProfileActivityCommentItem({
           <View style={styles.metaRow}>
             <Text style={styles.name}>{item.profile.nickName}</Text>
             <Text style={styles.dot}> </Text>
-            <Text style={styles.time}>{item.reply.lastCreatedTime}</Text>
+            <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
         </View>
 

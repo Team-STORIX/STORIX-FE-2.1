@@ -116,9 +116,9 @@ export const SignupRequestSchema = z.object({
   privacyPolicyAgree: z.boolean(),
   ageOver14: z.boolean(),
   nickName: z.string().min(1),
+  profileDescription: z.string(),
   favoriteGenreList: z.array(GenreKeySchema),
   favoriteWorksIdList: z.array(z.number()),
-  profileDescription: z.string(),
 })
 
 export const SignupResponseSchema = ApiResponseSchema(

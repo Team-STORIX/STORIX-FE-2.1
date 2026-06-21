@@ -102,6 +102,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.text,
   },
   tabIndicatorInactive: {
-    backgroundColor: Gray[50],
+    backgroundColor: Gray[200],
   },
 })

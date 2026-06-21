@@ -126,13 +126,21 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
     }
 
     const accessToken = response.successResponse?.accessToken
+    const refreshToken = response.successResponse?.refreshToken
+
     if (!accessToken) {
       throw new Error(
         '[NaverLogin] isSuccess was true but successResponse.accessToken is missing.',
       )
     }
 
-    return { accessToken }
+    if (!refreshToken) {
+      throw new Error(
+        '[NaverLogin] isSuccess was true but successResponse.refreshToken is missing.',
+      )
+    }
+
+    return { accessToken, refreshToken }
   },
 
   logoutNaver: async (): Promise<void> => {

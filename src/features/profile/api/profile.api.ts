@@ -27,11 +27,19 @@ const normalizeMeProfile = (raw: MeProfileResult): MeProfileResult => {
     nickName: nickName.length > 0 ? nickName : DEFAULT_NICKNAME,
     profileDescription: raw.profileDescription ?? '',
     profileImageUrl: raw.profileImageUrl ?? null,
+    // V2 fields with safe defaults
+    topGenre: raw.topGenre ?? '',
+    title: raw.title ?? null,
+    stage: raw.stage ?? '미진입',
+    nextStage: raw.nextStage ?? '입문',
+    topGenreScore: raw.topGenreScore ?? 0,
+    remainingScore: raw.remainingScore ?? 0,
+    progressPercentage: raw.progressPercentage ?? 0,
   }
 }
 
 export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {
-  const res = await apiClient.get('/api/v1/profile/me')
+  const res = await apiClient.get('/api/v2/profile/me')
   const data = res.data as ApiResponse<MeProfileResult>
   return data.result
     ? { ...data, result: normalizeMeProfile(data.result) }

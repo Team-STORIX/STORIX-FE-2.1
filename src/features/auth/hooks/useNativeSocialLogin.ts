@@ -41,8 +41,8 @@ const callBackend = async (
     }
     return kakaoNativeLogin({ accessToken, idToken });
   }
-  const { accessToken } = await nativeSocialAuthProvider.loginWithNaver();
-  return naverNativeLogin({ accessToken });
+  const { accessToken, refreshToken } = await nativeSocialAuthProvider.loginWithNaver();
+  return naverNativeLogin({ accessToken, refreshToken });
 };
 
 // ─── hook ─────────────────────────────────────────────────────────────────────

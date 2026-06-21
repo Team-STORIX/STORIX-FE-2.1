@@ -102,9 +102,9 @@ export function OnboardingScreen() {
         privacyPolicyAgree,
         ageOver14,
         nickName: nickname.trim(),
+        profileDescription: bio,
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,
-        profileDescription: bio,
       })
       if (profileImageUri) {
         await uploadAndSetProfileImage(profileImageUri).catch(() => {})

@@ -18,6 +18,7 @@ export interface KakaoNativeTokens {
 
 export interface NaverNativeTokens {
   accessToken: string
+  refreshToken: string
 }
 
 // 네이티브 플랫폼(SDK 기반)의 로그인 계약
