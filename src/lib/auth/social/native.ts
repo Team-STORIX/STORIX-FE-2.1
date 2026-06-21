@@ -5,10 +5,13 @@
 // Requires a Development Build (Expo Go will crash on import).
 // Run `npx expo run:ios` / `npx expo run:android` before testing.
 
+import { Platform } from 'react-native'
 import { login as kakaoLogin, logout as kakaoLogout } from '@react-native-seoul/kakao-login'
 import NaverLogin from '@react-native-seoul/naver-login'
+import { appleAuth } from '@invertase/react-native-apple-authentication'
 
 import type {
+  AppleNativeTokens,
   KakaoNativeTokens,
   NativeSocialAuthProvider,
   NaverNativeTokens,
@@ -132,14 +135,30 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
       console.warn('[NaverLogin] logout SDK error (non-fatal):', err)
     }
   },
-}
 
-// ─── Apple Sign In ────────────────────────────────────────────────────────────
-// Apple login is NOT part of NativeSocialAuthProvider because:
-//   1. The interface currently only declares Kakao and Naver.
-//   2. Apple Sign In on Android uses a web flow, not a native SDK.
-//   3. The backend endpoint for Apple may differ from Kakao/Naver native.
-//
-// Implement Apple Sign In as a dedicated hook (e.g. useAppleLogin) that calls
-// @invertase/react-native-apple-authentication directly and posts the
-// identityToken to the backend, analogous to useKakaoLogin.
+  // ── Apple ──────────────────────────────────────────────────────────────────
+  // Native Sign In with Apple via @invertase/react-native-apple-authentication.
+  // iOS-only: the SDK is not available on Android, so callers must gate the
+  // entry point on Platform.OS === 'ios'. The backend exchange endpoint is the
+  // same one 2.0 used (GET /api/v1/auth/oauth/apple/login?code=…) and accepts
+  // either authorizationCode (preferred) or identityToken as the `code` value.
+  loginWithApple: async (): Promise<AppleNativeTokens> => {
+    if (Platform.OS !== 'ios') {
+      throw new Error('[AppleLogin] Apple Sign In is only available on iOS.')
+    }
+
+    const response = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+    })
+
+    if (!response.identityToken) {
+      throw new Error('[AppleLogin] SDK returned no identityToken.')
+    }
+
+    return {
+      authorizationCode: response.authorizationCode,
+      identityToken: response.identityToken,
+    }
+  },
+}

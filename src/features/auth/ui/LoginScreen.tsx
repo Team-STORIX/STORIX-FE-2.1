@@ -140,9 +140,8 @@ export function LoginScreen() {
         {Platform.OS === "ios" && (
           <LoginAssetButton
             source={appleButton}
-            onPress={() =>
-              Alert.alert("안내", "Apple 로그인은 아직 준비 중이에요.")
-            }
+            onPress={() => mutation.mutate("apple")}
+            loading={pending && pendingProvider === "apple"}
             disabled={pending}
           />
         )}
@@ -151,7 +150,9 @@ export function LoginScreen() {
           <Text style={styles.errorText}>
             {pendingProvider === "kakao"
               ? "카카오 로그인에 실패했습니다. 다시 시도해 주세요."
-              : "로그인에 실패했습니다. 다시 시도해 주세요."}
+              : pendingProvider === "apple"
+                ? "Apple 로그인에 실패했습니다. 다시 시도해 주세요."
+                : "로그인에 실패했습니다. 다시 시도해 주세요."}
           </Text>
         ) : null}
       </View>
