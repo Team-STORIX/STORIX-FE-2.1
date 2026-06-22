@@ -42,3 +42,38 @@ export const ChatRoomMessagePageSchema = z.object({
 })
 
 export type ChatRoomMessagePage = z.infer<typeof ChatRoomMessagePageSchema>
+
+/**
+ * New wrapped chat-history response:
+ *   { joinedAt: string | null, messages: <paginated message page> }
+ *
+ * joinedAt is the membership start date (do NOT confuse with message.createdAt).
+ * Kept nullable/optional so old direct-page responses (no wrapper) stay valid
+ * via the union below.
+ */
+export const ChatRoomMessageHistoryWrappedSchema = z.object({
+  joinedAt: z.string().nullish(),
+  messages: ChatRoomMessagePageSchema,
+})
+
+export type ChatRoomMessageHistoryWrapped = z.infer<
+  typeof ChatRoomMessageHistoryWrappedSchema
+>
+
+/** Accepts either the new wrapped shape or the legacy direct page shape. */
+export const ChatRoomMessageHistorySchema = z.union([
+  ChatRoomMessageHistoryWrappedSchema,
+  ChatRoomMessagePageSchema,
+])
+
+/**
+ * Single normalized page type the screen consumes, regardless of whether the
+ * backend sent the wrapped or the legacy direct-page response.
+ */
+export type NormalizedChatRoomMessagePage = {
+  joinedAt: string | null
+  content: ChatRoomMessage[]
+  last: boolean
+  empty: boolean
+  number: number
+}

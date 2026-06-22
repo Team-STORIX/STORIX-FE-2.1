@@ -255,10 +255,12 @@ export default function TopicRoomScreen() {
     : topicRoomName || `채팅방 #${roomId}`;
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
-  // Room-age / D-Day source. No room creation/join date is currently exposed by
-  // the TopicRoom API (TopicRoomItem has no createdAt/joinedAt), so the bar only
-  // renders if a startDate param is supplied. See report notes.
-  const ddayStartDate = params.startDate ?? null;
+  // Room-age / D-Day source. The chat-history response now carries the
+  // membership `joinedAt` on its first page; prefer that, fall back to the
+  // route param, then null. Never use lastChatTime (last activity, not join).
+  // The bar stays hidden until history loads, then appears automatically.
+  const ddayStartDate =
+    historyData?.pages?.[0]?.joinedAt ?? params.startDate ?? null;
 
   const onLongPressOther = useCallback(
     (msg: DisplayMsg) => {

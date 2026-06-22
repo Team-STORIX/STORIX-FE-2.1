@@ -33,14 +33,18 @@ export const TopicRoomItemSchema = z.object({
   worksName: z.string(),
   thumbnailUrl: z.string().nullish(),
   activeUserNumber: z.number().nullish(),
+  // Timestamp of the latest message in the room (last activity).
   lastChatTime: z.string().nullish(),
   isJoined: z.boolean().nullish(),
-  // Latest-chat preview (optional / tolerant). The BE may populate these on
-  // popular/today/me; when absent the HotTopicRoomCard retains an empty preview
-  // box rather than showing placeholder text. Additive — does not change the
-  // request contract or break existing payloads.
-  lastChatMessage: z.string().nullish(),
-  lastChatSenderNickName: z.string().nullish(),
+  // Latest-message preview fields. GET /topic-rooms/popular populates these;
+  // today/me/search may omit them, so all are optional/nullish and the
+  // HotTopicRoomCard keeps an empty reserved preview line when absent (no fake
+  // text). Additive — does not change the request contract or break payloads
+  // that lack these fields.
+  lastMessage: z.string().nullish(),
+  lastMessageType: z.string().nullish(),
+  lastMessageSenderId: z.coerce.number().nullish(),
+  lastMessageSenderNickname: z.string().nullish(),
 })
 
 export type TopicRoomItem = z.infer<typeof TopicRoomItemSchema>
