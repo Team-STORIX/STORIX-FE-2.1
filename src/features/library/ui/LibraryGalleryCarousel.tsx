@@ -8,15 +8,16 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { C, Gray, Radius, Typography } from "../../../theme";
+import { C, Gray, Typography } from "../../../theme";
+import { LibraryRatingBadge } from "./LibraryRatingBadge";
 import type { LibraryUiWork } from "./types";
 
 const leftGradient = require("../../../../assets/icons/library/leftGradient.svg");
 const rightGradient = require("../../../../assets/icons/library/rightGradient.svg");
-const littleStarIcon = require("../../../../assets/icons/common/littleStar.svg");
 
 type Props = {
   data: LibraryUiWork[];
+  bottomInset?: number;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   onNeedMore?: () => void;
@@ -27,6 +28,7 @@ type LayoutMap = Record<number, { x: number; width: number }>;
 
 export function LibraryGalleryCarousel({
   data,
+  bottomInset = 128,
   hasNextPage = false,
   isFetchingNextPage = false,
   onNeedMore,
@@ -93,7 +95,7 @@ export function LibraryGalleryCarousel({
   const activeItem = data[activeIndex];
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingBottom: bottomInset }]}>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -178,23 +180,16 @@ export function LibraryGalleryCarousel({
 
       {activeItem ? (
         <View style={styles.activeInfo}>
-          <Text style={styles.activeTitle} numberOfLines={1}>
-            {activeItem.title}
-          </Text>
-          <Text style={styles.activeMeta} numberOfLines={1}>
-            {activeItem.meta}
-          </Text>
-
-          <View style={styles.ratingPill}>
-            <Image
-              source={littleStarIcon}
-              style={styles.ratingStar}
-              contentFit="contain"
-            />
-            <Text style={styles.ratingText}>
-              {activeItem.rating.toFixed(1)}
+          <View style={styles.activeTextGroup}>
+            <Text style={styles.activeTitle} numberOfLines={2}>
+              {activeItem.title}
+            </Text>
+            <Text style={styles.activeMeta} numberOfLines={1}>
+              {activeItem.meta}
             </Text>
           </View>
+
+          <LibraryRatingBadge value={activeItem.rating} variant="chip" />
         </View>
       ) : null}
     </View>
@@ -203,7 +198,7 @@ export function LibraryGalleryCarousel({
 
 const styles = StyleSheet.create({
   root: {
-    paddingBottom: 100,
+    flexShrink: 0,
   },
   carouselContent: {
     alignItems: "center",
@@ -273,41 +268,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     marginTop: 28,
+    gap: 12,
+  },
+  activeTextGroup: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    gap: 8,
   },
   activeTitle: {
     ...Typography.heading3,
     color: C.text,
     textAlign: "center",
     alignSelf: "stretch",
-    marginBottom: 8,
   },
   activeMeta: {
     ...Typography.body1Medium,
     color: Gray[400],
     textAlign: "center",
     alignSelf: "stretch",
-    marginBottom: 12,
-  },
-  ratingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    gap: 4,
-    backgroundColor: C.card,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Gray[200],
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  ratingStar: {
-    width: 14,
-    height: 14,
-  },
-  ratingText: {
-    ...Typography.caption1Semibold,
-    color: C.primary,
   },
   bookPressed: {
     opacity: 0.88,

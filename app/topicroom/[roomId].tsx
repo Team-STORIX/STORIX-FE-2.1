@@ -255,12 +255,27 @@ export default function TopicRoomScreen() {
     : topicRoomName || `채팅방 #${roomId}`;
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
-  // Room-age / D-Day source. The chat-history response now carries the
-  // membership `joinedAt` on its first page; prefer that, fall back to the
-  // route param, then null. Never use lastChatTime (last activity, not join).
-  // The bar stays hidden until history loads, then appears automatically.
-  const ddayStartDate =
-    historyData?.pages?.[0]?.joinedAt ?? params.startDate ?? null;
+  // Room-age / D-Day source. The chat-history response carries the membership
+  // `joinedAt`. It rides on the wrapped page, so scan all loaded pages for the
+  // first non-null value rather than assuming it sits on page[0] (defensive in
+  // case the first page back is a legacy direct-page with no joinedAt). Prefer
+  // joinedAt, fall back to a valid route param, then null. Never use
+  // lastChatTime (last activity, not join) or "now".
+  const historyJoinedAt =
+    historyData?.pages?.find((page) => page.joinedAt != null)?.joinedAt ?? null;
+  const validRouteStartDate =
+    params.startDate && !Number.isNaN(Date.parse(params.startDate))
+      ? params.startDate
+      : null;
+  const ddayStartDate = historyJoinedAt ?? validRouteStartDate ?? null;
+
+  if (__DEV__) {
+    console.log("[TOPICROOM_DATE] dday-source", {
+      historyJoinedAt,
+      routeStartDate: params.startDate ?? null,
+      selectedStartDate: ddayStartDate,
+    });
+  }
 
   const onLongPressOther = useCallback(
     (msg: DisplayMsg) => {

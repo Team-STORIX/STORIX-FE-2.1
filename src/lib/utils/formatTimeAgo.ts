@@ -3,6 +3,9 @@ export function formatTimeAgo(iso?: string | null): string {
   const t = new Date(iso).getTime()
   if (Number.isNaN(t)) return ''
   const diff = Date.now() - t
+  // Future timestamp (clock skew / bad data): treat as no value rather than
+  // letting a negative diff render as '방금 전' or a NaN-ish day count.
+  if (diff < 0) return ''
   if (diff < 60_000) return '방금 전'
   const min = Math.floor(diff / 60_000)
   if (min < 60) return `${min}분 전`

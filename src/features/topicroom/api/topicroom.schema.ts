@@ -35,6 +35,13 @@ export const TopicRoomItemSchema = z.object({
   activeUserNumber: z.number().nullish(),
   // Timestamp of the latest message in the room (last activity).
   lastChatTime: z.string().nullish(),
+  // Membership start date for the current user (GET /topic-rooms/me). Additive
+  // and forward-compatible: the backend does not expose this yet, so it is
+  // nullish and the joined list falls back to lastChatTime (labeled as recent
+  // activity). When BE starts returning it, the list will prefer it as the
+  // participation time with no further schema change. Do NOT conflate with
+  // lastChatTime (last activity, not join time).
+  joinedAt: z.string().nullish(),
   isJoined: z.boolean().nullish(),
   // Latest-message preview fields. GET /topic-rooms/popular populates these;
   // today/me/search may omit them, so all are optional/nullish and the

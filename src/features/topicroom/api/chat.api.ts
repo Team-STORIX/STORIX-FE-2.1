@@ -36,7 +36,20 @@ export async function getChatRoomMessages(params: {
   // New wrapped shape: { joinedAt, messages }. Legacy shape: the page itself.
   const isWrapped = 'messages' in result
   const page = isWrapped ? result.messages : result
-  const joinedAt = isWrapped ? (result.joinedAt ?? null) : null
+  const rawJoinedAt = isWrapped ? result.joinedAt : undefined
+  const joinedAt = rawJoinedAt ?? null
+
+  if (__DEV__) {
+    const parsedTimestamp = joinedAt ? Date.parse(joinedAt) : NaN
+    // Dev-only date audit. No message contents or tokens are logged.
+    console.log('[TOPICROOM_DATE] history', {
+      roomId: params.roomId,
+      rawJoinedAt,
+      normalizedJoinedAt: joinedAt,
+      parsedTimestamp,
+      isValidDate: Number.isFinite(parsedTimestamp),
+    })
+  }
 
   return {
     joinedAt,
