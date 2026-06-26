@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
 import { Image } from 'expo-image'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ViewShot from 'react-native-view-shot'
 import Svg, {
@@ -67,10 +67,8 @@ const truncateText = (text: string, maxLength: number) => {
 
 function ReviewCardSurface({
   imageUrl,
-  isMagentaTheme,
 }: {
   imageUrl?: string | null
-  isMagentaTheme: boolean
 }) {
   return (
     <Svg
@@ -84,19 +82,12 @@ function ReviewCardSurface({
         <ClipPath id="reviewCardClip">
           <Path d={REVIEW_CARD_OUTLINE} />
         </ClipPath>
-        {isMagentaTheme ? (
-          <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#FF4093" stopOpacity={0} />
-            <Stop offset="100%" stopColor="#FF4093" stopOpacity={1} />
-          </LinearGradient>
-        ) : (
-          <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#000000" stopOpacity={0.15} />
-            <Stop offset="35%" stopColor="#000000" stopOpacity={0.25} />
-            <Stop offset="70%" stopColor="#000000" stopOpacity={0.65} />
-            <Stop offset="100%" stopColor="#000000" stopOpacity={0.95} />
-          </LinearGradient>
-        )}
+        <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#000000" stopOpacity={0.15} />
+          <Stop offset="35%" stopColor="#000000" stopOpacity={0.25} />
+          <Stop offset="70%" stopColor="#000000" stopOpacity={0.65} />
+          <Stop offset="100%" stopColor="#000000" stopOpacity={0.95} />
+        </LinearGradient>
       </Defs>
 
       <Path d={REVIEW_CARD_OUTLINE} fill="#131112" />
@@ -130,7 +121,6 @@ export function RecordCardModal({
 }: RecordCardModalProps) {
   const insets = useSafeAreaInsets()
   const viewShotRef = useRef<ViewShot>(null)
-  const [isMagentaTheme, setIsMagentaTheme] = useState(false)
   const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
 
   const captureCard = async (): Promise<string | null> => {
@@ -159,19 +149,9 @@ export function RecordCardModal({
           </Pressable>
 
           <View style={styles.contentWrapper}>
-            <Pressable
-              style={styles.themeButton}
-              onPress={(event) => {
-                event.stopPropagation()
-                setIsMagentaTheme((prev) => !prev)
-              }}
-            >
-              <Text style={styles.themeButtonText}>테마 변경</Text>
-            </Pressable>
-
             <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
               <Pressable style={styles.cardContainer} onPress={(event) => event.stopPropagation()}>
-                <ReviewCardSurface imageUrl={coverImageUrl} isMagentaTheme={isMagentaTheme} />
+                <ReviewCardSurface imageUrl={coverImageUrl} />
 
                 <View style={styles.cardContent}>
                   <View style={styles.topSection}>
@@ -277,23 +257,6 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     width: CARD_WIDTH,
-  },
-  themeButton: {
-    position: 'absolute',
-    top: -36,
-    right: 0,
-    zIndex: 20,
-    minHeight: 26,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    borderRadius: 13,
-    backgroundColor: C.card,
-  },
-  themeButtonText: {
-    fontFamily: 'SUITBold',
-    fontSize: 11,
-    lineHeight: 15.4,
-    color: Gray[900],
   },
   cardContainer: {
     width: CARD_WIDTH,

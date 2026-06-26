@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: C.text,
   },
   inputDisabled: {

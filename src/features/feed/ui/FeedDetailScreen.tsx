@@ -34,6 +34,7 @@ import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInpu
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
 import { UserActionModal } from './BlockConfirmModal'
+import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -93,6 +94,11 @@ export function FeedDetailScreen() {
     nickname: string
     onConfirm: () => Promise<void>
   } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'post' | 'comment'
+    replyId?: number
+    parentReplyId?: number
+  } | null>(null)
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
@@ -134,10 +140,11 @@ export function FeedDetailScreen() {
     try {
       const result = await toggleBoardLike(boardId)
       setPostLikeOverride(result)
+      qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
     } catch {
       setPostLikeOverride({ isLiked: board.isLiked, likeCount: board.likeCount })
     }
-  }, [board, boardId, effectivePostLike])
+  }, [board, boardId, effectivePostLike, qc])
 
   const onToggleReplyLike = useCallback(
     async (replyId: number, current: { isLiked: boolean; likeCount: number }) => {
@@ -188,23 +195,8 @@ export function FeedDetailScreen() {
 
   const onDeleteBoard = useCallback(() => {
     if (!boardId) return
-    Alert.alert('삭제', '이 게시글을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteBoard(boardId)
-            await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
-            router.back()
-          } catch {
-            Alert.alert('오류', '삭제에 실패했어요.')
-          }
-        },
-      },
-    ])
-  }, [boardId, qc, router])
+    setDeleteTarget({ type: 'post' })
+  }, [boardId])
 
   const onReportBoard = useCallback(() => {
     if (!boardId || !profile) return
@@ -241,32 +233,39 @@ export function FeedDetailScreen() {
   const onDeleteReply = useCallback(
     (replyId: number, parentReplyId?: number) => {
       if (!boardId) return
-      Alert.alert('삭제', '이 댓글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteReply({ boardId, replyId })
-              if (parentReplyId != null) {
-                setSubRepliesMap((prev) => ({
-                  ...prev,
-                  [parentReplyId]: (prev[parentReplyId] ?? []).filter(
-                    (item) => item.reply.replyId !== replyId,
-                  ),
-                }))
-              }
-              await detailQuery.refetch()
-            } catch {
-              Alert.alert('오류', '삭제에 실패했어요.')
-            }
-          },
-        },
-      ])
+      setDeleteTarget({ type: 'comment', replyId, parentReplyId })
     },
-    [boardId, detailQuery],
+    [boardId],
   )
+
+  const confirmDeleteTarget = useCallback(async () => {
+    if (!boardId || !deleteTarget) return
+
+    try {
+      if (deleteTarget.type === 'post') {
+        await deleteBoard(boardId)
+        await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+        await qc.invalidateQueries({ queryKey: ['profile', 'activity'] })
+        router.back()
+        return
+      }
+
+      if (deleteTarget.replyId == null) return
+      await deleteReply({ boardId, replyId: deleteTarget.replyId })
+      if (deleteTarget.parentReplyId != null) {
+        setSubRepliesMap((prev) => ({
+          ...prev,
+          [deleteTarget.parentReplyId as number]: (
+            prev[deleteTarget.parentReplyId as number] ?? []
+          ).filter((item) => item.reply.replyId !== deleteTarget.replyId),
+        }))
+      }
+      await detailQuery.refetch()
+      await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
+    } catch {
+      Alert.alert('오류', '삭제에 실패했어요.')
+    }
+  }, [boardId, deleteTarget, detailQuery, qc, router])
 
   const onReportReply = useCallback(
     (
@@ -353,6 +352,7 @@ export function FeedDetailScreen() {
         })
         setReplyCountDelta(0)
         await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+        await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
       } catch {
         setSubRepliesMap((prev) => ({
           ...prev,
@@ -369,6 +369,7 @@ export function FeedDetailScreen() {
       await detailQuery.refetch()
       setReplyCountDelta(0)
       await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+      await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
     } catch {
@@ -586,6 +587,12 @@ export function FeedDetailScreen() {
         nickname={blockTarget?.nickname ?? ''}
         onClose={() => setBlockTarget(null)}
         onConfirm={blockTarget?.onConfirm ?? (() => Promise.resolve())}
+      />
+      <FeedDeleteConfirmModal
+        type={deleteTarget?.type ?? 'post'}
+        visible={deleteTarget != null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteTarget}
       />
     </View>
   )

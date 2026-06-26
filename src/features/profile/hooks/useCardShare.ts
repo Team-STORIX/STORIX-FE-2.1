@@ -1,20 +1,14 @@
 import { useCallback, useState } from 'react'
-import { Alert, Linking } from 'react-native'
+import { Alert, Linking, Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
 import Share, { Social } from 'react-native-share'
-import {
-  createProfileCardShare,
-  postProfileCardImagePresignedUrl,
-  uploadProfileCardImage,
-} from '../api/profile-card-share.api'
 
 export type CaptureFunction = () => Promise<string | null>
 
-const SHARE_MESSAGE = 'STORIX \uD504\uB85C\uD544 \uCE74\uB4DC'
+const STORIX_SHARE_URL = 'https://www.storix.kr/'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
-const TWITTER_WEB_INTENT_URL = 'https://twitter.com/intent/tweet'
-const TWITTER_HOME_URL = 'https://twitter.com'
+const X_HOME_URL = 'https://x.com'
 
 export function useCardShare() {
   const [isSaving, setIsSaving] = useState(false)
@@ -77,9 +71,10 @@ export function useCardShare() {
         return
       }
 
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: '\uD504\uB85C\uD544 \uCE74\uB4DC \uACF5\uC720',
+      await Share.open({
+        ...getOsShareOptions(uri, message),
+        title: message,
+        failOnCancel: false,
       })
     } catch (error) {
       console.error('Share error:', error)
@@ -104,8 +99,7 @@ export function useCardShare() {
 
       const isTwitterInstalled = await isTwitterAppInstalled()
       if (!isTwitterInstalled) {
-        const shareUrl = await uploadProfileCardForWebShare(uri)
-        await openTwitterWebIntent(shareUrl, message)
+        await openXHome()
         return
       }
 
@@ -113,11 +107,11 @@ export function useCardShare() {
         social: Social.Twitter,
         url: normalizeShareUri(uri),
         type: 'image/png',
-        message,
+        message: getShareMessage(message),
       })
     } catch (error) {
       console.error('Twitter share error:', error)
-      await openTwitterWebIntent(undefined, message)
+      await openXHome()
     } finally {
       setIsSharing(false)
     }
@@ -137,6 +131,54 @@ function normalizeShareUri(uri: string) {
   return `file://${uri}`
 }
 
+function getShareMessage(message: string) {
+  return `${message} ${STORIX_SHARE_URL}`
+}
+
+function getOsShareOptions(uri: string, message: string) {
+  const fileUri = normalizeShareUri(uri)
+  const shareMessage = getShareMessage(message)
+
+  if (Platform.OS === 'ios') {
+    return {
+      message: shareMessage,
+      url: fileUri,
+      type: 'image/png',
+      subject: message,
+      activityItemSources: [
+        {
+          placeholderItem: { type: 'text' as const, content: shareMessage },
+          item: {
+            default: { type: 'text' as const, content: shareMessage },
+          },
+          subject: {
+            default: message,
+          },
+        },
+        {
+          placeholderItem: { type: 'url' as const, content: fileUri },
+          item: {
+            default: { type: 'url' as const, content: fileUri },
+          },
+          dataTypeIdentifier: {
+            default: 'public.png',
+          },
+        },
+      ],
+    }
+  }
+
+  // Android: 메시지(텍스트 + URL)와 이미지를 함께 공유
+  return {
+    message: shareMessage,
+    url: fileUri,
+    urls: [fileUri],
+    type: '*/*',
+    subject: message,
+    useInternalStorage: true,
+  }
+}
+
 async function isTwitterAppInstalled() {
   try {
     const result = await Share.isPackageInstalled(TWITTER_ANDROID_PACKAGE)
@@ -146,31 +188,11 @@ async function isTwitterAppInstalled() {
   }
 }
 
-async function uploadProfileCardForWebShare(uri: string) {
-  const contentType = 'image/png'
-  const presigned = await postProfileCardImagePresignedUrl(contentType)
-
-  await uploadProfileCardImage({
-    url: presigned.url,
-    uri,
-    contentType,
-  })
-
-  const share = await createProfileCardShare(presigned.objectKey)
-  return share.shareUrl
-}
-
-async function openTwitterWebIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
-  const text = encodeURIComponent(message)
-  const query = shareUrl
-    ? `text=${text}&url=${encodeURIComponent(shareUrl)}`
-    : `text=${text}`
-  const webIntentUrl = `${TWITTER_WEB_INTENT_URL}?${query}`
-
+async function openXHome() {
   try {
-    const canOpenWebIntent = await Linking.canOpenURL(webIntentUrl)
-    await Linking.openURL(canOpenWebIntent ? webIntentUrl : TWITTER_HOME_URL)
+    const canOpenX = await Linking.canOpenURL(X_HOME_URL)
+    await Linking.openURL(canOpenX ? X_HOME_URL : STORIX_SHARE_URL)
   } catch {
-    await Linking.openURL(TWITTER_HOME_URL)
+    await Linking.openURL(STORIX_SHARE_URL)
   }
 }

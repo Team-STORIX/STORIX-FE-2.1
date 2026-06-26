@@ -19,6 +19,7 @@ export type LevelProgressProps = {
   topGenre: string | null
   /** 현재 칭호 */
   title: string | null
+  progressPercentage?: number
 }
 
 export function LevelProgress({
@@ -27,29 +28,35 @@ export function LevelProgress({
   remainingPoints,
   progress,
   topGenre,
-  title
+  title,
+  progressPercentage = 0
 }: LevelProgressProps) {
   const [showModal, setShowModal] = useState(false)
 
   // 최고 단계 달성 여부 (nextStage가 현재 stage와 같거나 비어있으면)
-  const isMaxLevel = !nextTitle || nextTitle === level
+  const normalizedLevel = level.trim()
+  const percentageText =
+    normalizedLevel === '미진입'
+      ? `${Math.max(0, 100 - progressPercentage).toFixed(1)}%`
+      : `${progressPercentage.toFixed(1)}%`
+  const isComplete = normalizedLevel === '몰입'
+  const prefixText =
+    normalizedLevel === '미진입'
+      ? '입문 단계까지'
+      : isComplete
+        ? '몰입 단계'
+        : `현재 ${normalizedLevel} 단계`
 
   return (
     <View style={styles.container}>
       {/* 텍스트 영역 */}
       <View style={styles.textRow}>
-        {isMaxLevel ? (
-          <Text style={styles.levelText}>
-            {level} 칭호 달성 완료
+        <Text style={styles.levelText}>
+          {prefixText}{' '}
+          <Text style={styles.pointsText}>
+            {isComplete ? '달성 완료' : percentageText}
           </Text>
-        ) : (
-          <>
-            <Text style={styles.levelText}>
-              {nextTitle} 칭호까지
-            </Text>
-            <Text style={styles.pointsText}>{remainingPoints} 점</Text>
-          </>
-        )}
+        </Text>
         <Pressable onPress={() => setShowModal(true)} hitSlop={8}>
           <Image source={helpIcon} style={styles.helpIcon} contentFit="contain" />
         </Pressable>
@@ -64,6 +71,7 @@ export function LevelProgress({
       <TitleInfoModal
         visible={showModal}
         onClose={() => setShowModal(false)}
+        stage={level}
         topGenre={topGenre}
         title={title}
       />

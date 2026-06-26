@@ -28,7 +28,9 @@ import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
 import { UserActionModal } from './BlockConfirmModal'
+import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 import { blockUser } from '../../users/api/users.api'
+import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollEvents'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 
@@ -36,6 +38,7 @@ export function FeedScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const qc = useQueryClient()
+  const listRef = useRef<FlatList<FeedBoardItem> | null>(null)
 
   // `section=topicroom` lands the user on the TopicRoom (writers) tab when
   // navigated here from Home's "실시간 작품 이야기" section.
@@ -55,6 +58,13 @@ export function FeedScreen() {
       setPick('all')
     }
   }, [sectionParam])
+
+  useEffect(() => {
+    return subscribeFeedTabReselected(() => {
+      setTab('works')
+      listRef.current?.scrollToOffset({ offset: 0, animated: true })
+    })
+  }, [])
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
@@ -66,6 +76,7 @@ export function FeedScreen() {
     nickname: string
     onConfirm: () => Promise<void>
   } | null>(null)
+  const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false)
 
@@ -131,6 +142,7 @@ export function FeedScreen() {
             likeCount: result.likeCount,
           })
           forceUpdate((n) => n + 1)
+          qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
         }
       } catch {
         likeOverrides.current.set(boardId, {
@@ -140,7 +152,7 @@ export function FeedScreen() {
         forceUpdate((n) => n + 1)
       }
     },
-    [],
+    [qc],
   )
 
   // ── Report / Delete / Block ──────────────────────────────────────────────────
@@ -181,26 +193,20 @@ export function FeedScreen() {
     [qc, activeQuery],
   )
 
-  const handleDelete = useCallback(
-    async (boardId: number) => {
-      Alert.alert('삭제', '이 게시글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteBoard(boardId)
-              qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
-            } catch {
-              Alert.alert('오류', '삭제에 실패했어요.')
-            }
-          },
-        },
-      ])
-    },
-    [qc],
-  )
+  const handleDelete = useCallback((boardId: number) => {
+    setDeleteBoardId(boardId)
+  }, [])
+
+  const confirmDeleteBoard = useCallback(async () => {
+    if (deleteBoardId == null) return
+    try {
+      await deleteBoard(deleteBoardId)
+      qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+      qc.invalidateQueries({ queryKey: ['profile', 'activity'] })
+    } catch {
+      Alert.alert('오류', '삭제에 실패했어요.')
+    }
+  }, [deleteBoardId, qc])
 
   // ── Pagination ───────────────────────────────────────────────────────────────
   const onEndReached = useCallback(() => {
@@ -335,6 +341,15 @@ export function FeedScreen() {
     />
   )
 
+  const deleteModal = (
+    <FeedDeleteConfirmModal
+      type="post"
+      visible={deleteBoardId != null}
+      onClose={() => setDeleteBoardId(null)}
+      onConfirm={confirmDeleteBoard}
+    />
+  )
+
   if (tab === 'writers') {
     return (
       <>
@@ -358,6 +373,7 @@ export function FeedScreen() {
         </View>
         {reportModal}
         {blockModal}
+        {deleteModal}
         {createWorksSheet}
       </>
     )
@@ -366,6 +382,7 @@ export function FeedScreen() {
   return (
     <>
     <FlatList
+      ref={listRef}
       style={[styles.screen, { paddingTop: insets.top }]}
       data={items}
       keyExtractor={(item) => `board_${item.board.boardId}`}
@@ -414,6 +431,7 @@ export function FeedScreen() {
     />
     {reportModal}
     {blockModal}
+    {deleteModal}
     {createWorksSheet}
     </>
   )

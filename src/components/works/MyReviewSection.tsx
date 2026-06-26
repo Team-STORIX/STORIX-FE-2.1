@@ -119,6 +119,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: C.textMuted,
     paddingRight: 4,
   },

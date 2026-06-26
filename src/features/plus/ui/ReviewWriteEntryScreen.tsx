@@ -296,6 +296,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     marginTop: 16,
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: Gray[700],
     padding: 0,
     paddingTop: 16,

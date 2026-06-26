@@ -173,6 +173,7 @@ export function ProfileScreen() {
                 progress={me.progressPercentage / 100}
                 topGenre={me.topGenre}
                 title={me.title}
+                progressPercentage={me.progressPercentage}
               />
               <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
             </>
@@ -220,6 +221,7 @@ export function ProfileScreen() {
         progress={me.progressPercentage / 100}
         topGenre={me.topGenre}
         title={me.title}
+        progressPercentage={me.progressPercentage}
       />
       <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <ProfilePreferenceSection />

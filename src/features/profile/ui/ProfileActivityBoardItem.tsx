@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { FeedPostCard } from '../../feed/ui/FeedPostCard'
 import { ReportModal } from '../../feed/ui/ReportModal'
+import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
 import {
   deleteBoard,
   reportBoard,
@@ -25,6 +26,7 @@ export function ProfileActivityBoardCard({
   const router = useRouter()
   const qc = useQueryClient()
   const [reportModalVisible, setReportModalVisible] = useState(false)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
 
   const syncBoardItem = (
     boardId: number,
@@ -86,24 +88,19 @@ export function ProfileActivityBoardCard({
   }
 
   const handleDelete = () => {
-    Alert.alert('삭제', '이 게시글을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const result = await deleteBoard(item.board.boardId)
-            if (result?.isSuccess === false) {
-              throw new Error(result?.message ?? '게시글 삭제에 실패했어요.')
-            }
-            syncBoardItem(item.board.boardId, () => null)
-          } catch {
-            Alert.alert('오류', '게시글 삭제에 실패했어요.')
-          }
-        },
-      },
-    ])
+    setDeleteModalVisible(true)
+  }
+
+  const confirmDelete = async () => {
+    try {
+      const result = await deleteBoard(item.board.boardId)
+      if (result?.isSuccess === false) {
+        throw new Error(result?.message ?? '게시글 삭제에 실패했어요.')
+      }
+      syncBoardItem(item.board.boardId, () => null)
+    } catch {
+      Alert.alert('오류', '게시글 삭제에 실패했어요.')
+    }
   }
 
   const handleReport = () => {
@@ -167,6 +164,12 @@ export function ProfileActivityBoardCard({
           throw new Error('이미 신고한 유저예요.')
         }
       }}
+    />
+    <FeedDeleteConfirmModal
+      type="post"
+      visible={deleteModalVisible}
+      onClose={() => setDeleteModalVisible(false)}
+      onConfirm={confirmDelete}
     />
     </>
   )

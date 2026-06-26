@@ -4,11 +4,12 @@ import { C, Gray, Magenta, Typography } from '../../../theme'
 type TitleInfoModalProps = {
   visible: boolean
   onClose: () => void
+  stage: string | null
   topGenre: string | null
   title: string | null
 }
 
-export function TitleInfoModal({ visible, onClose, topGenre, title }: TitleInfoModalProps) {
+export function TitleInfoModal({ visible, onClose, stage, topGenre, title }: TitleInfoModalProps) {
   return (
     <Modal
       visible={visible}
@@ -21,10 +22,15 @@ export function TitleInfoModal({ visible, onClose, topGenre, title }: TitleInfoM
           {/* 타이틀 */}
           <Text style={styles.title}>칭호는 어떻게 정해지나요?</Text>
 
-          {/* 설명 */}
-          <Text style={styles.description}>
-            칭호는 활동점수가 가장 높은 장르를 기준으로 정해져요.
-          </Text>
+          {/* 현재 단계 */}
+          <View style={[styles.infoRow, styles.firstInfoRow]}>
+            <View style={styles.labelChip}>
+              <Text style={styles.labelText}>현재 단계</Text>
+            </View>
+            <Text style={styles.valueText}>
+              {stage || '미진입 단계'}
+            </Text>
+          </View>
 
           {/* 대표 장르 */}
           <View style={styles.infoRow}>
@@ -46,8 +52,10 @@ export function TitleInfoModal({ visible, onClose, topGenre, title }: TitleInfoM
 
           {/* 안내 문구 */}
           <Text style={styles.notice}>
-            대표 장르 점수가 높아지면 칭호 단계도 함께 올라갑니다.{'\n'}
-            다음 칭호는 획득 시 공개돼요.
+            칭호는 활동점수가 가장 높은 장르를 기준으로 정해져요.{'\n'}
+            토픽룸 참여, 리뷰·게시물 작성, 관심 작품 등록을 통해 {'\n'}
+            장르 점수가 쌓이면 입문-탐색-몰입 단계로 성장합니다.{'\n'}
+            다음 칭호는 획득시 공개돼요.
           </Text>
 
           {/* 확인 버튼 */}
@@ -95,8 +103,11 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 8,
     gap: 8,
+  },
+  firstInfoRow: {
+    marginTop: 16,
   },
   labelChip: {
     paddingVertical: 4,

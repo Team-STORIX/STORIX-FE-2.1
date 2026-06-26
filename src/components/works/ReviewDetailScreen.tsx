@@ -586,6 +586,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     ...Typography.body1Medium,
+    fontFamily: undefined,
     color: C.textSecondary,
     lineHeight: 28,
   },

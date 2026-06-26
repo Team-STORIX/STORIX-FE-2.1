@@ -31,6 +31,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useColorScheme } from '@/components/useColorScheme'
 import { C } from '../src/theme'
 import { useMe } from '../src/features/profile'
+import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
@@ -204,6 +205,7 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileBootstrap />
       <PushNotificationBootstrap />
+      <TitleAchievementDetector />
       <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -1,18 +1,21 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { C, Gray, Magenta, Typography } from '../../../theme'
+import { Image } from 'expo-image'
+import { C, Gray, Typography } from '../../../theme'
 
 type TitleAchievementModalProps = {
   visible: boolean
   onClose: () => void
   title: string
-  genre: string
+  nickname: string
 }
+
+const storixLogo = require('../../../../assets/logos/logo-pink.svg')
 
 export function TitleAchievementModal({
   visible,
   onClose,
   title,
-  genre,
+  nickname,
 }: TitleAchievementModalProps) {
   return (
     <Modal
@@ -23,26 +26,15 @@ export function TitleAchievementModal({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
-          {/* 칭호명 */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>{nickname} 님의 칭호가</Text>
+          <Text style={styles.subtitle}>{title}로 변경되었습니다!</Text>
 
-          {/* "칭호를 획득하였습니다!" */}
-          <Text style={styles.subtitle}>칭호를 획득하였습니다!</Text>
+          <Image source={storixLogo} style={styles.logo} contentFit="contain" />
 
-          {/* 장르 아이콘 (80x80) */}
-          <View style={styles.iconContainer}>
-            {/* TODO: 장르별 SVG 아이콘 추가 */}
-            <View style={styles.iconPlaceholder}>
-              <Text style={styles.genreText}>{genre}</Text>
-            </View>
-          </View>
-
-          {/* 설명 */}
           <Text style={styles.description}>
             모든 칭호는 활동 점수가{'\n'}가장 높은 장르에 기반해 부여됩니다.
           </Text>
 
-          {/* 확인 버튼 */}
           <Pressable
             style={({ pressed }) => [
               styles.confirmButton,
@@ -75,33 +67,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
-    lineHeight: 28,
-    color: Magenta[300],
+    ...Typography.heading2,
+    color: Gray[900],
     textAlign: 'center',
   },
   subtitle: {
     ...Typography.heading2,
     color: Gray[900],
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 0,
   },
-  iconContainer: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  iconPlaceholder: {
+  logo: {
     width: 80,
     height: 80,
-    backgroundColor: Gray[100],
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  genreText: {
-    ...Typography.body2Bold,
-    color: '#010101',
+    marginTop: 16,
   },
   description: {
     ...Typography.body2Medium,

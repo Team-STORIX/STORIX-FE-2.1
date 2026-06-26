@@ -253,11 +253,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: C.card,
     shadowColor: C.text,
-    shadowOpacity: 0.20,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 4,
-    overflow: 'hidden',
   },
   dropdownImage: {
     width: 96,
@@ -282,6 +281,7 @@ const styles = StyleSheet.create({
   },
   commentText: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: Gray[900],
   },
   actionRow: {
