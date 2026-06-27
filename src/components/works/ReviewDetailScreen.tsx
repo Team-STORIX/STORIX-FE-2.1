@@ -126,10 +126,6 @@ export function ReviewDetailScreen({ reviewId }: Props) {
   const menuBtnRef = useRef<any>(null)
   const [reportModalVisible, setReportModalVisible] = useState(false)
   const [blockModalVisible, setBlockModalVisible] = useState(false)
-  // Set true after a successful block so we navigate back only once the
-  // completion UI has finished (UserActionModal -> onClose).
-  const blockCompletedRef = useRef(false)
-
   const relativeTime = formatCreatedAtLabel(
     data?.lastCreatedTime ?? data?.createdAt,
   )
@@ -176,7 +172,23 @@ export function ReviewDetailScreen({ reviewId }: Props) {
   }
 
   const onConfirmReport = async () => {
-    await reportMutation.mutateAsync({ reviewId })
+    // Backend requires the actual review writer's id; never report myself.
+    if (ui.userId == null || isMine) return
+    if (__DEV__) {
+      console.log('[worksReview][report] request', {
+        reviewId,
+        reportedUserId: ui.userId,
+        reason: 'OTHER',
+      })
+    }
+    await reportMutation.mutateAsync({
+      reviewId,
+      payload: {
+        reportedUserId: ui.userId,
+        reason: 'OTHER',
+        otherReason: null,
+      },
+    })
   }
 
   const onConfirmBlock = async () => {
@@ -189,7 +201,6 @@ export function ReviewDetailScreen({ reviewId }: Props) {
       qc.invalidateQueries({ queryKey: ['allBoards'] }),
       qc.invalidateQueries({ queryKey: ['boardsByWorksId'] }),
     ])
-    blockCompletedRef.current = true
   }
 
   const onReportError = (error: unknown) => {
@@ -200,18 +211,14 @@ export function ReviewDetailScreen({ reviewId }: Props) {
     Alert.alert('차단 실패', '차단 처리에 실패했어요. 다시 시도해 주세요.')
   }
 
-  const onBlockModalClose = () => {
-    setBlockModalVisible(false)
-    if (!blockCompletedRef.current) return
-    blockCompletedRef.current = false
-    // Leave only after the completion UI is done so the popup is actually seen.
-    if (router.canGoBack()) {
-      router.back()
-    } else if (ui.worksId) {
-      router.replace(`/works/${ui.worksId}` as never)
-    } else {
-      router.replace('/(tabs)' as const)
+  const navigateToWorksWithActionToast = (action: 'report' | 'block') => {
+    if (ui.worksId) {
+      router.replace(
+        `/works/${ui.worksId}?tab=review&actionToast=${action}` as never,
+      )
+      return
     }
+    router.replace('/(tabs)' as const)
   }
 
   const storeIsLiked = useLikesStore(
@@ -497,6 +504,8 @@ export function ReviewDetailScreen({ reviewId }: Props) {
         onClose={() => setReportModalVisible(false)}
         onConfirm={onConfirmReport}
         onError={onReportError}
+        onSuccess={() => navigateToWorksWithActionToast('report')}
+        showCompletionPopup={false}
       />
 
       {/* 차단 확인 팝업 */}
@@ -505,9 +514,11 @@ export function ReviewDetailScreen({ reviewId }: Props) {
         visible={blockModalVisible}
         profileImageUrl={ui.profileImageUrl}
         nickname={ui.userName}
-        onClose={onBlockModalClose}
+        onClose={() => setBlockModalVisible(false)}
         onConfirm={onConfirmBlock}
         onError={onBlockError}
+        onSuccess={() => navigateToWorksWithActionToast('block')}
+        showCompletionPopup={false}
       />
 
       {/* 기록카드 모달 */}

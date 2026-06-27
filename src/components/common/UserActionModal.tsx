@@ -17,6 +17,8 @@ type UserActionModalProps = {
   nickname: string
   type: ActionType
   onError?: (error: unknown) => void
+  onSuccess?: () => void
+  showCompletionPopup?: boolean
 }
 
 export function UserActionModal({
@@ -27,6 +29,8 @@ export function UserActionModal({
   nickname,
   type,
   onError,
+  onSuccess,
+  showCompletionPopup = true,
 }: UserActionModalProps) {
   const isReport = type === 'report'
   const [confirming, setConfirming] = useState(false)
@@ -56,6 +60,11 @@ export function UserActionModal({
     setConfirming(true)
     try {
       await onConfirm()
+      if (!showCompletionPopup) {
+        onClose()
+        requestAnimationFrame(() => onSuccess?.())
+        return
+      }
       showDone()
     } catch (error: unknown) {
       // Surface the failure to the caller; do NOT show the success UI.
