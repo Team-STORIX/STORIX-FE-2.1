@@ -47,11 +47,29 @@ export async function joinTopicRoom(roomId: number) {
 }
 
 // DELETE /api/v1/topic-rooms/{roomId}/leave
+// No request body. A successful 2xx can come back as the standard envelope, an
+// envelope with a null result, or an empty body (HTTP 204). Parse leniently so
+// any of those is treated as success: strictly parsing the envelope here threw
+// a ZodError whenever the success body was empty/odd, turning a genuine 2xx
+// leave into a false "나가기 실패" — which also blocked cache invalidation and
+// navigation. A 2xx must always resolve; non-2xx still rejects via axios.
 export async function leaveTopicRoom(roomId: number) {
-  const res = await apiClient.delete(`/api/v1/topic-rooms/${roomId}/leave`, {
+  const endpoint = `/api/v1/topic-rooms/${roomId}/leave`
+  if (__DEV__) {
+    console.log('[TOPICROOM_LEAVE] request', { method: 'DELETE', endpoint })
+  }
+  const res = await apiClient.delete(endpoint, {
     headers: { accept: '*/*' },
   })
-  return AnyEnvelopeSchema.parse(res.data)
+  const parsed = AnyEnvelopeSchema.safeParse(res.data)
+  if (__DEV__) {
+    console.log('[TOPICROOM_LEAVE] success', {
+      roomId,
+      responseStatus: res.status,
+      resultType: parsed.success ? typeof parsed.data.result : typeof res.data,
+    })
+  }
+  return parsed.success ? parsed.data : res.data
 }
 
 // GET /api/v1/topic-rooms/today

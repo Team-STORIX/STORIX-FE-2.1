@@ -90,7 +90,11 @@ export default function TopicRoomScreen() {
     // report-complete snackbar after navigating back. Cleared once consumed.
     userActionToast?: string;
   }>();
-  const roomId = typeof params.roomId === "string" ? Number(params.roomId) : 0;
+  // useLocalSearchParams can yield a string or a string[]; normalize either to a
+  // single number. Invalid values become NaN, which downstream guards (history
+  // query, STOMP canConnect, the leave guard) all treat as "no room".
+  const rawRoomId = params.roomId;
+  const roomId = Number(Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId);
 
   const insets = useSafeAreaInsets();
   const myUserId = useProfileStore((s) => s.me?.userId);
@@ -170,20 +174,45 @@ export default function TopicRoomScreen() {
     setLeaveConfirmOpen(true);
   }, [leaveMutation.isPending]);
 
-  const handleConfirmLeave = useCallback(() => {
+  const handleConfirmLeave = useCallback(async () => {
+    if (__DEV__) {
+      console.log("[TOPICROOM_LEAVE] confirm", {
+        rawRoomId,
+        normalizedRoomId: roomId,
+        isPending: leaveMutation.isPending,
+      });
+    }
+    // Block duplicate confirm taps while the request is in flight.
     if (leaveMutation.isPending) return;
-    leaveMutation.mutate(roomId, {
-      onSuccess: () => {
-        setLeaveConfirmOpen(false);
-        if (router.canGoBack()) router.back();
-        else router.replace("/(tabs)" as const);
-      },
-      onError: () => {
-        setLeaveConfirmOpen(false);
-        showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
-      },
-    });
-  }, [leaveMutation, roomId, router, showToast]);
+
+    // Never issue /topic-rooms/NaN/leave — bail out with feedback instead.
+    if (!Number.isFinite(roomId) || roomId <= 0) {
+      setLeaveConfirmOpen(false);
+      showToast("채팅방 정보를 확인할 수 없어요.");
+      return;
+    }
+
+    try {
+      await leaveMutation.mutateAsync(roomId);
+      // Only after a confirmed success: tear down overlays and replace (not
+      // back/push) so direct-entry users can't return to the room they left.
+      setMenuOpen(false);
+      setLeaveConfirmOpen(false);
+      router.replace("/(tabs)/feed?section=topicroom" as never);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.log("[TOPICROOM_LEAVE] error", {
+          roomId,
+          status: error?.response?.status,
+          code: error?.response?.data?.code,
+          message: error?.response?.data?.message,
+        });
+      }
+      // Stay in the room; restore button state and surface feedback.
+      setLeaveConfirmOpen(false);
+      showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  }, [rawRoomId, roomId, leaveMutation, router, showToast]);
 
   // Report is now a full page (app/topicroom/report.tsx), not a bottom sheet.
   const goToReport = useCallback(
