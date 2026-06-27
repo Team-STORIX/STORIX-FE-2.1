@@ -1,33 +1,27 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { C, Magenta, Typography } from '../../../theme'
+import { calendarDaysSince } from '../../../lib/utils/parseValidDate'
 
 const starIcon = require('../../../../assets/icons/common/littleStar.svg')
 
 type Props = {
   /**
-   * Membership start date (ISO) — the day the user joined the room.
-   * Bar is hidden when absent or invalid.
+   * Membership start date (ISO) — the day the user joined the room. Sourced
+   * from the chat-history response's `joinedAt` (GET /chat/rooms/{id}/messages).
+   * Bar is hidden when absent, invalid, or in the future.
    *
-   * Requires BE to provide joinedAt/participatedAt. Do not use lastChatTime
-   * (that is last-activity only, not a membership date). The current TopicRoom
-   * Swagger exposes no such field, so this prop is effectively never populated
-   * and the bar renders null until the backend adds one.
+   * Do NOT pass lastChatTime here (that is last-activity only, not a membership
+   * date).
    */
   startDate?: string | null
 }
 
-const daysSince = (iso: string): number | null => {
-  const start = new Date(iso)
-  if (Number.isNaN(start.getTime())) return null
-  const diffMs = Date.now() - start.getTime()
-  if (diffMs < 0) return null
-  return Math.floor(diffMs / 86_400_000)
-}
-
 export function TopicRoomDdayBar({ startDate }: Props) {
-  if (!startDate) return null
-  const days = daysSince(startDate)
+  // Calendar-day elapsed count. Returns null for missing/invalid/future dates,
+  // so the bar never renders "NaN일" or a misleading value — it simply hides.
+  // Convention: elapsed days, so joining today shows "0일이 지났어요!".
+  const days = calendarDaysSince(startDate)
   if (days == null) return null
 
   return (

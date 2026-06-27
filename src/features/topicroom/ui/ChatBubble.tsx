@@ -1,9 +1,14 @@
 import { Image } from "expo-image";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
 
 const profileDefault = require("../../../../assets/placeholders/profile-default.png");
+const kebabIcon = require("../../../../assets/icons/common/menu-3dots.svg");
+
+/** Top-right anchor point (screen coords) of a tapped kebab. */
+export type KebabAnchor = { x: number; y: number };
 
 export type DisplayMsg = {
   key: string;
@@ -17,10 +22,15 @@ export type DisplayMsg = {
 
 type Props = {
   msg: DisplayMsg;
-  onLongPressOther?: (msg: DisplayMsg) => void;
+  /** Tapping another user's avatar opens the profile action modal. */
+  onPressAvatar?: (msg: DisplayMsg) => void;
+  /** Tapping the kebab opens the action dropdown anchored at its top-right. */
+  onPressKebab?: (msg: DisplayMsg, anchor: KebabAnchor) => void;
 };
 
-export function ChatBubble({ msg, onLongPressOther }: Props) {
+export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
+  const kebabRef = useRef<View>(null);
+
   if (msg.isMe) {
     return (
       <View style={styles.rowMe}>
@@ -32,13 +42,34 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
     );
   }
 
-  const handleLongPress = onLongPressOther
-    ? () => onLongPressOther(msg)
-    : undefined;
+  // Self-action guard: avatar / kebab affordances only exist for valid other
+  // users (a missing or invalid senderId yields no report/block entry point).
+  const hasValidSender = typeof msg.senderId === "number";
+
+  const handleAvatar =
+    onPressAvatar && hasValidSender ? () => onPressAvatar(msg) : undefined;
+
+  const handleKebab =
+    onPressKebab && hasValidSender
+      ? () => {
+          kebabRef.current?.measureInWindow((x, y, w) => {
+            onPressKebab(msg, { x: x + w, y: y + 24 });
+          });
+        }
+      : undefined;
 
   return (
     <View style={styles.rowOther}>
-      <View style={styles.avatar}>
+      <Pressable
+        onPress={handleAvatar}
+        disabled={!handleAvatar}
+        style={({ pressed }) => [
+          styles.avatar,
+          pressed && handleAvatar ? styles.pressed : null,
+        ]}
+        accessibilityRole={handleAvatar ? "button" : undefined}
+        accessibilityLabel={handleAvatar ? "프로필 보기" : undefined}
+      >
         <Image
           source={
             msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault
@@ -46,22 +77,33 @@ export function ChatBubble({ msg, onLongPressOther }: Props) {
           style={styles.avatarImage}
           contentFit={msg.profileImageUrl ? "cover" : "contain"}
         />
-      </View>
+      </Pressable>
       <View style={styles.otherBody}>
         <Text style={styles.senderName}>{msg.senderName || "익명"}</Text>
         <View style={styles.otherBubbleRow}>
-          <Pressable
-            onLongPress={handleLongPress}
-            delayLongPress={400}
-            style={({ pressed }) => [
-              styles.bubble,
-              styles.bubbleOther,
-              pressed && handleLongPress ? styles.pressed : null,
-            ]}
-          >
+          <View style={[styles.bubble, styles.bubbleOther]}>
             <Text style={styles.textOther}>{msg.text}</Text>
-          </Pressable>
+          </View>
           <Text style={styles.timeOther}>{msg.time}</Text>
+          {handleKebab ? (
+            <Pressable
+              ref={kebabRef}
+              onPress={handleKebab}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.kebab,
+                pressed ? styles.pressed : null,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="메시지 메뉴 열기"
+            >
+              <Image
+                source={kebabIcon}
+                style={styles.kebabIcon}
+                contentFit="contain"
+              />
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </View>
@@ -155,5 +197,20 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     marginBottom: 2,
     flexShrink: 0,
+  },
+
+  kebab: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 2,
+    marginBottom: 2,
+    alignSelf: "flex-end",
+    flexShrink: 0,
+  },
+  kebabIcon: {
+    width: 16,
+    height: 16,
   },
 });

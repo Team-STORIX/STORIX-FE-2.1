@@ -22,12 +22,19 @@ import {
   TopicRoomDdayBar,
   TopicRoomMenuDropdown,
   TopicRoomTopBar,
+  TopicRoomUserActionDropdown,
+  TopicRoomUserActionModal,
+  TopicRoomUserConfirmModal,
   formatTopicRoomSubtitle,
+  useBlockTopicRoomUser,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
   useTopicRoomMembers,
   useTopicRoomStomp,
+  type ConfirmVariant,
   type DisplayMsg,
+  type KebabAnchor,
+  type TopicRoomActionTarget,
   type TopicRoomItem,
 } from "../../src/features/topicroom";
 import { C } from "../../src/theme/colors";
@@ -53,6 +60,13 @@ function findCachedTopicRoom(
   return null;
 }
 
+// Success snackbar copy for the user-specific report / block flows
+// (Figma 9095:36505 / 9095:36642).
+const USER_ACTION_SNACK = {
+  report: "신고가 접수되었어요.",
+  block: "차단이 완료되었어요.",
+} as const;
+
 const formatTime = (iso?: string | null): string => {
   if (!iso) return "";
   const d = new Date(iso);
@@ -72,8 +86,15 @@ export default function TopicRoomScreen() {
     worksType?: string;
     activeUserNumber?: string;
     startDate?: string;
+    // Set by the report page on successful submission so the chat shows the
+    // report-complete snackbar after navigating back. Cleared once consumed.
+    userActionToast?: string;
   }>();
-  const roomId = typeof params.roomId === "string" ? Number(params.roomId) : 0;
+  // useLocalSearchParams can yield a string or a string[]; normalize either to a
+  // single number. Invalid values become NaN, which downstream guards (history
+  // query, STOMP canConnect, the leave guard) all treat as "no room".
+  const rawRoomId = params.roomId;
+  const roomId = Number(Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId);
 
   const insets = useSafeAreaInsets();
   const myUserId = useProfileStore((s) => s.me?.userId);
@@ -84,6 +105,17 @@ export default function TopicRoomScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+
+  // User-specific report / block flow. A single shared target drives both entry
+  // points (avatar modal + message kebab); only one overlay is visible at once.
+  const [actionTarget, setActionTarget] =
+    useState<TopicRoomActionTarget | null>(null);
+  const [profileActionVisible, setProfileActionVisible] = useState(false);
+  const [dropdownAnchor, setDropdownAnchor] = useState<KebabAnchor | null>(null);
+  const [confirmVariant, setConfirmVariant] = useState<ConfirmVariant | null>(
+    null,
+  );
+  const blockMutation = useBlockTopicRoomUser();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,20 +174,45 @@ export default function TopicRoomScreen() {
     setLeaveConfirmOpen(true);
   }, [leaveMutation.isPending]);
 
-  const handleConfirmLeave = useCallback(() => {
+  const handleConfirmLeave = useCallback(async () => {
+    if (__DEV__) {
+      console.log("[TOPICROOM_LEAVE] confirm", {
+        rawRoomId,
+        normalizedRoomId: roomId,
+        isPending: leaveMutation.isPending,
+      });
+    }
+    // Block duplicate confirm taps while the request is in flight.
     if (leaveMutation.isPending) return;
-    leaveMutation.mutate(roomId, {
-      onSuccess: () => {
-        setLeaveConfirmOpen(false);
-        if (router.canGoBack()) router.back();
-        else router.replace("/(tabs)" as const);
-      },
-      onError: () => {
-        setLeaveConfirmOpen(false);
-        showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
-      },
-    });
-  }, [leaveMutation, roomId, router, showToast]);
+
+    // Never issue /topic-rooms/NaN/leave — bail out with feedback instead.
+    if (!Number.isFinite(roomId) || roomId <= 0) {
+      setLeaveConfirmOpen(false);
+      showToast("채팅방 정보를 확인할 수 없어요.");
+      return;
+    }
+
+    try {
+      await leaveMutation.mutateAsync(roomId);
+      // Only after a confirmed success: tear down overlays and replace (not
+      // back/push) so direct-entry users can't return to the room they left.
+      setMenuOpen(false);
+      setLeaveConfirmOpen(false);
+      router.replace("/(tabs)/feed?section=topicroom" as never);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.log("[TOPICROOM_LEAVE] error", {
+          roomId,
+          status: error?.response?.status,
+          code: error?.response?.data?.code,
+          message: error?.response?.data?.message,
+        });
+      }
+      // Stay in the room; restore button state and surface feedback.
+      setLeaveConfirmOpen(false);
+      showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  }, [rawRoomId, roomId, leaveMutation, router, showToast]);
 
   // Report is now a full page (app/topicroom/report.tsx), not a bottom sheet.
   const goToReport = useCallback(
@@ -255,23 +312,142 @@ export default function TopicRoomScreen() {
     : topicRoomName || `채팅방 #${roomId}`;
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
-  // Room-age / D-Day source. No room creation/join date is currently exposed by
-  // the TopicRoom API (TopicRoomItem has no createdAt/joinedAt), so the bar only
-  // renders if a startDate param is supplied. See report notes.
-  const ddayStartDate = params.startDate ?? null;
+  // Room-age / D-Day source. The chat-history response carries the membership
+  // `joinedAt`. It rides on the wrapped page, so scan all loaded pages for the
+  // first non-null value rather than assuming it sits on page[0] (defensive in
+  // case the first page back is a legacy direct-page with no joinedAt). Prefer
+  // joinedAt, fall back to a valid route param, then null. Never use
+  // lastChatTime (last activity, not join) or "now".
+  const historyJoinedAt =
+    historyData?.pages?.find((page) => page.joinedAt != null)?.joinedAt ?? null;
+  const validRouteStartDate =
+    params.startDate && !Number.isNaN(Date.parse(params.startDate))
+      ? params.startDate
+      : null;
+  const ddayStartDate = historyJoinedAt ?? validRouteStartDate ?? null;
 
-  const onLongPressOther = useCallback(
-    (msg: DisplayMsg) => {
-      if (typeof msg.senderId !== "number") return;
-      if (msg.senderId === myUserId) return;
-      goToReport({
+  if (__DEV__) {
+    console.log("[TOPICROOM_DATE] dday-source", {
+      historyJoinedAt,
+      routeStartDate: params.startDate ?? null,
+      selectedStartDate: ddayStartDate,
+    });
+  }
+
+  const closeUserActions = useCallback(() => {
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+    setConfirmVariant(null);
+    setActionTarget(null);
+  }, []);
+
+  // Build a target only for a valid other user — self / unknown senders get no
+  // report/block entry point (Part C).
+  const targetFromMsg = useCallback(
+    (msg: DisplayMsg): TopicRoomActionTarget | null => {
+      if (typeof msg.senderId !== "number") return null;
+      if (msg.senderId === myUserId) return null;
+      return {
         userId: msg.senderId,
-        userName: msg.senderName,
+        nickname: msg.senderName,
         profileImageUrl: msg.profileImageUrl,
-      });
+      };
     },
-    [myUserId, goToReport],
+    [myUserId],
   );
+
+  const handlePressAvatar = useCallback(
+    (msg: DisplayMsg) => {
+      const target = targetFromMsg(msg);
+      if (!target) return;
+      setConfirmVariant(null);
+      setDropdownAnchor(null);
+      setActionTarget(target);
+      setProfileActionVisible(true);
+    },
+    [targetFromMsg],
+  );
+
+  const handlePressKebab = useCallback(
+    (msg: DisplayMsg, anchor: KebabAnchor) => {
+      const target = targetFromMsg(msg);
+      if (!target) return;
+      setConfirmVariant(null);
+      setProfileActionVisible(false);
+      setActionTarget(target);
+      setDropdownAnchor(anchor);
+    },
+    [targetFromMsg],
+  );
+
+  // Siren / 신고하기 and block / 차단하기 both suspend the originating overlay
+  // and open the matching confirmation popup against the same target.
+  const handleOpenReportConfirm = useCallback(() => {
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+    setConfirmVariant("report");
+  }, []);
+
+  const handleOpenBlockConfirm = useCallback(() => {
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+    setConfirmVariant("block");
+  }, []);
+
+  const handleCancelConfirm = useCallback(() => {
+    if (blockMutation.isPending) return;
+    setConfirmVariant(null);
+    setActionTarget(null);
+  }, [blockMutation.isPending]);
+
+  const handleConfirmAction = useCallback(() => {
+    if (!actionTarget || !confirmVariant) return;
+
+    if (confirmVariant === "report") {
+      // Reason selection is mandatory, so hand off to the existing report page
+      // with the target prefilled; the snackbar fires on its return.
+      const target = actionTarget;
+      closeUserActions();
+      goToReport({
+        userId: target.userId,
+        userName: target.nickname,
+        profileImageUrl: target.profileImageUrl,
+      });
+      return;
+    }
+
+    if (blockMutation.isPending) return;
+    blockMutation.mutate(
+      { roomId, targetUserId: actionTarget.userId },
+      {
+        onSuccess: () => {
+          closeUserActions();
+          showToast(USER_ACTION_SNACK.block);
+        },
+        onError: () => {
+          closeUserActions();
+          showToast("차단하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        },
+      },
+    );
+  }, [
+    actionTarget,
+    confirmVariant,
+    blockMutation,
+    roomId,
+    goToReport,
+    closeUserActions,
+    showToast,
+  ]);
+
+  // Report page hands back `userActionToast=report` on success; show the
+  // snackbar once and clear the param so it does not re-fire on re-render.
+  useEffect(() => {
+    if (params.userActionToast === "report") {
+      showToast(USER_ACTION_SNACK.report);
+      router.setParams({ userActionToast: "" });
+    }
+  }, [params.userActionToast, showToast, router]);
 
   return (
     <KeyboardAvoidingView
@@ -314,7 +490,11 @@ export default function TopicRoomScreen() {
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <ChatBubble msg={item} onLongPressOther={onLongPressOther} />
+          <ChatBubble
+            msg={item}
+            onPressAvatar={handlePressAvatar}
+            onPressKebab={handlePressKebab}
+          />
         )}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -364,6 +544,31 @@ export default function TopicRoomScreen() {
           setLeaveConfirmOpen(false);
         }}
         onConfirm={handleConfirmLeave}
+      />
+
+      <TopicRoomUserActionModal
+        visible={profileActionVisible}
+        target={actionTarget}
+        onClose={closeUserActions}
+        onReport={handleOpenReportConfirm}
+        onBlock={handleOpenBlockConfirm}
+      />
+
+      <TopicRoomUserActionDropdown
+        visible={dropdownAnchor != null}
+        anchor={dropdownAnchor}
+        onClose={closeUserActions}
+        onReport={handleOpenReportConfirm}
+        onBlock={handleOpenBlockConfirm}
+      />
+
+      <TopicRoomUserConfirmModal
+        visible={confirmVariant != null}
+        variant={confirmVariant ?? "report"}
+        target={actionTarget}
+        isPending={confirmVariant === "block" && blockMutation.isPending}
+        onCancel={handleCancelConfirm}
+        onConfirm={handleConfirmAction}
       />
 
       <Toast message={toastMessage} bottomOffset={insets.bottom + 80} />

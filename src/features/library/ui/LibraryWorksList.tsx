@@ -8,12 +8,12 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { C, Gray, Typography } from '../../../theme'
+import { LibraryRatingBadge } from './LibraryRatingBadge'
 import type { LibraryUiWork } from './types'
-
-const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
 
 type Props = {
   data: LibraryUiWork[]
+  bottomInset?: number
   isFetchingNextPage?: boolean
   onEndReached?: () => void
   onPressItem: (item: LibraryUiWork) => void
@@ -21,6 +21,7 @@ type Props = {
 
 export function LibraryWorksList({
   data,
+  bottomInset = 128,
   isFetchingNextPage = false,
   onEndReached,
   onPressItem,
@@ -55,10 +56,7 @@ export function LibraryWorksList({
               {item.meta}
             </Text>
 
-            <View style={styles.ratingRow}>
-              <Image source={littleStarIcon} style={styles.star} contentFit="contain" />
-              <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
-            </View>
+            <LibraryRatingBadge value={item.rating} />
           </View>
         </Pressable>
       )}
@@ -68,11 +66,11 @@ export function LibraryWorksList({
       showsVerticalScrollIndicator={false}
       ListFooterComponent={
         isFetchingNextPage ? (
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: bottomInset }]}>
             <ActivityIndicator size="small" color={C.primary} />
           </View>
         ) : (
-          <View style={styles.footerSpacer} />
+          <View style={{ height: bottomInset }} />
         )
       }
     />
@@ -115,24 +113,8 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: Gray[500],
   },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  star: {
-    width: 9,
-    height: 10,
-  },
-  rating: {
-    ...Typography.caption1Medium,
-    color: C.primary,
-  },
   footer: {
-    paddingVertical: 16,
-  },
-  footerSpacer: {
-    height: 100,
+    paddingTop: 16,
   },
   pressed: {
     opacity: 0.78,

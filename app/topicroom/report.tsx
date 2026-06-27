@@ -118,8 +118,12 @@ export default function TopicRoomReportScreen() {
         reason: selectedReason,
         otherReason: trimmedDetail.length > 0 ? trimmedDetail : null,
       });
-      if (router.canGoBack()) router.back();
-      else router.replace(`/topicroom/${roomId}` as const);
+      // Return to the chat (reusing the existing screen instance so STOMP /
+      // scroll survive) and flag it to show the report-complete snackbar.
+      router.navigate({
+        pathname: "/topicroom/[roomId]",
+        params: { roomId: String(roomId), userActionToast: "report" },
+      });
     } catch {
       setErrorText("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
     }

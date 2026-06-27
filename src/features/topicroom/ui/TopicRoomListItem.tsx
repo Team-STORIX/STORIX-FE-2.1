@@ -3,20 +3,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
+import { formatTimeAgo } from "../../../lib/utils/formatTimeAgo";
 import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
-
-function formatTimeAgo(value?: string | null) {
-  if (!value) return "";
-  const diffSeconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(value).getTime()) / 1000),
-  );
-  if (diffSeconds < 60) return "방금";
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}분 전`;
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}시간 전`;
-  return `${Math.floor(diffSeconds / 86400)}일 전`;
-}
 
 type Props = {
   item: TopicRoomItem;
@@ -25,9 +14,28 @@ type Props = {
 
 export function TopicRoomListItem({ item, onPress }: Props) {
   const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
-  const rightText = item.lastChatTime
-    ? `${item.activeUserNumber ?? 0}명 · ${formatTimeAgo(item.lastChatTime)}`
-    : `${item.activeUserNumber ?? 0}명`;
+
+  // Prefer the membership join time when the backend provides it; otherwise
+  // fall back to lastChatTime (recent activity, not a join time). The shared
+  // formatter returns "" for missing/invalid/future values, so we never render
+  // "NaN일 전" and simply drop the time segment when there is nothing valid.
+  const selectedField = item.joinedAt ? "joinedAt" : "lastChatTime";
+  const timeSource = item.joinedAt ?? item.lastChatTime;
+  const formattedValue = formatTimeAgo(timeSource);
+  const memberCount = item.activeUserNumber ?? 0;
+  const rightText = formattedValue
+    ? `${memberCount}명 · ${formattedValue}`
+    : `${memberCount}명`;
+
+  if (__DEV__) {
+    console.log("[TOPICROOM_DATE] joined-list-item", {
+      roomId: item.topicRoomId,
+      joinedAt: item.joinedAt ?? null,
+      lastChatTime: item.lastChatTime ?? null,
+      selectedField,
+      formattedValue,
+    });
+  }
   const initial = (item.worksName || item.topicRoomName || "?")
     .slice(0, 1)
     .toUpperCase();

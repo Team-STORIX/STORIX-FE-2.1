@@ -43,6 +43,8 @@ const API_SORT: Record<SortKey, LibraryReviewSort> = {
   REVIEWS: 'LATEST',
 }
 
+const TAB_BAR_CLEARANCE = 128
+
 export function LibraryScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
@@ -100,6 +102,8 @@ export function LibraryScreen() {
     setSortOpen(false)
   }
 
+  const bottomClearance = Math.max(TAB_BAR_CLEARANCE, insets.bottom + 96)
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.headerLayer}>
@@ -152,6 +156,7 @@ export function LibraryScreen() {
         ) : mode === 'list' ? (
           <LibraryWorksList
             data={works}
+            bottomInset={bottomClearance}
             isFetchingNextPage={reviewQuery.isFetchingNextPage}
             onEndReached={() => {
               if (reviewQuery.hasNextPage && !reviewQuery.isFetchingNextPage) {
@@ -163,6 +168,7 @@ export function LibraryScreen() {
         ) : (
           <LibraryGalleryCarousel
             data={works}
+            bottomInset={bottomClearance}
             hasNextPage={!!reviewQuery.hasNextPage}
             isFetchingNextPage={reviewQuery.isFetchingNextPage}
             onNeedMore={() => {
