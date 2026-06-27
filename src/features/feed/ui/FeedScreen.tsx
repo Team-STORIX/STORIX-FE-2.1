@@ -27,7 +27,7 @@ import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
-import { UserActionModal } from './BlockConfirmModal'
+import { UserActionModal } from '../../../components/common/UserActionModal'
 import { blockUser } from '../../users/api/users.api'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }

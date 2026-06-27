@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
-import { useWorksDetail } from '../../works'
+import { useUpdateMyReview, useWorksDetail, useWorksReviewDetail } from '../../works'
 import { useCreateReaderReview, usePlusReviewDuplicateCheck } from '../hooks'
 import { LIBRARY_REVIEW_QUERY_KEY } from '../../library/hooks'
 import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
@@ -38,39 +38,70 @@ function parseWorksId(raw?: string | string[]) {
 
 export function ReviewWriteEntryScreen() {
   const insets = useSafeAreaInsets()
-  const params = useLocalSearchParams<{ worksId?: string }>()
-  const worksId = parseWorksId(params.worksId)
+  const params = useLocalSearchParams<{ worksId?: string; reviewId?: string }>()
+  const worksIdParam = parseWorksId(params.worksId)
+  const reviewId = parseWorksId(params.reviewId)
+  const isEditMode = reviewId != null
   const queryClient = useQueryClient()
+
+  const reviewDetailQuery = useWorksReviewDetail(reviewId ?? 0)
+  const detailWorksId = parseWorksId(
+    reviewDetailQuery.data?.worksId != null
+      ? String(reviewDetailQuery.data.worksId)
+      : undefined,
+  )
+  const worksId = worksIdParam ?? detailWorksId
 
   const worksQuery = useWorksDetail(worksId ?? 0)
   const work = worksQuery.data
-  const duplicateQuery = usePlusReviewDuplicateCheck(worksId)
-  const isDuplicated = duplicateQuery.data?.result?.isDuplicated === true
+  const duplicateQuery = usePlusReviewDuplicateCheck(isEditMode ? undefined : worksId)
+  const isDuplicated =
+    !isEditMode && duplicateQuery.data?.result?.isDuplicated === true
 
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
   const [spoiler, setSpoiler] = useState(false)
   const [spoilerMessage, setSpoilerMessage] = useState('')
+  const [editInitialised, setEditInitialised] = useState(false)
 
   const submitMutation = useCreateReaderReview()
+  const updateMutation = useUpdateMyReview({ worksId: worksId ?? 0 })
 
   const content = text.trim()
 
   const canSubmit = useMemo(() => {
     if (!worksId) return false
+    if (isEditMode && !editInitialised) return false
     if (rating < 0.5) return false
     if (content.length === 0) return false
     if (content.length > MAX_CONTENT_LENGTH) return false
-    if (submitMutation.isPending) return false
+    if (submitMutation.isPending || updateMutation.isPending) return false
     if (isDuplicated) return false
     return true
   }, [
     content.length,
+    editInitialised,
     isDuplicated,
+    isEditMode,
     rating,
     submitMutation.isPending,
+    updateMutation.isPending,
     worksId,
   ])
+
+  useEffect(() => {
+    if (!isEditMode || editInitialised || !reviewDetailQuery.data) return
+
+    setRating(
+      typeof reviewDetailQuery.data.rating === 'number'
+        ? reviewDetailQuery.data.rating
+        : 0,
+    )
+    setText(reviewDetailQuery.data.content ?? '')
+    setSpoiler(reviewDetailQuery.data.isSpoiler === true)
+    setSpoilerMessage(reviewDetailQuery.data.spoilerScript ?? '')
+    setEditInitialised(true)
+  }, [editInitialised, isEditMode, reviewDetailQuery.data])
 
   const workMeta = useMemo(
     () =>
@@ -81,13 +112,20 @@ export function ReviewWriteEntryScreen() {
   const onSubmit = async () => {
     if (!canSubmit || !worksId) return
     try {
-      await submitMutation.mutateAsync({
-        worksId,
+      const payload = {
         rating: rating.toFixed(1),
         isSpoiler: spoiler,
         spoilerScript: spoiler ? spoilerMessage.trim() : '',
         content,
-      })
+      }
+
+      if (isEditMode) {
+        if (!reviewId) return
+        await updateMutation.mutateAsync({ reviewId, payload })
+      } else {
+        await submitMutation.mutateAsync({ worksId, ...payload })
+      }
+
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: LIBRARY_REVIEW_QUERY_KEY,
@@ -95,20 +133,28 @@ export function ReviewWriteEntryScreen() {
         }),
         queryClient.invalidateQueries({ queryKey: ['works', 'review', 'list', worksId] }),
         queryClient.invalidateQueries({ queryKey: ['works', 'review', 'me', worksId] }),
+        reviewId
+          ? queryClient.invalidateQueries({ queryKey: ['works', 'review', 'detail', reviewId] })
+          : Promise.resolve(),
         queryClient.invalidateQueries({ queryKey: ['works', 'detail', worksId] }),
         queryClient.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY }),
       ])
-      router.replace(`/works/${worksId}` as never)
+      if (isEditMode && reviewId) {
+        router.replace(`/works/review/${reviewId}` as never)
+      } else {
+        router.replace(`/works/${worksId}` as never)
+      }
     } catch (e) {
       Alert.alert(
-        '리뷰 등록 실패',
+        isEditMode ? '리뷰 수정 실패' : '리뷰 등록 실패',
         e instanceof Error ? e.message : '잠시 후 다시 시도해 주세요.',
       )
     }
   }
 
   const cardLoading =
-    !!worksId && (worksQuery.isLoading || (!worksQuery.data && !worksQuery.isError))
+    (isEditMode && reviewDetailQuery.isLoading) ||
+    (!!worksId && (worksQuery.isLoading || (!worksQuery.data && !worksQuery.isError)))
   const cardError = !!worksId && worksQuery.isError
 
   return (
@@ -129,7 +175,7 @@ export function ReviewWriteEntryScreen() {
           <Image source={backIcon} style={styles.headerIcon} contentFit="contain" />
         </Pressable>
 
-        <Text style={styles.headerTitle}>리뷰</Text>
+        <Text style={styles.headerTitle}>{isEditMode ? '리뷰 수정' : '리뷰'}</Text>
 
         <Pressable
           onPress={onSubmit}
@@ -140,9 +186,9 @@ export function ReviewWriteEntryScreen() {
             pressed && canSubmit && styles.pressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="등록"
+          accessibilityLabel={isEditMode ? '수정 완료' : '등록'}
         >
-          {submitMutation.isPending ? (
+          {submitMutation.isPending || updateMutation.isPending ? (
             <ActivityIndicator size="small" color={C.primary} />
           ) : (
             <Text
