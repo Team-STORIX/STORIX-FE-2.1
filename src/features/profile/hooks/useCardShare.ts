@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Alert, Linking } from 'react-native'
+import { Alert, Linking, Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
 import Share, { Social } from 'react-native-share'
@@ -13,6 +13,8 @@ export type CaptureFunction = () => Promise<string | null>
 
 const SHARE_MESSAGE = 'STORIX \uD504\uB85C\uD544 \uCE74\uB4DC'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
+const TWITTER_IOS_SCHEME = 'twitter://'
+const TWITTER_IOS_POST_URL = 'twitter://post'
 const TWITTER_WEB_INTENT_URL = 'https://twitter.com/intent/tweet'
 const TWITTER_HOME_URL = 'https://twitter.com'
 
@@ -28,11 +30,11 @@ export function useCardShare() {
     try {
       setIsSaving(true)
 
-      const { status } = await MediaLibrary.requestPermissionsAsync()
+      const { status } = await MediaLibrary.requestPermissionsAsync(true)
       if (status !== 'granted') {
         Alert.alert(
           '\uAD8C\uD55C \uD544\uC694',
-          '\uAC24\uB7EC\uB9AC\uC5D0 \uC800\uC7A5\uD558\uB824\uBA74 \uC0AC\uC9C4 \uC811\uADFC \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+          '\uAC24\uB7EC\uB9AC\uC5D0 \uC800\uC7A5\uD558\uB824\uBA74 \uC0AC\uC9C4 \uC800\uC7A5 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
         )
         return
       }
@@ -102,9 +104,15 @@ export function useCardShare() {
         return
       }
 
+      if (Platform.OS === 'ios') {
+        const shareUrl = await createWebShareUrlSafely(uri)
+        await openTwitterIntent(shareUrl, message)
+        return
+      }
+
       const isTwitterInstalled = await isTwitterAppInstalled()
       if (!isTwitterInstalled) {
-        const shareUrl = await uploadProfileCardForWebShare(uri)
+        const shareUrl = await createWebShareUrlSafely(uri)
         await openTwitterWebIntent(shareUrl, message)
         return
       }
@@ -117,7 +125,11 @@ export function useCardShare() {
       })
     } catch (error) {
       console.error('Twitter share error:', error)
-      await openTwitterWebIntent(undefined, message)
+      if (Platform.OS === 'ios') {
+        await openTwitterIntent(undefined, message)
+      } else {
+        await openTwitterWebIntent(undefined, message)
+      }
     } finally {
       setIsSharing(false)
     }
@@ -138,6 +150,14 @@ function normalizeShareUri(uri: string) {
 }
 
 async function isTwitterAppInstalled() {
+  if (Platform.OS === 'ios') {
+    try {
+      return Linking.canOpenURL(TWITTER_IOS_SCHEME)
+    } catch {
+      return false
+    }
+  }
+
   try {
     const result = await Share.isPackageInstalled(TWITTER_ANDROID_PACKAGE)
     return result.isInstalled
@@ -158,6 +178,48 @@ async function uploadProfileCardForWebShare(uri: string) {
 
   const share = await createProfileCardShare(presigned.objectKey)
   return share.shareUrl
+}
+
+async function createWebShareUrlSafely(uri: string) {
+  try {
+    return await uploadProfileCardForWebShare(uri)
+  } catch (error) {
+    if (__DEV__) {
+      const axiosError = error as {
+        config?: { url?: string; method?: string; data?: unknown }
+        response?: { status?: number; data?: unknown }
+        message?: string
+      }
+      // Surface the exact endpoint/method that failed so the backend team
+      // can pinpoint which call returned the error (presign vs. share).
+      console.log('[cardShare] web share URL creation failed', {
+        method: axiosError.config?.method?.toUpperCase(),
+        endpoint: axiosError.config?.url,
+        requestBody: axiosError.config?.data,
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        message: error instanceof Error ? error.message : undefined,
+      })
+    }
+    return undefined
+  }
+}
+
+async function openTwitterIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
+  const isTwitterInstalled = await isTwitterAppInstalled()
+  if (!isTwitterInstalled) {
+    await openTwitterWebIntent(shareUrl, message)
+    return
+  }
+
+  const text = [message, shareUrl].filter(Boolean).join(' ')
+  const appUrl = `${TWITTER_IOS_POST_URL}?message=${encodeURIComponent(text)}`
+
+  try {
+    await Linking.openURL(appUrl)
+  } catch {
+    await openTwitterWebIntent(shareUrl, message)
+  }
 }
 
 async function openTwitterWebIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
