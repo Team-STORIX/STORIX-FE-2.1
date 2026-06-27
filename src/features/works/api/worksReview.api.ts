@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { z } from 'zod'
 import { apiClient } from '../../../lib/api/axios-instance'
 import { ApiEnvelopeSchema } from './works.schema'
@@ -126,15 +127,65 @@ export const postWorksReviewLike = async (reviewId: number) => {
 }
 
 // POST /api/v1/works/review/{reviewId}/report
+export type WorksReviewReportReason = 'ABUSE' | 'SPAM' | 'OTHER'
+
+export type WorksReviewReportPayload = {
+  reportedUserId: number
+  reason: WorksReviewReportReason
+  otherReason: string | null
+}
+
+// CustomResponse<Void>: the backend omits a null `result` from the JSON, so we
+// parse against a result-agnostic schema and never read `.result`.
+const WorksReviewReportResponseSchema = z.object({
+  isSuccess: z.boolean(),
+  code: z.string().optional(),
+  message: z.string().optional(),
+  result: z.unknown().nullish(),
+  timestamp: z.string().optional(),
+})
+
 export const postWorksReviewReport = async (params: {
   reviewId: number
-  payload?: unknown
-}) => {
-  const res = await apiClient.post(
-    `/api/v1/works/review/${params.reviewId}/report`,
-    params.payload ?? {},
-  )
-  return ApiEnvelopeSchema(z.any()).parse(res.data).result
+  payload: WorksReviewReportPayload
+}): Promise<void> => {
+  try {
+    const res = await apiClient.post(
+      `/api/v1/works/review/${params.reviewId}/report`,
+      params.payload,
+    )
+
+    if (__DEV__) {
+      // Log raw status/body (no headers, no auth tokens) before parsing.
+      console.log('[worksReview][report] response', {
+        status: res.status,
+        data: res.data,
+      })
+    }
+
+    const parsed = WorksReviewReportResponseSchema.parse(res.data)
+    if (!parsed.isSuccess) {
+      throw new Error(parsed.message ?? '신고 처리에 실패했어요.')
+    }
+  } catch (error) {
+    if (__DEV__) {
+      if (axios.isAxiosError(error)) {
+        console.log('[worksReview][report] axios error', {
+          status: error.response?.status,
+          code: (error.response?.data as { code?: string } | undefined)?.code,
+          message:
+            (error.response?.data as { message?: string } | undefined)?.message,
+        })
+      } else if (error instanceof z.ZodError) {
+        console.log('[worksReview][report] parse error', error.issues)
+      } else {
+        console.log('[worksReview][report] error', {
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+    throw error
+  }
 }
 
 const UpdateMyReviewPayloadSchema = z.object({
@@ -158,7 +209,11 @@ export const postUpdateMyReview = async (params: {
 }
 
 // DELETE /api/v1/works/review/{reviewId}
-export const deleteMyReview = async (reviewId: number) => {
+// Also CustomResponse<Void>: parse result-agnostically and don't read `.result`.
+export const deleteMyReview = async (reviewId: number): Promise<void> => {
   const res = await apiClient.delete(`/api/v1/works/review/${reviewId}`)
-  return ApiEnvelopeSchema(z.any()).parse(res.data).result
+  const parsed = WorksReviewReportResponseSchema.parse(res.data)
+  if (!parsed.isSuccess) {
+    throw new Error(parsed.message ?? '리뷰 삭제에 실패했어요.')
+  }
 }

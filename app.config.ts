@@ -137,6 +137,23 @@ export default ({ config }: ConfigContext): ExpoConfig =>
         },
       ],
       [
+        "expo-media-library",
+        {
+          photosPermission:
+            "STORIX에서 카드 이미지를 저장하려면 사진 접근 권한이 필요합니다.",
+          savePhotosPermission:
+            "STORIX에서 프로필카드와 리뷰카드를 사진 앱에 저장하려면 권한이 필요합니다.",
+          isAccessMediaLocationEnabled: false,
+        },
+      ],
+      [
+        "react-native-share",
+        {
+          ios: ["twitter"],
+          android: ["com.twitter.android"],
+        },
+      ],
+      [
         "@react-native-seoul/kakao-login",
         {
           kakaoAppKey,
