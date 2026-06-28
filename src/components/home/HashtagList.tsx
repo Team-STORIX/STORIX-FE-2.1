@@ -39,7 +39,11 @@ export function HashtagList({ items, onSelect }: HashtagListProps) {
           <HashtagChip
             key={item}
             label={item}
-            onPress={onSelect ? () => onSelect(item) : undefined}
+            onPress={
+              onSelect
+                ? () => onSelect(item.startsWith('#') ? item : `#${item}`)
+                : undefined
+            }
           />
         ))}
       </View>

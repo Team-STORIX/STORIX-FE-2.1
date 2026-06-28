@@ -101,7 +101,7 @@ export default function HomeScreen() {
   }
 
   const goSearchKeyword = (raw: string) => {
-    const keyword = raw.replace(/^#/, '').trim()
+    const keyword = raw.trim()
     if (!keyword) return
     router.push(`/search?keyword=${encodeURIComponent(keyword)}` as never)
   }

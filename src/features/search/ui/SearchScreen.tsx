@@ -70,7 +70,7 @@ const GENRE_LABELS: Record<SearchGenre, string> = {
 
 function normalizeKeyword(raw?: string | string[]) {
   const value = Array.isArray(raw) ? raw[0] : raw
-  return (value ?? '').replace(/^#/, '').trim()
+  return (value ?? '').trim()
 }
 
 function summarizeSelected(
@@ -132,6 +132,11 @@ export function SearchScreen() {
     setSelectedTypes([])
     setSelectedGenres([])
   }, [submittedKeyword])
+
+  useEffect(() => {
+    if (!submittedKeyword || !worksQuery.isSuccess) return
+    void recentKeywordsQuery.refetch()
+  }, [submittedKeyword, worksQuery.isSuccess, recentKeywordsQuery.refetch])
 
   const recentKeywords = recentKeywordsQuery.data?.result.recentKeywords ?? []
   const trendingKeywords = trendingKeywordsQuery.data?.result.trendingKeywords ?? []

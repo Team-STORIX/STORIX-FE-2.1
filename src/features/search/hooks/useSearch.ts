@@ -17,7 +17,7 @@ import type {
 } from '../api'
 
 function normalizeKeyword(keyword: string) {
-  return keyword.replace(/^#/, '').trim()
+  return keyword.trim()
 }
 
 function normalizeFilterKey(values: readonly string[]) {
