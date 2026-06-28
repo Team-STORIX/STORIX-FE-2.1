@@ -10,6 +10,8 @@ type TitleInfoModalProps = {
 }
 
 export function TitleInfoModal({ visible, onClose, stage, topGenre, title }: TitleInfoModalProps) {
+  const stageLabel = stage?.replace(/\s*단계$/, '') || '미진입'
+
   return (
     <Modal
       visible={visible}
@@ -28,7 +30,7 @@ export function TitleInfoModal({ visible, onClose, stage, topGenre, title }: Tit
               <Text style={styles.labelText}>현재 단계</Text>
             </View>
             <Text style={styles.valueText}>
-              {stage || '미진입 단계'}
+              {stageLabel}
             </Text>
           </View>
 
@@ -54,7 +56,7 @@ export function TitleInfoModal({ visible, onClose, stage, topGenre, title }: Tit
           <Text style={styles.notice}>
             칭호는 활동점수가 가장 높은 장르를 기준으로 정해져요.{'\n'}
             토픽룸 참여, 리뷰·게시물 작성, 관심 작품 등록을 통해 {'\n'}
-            장르 점수가 쌓이면 입문-탐색-몰입 단계로 성장합니다.{'\n'}
+            장르 점수가 쌓이면 <Text style={styles.noticeStrong}>입문-탐색-몰입</Text> 단계로 성장합니다.{'\n'}
             다음 칭호는 획득시 공개돼요.
           </Text>
 
@@ -129,6 +131,10 @@ const styles = StyleSheet.create({
     color: Gray[500],
     marginTop: 16,
     textAlign: 'left',
+  },
+  noticeStrong: {
+    ...Typography.caption1Extrabold,
+    color: Gray[500],
   },
   confirmButton: {
     height: 49,

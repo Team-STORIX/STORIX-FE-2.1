@@ -10,7 +10,7 @@ import {
   removeRefreshToken,
   clearAuthTokens,
 } from '../lib/storage/secure'
-import { getItem, setItem } from '../lib/storage/async'
+import { getItem, setItem, removeItem } from '../lib/storage/async'
 import { queryClient } from '../lib/query/queryClient'
 import { useProfileStore } from '../features/profile/store/profile.store'
 import { useLikesStore } from './likes.store'
@@ -209,6 +209,12 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
 
     // Clear all per-user caches so stale data is not shown after re-login.
     await Promise.all([
+      removeItem(SERVICE_TERMS_AGREE_KEY),
+      removeItem(PRIVACY_POLICY_AGREE_KEY),
+      removeItem(AGE_OVER_14_KEY),
+      removeItem(MARKETING_AGREE_KEY),
+      removeItem('tempSocialProvider'),
+      removeItem('socialProvider'),
       useLikesStore.getState().clearLikes(),
       useFavoritesStore.getState().clearFavorites(),
     ])

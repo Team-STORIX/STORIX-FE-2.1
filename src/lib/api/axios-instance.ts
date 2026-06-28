@@ -60,6 +60,12 @@ const setAuthorizationHeader = (
   (headers as Record<string, unknown>)["Authorization"] = value;
 };
 
+const extractBearerToken = (authorization?: string): string | undefined => {
+  if (!authorization) return undefined;
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1];
+};
+
 // ---------- no-refresh endpoint list ----------
 // Requests matching these paths must never trigger a token refresh:
 //   - The refresh endpoint itself (would cause an infinite loop)
@@ -165,6 +171,14 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
     if (error.response?.status !== 401 || original._retry) {
+      return Promise.reject(error);
+    }
+
+    const requestAccessToken = extractBearerToken(
+      getAuthorizationHeader(original.headers),
+    );
+    const currentAccessToken = await getAccessToken();
+    if (!currentAccessToken || requestAccessToken !== currentAccessToken) {
       return Promise.reject(error);
     }
 

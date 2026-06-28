@@ -11,6 +11,8 @@ import { isAxiosError } from 'axios'
 import { signup } from '../api/signup.api'
 import { type SignupRequest } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
+import { setItem, getItem, removeItem } from '../../../lib/storage/async'
+import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useSignup = () => {
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens)
@@ -27,7 +29,16 @@ export const useSignup = () => {
       const { accessToken, refreshToken } = response.result
       // refreshToken may be absent if the signup endpoint has not yet been
       // updated server-side. setLoginTokens handles the optional case.
-      await setLoginTokens({ accessToken, refreshToken })
+
+      // Retrieve the temporary provider from storage (stored during social login)
+      const tempProvider = await getItem<string>('tempSocialProvider')
+
+      await Promise.all([
+        setLoginTokens({ accessToken, refreshToken }),
+        // Store the final provider if we have one from the temp storage
+        tempProvider ? setItem(SOCIAL_PROVIDER_KEY, tempProvider) : Promise.resolve(),
+        removeItem('tempSocialProvider'),
+      ])
       // Navigation is left to the caller.
     },
 

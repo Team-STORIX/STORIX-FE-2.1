@@ -175,11 +175,11 @@ function renderActivityItem(
 function getEmptyMessage(tab: ProfileActivityTab) {
   switch (tab) {
     case 'posts':
-      return '아직 작성한 글이 없어요.'
+      return '아직 작성한 글이 없어요'
     case 'comments':
-      return '아직 작성한 댓글이 없어요.'
+      return '아직 작성한 댓글이 없어요'
     case 'likes':
-      return '아직 좋아한 글이 없어요.'
+      return '아직 좋아요한 글이 없어요'
     default:
       return '활동 내역이 없어요.'
   }

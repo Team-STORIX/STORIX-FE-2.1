@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -16,63 +16,50 @@ export function ProfileLikesScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const worksQuery = useProfileFavoriteWorks(true)
-  const [pendingWorkRemoved, setPendingWorkRemoved] = useState<Set<number>>(new Set())
-  const pendingRef = useRef({ pendingWorkRemoved })
-  const commitWorksLockRef = useRef(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [selectedWorkIds, setSelectedWorkIds] = useState<Set<number>>(new Set())
+  const [removedWorkIds, setRemovedWorkIds] = useState<Set<number>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  useEffect(() => {
-    pendingRef.current = { pendingWorkRemoved }
-  }, [pendingWorkRemoved])
-
-  const commitWorks = useCallback(async () => {
-    if (commitWorksLockRef.current) return
-    commitWorksLockRef.current = true
-
-    try {
-      const targets = Array.from(pendingRef.current.pendingWorkRemoved)
-      if (targets.length === 0) return
-
-      await Promise.allSettled(targets.map((worksId) => deleteFavoriteWork(worksId)))
-      setPendingWorkRemoved(new Set())
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] }),
-        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works-preview'] }),
-      ])
-    } finally {
-      commitWorksLockRef.current = false
-    }
-  }, [queryClient])
-
-  useEffect(() => {
-    return () => {
-      void commitWorks()
-    }
-  }, [commitWorks])
+  const selectedCount = selectedWorkIds.size
 
   const works = useMemo(
     () =>
       (worksQuery.data?.pages.flatMap((page) => page.result.content) ?? []).filter(
-        (item) => !pendingWorkRemoved.has(item.worksId),
+        (item) => !removedWorkIds.has(item.worksId),
       ),
-    [pendingWorkRemoved, worksQuery.data?.pages],
+    [removedWorkIds, worksQuery.data?.pages],
   )
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if ('canGoBack' in router && router.canGoBack()) {
       router.back()
       return
     }
     router.replace('/(tabs)/profile')
-  }
+  }, [router])
 
-  const renderHeader = () => (
+  const handleToggleEdit = useCallback(() => {
+    if (isEditing) {
+      setSelectedWorkIds(new Set())
+      setIsEditing(false)
+      return
+    }
+    setIsEditing(true)
+  }, [isEditing])
+
+  const renderHeader = useCallback(() => (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ paddingTop: insets.top }}>
-        <ProfileLikesTopBar onBack={handleBack} />
+        <ProfileLikesTopBar
+          onBack={handleBack}
+          isEditing={isEditing}
+          onToggleEdit={handleToggleEdit}
+        />
       </View>
     </>
-  )
+  ), [handleBack, handleToggleEdit, insets.top, isEditing])
 
   const renderFooter = () => {
     if (!worksQuery.hasNextPage && !worksQuery.isFetchingNextPage) {
@@ -93,13 +80,14 @@ export function ProfileLikesScreen() {
   }
 
   return (
-    <FlatList<FavoriteWork>
-      data={works}
-      style={styles.list}
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingBottom: insets.bottom + 24,
-      }}
+    <View style={styles.screen}>
+      <FlatList<FavoriteWork>
+        data={works}
+        style={styles.list}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: insets.bottom + (isEditing ? 120 : 24),
+        }}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderFooter}
@@ -127,9 +115,10 @@ export function ProfileLikesScreen() {
       renderItem={({ item }) => (
         <ProfileLikedWorkItem
           item={item}
-          isFavorite={!pendingWorkRemoved.has(item.worksId)}
+          isFavorite={selectedWorkIds.has(item.worksId)}
+          showFavoriteButton={isEditing}
           onToggleFavorite={(worksId) => {
-            setPendingWorkRemoved((current) => {
+            setSelectedWorkIds((current) => {
               const next = new Set(current)
               if (next.has(worksId)) {
                 next.delete(worksId)
@@ -142,10 +131,59 @@ export function ProfileLikesScreen() {
         />
       )}
     />
+    {isEditing ? (
+      <View style={[styles.ctaWrap, { paddingBottom: insets.bottom + 12 }]}>
+        <Pressable
+          disabled={selectedCount === 0 || isDeleting}
+          onPress={async () => {
+            if (selectedCount === 0 || isDeleting) return
+            const targets = Array.from(selectedWorkIds)
+            setRemovedWorkIds((current) => {
+              const next = new Set(current)
+              targets.forEach((worksId) => next.add(worksId))
+              return next
+            })
+            setSelectedWorkIds(new Set())
+            setIsEditing(false)
+            setIsDeleting(true)
+            try {
+              await Promise.allSettled(targets.map((worksId) => deleteFavoriteWork(worksId)))
+              await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] }),
+                queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works-preview'] }),
+              ])
+            } finally {
+              setIsDeleting(false)
+            }
+          }}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            selectedCount > 0 ? styles.deleteButtonActive : styles.deleteButtonInactive,
+            pressed && selectedCount > 0 && styles.deleteButtonPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="선택 작품 삭제하기"
+        >
+          <Text
+            style={[
+              styles.deleteButtonText,
+              selectedCount > 0 ? styles.deleteButtonTextActive : styles.deleteButtonTextInactive,
+            ]}
+          >
+            선택 작품 삭제하기
+          </Text>
+        </Pressable>
+      </View>
+    ) : null}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: C.card,
+  },
   list: {
     flex: 1,
     backgroundColor: C.card,
@@ -169,5 +207,38 @@ const styles = StyleSheet.create({
   footerText: {
     ...Typography.body2Medium,
     color: Gray[400],
+  },
+  ctaWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    backgroundColor: C.card,
+  },
+  deleteButton: {
+    height: 49,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonInactive: {
+    backgroundColor: Gray[200],
+  },
+  deleteButtonActive: {
+    backgroundColor: Gray[900],
+  },
+  deleteButtonPressed: {
+    opacity: 0.9,
+  },
+  deleteButtonText: {
+    ...Typography.body1Medium,
+  },
+  deleteButtonTextInactive: {
+    color: Gray[500],
+  },
+  deleteButtonTextActive: {
+    color: C.card,
   },
 })

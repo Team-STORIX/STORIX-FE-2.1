@@ -134,13 +134,14 @@ function AuthGate() {
     const isLoginRoute = inAuthGroup && screen === 'login'
     const isAgreementRoute = inAuthGroup && screen === 'agreement'
     const isOnboardingRoute = inAuthGroup && screen === 'onboarding'
-    const isMidSignupRoute = isAgreementRoute || isOnboardingRoute
+    const isManualRoute = inAuthGroup && screen === 'manual'
+    const isMidSignupRoute = isAgreementRoute || isOnboardingRoute || isManualRoute
 
     if (inOAuthCallback) {
       return
     }
 
-    if (isAuthenticated && inAuthGroup) {
+    if (isAuthenticated && inAuthGroup && !isManualRoute) {
       router.replace('/(tabs)')
       return
     }
@@ -151,11 +152,11 @@ function AuthGate() {
       }
 
       if (isLoginRoute || !inAuthGroup) {
-        router.replace('/agreement')
+        router.replace('/(auth)/agreement')
         return
       }
 
-      router.replace('/agreement')
+      router.replace('/(auth)/agreement')
       return
     }
 

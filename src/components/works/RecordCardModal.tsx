@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
 import { useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -26,6 +26,7 @@ const storixLogo = require('../../../assets/logos/logo-white.svg')
 
 const CARD_WIDTH = 322
 const CARD_HEIGHT = 429
+const CARD_SCREEN_SIDE_MARGIN = 36
 const REVIEW_CARD_OUTLINE =
   'M16 0H145C153.837 0 161 7.163 161 16C161 7.163 168.163 0 177 0H306C314.837 0 322 7.163 322 16V145C322 153.837 314.837 161 306 161C314.837 161 322 168.163 322 177V413C322 421.837 314.837 429 306 429H16C7.163 429 0 421.837 0 413V177C0 168.163 7.163 161 16 161C7.163 161 0 153.837 0 145V16C0 7.163 7.163 0 16 0Z'
 
@@ -120,8 +121,12 @@ export function RecordCardModal({
   onSaveSuccess,
 }: RecordCardModalProps) {
   const insets = useSafeAreaInsets()
+  const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
   const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
+  const cardDisplayWidth = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
+  const cardDisplayScale = cardDisplayWidth / CARD_WIDTH
+  const cardDisplayHeight = CARD_HEIGHT * cardDisplayScale
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -148,9 +153,47 @@ export function RecordCardModal({
             <Image source={closeIcon} style={styles.closeIcon} contentFit="contain" tintColor={C.card} />
           </Pressable>
 
-          <View style={styles.contentWrapper}>
-            <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
-              <Pressable style={styles.cardContainer} onPress={(event) => event.stopPropagation()}>
+          <ViewShot ref={viewShotRef} style={styles.captureCardWrapper} options={{ format: 'png', quality: 1.0 }}>
+            <View style={styles.cardContainer}>
+              <ReviewCardSurface imageUrl={coverImageUrl} />
+
+              <View style={styles.cardContent}>
+                <View style={styles.topSection}>
+                  <Image source={recordCardTitle} style={styles.cardTitleImage} contentFit="contain" />
+                  <Image source={storixLogo} style={styles.logoImage} contentFit="contain" />
+                </View>
+
+                <View style={styles.bottomSection}>
+                  <View style={styles.ratingBadge}>
+                    <Image source={star} style={styles.starIcon} contentFit="contain" tintColor="#FFE1ED" />
+                    <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+                  </View>
+
+                  <Text style={styles.worksTitle} numberOfLines={1}>
+                    {worksTitle}
+                  </Text>
+
+                  <Text style={styles.reviewContent} numberOfLines={8}>
+                    {truncateText(reviewContent, 220)}
+                  </Text>
+
+                  <Text style={styles.metaText}>
+                    {nickname} · {formatDate(createdAt)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ViewShot>
+
+          <View style={[styles.contentWrapper, { width: cardDisplayWidth, height: cardDisplayHeight }]}>
+            <Pressable
+              style={[
+                styles.cardContainer,
+                styles.visibleCardContainer,
+                { transform: [{ scale: cardDisplayScale }] },
+              ]}
+              onPress={(event) => event.stopPropagation()}
+            >
                 <ReviewCardSurface imageUrl={coverImageUrl} />
 
                 <View style={styles.cardContent}>
@@ -178,10 +221,10 @@ export function RecordCardModal({
                     </Text>
                   </View>
                 </View>
-              </Pressable>
-            </ViewShot>
+            </Pressable>
+          </View>
 
-            <View style={styles.actionButtons}>
+            <View style={[styles.actionButtons, { bottom: insets.bottom + 60 }]}>
               <Pressable
                 onPress={() => {
                   saveToGallery(captureCard, () => {
@@ -226,7 +269,6 @@ export function RecordCardModal({
                 </View>
                 <Text style={styles.actionButtonText}>X에 공유</Text>
               </Pressable>
-            </View>
           </View>
         </Pressable>
       </View>
@@ -256,12 +298,24 @@ const styles = StyleSheet.create({
     height: 24,
   },
   contentWrapper: {
-    width: CARD_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   cardContainer: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     position: 'relative',
+  },
+  captureCardWrapper: {
+    position: 'absolute',
+    left: -10000,
+    top: -10000,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+  },
+  visibleCardContainer: {
+    overflow: 'visible',
   },
   cardContent: {
     position: 'relative',
@@ -328,14 +382,16 @@ const styles = StyleSheet.create({
     color: C.card,
   },
   actionButtons: {
-    height: 136,
-    paddingHorizontal: 67,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 60,
   },
   actionButton: {
-    width: 48,
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

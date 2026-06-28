@@ -109,7 +109,7 @@ export function OnboardingScreen() {
       if (profileImageUri) {
         await uploadAndSetProfileImage(profileImageUri).catch(() => {})
       }
-      router.replace('/(tabs)')
+      router.replace('/(auth)/manual')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
     }

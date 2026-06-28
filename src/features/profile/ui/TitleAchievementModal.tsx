@@ -1,35 +1,47 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Gray, Typography } from '../../../theme'
+import { SvgXml } from 'react-native-svg'
+import { C, Gray, Magenta, Typography } from '../../../theme'
+import { GENRE_SVG, normalizeGenreKey } from './ProfilePreferGenreSection'
 
 type TitleAchievementModalProps = {
   visible: boolean
   onClose: () => void
   title: string
   nickname: string
+  topGenre?: string | null
 }
-
-const storixLogo = require('../../../../assets/logos/logo-pink.svg')
 
 export function TitleAchievementModal({
   visible,
   onClose,
   title,
   nickname,
+  topGenre,
 }: TitleAchievementModalProps) {
+  const genreKey = topGenre ? normalizeGenreKey(topGenre) : null
+  const genreSvg = genreKey ? GENRE_SVG[genreKey] : null
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={() => {}}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <View style={styles.overlay}>
         <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>{nickname} 님의 칭호가</Text>
-          <Text style={styles.subtitle}>{title}로 변경되었습니다!</Text>
+          <Text style={styles.title}>
+            <Text style={styles.highlight}>{nickname}</Text> 님의 칭호가
+          </Text>
+          <Text style={styles.subtitle}>
+            <Text style={styles.highlight}>{title}</Text>로 변경되었습니다!
+          </Text>
 
-          <Image source={storixLogo} style={styles.logo} contentFit="contain" />
+          {genreSvg ? (
+            <View style={styles.logo}>
+              <SvgXml xml={genreSvg} width={80} height={80} />
+            </View>
+          ) : null}
 
           <Text style={styles.description}>
             모든 칭호는 활동 점수가{'\n'}가장 높은 장르에 기반해 부여됩니다.
@@ -45,7 +57,7 @@ export function TitleAchievementModal({
             <Text style={styles.confirmButtonText}>확인</Text>
           </Pressable>
         </Pressable>
-      </Pressable>
+      </View>
     </Modal>
   )
 }
@@ -67,15 +79,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...Typography.heading2,
+    fontFamily: 'SUITBold',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 25.2,
     color: Gray[900],
     textAlign: 'center',
   },
   subtitle: {
-    ...Typography.heading2,
+    fontFamily: 'SUITBold',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 25.2,
     color: Gray[900],
     textAlign: 'center',
     marginTop: 0,
+  },
+  highlight: {
+    color: Magenta[300],
   },
   logo: {
     width: 80,

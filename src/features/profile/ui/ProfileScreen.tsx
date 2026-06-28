@@ -183,7 +183,7 @@ export function ProfileScreen() {
           visible={showCardModal}
           onClose={() => setShowCardModal(false)}
           nickname={me.nickName}
-          title={me.title ?? getLevelTitle(me.level ?? 0)}
+          title={me.title}
           averageRating={averageRating}
           topGenreName={topGenre?.name ?? me.topGenre}
           reviewCount={totalReviews}
@@ -233,7 +233,7 @@ export function ProfileScreen() {
       visible={showCardModal}
       onClose={() => setShowCardModal(false)}
       nickname={me.nickName}
-      title={me.title ?? getLevelTitle(me.level ?? 0)}
+      title={me.title}
       averageRating={averageRating}
       topGenreName={topGenre?.name ?? me.topGenre}
       reviewCount={totalReviews}

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../../assets/icons/common/icon-like-pink.svg')
@@ -133,7 +133,11 @@ export function FeedCommentItem(props: Props) {
             style={styles.actionIcon}
             contentFit="contain"
           />
-          {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
+          {item.reply.likeCount > 0 ? (
+            <Text style={[styles.count, item.reply.isLiked ? styles.countLiked : null]}>
+              {item.reply.likeCount}
+            </Text>
+          ) : null}
         </Pressable>
 
         {props.variant === 'reply' ? (
@@ -308,6 +312,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16.8,
     color: Gray[500],
+  },
+  countLiked: {
+    color: Magenta[300],
   },
   pressed: {
     opacity: 0.7,

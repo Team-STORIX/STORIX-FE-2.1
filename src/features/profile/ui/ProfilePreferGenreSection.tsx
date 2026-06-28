@@ -35,27 +35,50 @@ export const genreLabels: Record<string, string> = {
 
 const genreAliases: Record<string, string> = {
   '\uD310\uD0C0\uC9C0': 'FANTASY',
+  FANTASY: 'FANTASY',
   '\uC561\uC158': 'ACTION',
   '\uBB34\uD611': 'ACTION',
+  ACTION: 'ACTION',
   '\uD604\uD310': 'MODERN_FANTASY',
   '\uD604\uB300\uD310\uD0C0\uC9C0': 'MODERN_FANTASY',
+  '\uD604\uB300 \uD310\uD0C0\uC9C0': 'MODERN_FANTASY',
+  MODERNFANTASY: 'MODERN_FANTASY',
   '\uB85C\uB9E8\uC2A4': 'ROMANCE',
+  ROMANCE: 'ROMANCE',
   '\uB85C\uD310': 'ROFAN',
   '\uB85C\uB9E8\uC2A4\uD310\uD0C0\uC9C0': 'ROFAN',
+  '\uB85C\uB9E8\uC2A4 \uD310\uD0C0\uC9C0': 'ROFAN',
+  ROMANCE_FANTASY: 'ROFAN',
+  ROMANCEFANTASY: 'ROFAN',
+  ROFAN: 'ROFAN',
   '\uC77C\uC0C1': 'DAILY',
+  DAILY: 'DAILY',
   '\uC2A4\uB9B4\uB7EC': 'THRILLER',
+  THRILLER: 'THRILLER',
   '\uB4DC\uB77C\uB9C8': 'DRAMA',
+  DRAMA: 'DRAMA',
+  BL: 'BL',
   '\uC0AC\uADF9': 'HISTORICAL',
   '\uC5ED\uC0AC': 'HISTORICAL',
   '\uC5ED\uC0AC/\uC0AC\uADF9': 'HISTORICAL',
+  HISTORICAL: 'HISTORICAL',
+  HISTORY: 'HISTORICAL',
 }
 
 export function normalizeGenreKey(genre: string) {
   const trimmed = genre.trim()
   const enumLike = trimmed.toUpperCase().replace(/[\s-]+/g, '_')
+  const compact = trimmed.replace(/[\s/_-]+/g, '')
+  const compactEnumLike = enumLike.replace(/_/g, '')
 
   if (GENRE_SVG[enumLike]) return enumLike
-  return genreAliases[trimmed] ?? trimmed
+  return (
+    genreAliases[trimmed] ??
+    genreAliases[enumLike] ??
+    genreAliases[compact] ??
+    genreAliases[compactEnumLike] ??
+    trimmed
+  )
 }
 
 function GenreIconItem({ genre, score }: { genre: string; score: number }) {

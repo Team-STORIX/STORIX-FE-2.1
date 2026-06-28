@@ -9,7 +9,7 @@ import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
 import { ReportModal } from '../../feed/ui/ReportModal'
 import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
@@ -161,21 +161,23 @@ export function ProfileActivityCommentItem({
           </Pressable>
 
           {isMenuOpen ? (
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation()
-                onToggleMenu()
-                if (isMine) handleDelete()
-                else void handleReport()
-              }}
-              style={styles.dropdownButton}
-            >
-              <Image
-                source={isMine ? deleteDropdown : commentDropdown}
-                style={styles.dropdownImage}
-                contentFit="contain"
-              />
-            </Pressable>
+            <View style={styles.dropdownButton}>
+              <View style={styles.menuTextWrapper}>
+                <Pressable
+                  style={styles.menuTextItem}
+                  onPress={(event) => {
+                    event.stopPropagation()
+                    onToggleMenu()
+                    if (isMine) handleDelete()
+                    else void handleReport()
+                  }}
+                >
+                  <Text style={styles.menuTextItemText}>
+                    {isMine ? '삭제하기' : '신고하기'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
         </View>
       </View>
@@ -197,7 +199,11 @@ export function ProfileActivityCommentItem({
           />
         </Pressable>
 
-        {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
+        {item.reply.likeCount > 0 ? (
+          <Text style={[styles.count, item.reply.isLiked ? styles.countLiked : null]}>
+            {item.reply.likeCount}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
     <ReportModal
@@ -295,9 +301,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  dropdownImage: {
+  menuTextWrapper: {
     width: 96,
-    height: 36,
+    padding: 8,
+  },
+  menuTextItem: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  menuTextItemText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
   },
   commentText: {
     ...Typography.body2Medium,
@@ -320,6 +334,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     ...Typography.body2Bold,
     color: Gray[500],
+  },
+  countLiked: {
+    color: Magenta[300],
   },
   pressed: {
     opacity: 0.9,

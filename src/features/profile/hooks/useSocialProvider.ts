@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from 'expo-router'
 import { getItem } from '../../../lib/storage/async'
 
 export type SocialProvider = 'kakao' | 'naver' | 'apple' | 'x'
@@ -18,11 +19,20 @@ export const SOCIAL_PROVIDER_KEY = 'socialProvider'
 export const useSocialProvider = () => {
   const [provider, setProvider] = useState<SocialProvider | null>(null)
 
-  useEffect(() => {
-    void getItem<unknown>(SOCIAL_PROVIDER_KEY).then((value) => {
-      setProvider(isSocialProvider(value) ? value : null)
-    })
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true
+
+      void getItem<unknown>(SOCIAL_PROVIDER_KEY).then((value) => {
+        if (!mounted) return
+        setProvider(isSocialProvider(value) ? value : null)
+      })
+
+      return () => {
+        mounted = false
+      }
+    }, []),
+  )
 
   return provider ? PROVIDER_NAMES[provider] : null
 }

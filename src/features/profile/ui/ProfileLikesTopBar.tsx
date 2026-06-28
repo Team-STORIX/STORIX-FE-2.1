@@ -6,9 +6,11 @@ const backIcon = require('../../../../assets/icons/common/back.svg')
 
 type Props = {
   onBack: () => void
+  isEditing: boolean
+  onToggleEdit: () => void
 }
 
-export function ProfileLikesTopBar({ onBack }: Props) {
+export function ProfileLikesTopBar({ onBack, isEditing, onToggleEdit }: Props) {
   return (
     <View style={styles.container}>
       <Pressable
@@ -21,6 +23,14 @@ export function ProfileLikesTopBar({ onBack }: Props) {
       </Pressable>
 
       <Text style={styles.title}>관심작품</Text>
+      <Pressable
+        onPress={onToggleEdit}
+        style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={isEditing ? '편집 취소' : '편집'}
+      >
+        <Text style={styles.editText}>{isEditing ? '취소' : '편집'}</Text>
+      </Pressable>
     </View>
   )
 }
@@ -47,6 +57,14 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     ...Typography.heading2,
     color: Gray[900],
+  },
+  editButton: {
+    marginLeft: 'auto',
+    paddingVertical: 8,
+  },
+  editText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
   },
   pressed: {
     opacity: 0.7,

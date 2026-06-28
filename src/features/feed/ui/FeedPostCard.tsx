@@ -500,7 +500,14 @@ export function FeedPostCard({
               contentFit="contain"
             />
             {likeCount > 0 && (
-              <Text style={styles.reactionCount}>{likeCount}</Text>
+              <Text
+                style={[
+                  styles.reactionCount,
+                  isLiked ? styles.reactionCountLiked : null,
+                ]}
+              >
+                {likeCount}
+              </Text>
             )}
           </Pressable>
 
@@ -818,6 +825,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
     color: Gray[500],
+  },
+  reactionCountLiked: {
+    color: Magenta[300],
   },
   lightboxBackdrop: {
     flex: 1,

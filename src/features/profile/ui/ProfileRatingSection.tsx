@@ -105,7 +105,7 @@ export function ProfileRatingSection() {
 
         {totalReviews === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 리뷰가 없어요...</Text>
+            <Text style={styles.emptyText}>아직 리뷰가 없어요</Text>
             <Pressable
               onPress={() => setShowReviewSheet(true)}
               style={({ pressed }) => [pressed && styles.pressed]}
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   writeReviewImage: {
     width: 131,
     height: 36,
-    marginTop: 12,
+    marginTop: 20,
   },
   chartWrap: {
     marginTop: 24,

@@ -85,7 +85,7 @@ export function ProfilePreferenceSection() {
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 관심 작품이 없어요...</Text>
+            <Text style={styles.emptyText}>아직 관심 작품이 없어요</Text>
             <Pressable
               onPress={() => router.push("/search")}
               style={({ pressed }) => [pressed && styles.pressed]}
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   emptyButtonImage: {
     width: 131,
     height: 36,
-    marginTop: 12,
+    marginTop: 20,
   },
   pressed: {
     opacity: 0.8,

@@ -8,14 +8,18 @@ export function OnboardingTopBar({
   onBack,
   onSkip,
 }: {
-  onBack: () => void
+  onBack?: () => void
   onSkip?: () => void
 }) {
   return (
     <View style={styles.container}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
-      </Pressable>
+      {onBack ? (
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+        </Pressable>
+      ) : (
+        <View style={styles.backButton} />
+      )}
 
       {onSkip ? (
         <Pressable onPress={onSkip}>
