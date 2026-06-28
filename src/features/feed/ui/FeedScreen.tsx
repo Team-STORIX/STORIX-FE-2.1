@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,21 +22,24 @@ import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
 import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
-import { WarningEmptyState } from '../../../components/common/WarningEmptyState'
 import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
+import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 import { UserActionModal } from '../../../components/common/UserActionModal'
 import { blockUser } from '../../users/api/users.api'
+import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollEvents'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
+const warningIcon = require('../../../../assets/icons/profile/warning.svg')
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const qc = useQueryClient()
+  const listRef = useRef<FlatList<FeedBoardItem> | null>(null)
 
   // `section=topicroom` lands the user on the TopicRoom (writers) tab when
   // navigated here from Home's "실시간 작품 이야기" section.
@@ -55,6 +59,13 @@ export function FeedScreen() {
       setPick('all')
     }
   }, [sectionParam])
+
+  useEffect(() => {
+    return subscribeFeedTabReselected(() => {
+      setTab('works')
+      listRef.current?.scrollToOffset({ offset: 0, animated: true })
+    })
+  }, [])
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
@@ -66,6 +77,7 @@ export function FeedScreen() {
     nickname: string
     onConfirm: () => Promise<void>
   } | null>(null)
+  const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false)
 
@@ -131,6 +143,7 @@ export function FeedScreen() {
             likeCount: result.likeCount,
           })
           forceUpdate((n) => n + 1)
+          qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
         }
       } catch {
         likeOverrides.current.set(boardId, {
@@ -140,7 +153,7 @@ export function FeedScreen() {
         forceUpdate((n) => n + 1)
       }
     },
-    [],
+    [qc],
   )
 
   // ── Report / Delete / Block ──────────────────────────────────────────────────
@@ -181,26 +194,20 @@ export function FeedScreen() {
     [qc, activeQuery],
   )
 
-  const handleDelete = useCallback(
-    async (boardId: number) => {
-      Alert.alert('삭제', '이 게시글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteBoard(boardId)
-              qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
-            } catch {
-              Alert.alert('오류', '삭제에 실패했어요.')
-            }
-          },
-        },
-      ])
-    },
-    [qc],
-  )
+  const handleDelete = useCallback((boardId: number) => {
+    setDeleteBoardId(boardId)
+  }, [])
+
+  const confirmDeleteBoard = useCallback(async () => {
+    if (deleteBoardId == null) return
+    try {
+      await deleteBoard(deleteBoardId)
+      qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+      qc.invalidateQueries({ queryKey: ['profile', 'activity'] })
+    } catch {
+      Alert.alert('오류', '삭제에 실패했어요.')
+    }
+  }, [deleteBoardId, qc])
 
   // ── Pagination ───────────────────────────────────────────────────────────────
   const onEndReached = useCallback(() => {
@@ -335,6 +342,15 @@ export function FeedScreen() {
     />
   )
 
+  const deleteModal = (
+    <FeedDeleteConfirmModal
+      type="post"
+      visible={deleteBoardId != null}
+      onClose={() => setDeleteBoardId(null)}
+      onConfirm={confirmDeleteBoard}
+    />
+  )
+
   if (tab === 'writers') {
     return (
       <>
@@ -358,6 +374,7 @@ export function FeedScreen() {
         </View>
         {reportModal}
         {blockModal}
+        {deleteModal}
         {createWorksSheet}
       </>
     )
@@ -366,6 +383,7 @@ export function FeedScreen() {
   return (
     <>
     <FlatList
+      ref={listRef}
       style={[styles.screen, { paddingTop: insets.top }]}
       data={items}
       keyExtractor={(item) => `board_${item.board.boardId}`}
@@ -387,7 +405,10 @@ export function FeedScreen() {
             </Pressable>
           </View>
         ) : (
-          <WarningEmptyState description="등록된 피드가 없습니다." />
+          <View style={styles.emptyState}>
+            <Image source={warningIcon} style={styles.emptyIcon} contentFit="contain" />
+            <Text style={styles.emptyTitle}>아직 작성된 글이 없어요</Text>
+          </View>
         )
       }
       ListFooterComponent={
@@ -402,7 +423,12 @@ export function FeedScreen() {
       onEndReached={onEndReached}
       onEndReachedThreshold={0.4}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        items.length === 0 && !activeQuery.isLoading && !activeQuery.isError
+          ? styles.emptyContent
+          : null,
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={activeQuery.isRefetching && !activeQuery.isFetchingNextPage}
@@ -414,6 +440,7 @@ export function FeedScreen() {
     />
     {reportModal}
     {blockModal}
+    {deleteModal}
     {createWorksSheet}
     </>
   )
@@ -426,6 +453,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 128,
+  },
+  emptyContent: {
+    flexGrow: 1,
   },
   listHeader: {
     backgroundColor: C.card,
@@ -451,9 +481,20 @@ const styles = StyleSheet.create({
     color: C.card,
     fontWeight: '600',
   },
-  emptyText: {
-    ...Typography.body2Medium,
-    color: Gray[500],
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+  },
+  emptyTitle: {
+    marginTop: 20,
+    ...Typography.heading2,
+    color: Gray[900],
+    textAlign: 'center',
   },
   footerLoader: {
     paddingVertical: 16,

@@ -173,6 +173,7 @@ export function ProfileScreen() {
                 progress={me.progressPercentage / 100}
                 topGenre={me.topGenre}
                 title={me.title}
+                progressPercentage={me.progressPercentage}
               />
               <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
             </>
@@ -182,7 +183,7 @@ export function ProfileScreen() {
           visible={showCardModal}
           onClose={() => setShowCardModal(false)}
           nickname={me.nickName}
-          title={me.title ?? getLevelTitle(me.level ?? 0)}
+          title={me.title}
           averageRating={averageRating}
           topGenreName={topGenre?.name ?? me.topGenre}
           reviewCount={totalReviews}
@@ -220,6 +221,7 @@ export function ProfileScreen() {
         progress={me.progressPercentage / 100}
         topGenre={me.topGenre}
         title={me.title}
+        progressPercentage={me.progressPercentage}
       />
       <ProfilePreferenceTabs activeTab={activeTab} onChangeTab={setActiveTab} />
       <ProfilePreferenceSection />
@@ -231,7 +233,7 @@ export function ProfileScreen() {
       visible={showCardModal}
       onClose={() => setShowCardModal(false)}
       nickname={me.nickName}
-      title={me.title ?? getLevelTitle(me.level ?? 0)}
+      title={me.title}
       averageRating={averageRating}
       topGenreName={topGenre?.name ?? me.topGenre}
       reviewCount={totalReviews}

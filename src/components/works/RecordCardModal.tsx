@@ -1,6 +1,6 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ViewShot from 'react-native-view-shot'
 import Svg, {
@@ -26,6 +26,7 @@ const storixLogo = require('../../../assets/logos/logo-white.svg')
 
 const CARD_WIDTH = 322
 const CARD_HEIGHT = 429
+const CARD_SCREEN_SIDE_MARGIN = 36
 const REVIEW_CARD_OUTLINE =
   'M16 0H145C153.837 0 161 7.163 161 16C161 7.163 168.163 0 177 0H306C314.837 0 322 7.163 322 16V145C322 153.837 314.837 161 306 161C314.837 161 322 168.163 322 177V413C322 421.837 314.837 429 306 429H16C7.163 429 0 421.837 0 413V177C0 168.163 7.163 161 16 161C7.163 161 0 153.837 0 145V16C0 7.163 7.163 0 16 0Z'
 
@@ -67,10 +68,8 @@ const truncateText = (text: string, maxLength: number) => {
 
 function ReviewCardSurface({
   imageUrl,
-  isMagentaTheme,
 }: {
   imageUrl?: string | null
-  isMagentaTheme: boolean
 }) {
   return (
     <Svg
@@ -84,19 +83,12 @@ function ReviewCardSurface({
         <ClipPath id="reviewCardClip">
           <Path d={REVIEW_CARD_OUTLINE} />
         </ClipPath>
-        {isMagentaTheme ? (
-          <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#FF4093" stopOpacity={0} />
-            <Stop offset="100%" stopColor="#FF4093" stopOpacity={1} />
-          </LinearGradient>
-        ) : (
-          <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#000000" stopOpacity={0.15} />
-            <Stop offset="35%" stopColor="#000000" stopOpacity={0.25} />
-            <Stop offset="70%" stopColor="#000000" stopOpacity={0.65} />
-            <Stop offset="100%" stopColor="#000000" stopOpacity={0.95} />
-          </LinearGradient>
-        )}
+        <LinearGradient id="reviewCardGradient" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#000000" stopOpacity={0.15} />
+          <Stop offset="35%" stopColor="#000000" stopOpacity={0.25} />
+          <Stop offset="70%" stopColor="#000000" stopOpacity={0.65} />
+          <Stop offset="100%" stopColor="#000000" stopOpacity={0.95} />
+        </LinearGradient>
       </Defs>
 
       <Path d={REVIEW_CARD_OUTLINE} fill="#131112" />
@@ -129,9 +121,12 @@ export function RecordCardModal({
   onSaveSuccess,
 }: RecordCardModalProps) {
   const insets = useSafeAreaInsets()
+  const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
-  const [isMagentaTheme, setIsMagentaTheme] = useState(false)
   const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
+  const cardDisplayWidth = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
+  const cardDisplayScale = cardDisplayWidth / CARD_WIDTH
+  const cardDisplayHeight = CARD_HEIGHT * cardDisplayScale
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -158,20 +153,48 @@ export function RecordCardModal({
             <Image source={closeIcon} style={styles.closeIcon} contentFit="contain" tintColor={C.card} />
           </Pressable>
 
-          <View style={styles.contentWrapper}>
-            <Pressable
-              style={styles.themeButton}
-              onPress={(event) => {
-                event.stopPropagation()
-                setIsMagentaTheme((prev) => !prev)
-              }}
-            >
-              <Text style={styles.themeButtonText}>테마 변경</Text>
-            </Pressable>
+          <ViewShot ref={viewShotRef} style={styles.captureCardWrapper} options={{ format: 'png', quality: 1.0 }}>
+            <View style={styles.cardContainer}>
+              <ReviewCardSurface imageUrl={coverImageUrl} />
 
-            <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
-              <Pressable style={styles.cardContainer} onPress={(event) => event.stopPropagation()}>
-                <ReviewCardSurface imageUrl={coverImageUrl} isMagentaTheme={isMagentaTheme} />
+              <View style={styles.cardContent}>
+                <View style={styles.topSection}>
+                  <Image source={recordCardTitle} style={styles.cardTitleImage} contentFit="contain" />
+                  <Image source={storixLogo} style={styles.logoImage} contentFit="contain" />
+                </View>
+
+                <View style={styles.bottomSection}>
+                  <View style={styles.ratingBadge}>
+                    <Image source={star} style={styles.starIcon} contentFit="contain" tintColor="#FFE1ED" />
+                    <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+                  </View>
+
+                  <Text style={styles.worksTitle} numberOfLines={1}>
+                    {worksTitle}
+                  </Text>
+
+                  <Text style={styles.reviewContent} numberOfLines={8}>
+                    {truncateText(reviewContent, 220)}
+                  </Text>
+
+                  <Text style={styles.metaText}>
+                    {nickname} · {formatDate(createdAt)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ViewShot>
+
+          <View style={[styles.contentWrapper, { width: cardDisplayWidth, height: cardDisplayHeight }]}>
+            <Pressable
+              style={[
+                styles.cardContainer,
+                styles.visibleCardContainer,
+                { transform: [{ scale: cardDisplayScale }] },
+              ]}
+              onPress={(event) => event.stopPropagation()}
+            >
+                <ReviewCardSurface imageUrl={coverImageUrl} />
 
                 <View style={styles.cardContent}>
                   <View style={styles.topSection}>
@@ -198,10 +221,10 @@ export function RecordCardModal({
                     </Text>
                   </View>
                 </View>
-              </Pressable>
-            </ViewShot>
+            </Pressable>
+          </View>
 
-            <View style={styles.actionButtons}>
+            <View style={[styles.actionButtons, { bottom: insets.bottom + 60 }]}>
               <Pressable
                 onPress={() => {
                   saveToGallery(captureCard, () => {
@@ -246,7 +269,6 @@ export function RecordCardModal({
                 </View>
                 <Text style={styles.actionButtonText}>X에 공유</Text>
               </Pressable>
-            </View>
           </View>
         </Pressable>
       </View>
@@ -276,29 +298,24 @@ const styles = StyleSheet.create({
     height: 24,
   },
   contentWrapper: {
-    width: CARD_WIDTH,
-  },
-  themeButton: {
-    position: 'absolute',
-    top: -36,
-    right: 0,
-    zIndex: 20,
-    minHeight: 26,
-    paddingHorizontal: 10,
+    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
-    backgroundColor: C.card,
-  },
-  themeButtonText: {
-    fontFamily: 'SUITBold',
-    fontSize: 11,
-    lineHeight: 15.4,
-    color: Gray[900],
+    overflow: 'visible',
   },
   cardContainer: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     position: 'relative',
+  },
+  captureCardWrapper: {
+    position: 'absolute',
+    left: -10000,
+    top: -10000,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+  },
+  visibleCardContainer: {
+    overflow: 'visible',
   },
   cardContent: {
     position: 'relative',
@@ -365,14 +382,16 @@ const styles = StyleSheet.create({
     color: C.card,
   },
   actionButtons: {
-    height: 136,
-    paddingHorizontal: 67,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 60,
   },
   actionButton: {
-    width: 48,
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

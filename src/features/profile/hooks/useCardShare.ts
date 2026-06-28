@@ -11,7 +11,8 @@ import {
 
 export type CaptureFunction = () => Promise<string | null>
 
-const SHARE_MESSAGE = 'STORIX \uD504\uB85C\uD544 \uCE74\uB4DC'
+const SHARE_MESSAGE = 'STORIX 프로필 카드'
+const STORIX_SHARE_URL = 'https://www.storix.kr/'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
 const TWITTER_IOS_SCHEME = 'twitter://'
 const TWITTER_IOS_POST_URL = 'twitter://post'
@@ -79,9 +80,10 @@ export function useCardShare() {
         return
       }
 
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: '\uD504\uB85C\uD544 \uCE74\uB4DC \uACF5\uC720',
+      await Share.open({
+        ...getOsShareOptions(uri, message),
+        title: message,
+        failOnCancel: false,
       })
     } catch (error) {
       console.error('Share error:', error)
@@ -121,7 +123,7 @@ export function useCardShare() {
         social: Social.Twitter,
         url: normalizeShareUri(uri),
         type: 'image/png',
-        message,
+        message: getShareMessage(message),
       })
     } catch (error) {
       console.error('Twitter share error:', error)
@@ -147,6 +149,54 @@ export function useCardShare() {
 function normalizeShareUri(uri: string) {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(uri)) return uri
   return `file://${uri}`
+}
+
+function getShareMessage(message: string) {
+  return `${message} ${STORIX_SHARE_URL}`
+}
+
+function getOsShareOptions(uri: string, message: string) {
+  const fileUri = normalizeShareUri(uri)
+  const shareMessage = getShareMessage(message)
+
+  if (Platform.OS === 'ios') {
+    return {
+      message: shareMessage,
+      url: fileUri,
+      type: 'image/png',
+      subject: message,
+      activityItemSources: [
+        {
+          placeholderItem: { type: 'text' as const, content: shareMessage },
+          item: {
+            default: { type: 'text' as const, content: shareMessage },
+          },
+          subject: {
+            default: message,
+          },
+        },
+        {
+          placeholderItem: { type: 'url' as const, content: fileUri },
+          item: {
+            default: { type: 'url' as const, content: fileUri },
+          },
+          dataTypeIdentifier: {
+            default: 'public.png',
+          },
+        },
+      ],
+    }
+  }
+
+  // Android: 메시지(텍스트 + URL)와 이미지를 함께 공유
+  return {
+    message: shareMessage,
+    url: fileUri,
+    urls: [fileUri],
+    type: '*/*',
+    subject: message,
+    useInternalStorage: true,
+  }
 }
 
 async function isTwitterAppInstalled() {
@@ -212,7 +262,7 @@ async function openTwitterIntent(shareUrl?: string, message: string = SHARE_MESS
     return
   }
 
-  const text = [message, shareUrl].filter(Boolean).join(' ')
+  const text = [getShareMessage(message), shareUrl].filter(Boolean).join(' ')
   const appUrl = `${TWITTER_IOS_POST_URL}?message=${encodeURIComponent(text)}`
 
   try {
@@ -223,7 +273,7 @@ async function openTwitterIntent(shareUrl?: string, message: string = SHARE_MESS
 }
 
 async function openTwitterWebIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
-  const text = encodeURIComponent(message)
+  const text = encodeURIComponent(getShareMessage(message))
   const query = shareUrl
     ? `text=${text}&url=${encodeURIComponent(shareUrl)}`
     : `text=${text}`

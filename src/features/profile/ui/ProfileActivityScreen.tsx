@@ -49,6 +49,8 @@ export function ProfileActivityScreen() {
       activeTab={activeTab}
       onChangeTab={setActiveTab}
       currentUserId={me.userId}
+      currentUserProfileImageUrl={me.profileImageUrl}
+      currentUserNickName={me.nickName}
       bottomInset={insets.bottom}
       header={
         <>

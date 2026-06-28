@@ -4,17 +4,23 @@ import { useRouter } from 'expo-router'
 import type { FavoriteWork } from '../types'
 import { C, Gray, Magenta, Typography } from '../../../theme'
 
-const favoriteOnIcon = require('../../../../assets/icons/profile/likes-check.svg')
-const favoriteOffIcon = require('../../../../assets/icons/profile/likes-plus.svg')
+const favoriteCheckGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
+const favoriteCheckPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 const ratingStarIcon = require('../../../../assets/icons/common/star.svg')
 
 type Props = {
   item: FavoriteWork
   isFavorite: boolean
+  showFavoriteButton?: boolean
   onToggleFavorite: (worksId: number) => void
 }
 
-export function ProfileLikedWorkItem({ item, isFavorite, onToggleFavorite }: Props) {
+export function ProfileLikedWorkItem({
+  item,
+  isFavorite,
+  showFavoriteButton = true,
+  onToggleFavorite,
+}: Props) {
   const router = useRouter()
 
   return (
@@ -49,22 +55,24 @@ export function ProfileLikedWorkItem({ item, isFavorite, onToggleFavorite }: Pro
         )}
       </View>
 
-      <Pressable
-        onPress={(event) => {
-          event.stopPropagation()
-          onToggleFavorite(item.worksId)
-        }}
-        hitSlop={8}
-        style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={'\uad00\uc2ec \uc791\ud488 \ud1a0\uae00'}
-      >
-        <Image
-          source={isFavorite ? favoriteOnIcon : favoriteOffIcon}
-          style={styles.favoriteIcon}
-          contentFit="contain"
-        />
-      </Pressable>
+      {showFavoriteButton ? (
+        <Pressable
+          onPress={(event) => {
+            event.stopPropagation()
+            onToggleFavorite(item.worksId)
+          }}
+          hitSlop={8}
+          style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={'\uad00\uc2ec \uc791\ud488 \uc120\ud0dd'}
+        >
+          <Image
+            source={isFavorite ? favoriteCheckPinkIcon : favoriteCheckGrayIcon}
+            style={styles.favoriteIcon}
+            contentFit="contain"
+          />
+        </Pressable>
+      ) : null}
     </Pressable>
   )
 }
@@ -144,8 +152,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   favoriteIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   pressed: {
     opacity: 0.7,

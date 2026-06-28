@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Gray, Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
+import { emitFeedTabReselected } from '../services/tabScrollEvents'
 import { PlusActionButton } from './PlusActionButton'
 import { PlusActionMenu } from './PlusActionMenu'
 
@@ -85,6 +86,10 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
     })
 
     if (!event.defaultPrevented) {
+      if (routeName === 'feed' && activeRouteName === 'feed') {
+        emitFeedTabReselected()
+        return
+      }
       navigation.navigate(route.name, route.params)
     }
   }

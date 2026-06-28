@@ -50,7 +50,10 @@ export const useXLogin = () => {
       }
 
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
-        await setOnboardingToken(readerPreLoginResponse.onboardingToken)
+        await Promise.all([
+          setOnboardingToken(readerPreLoginResponse.onboardingToken),
+          setItem('tempSocialProvider', 'x'),
+        ])
         console.log('[useXLogin] onboarding token stored, navigating to agreement')
         router.replace('/agreement' as never)
         return

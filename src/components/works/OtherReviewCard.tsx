@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: C.textSecondary,
     paddingRight: 4,
   },

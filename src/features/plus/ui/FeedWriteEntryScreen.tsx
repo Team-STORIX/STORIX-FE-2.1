@@ -268,6 +268,7 @@ export function FeedWriteEntryScreen() {
 
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["plus", "board"] });
+      queryClient.invalidateQueries({ queryKey: ["profile", "activity", "boards"] });
 
       router.replace("/(tabs)/feed" as never);
     } catch (e) {
@@ -830,6 +831,7 @@ const styles = StyleSheet.create({
     height: 240,
     width: "100%",
     ...Typography.body1Medium,
+    fontFamily: undefined,
     color: Gray[700],
     padding: 0,
     textAlignVertical: "top",

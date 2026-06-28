@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
   },
   input: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: Gray[800],
     padding: 0,
     margin: 0,

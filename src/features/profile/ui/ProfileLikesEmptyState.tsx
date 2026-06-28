@@ -17,7 +17,7 @@ export function ProfileLikesEmptyState({ tab }: Props) {
 
   const title =
     tab === 'works'
-      ? '\uc544\uc9c1 \uad00\uc2ec \uc791\ud488 \uc124\uc815\uc744\n\ud558\uc9c0 \uc54a\uc73c\uc168\uc5b4\uc694.'
+      ? '아직 관심 작품이 없어요'
       : '\uc544\uc9c1 \uad00\uc2ec \uc791\uac00 \uc124\uc815\uc744\n\ud558\uc9c0 \uc54a\uc73c\uc168\uc5b4\uc694.'
 
   return (

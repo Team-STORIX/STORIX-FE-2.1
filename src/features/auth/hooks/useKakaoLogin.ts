@@ -43,7 +43,10 @@ export const useKakaoLogin = () => {
 
       // New user — store the onboarding token and start the signup flow.
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
-        await setOnboardingToken(readerPreLoginResponse.onboardingToken)
+        await Promise.all([
+          setOnboardingToken(readerPreLoginResponse.onboardingToken),
+          setItem('tempSocialProvider', 'kakao'),
+        ])
         router.replace('/(auth)/agreement')
         return
       }

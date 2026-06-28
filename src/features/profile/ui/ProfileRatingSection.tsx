@@ -1,12 +1,12 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import { C, Gray, Magenta, Typography } from '../../../theme'
-import { ReviewWriteBottomSheet } from '../../plus'
 import { useProfileRatings } from '../hooks'
 import type { RatingCountsMap } from '../types'
 
-const writeReviewButton = require('../../../../assets/icons/profile/write-review.svg')
+const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
 
 const RATING_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const
 const MAX_HEIGHT = 120
@@ -35,7 +35,7 @@ function parseCountsToStepMap(raw: RatingCountsMap): Record<number, number> {
 }
 
 export function ProfileRatingSection() {
-  const [showReviewSheet, setShowReviewSheet] = useState(false)
+  const router = useRouter()
   const ratingsQuery = useProfileRatings()
 
   const stepCounts = useMemo(
@@ -95,8 +95,7 @@ export function ProfileRatingSection() {
   }
 
   return (
-    <>
-      <View style={styles.section}>
+    <View style={styles.section}>
         <Text style={styles.title}>별점 분포</Text>
 
         {ratingsQuery.isError ? (
@@ -105,14 +104,14 @@ export function ProfileRatingSection() {
 
         {totalReviews === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 리뷰가 없어요...</Text>
+            <Text style={styles.emptyText}>아직 리뷰가 없어요</Text>
             <Pressable
-              onPress={() => setShowReviewSheet(true)}
+              onPress={() => router.push('/search')}
               style={({ pressed }) => [pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel="리뷰 작성"
+              accessibilityLabel="작품 찾기"
             >
-              <Image source={writeReviewButton} style={styles.writeReviewImage} contentFit="contain" />
+              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
             </Pressable>
           </View>
         ) : (
@@ -165,12 +164,6 @@ export function ProfileRatingSection() {
           </>
         )}
       </View>
-
-      <ReviewWriteBottomSheet
-        visible={showReviewSheet}
-        onClose={() => setShowReviewSheet(false)}
-      />
-    </>
   )
 }
 
@@ -199,10 +192,10 @@ const styles = StyleSheet.create({
     ...Typography.heading3,
     color: Gray[500],
   },
-  writeReviewImage: {
+  emptyButtonImage: {
     width: 131,
     height: 36,
-    marginTop: 12,
+    marginTop: 20,
   },
   chartWrap: {
     marginTop: 24,

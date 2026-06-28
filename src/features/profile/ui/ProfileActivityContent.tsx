@@ -24,6 +24,8 @@ type Props = {
   activeTab: ProfileActivityTab
   onChangeTab: (tab: ProfileActivityTab) => void
   currentUserId: number
+  currentUserProfileImageUrl?: string | null
+  currentUserNickName?: string
   header?: ReactElement | null
   bottomInset?: number
 }
@@ -32,6 +34,8 @@ export function ProfileActivityContent({
   activeTab,
   onChangeTab,
   currentUserId,
+  currentUserProfileImageUrl,
+  currentUserNickName,
   header = null,
   bottomInset = 0,
 }: Props) {
@@ -91,7 +95,7 @@ export function ProfileActivityContent({
       data={items}
       key={activeTab}
       style={styles.list}
-      contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+      contentContainerStyle={{ paddingBottom: bottomInset + 100 }}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderFooter}
@@ -106,6 +110,8 @@ export function ProfileActivityContent({
           activeTab,
           info,
           currentUserId,
+          currentUserProfileImageUrl,
+          currentUserNickName,
           openCommentMenuId,
           setOpenCommentMenuId,
         )
@@ -127,6 +133,8 @@ function renderActivityItem(
   activeTab: ProfileActivityTab,
   info: ListRenderItemInfo<ProfileActivityBoardItem | ProfileActivityReplyItem>,
   userId: number,
+  currentUserProfileImageUrl: string | null | undefined,
+  currentUserNickName: string | undefined,
   openCommentMenuId: number | null,
   setOpenCommentMenuId: (value: number | null) => void,
 ) {
@@ -136,6 +144,8 @@ function renderActivityItem(
       <ProfileActivityCommentItem
         item={item}
         currentUserId={userId}
+        currentUserProfileImageUrl={currentUserProfileImageUrl}
+        currentUserNickName={currentUserNickName}
         isMenuOpen={openCommentMenuId === item.reply.replyId}
         onToggleMenu={() =>
           setOpenCommentMenuId(
@@ -165,11 +175,11 @@ function renderActivityItem(
 function getEmptyMessage(tab: ProfileActivityTab) {
   switch (tab) {
     case 'posts':
-      return '아직 작성한 글이 없어요.'
+      return '아직 작성한 글이 없어요'
     case 'comments':
-      return '아직 작성한 댓글이 없어요.'
+      return '아직 작성한 댓글이 없어요'
     case 'likes':
-      return '아직 좋아한 글이 없어요.'
+      return '아직 좋아요한 글이 없어요'
     default:
       return '활동 내역이 없어요.'
   }

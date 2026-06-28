@@ -1,48 +1,52 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { SvgXml } from 'react-native-svg'
 import { C, Gray, Magenta, Typography } from '../../../theme'
+import { GENRE_SVG, normalizeGenreKey } from './ProfilePreferGenreSection'
 
 type TitleAchievementModalProps = {
   visible: boolean
   onClose: () => void
   title: string
-  genre: string
+  nickname: string
+  topGenre?: string | null
 }
 
 export function TitleAchievementModal({
   visible,
   onClose,
   title,
-  genre,
+  nickname,
+  topGenre,
 }: TitleAchievementModalProps) {
+  const genreKey = topGenre ? normalizeGenreKey(topGenre) : null
+  const genreSvg = genreKey ? GENRE_SVG[genreKey] : null
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={() => {}}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <View style={styles.overlay}>
         <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
-          {/* 칭호명 */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>
+            <Text style={styles.highlight}>{nickname}</Text> 님의 칭호가
+          </Text>
+          <Text style={styles.subtitle}>
+            <Text style={styles.highlight}>{title}</Text>로 변경되었습니다!
+          </Text>
 
-          {/* "칭호를 획득하였습니다!" */}
-          <Text style={styles.subtitle}>칭호를 획득하였습니다!</Text>
-
-          {/* 장르 아이콘 (80x80) */}
-          <View style={styles.iconContainer}>
-            {/* TODO: 장르별 SVG 아이콘 추가 */}
-            <View style={styles.iconPlaceholder}>
-              <Text style={styles.genreText}>{genre}</Text>
+          {genreSvg ? (
+            <View style={styles.logo}>
+              <SvgXml xml={genreSvg} width={80} height={80} />
             </View>
-          </View>
+          ) : null}
 
-          {/* 설명 */}
           <Text style={styles.description}>
             모든 칭호는 활동 점수가{'\n'}가장 높은 장르에 기반해 부여됩니다.
           </Text>
 
-          {/* 확인 버튼 */}
           <Pressable
             style={({ pressed }) => [
               styles.confirmButton,
@@ -53,7 +57,7 @@ export function TitleAchievementModal({
             <Text style={styles.confirmButtonText}>확인</Text>
           </Pressable>
         </Pressable>
-      </Pressable>
+      </View>
     </Modal>
   )
 }
@@ -75,33 +79,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
-    lineHeight: 28,
-    color: Magenta[300],
+    fontFamily: 'SUITBold',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 25.2,
+    color: Gray[900],
     textAlign: 'center',
   },
   subtitle: {
-    ...Typography.heading2,
+    fontFamily: 'SUITBold',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 25.2,
     color: Gray[900],
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 0,
   },
-  iconContainer: {
-    marginTop: 16,
-    alignItems: 'center',
+  highlight: {
+    color: Magenta[300],
   },
-  iconPlaceholder: {
+  logo: {
     width: 80,
     height: 80,
-    backgroundColor: Gray[100],
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  genreText: {
-    ...Typography.body2Bold,
-    color: '#010101',
+    marginTop: 16,
   },
   description: {
     ...Typography.body2Medium,

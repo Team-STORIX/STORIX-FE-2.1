@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useMemo, useRef } from 'react'
@@ -16,12 +16,14 @@ const libraryIcon = require('../../../../assets/icons/profile/icon-library.svg')
 const downloadIcon = require('../../../../assets/icons/common/icon-download.svg')
 const shareIcon = require('../../../../assets/icons/common/icon-share.svg')
 const twitterIcon = require('../../../../assets/icons/common/icon-twitter.svg')
+const CARD_CAPTURE_SIZE = 322
+const CARD_SCREEN_SIDE_MARGIN = 35
 
 export type ProfileCardModalProps = {
   visible: boolean
   onClose: () => void
   nickname: string
-  title: string
+  title?: string | null
   topGenreIconSvg?: string
   averageRating?: number
   topGenreName?: string
@@ -41,12 +43,17 @@ export function ProfileCardModal({
   onSaveSuccess,
 }: ProfileCardModalProps) {
   const insets = useSafeAreaInsets()
+  const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
   const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
   const tintedTopGenreIconSvg = useMemo(
     () => tintSvg(topGenreIconSvg, Magenta[300]),
     [topGenreIconSvg],
   )
+  const trimmedTitle = title?.trim()
+  const shouldShowTitleBadge = !!trimmedTitle && trimmedTitle !== '-'
+  const cardDisplaySize = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
+  const cardDisplayScale = cardDisplaySize / CARD_CAPTURE_SIZE
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -76,9 +83,80 @@ export function ProfileCardModal({
             <Image source={closeIcon} style={styles.closeIcon} contentFit="contain" tintColor={C.card} />
           </Pressable>
 
-        <View style={styles.contentWrapper}>
-          <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
-            <Pressable style={styles.cardContainer} onPress={(e) => e.stopPropagation()}>
+        <ViewShot ref={viewShotRef} style={styles.captureCardWrapper} options={{ format: 'png', quality: 1.0 }}>
+          <View style={styles.cardContainer}>
+            {/* 상단 영역: 핑크 + 검정 */}
+            <View style={styles.topRow}>
+              {/* 왼쪽 핑크 영역 */}
+              <View style={styles.pinkSection}>
+                <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
+
+                <View style={styles.nicknameBadge}>
+                  <Text style={styles.nicknameText} numberOfLines={1}>
+                    {nickname}
+                  </Text>
+                </View>
+
+                {shouldShowTitleBadge ? (
+                  <View style={styles.titleBadge}>
+                    <Text style={styles.titleText} numberOfLines={1}>
+                      {trimmedTitle}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* 오른쪽 검정 영역 */}
+              <View style={styles.blackSectionRight}>
+                {tintedTopGenreIconSvg ? (
+                  <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
+                ) : (
+                  <View style={styles.genreIconPlaceholder} />
+                )}
+              </View>
+            </View>
+
+            {/* 하단 검정 영역 */}
+            <View style={styles.blackSectionBottom}>
+              {/* 별점평균 */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
+                <Text style={styles.statLabel}>별점평균</Text>
+                <View style={styles.statIconWrap}>
+                  <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
+                </View>
+              </View>
+
+              {/* 최애장르 */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{topGenreName}</Text>
+                <Text style={styles.statLabel}>최애장르</Text>
+                <View style={styles.statIconWrap}>
+                  <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
+                </View>
+              </View>
+
+              {/* 작품 리뷰 */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{reviewCount}</Text>
+                <Text style={styles.statLabel}>작품 리뷰</Text>
+                <View style={styles.statIconWrap}>
+                  <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
+                </View>
+              </View>
+            </View>
+          </View>
+        </ViewShot>
+
+        <View style={[styles.contentWrapper, { width: cardDisplaySize, height: cardDisplaySize }]}>
+          <Pressable
+            style={[
+              styles.cardContainer,
+              styles.visibleCardContainer,
+              { transform: [{ scale: cardDisplayScale }] },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
           {/* 상단 영역: 핑크 + 검정 */}
           <View style={styles.topRow}>
             {/* 왼쪽 핑크 영역 */}
@@ -91,11 +169,13 @@ export function ProfileCardModal({
                 </Text>
               </View>
 
-              <View style={styles.titleBadge}>
-                <Text style={styles.titleText} numberOfLines={1}>
-                  {title}
-                </Text>
-              </View>
+              {shouldShowTitleBadge ? (
+                <View style={styles.titleBadge}>
+                  <Text style={styles.titleText} numberOfLines={1}>
+                    {trimmedTitle}
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             {/* 오른쪽 검정 영역 */}
@@ -137,11 +217,11 @@ export function ProfileCardModal({
               </View>
             </View>
           </View>
-            </Pressable>
-          </ViewShot>
+          </Pressable>
+        </View>
 
           {/* 하단 버튼 영역 */}
-          <View style={styles.actionButtons}>
+          <View style={[styles.actionButtons, { bottom: insets.bottom + 60 }]}>
             {/* 저장 버튼 */}
             <Pressable
               onPress={() => {
@@ -190,7 +270,6 @@ export function ProfileCardModal({
               <Text style={styles.actionButtonText}>X에 공유</Text>
             </Pressable>
           </View>
-        </View>
         </Pressable>
       </View>
     </Modal>
@@ -230,10 +309,24 @@ const styles = StyleSheet.create({
     height: 24,
   },
   contentWrapper: {
-    width: 322,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   cardContainer: {
+    width: CARD_CAPTURE_SIZE,
+    height: CARD_CAPTURE_SIZE,
     // backgroundColor 제거 - 핑크/검정 영역만 보이도록
+  },
+  captureCardWrapper: {
+    position: 'absolute',
+    left: -10000,
+    top: -10000,
+    width: CARD_CAPTURE_SIZE,
+    height: CARD_CAPTURE_SIZE,
+  },
+  visibleCardContainer: {
+    overflow: 'visible',
   },
   topRow: {
     flexDirection: 'row',
@@ -262,12 +355,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 44.722,
-    backgroundColor: Magenta[200],
+    backgroundColor: Gray[900],
     marginTop: 8,
   },
   nicknameText: {
     ...Typography.caption1Semibold,
-    color: C.card,
+    color: Magenta[300],
   },
   titleBadge: {
     paddingHorizontal: 8,
@@ -275,12 +368,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 44.722,
-    backgroundColor: Magenta[200],
+    backgroundColor: Gray[900],
     marginTop: 4,
   },
   titleText: {
     ...Typography.caption1Medium,
-    color: C.card,
+    color: Magenta[300],
   },
   genreIconPlaceholder: {
     width: '100%',
@@ -339,14 +432,16 @@ const styles = StyleSheet.create({
     height: 24,
   },
   actionButtons: {
-    height: 136,
-    paddingHorizontal: 67,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 60,
   },
   actionButton: {
-    width: 48,
+    width: 60,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
