@@ -16,7 +16,7 @@ import { C, Gray, Magenta, Typography } from '../../../theme'
 const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
 const warningSmallIcon = require('../../../../assets/icons/common/warningSmall.svg')
 
-const TOPIC_NAME_PATTERN = /^[0-9A-Za-z가-힣]{2,10}$/
+const TOPIC_NAME_PATTERN = /^[0-9A-Za-z가-힣 ]{2,10}$/
 const MAX_NAME_LENGTH = 10
 
 type Step = 1 | 2 | 3
@@ -43,9 +43,10 @@ export function TopicRoomCreateModal({
     setTopicRoomName('')
   }, [visible])
 
+  const trimmedTopicRoomName = topicRoomName.trim()
   const canCreate = useMemo(
-    () => TOPIC_NAME_PATTERN.test(topicRoomName),
-    [topicRoomName],
+    () => TOPIC_NAME_PATTERN.test(trimmedTopicRoomName),
+    [trimmedTopicRoomName],
   )
 
   const helperText =
@@ -181,7 +182,7 @@ export function TopicRoomCreateModal({
                       returnKeyType="done"
                       onSubmitEditing={() => {
                         if (canCreate && !isSubmitting) {
-                          onConfirm(topicRoomName)
+                          onConfirm(trimmedTopicRoomName)
                         }
                       }}
                     />
@@ -200,7 +201,7 @@ export function TopicRoomCreateModal({
                     ]}
                     onPress={() => {
                       if (canCreate && !isSubmitting) {
-                        onConfirm(topicRoomName)
+                        onConfirm(trimmedTopicRoomName)
                       }
                     }}
                     disabled={!canCreate || isSubmitting}

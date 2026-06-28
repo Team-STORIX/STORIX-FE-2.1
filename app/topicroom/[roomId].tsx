@@ -17,10 +17,8 @@ import { useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
   ChatInput,
-  ConnectionStatusPill,
   LeaveConfirmModal,
   TopicRoomDdayBar,
-  TopicRoomMenuDropdown,
   TopicRoomTopBar,
   TopicRoomUserActionDropdown,
   TopicRoomUserActionModal,
@@ -102,8 +100,6 @@ export default function TopicRoomScreen() {
   const queryClient = useQueryClient();
   const [inputText, setInputText] = useState("");
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [headerHeight, setHeaderHeight] = useState(0);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   // User-specific report / block flow. A single shared target drives both entry
@@ -196,7 +192,6 @@ export default function TopicRoomScreen() {
       await leaveMutation.mutateAsync(roomId);
       // Only after a confirmed success: tear down overlays and replace (not
       // back/push) so direct-entry users can't return to the room they left.
-      setMenuOpen(false);
       setLeaveConfirmOpen(false);
       router.replace("/(tabs)/feed?section=topicroom" as never);
     } catch (error: any) {
@@ -457,20 +452,18 @@ export default function TopicRoomScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+      <View>
         <TopicRoomTopBar
           topInset={insets.top}
           title={headerTitle}
           subtitle={headerSubtitle}
           memberCount={headerMemberCount}
           onBack={handleBack}
-          onPressMenu={() => setMenuOpen(true)}
+          onPressExit={handleLeave}
         />
       </View>
 
       <TopicRoomDdayBar startDate={ddayStartDate} />
-
-      <ConnectionStatusPill status={status} />
 
       {historyLoading && !historyData ? (
         <ActivityIndicator
@@ -527,15 +520,6 @@ export default function TopicRoomScreen() {
         canSend={canSend}
       />
 
-      <TopicRoomMenuDropdown
-        visible={menuOpen}
-        topOffset={headerHeight}
-        onClose={() => setMenuOpen(false)}
-        onPressReport={() => goToReport()}
-        onPressLeave={handleLeave}
-        leaveDisabled={leaveMutation.isPending}
-      />
-
       <LeaveConfirmModal
         visible={leaveConfirmOpen}
         isPending={leaveMutation.isPending}
@@ -562,14 +546,16 @@ export default function TopicRoomScreen() {
         onBlock={handleOpenBlockConfirm}
       />
 
-      <TopicRoomUserConfirmModal
-        visible={confirmVariant != null}
-        variant={confirmVariant ?? "report"}
-        target={actionTarget}
-        isPending={confirmVariant === "block" && blockMutation.isPending}
-        onCancel={handleCancelConfirm}
-        onConfirm={handleConfirmAction}
-      />
+      {confirmVariant ? (
+        <TopicRoomUserConfirmModal
+          visible
+          variant={confirmVariant}
+          target={actionTarget}
+          isPending={confirmVariant === "block" && blockMutation.isPending}
+          onCancel={handleCancelConfirm}
+          onConfirm={handleConfirmAction}
+        />
+      ) : null}
 
       <Toast message={toastMessage} bottomOffset={insets.bottom + 80} />
     </KeyboardAvoidingView>

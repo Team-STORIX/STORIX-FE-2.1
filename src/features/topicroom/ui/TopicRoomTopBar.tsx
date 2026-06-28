@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray, Typography } from "../../../theme";
 
 const backIcon = require("../../../../assets/icons/common/back.svg");
-const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
+const exitIcon = require("../../../../assets/topicroom/icon-topicroom-exit.svg");
 
 type Props = {
   topInset: number;
@@ -11,7 +11,7 @@ type Props = {
   subtitle?: string;
   memberCount?: number;
   onBack: () => void;
-  onPressMenu?: () => void;
+  onPressExit?: () => void;
 };
 
 export function TopicRoomTopBar({
@@ -20,7 +20,7 @@ export function TopicRoomTopBar({
   subtitle,
   memberCount,
   onBack,
-  onPressMenu,
+  onPressExit,
 }: Props) {
   return (
     <View style={[styles.container, { paddingTop: topInset + 12 }]}>
@@ -50,18 +50,18 @@ export function TopicRoomTopBar({
         ) : null}
       </View>
 
-      {onPressMenu ? (
+      {onPressExit ? (
         <Pressable
           style={({ pressed }) => [
             styles.iconButton,
             pressed && styles.pressed,
           ]}
-          onPress={onPressMenu}
+          onPress={onPressExit}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="메뉴"
+          accessibilityLabel="토픽룸 나가기"
         >
-          <Image source={menuIcon} style={styles.icon} contentFit="contain" />
+          <Image source={exitIcon} style={styles.icon} contentFit="contain" />
         </Pressable>
       ) : null}
     </View>

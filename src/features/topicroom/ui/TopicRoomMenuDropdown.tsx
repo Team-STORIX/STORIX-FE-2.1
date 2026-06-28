@@ -1,14 +1,15 @@
+import { Image } from 'expo-image'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Magenta, Radius, Shadow, Typography } from '../../../theme'
+
+const exitIcon = require('../../../../assets/topicroom/icon-topicroom-exit.svg')
 
 type Props = {
   visible: boolean
   /** Y position (px from top of screen) to anchor the dropdown under the header. */
   topOffset: number
   onClose: () => void
-  onPressReport: () => void
   onPressLeave: () => void
-  reportDisabled?: boolean
   leaveDisabled?: boolean
 }
 
@@ -16,9 +17,7 @@ export function TopicRoomMenuDropdown({
   visible,
   topOffset,
   onClose,
-  onPressReport,
   onPressLeave,
-  reportDisabled = false,
   leaveDisabled = false,
 }: Props) {
   return (
@@ -26,25 +25,6 @@ export function TopicRoomMenuDropdown({
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose}>
         <View style={[styles.box, { top: topOffset }]} pointerEvents="box-none">
           <View style={styles.menu}>
-            <Pressable
-              disabled={reportDisabled}
-              onPress={() => {
-                onClose()
-                onPressReport()
-              }}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && !reportDisabled && styles.rowPressed,
-              ]}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.rowText, reportDisabled && styles.disabledText]}>
-                신고하기
-              </Text>
-            </Pressable>
-
-            <View style={styles.divider} />
-
             <Pressable
               disabled={leaveDisabled}
               onPress={() => {
@@ -57,6 +37,7 @@ export function TopicRoomMenuDropdown({
               ]}
               accessibilityRole="button"
             >
+              <Image source={exitIcon} style={styles.rowIcon} contentFit="contain" />
               <Text
                 style={[styles.rowText, styles.destructiveText, leaveDisabled && styles.disabledText]}
               >
@@ -80,11 +61,18 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderRadius: Radius.xs,
     padding: 8,
-    gap: 6,
     ...Shadow.lg,
   },
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
     paddingVertical: 2,
+  },
+  rowIcon: {
+    width: 16,
+    height: 16,
   },
   rowPressed: {
     opacity: 0.6,
@@ -98,10 +86,5 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     opacity: 0.4,
-  },
-  divider: {
-    height: 1,
-    width: 80,
-    backgroundColor: C.divider,
   },
 })

@@ -82,7 +82,7 @@ export function TopicRoomFeedSection() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>🔥 지금 핫한 토픽룸</Text>
+        <Text style={styles.sectionTitle}>지금 핫한 토픽룸</Text>
       </View>
 
       {popularQuery.isLoading ? (
@@ -146,7 +146,7 @@ export function TopicRoomFeedSection() {
       )}
 
       <View style={[styles.header, styles.headerSpaced]}>
-        <Text style={styles.sectionTitle}>😎 참여 중인 토픽룸</Text>
+        <Text style={styles.sectionTitle}>참여 중인 토픽룸</Text>
       </View>
 
       {myQuery.isLoading ? (
