@@ -18,10 +18,9 @@ function worksTypeLabel(type?: string | null) {
 
 function buildAuthorLine(works: WorksDetail) {
   const items: string[] = [];
-  if (works.author) items.push(`P. ${works.author}`);
-  if (works.illustrator) items.push(`I. ${works.illustrator}`);
-  if (!items.length && works.originalAuthor)
-    items.push(`O. ${works.originalAuthor}`);
+  if (works.author) items.push(works.author);
+  if (works.illustrator) items.push(works.illustrator);
+  if (!items.length && works.originalAuthor) items.push(works.originalAuthor);
   return items.join(" , ");
 }
 

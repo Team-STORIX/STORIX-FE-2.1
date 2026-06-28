@@ -33,8 +33,8 @@ import { blockUser } from '../../users/api/users.api'
 import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
-import { UserActionModal } from './BlockConfirmModal'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
+import { UserActionModal } from '../../../components/common/UserActionModal'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')

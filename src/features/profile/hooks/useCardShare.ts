@@ -3,12 +3,21 @@ import { Alert, Linking, Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
 import Share, { Social } from 'react-native-share'
+import {
+  createProfileCardShare,
+  postProfileCardImagePresignedUrl,
+  uploadProfileCardImage,
+} from '../api/profile-card-share.api'
 
 export type CaptureFunction = () => Promise<string | null>
 
+const SHARE_MESSAGE = 'STORIX 프로필 카드'
 const STORIX_SHARE_URL = 'https://www.storix.kr/'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
-const X_HOME_URL = 'https://x.com'
+const TWITTER_IOS_SCHEME = 'twitter://'
+const TWITTER_IOS_POST_URL = 'twitter://post'
+const TWITTER_WEB_INTENT_URL = 'https://twitter.com/intent/tweet'
+const TWITTER_HOME_URL = 'https://twitter.com'
 
 export function useCardShare() {
   const [isSaving, setIsSaving] = useState(false)
@@ -22,11 +31,11 @@ export function useCardShare() {
     try {
       setIsSaving(true)
 
-      const { status } = await MediaLibrary.requestPermissionsAsync()
+      const { status } = await MediaLibrary.requestPermissionsAsync(true)
       if (status !== 'granted') {
         Alert.alert(
           '\uAD8C\uD55C \uD544\uC694',
-          '\uAC24\uB7EC\uB9AC\uC5D0 \uC800\uC7A5\uD558\uB824\uBA74 \uC0AC\uC9C4 \uC811\uADFC \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+          '\uAC24\uB7EC\uB9AC\uC5D0 \uC800\uC7A5\uD558\uB824\uBA74 \uC0AC\uC9C4 \uC800\uC7A5 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
         )
         return
       }
@@ -97,9 +106,16 @@ export function useCardShare() {
         return
       }
 
+      if (Platform.OS === 'ios') {
+        const shareUrl = await createWebShareUrlSafely(uri)
+        await openTwitterIntent(shareUrl, message)
+        return
+      }
+
       const isTwitterInstalled = await isTwitterAppInstalled()
       if (!isTwitterInstalled) {
-        await openXHome()
+        const shareUrl = await createWebShareUrlSafely(uri)
+        await openTwitterWebIntent(shareUrl, message)
         return
       }
 
@@ -111,7 +127,11 @@ export function useCardShare() {
       })
     } catch (error) {
       console.error('Twitter share error:', error)
-      await openXHome()
+      if (Platform.OS === 'ios') {
+        await openTwitterIntent(undefined, message)
+      } else {
+        await openTwitterWebIntent(undefined, message)
+      }
     } finally {
       setIsSharing(false)
     }
@@ -180,6 +200,14 @@ function getOsShareOptions(uri: string, message: string) {
 }
 
 async function isTwitterAppInstalled() {
+  if (Platform.OS === 'ios') {
+    try {
+      return Linking.canOpenURL(TWITTER_IOS_SCHEME)
+    } catch {
+      return false
+    }
+  }
+
   try {
     const result = await Share.isPackageInstalled(TWITTER_ANDROID_PACKAGE)
     return result.isInstalled
@@ -188,11 +216,73 @@ async function isTwitterAppInstalled() {
   }
 }
 
-async function openXHome() {
+async function uploadProfileCardForWebShare(uri: string) {
+  const contentType = 'image/png'
+  const presigned = await postProfileCardImagePresignedUrl(contentType)
+
+  await uploadProfileCardImage({
+    url: presigned.url,
+    uri,
+    contentType,
+  })
+
+  const share = await createProfileCardShare(presigned.objectKey)
+  return share.shareUrl
+}
+
+async function createWebShareUrlSafely(uri: string) {
   try {
-    const canOpenX = await Linking.canOpenURL(X_HOME_URL)
-    await Linking.openURL(canOpenX ? X_HOME_URL : STORIX_SHARE_URL)
+    return await uploadProfileCardForWebShare(uri)
+  } catch (error) {
+    if (__DEV__) {
+      const axiosError = error as {
+        config?: { url?: string; method?: string; data?: unknown }
+        response?: { status?: number; data?: unknown }
+        message?: string
+      }
+      // Surface the exact endpoint/method that failed so the backend team
+      // can pinpoint which call returned the error (presign vs. share).
+      console.log('[cardShare] web share URL creation failed', {
+        method: axiosError.config?.method?.toUpperCase(),
+        endpoint: axiosError.config?.url,
+        requestBody: axiosError.config?.data,
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        message: error instanceof Error ? error.message : undefined,
+      })
+    }
+    return undefined
+  }
+}
+
+async function openTwitterIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
+  const isTwitterInstalled = await isTwitterAppInstalled()
+  if (!isTwitterInstalled) {
+    await openTwitterWebIntent(shareUrl, message)
+    return
+  }
+
+  const text = [getShareMessage(message), shareUrl].filter(Boolean).join(' ')
+  const appUrl = `${TWITTER_IOS_POST_URL}?message=${encodeURIComponent(text)}`
+
+  try {
+    await Linking.openURL(appUrl)
   } catch {
-    await Linking.openURL(STORIX_SHARE_URL)
+    await openTwitterWebIntent(shareUrl, message)
+  }
+}
+
+async function openTwitterWebIntent(shareUrl?: string, message: string = SHARE_MESSAGE) {
+  const text = encodeURIComponent(getShareMessage(message))
+  const query = shareUrl
+    ? `text=${text}&url=${encodeURIComponent(shareUrl)}`
+    : `text=${text}`
+  const webIntentUrl = `${TWITTER_WEB_INTENT_URL}?${query}`
+
+  try {
+    const canOpenWebIntent = await Linking.canOpenURL(webIntentUrl)
+    await Linking.openURL(canOpenWebIntent ? webIntentUrl : TWITTER_HOME_URL)
+  } catch {
+    await Linking.openURL(TWITTER_HOME_URL)
   }
 }

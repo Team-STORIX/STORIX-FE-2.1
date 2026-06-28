@@ -280,7 +280,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SUIT',
   },
   progressWrap: {
-    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   content: {

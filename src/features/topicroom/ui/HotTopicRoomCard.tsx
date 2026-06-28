@@ -27,8 +27,12 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
     .slice(0, 1)
     .toUpperCase();
 
-  const previewMessage = item.lastChatMessage?.trim();
-  const previewNick = item.lastChatSenderNickName?.trim();
+  const previewMessage = item.lastMessage?.trim();
+  const previewNick = item.lastMessageSenderNickname?.trim();
+  // Only TALK messages carry a meaningful sender; ENTER/LEAVE/system messages
+  // render the message text alone (lastMessage is already the full system line).
+  const isTalk = (item.lastMessageType ?? "TALK").toUpperCase() === "TALK";
+  const showNick = isTalk && !!previewMessage && !!previewNick;
 
   return (
     <Pressable
@@ -77,7 +81,7 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
         </View>
 
         <View style={styles.previewBox}>
-          {previewMessage && previewNick ? (
+          {showNick ? (
             <Text
               style={styles.previewNick}
               numberOfLines={1}

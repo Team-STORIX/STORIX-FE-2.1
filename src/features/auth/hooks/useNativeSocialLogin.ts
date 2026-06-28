@@ -11,17 +11,18 @@ import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { useRouter } from "expo-router";
 
-import type { SocialProviderId } from "../../../lib/auth/social/types";
 import { nativeSocialAuthProvider } from "../../../lib/auth/social/native";
+import type { SocialProviderId } from "../../../lib/auth/social/types";
+import { setItem } from "../../../lib/storage/async";
 import { useAuthStore } from "../../../store/auth.store";
+import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
+import { appleLogin } from "../api/apple.api";
 import {
   extractLoginTokens,
   type SocialLoginResponse,
 } from "../api/auth.schema";
 import { kakaoNativeLogin } from "../api/kakao.api";
 import { naverNativeLogin } from "../api/naver.api";
-import { setItem } from "../../../lib/storage/async";
-import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
 
 // ─── internal helper ──────────────────────────────────────────────────────────
 
@@ -41,7 +42,16 @@ const callBackend = async (
     }
     return kakaoNativeLogin({ accessToken, idToken });
   }
-  const { accessToken, refreshToken } = await nativeSocialAuthProvider.loginWithNaver();
+  if (provider === "apple") {
+    // The 2.0 backend contract takes a single `code` param — authorizationCode
+    // is preferred; fall back to identityToken when Apple omits the code.
+    const { authorizationCode, identityToken } =
+      await nativeSocialAuthProvider.loginWithApple();
+    const code = authorizationCode ?? identityToken;
+    return appleLogin(code);
+  }
+  const { accessToken, refreshToken } =
+    await nativeSocialAuthProvider.loginWithNaver();
   return naverNativeLogin({ accessToken, refreshToken });
 };
 
@@ -55,7 +65,10 @@ export const useNativeSocialLogin = () => {
   return useMutation({
     mutationFn: (provider: SocialProviderId) => callBackend(provider),
 
-    onSuccess: async (data: SocialLoginResponse, provider: SocialProviderId) => {
+    onSuccess: async (
+      data: SocialLoginResponse,
+      provider: SocialProviderId,
+    ) => {
       const { isRegistered, readerPreLoginResponse } = data.result;
       const loginTokens = extractLoginTokens(data.result);
       if (__DEV__) {

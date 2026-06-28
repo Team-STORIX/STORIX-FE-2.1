@@ -14,6 +14,7 @@ import {
   postWorksReviewLike,
   postWorksReviewReport,
   type UpdateMyReviewPayload,
+  type WorksReviewReportPayload,
 } from '../api/worksReview.api'
 import { useLikesStore } from '../../../store/likes.store'
 import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
@@ -70,7 +71,7 @@ export const useLikeWorksReview = (params: { worksId: number }) => {
 
 export const useReportWorksReview = () =>
   useMutation({
-    mutationFn: (p: { reviewId: number; payload?: unknown }) =>
+    mutationFn: (p: { reviewId: number; payload: WorksReviewReportPayload }) =>
       postWorksReviewReport(p),
   })
 

@@ -36,13 +36,34 @@ import { Typography } from '../../src/theme/typography'
 
 type EntryPhase = 'idle' | 'searching' | 'joining' | 'creating'
 type TabKey = 'info' | 'review'
+type ActionToast = 'report' | 'block'
+
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function actionToastMessage(action?: string | null) {
+  if (action === 'report') return '신고가 정상적으로 완료됐어요'
+  if (action === 'block') return '차단이 정상적으로 완료됐어요'
+  return null
+}
 
 export default function WorksDetailScreen() {
-  const { worksId: worksIdParam } = useLocalSearchParams<{ worksId: string }>()
+  const {
+    worksId: worksIdParam,
+    tab: tabParam,
+    actionToast: actionToastParam,
+  } = useLocalSearchParams<{
+    worksId: string
+    tab?: string
+    actionToast?: ActionToast
+  }>()
   const worksId = typeof worksIdParam === 'string' ? Number(worksIdParam) : 0
+  const initialTab = firstParam(tabParam) === 'review' ? 'review' : 'info'
+  const actionToast = firstParam(actionToastParam)
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const [tab, setTab] = useState<TabKey>('info')
+  const [tab, setTab] = useState<TabKey>(initialTab)
 
   const worksQuery = useWorksDetail(worksId)
   const works = worksQuery.data
@@ -67,21 +88,28 @@ export default function WorksDetailScreen() {
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const shownActionToastRef = useRef<string | null>(null)
 
   const isEntering =
     entryPhase === 'searching' ||
     entryPhase === 'joining' ||
     entryPhase === 'creating'
 
-  const showToast = useCallback((message: string) => {
-    setToastMessage(message)
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null)
-      toastTimerRef.current = null
-    }, 2400)
-  }, [])
+  const showToast = useCallback(
+    (message: string, variant: 'default' | 'success' = 'default') => {
+      setToastMessage(message)
+      setToastVariant(variant)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => {
+        setToastMessage(null)
+        setToastVariant('default')
+        toastTimerRef.current = null
+      }, 2400)
+    },
+    [],
+  )
 
   useEffect(
     () => () => {
@@ -89,6 +117,18 @@ export default function WorksDetailScreen() {
     },
     [],
   )
+
+  useEffect(() => {
+    if (firstParam(tabParam) === 'review') setTab('review')
+  }, [tabParam])
+
+  useEffect(() => {
+    const message = actionToastMessage(actionToast)
+    if (!actionToast || !message || shownActionToastRef.current === actionToast) return
+
+    shownActionToastRef.current = actionToast
+    showToast(message, 'success')
+  }, [actionToast, showToast])
 
   const navigateToRoom = useCallback(
     (roomId: number) => {
@@ -270,7 +310,11 @@ export default function WorksDetailScreen() {
         }}
       />
 
-      <Toast message={toastMessage} bottomOffset={insets.bottom + 96} />
+      <Toast
+        message={toastMessage}
+        variant={toastVariant}
+        bottomOffset={toastVariant === 'success' ? 36 : insets.bottom + 96}
+      />
     </View>
   )
 }

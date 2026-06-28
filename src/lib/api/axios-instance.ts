@@ -42,9 +42,7 @@ const getOnboardingHeader = (
   }
   const h = headers as Record<string, unknown>;
   const val =
-    h["Onboarding-Token"] ??
-    h["onboarding-token"] ??
-    h["onboardingToken"];
+    h["Onboarding-Token"] ?? h["onboarding-token"] ?? h["onboardingToken"];
   return typeof val === "string" && val.length > 0 ? val : undefined;
 };
 
@@ -145,6 +143,7 @@ apiClient.interceptors.request.use(
         // TODO: Remove this temporary auth header diagnostic before release.
         // Never log the token value (or Bearer string) — path + method only.
         console.log(
+          authorization,
           "[api] Authorization attached",
           config.method?.toUpperCase(),
           config.url,
