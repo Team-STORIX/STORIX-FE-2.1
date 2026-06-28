@@ -98,6 +98,7 @@ export function LibraryGalleryCarousel({
     <View style={[styles.root, { paddingBottom: bottomInset }]}>
       <ScrollView
         ref={scrollRef}
+        style={styles.carouselScroll}
         horizontal
         showsHorizontalScrollIndicator={false}
         bounces={false}
@@ -198,13 +199,18 @@ export function LibraryGalleryCarousel({
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+    minHeight: 0,
+  },
+  carouselScroll: {
+    height: 300,
+    flexGrow: 0,
     flexShrink: 0,
   },
   carouselContent: {
     alignItems: "center",
     gap: 0,
     paddingTop: 100,
-    paddingBottom: 28,
   },
   book: {
     height: 200,

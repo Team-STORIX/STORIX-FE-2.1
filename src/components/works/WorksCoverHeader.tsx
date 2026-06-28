@@ -40,15 +40,15 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
           contentFit="cover"
         />
       ) : null}
-      {/* Figma: linear-gradient(0deg, transparent 0%, #F9F6F7 100%) — #F9F6F7 at the top, fading down. */}
+      {/* Figma: white fade at the top, mirrored with the bottom fade. */}
       <LinearGradient
         pointerEvents="none"
-        colors={["#F9F6F7", "rgba(255,255,255,0)"]}
+        colors={["#FFFFFF", "rgba(255,255,255,0)"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFillObject}
       />
-      {/* Figma: linear-gradient(180deg, transparent 0%, #FFFFFF 100%) — white at the bottom. */}
+      {/* Figma: white fade at the bottom. */}
       <LinearGradient
         pointerEvents="none"
         colors={["rgba(255,255,255,0)", "#FFFFFF"]}

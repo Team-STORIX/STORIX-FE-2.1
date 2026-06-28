@@ -40,6 +40,8 @@ const savedToast = require('../../../assets/common/cardshare/image-gallery-saved
 
 type Props = {
   reviewId: number
+  source?: 'library'
+  sourceWorksId?: number
 }
 
 const formatKoreanDate = (iso?: string) => {
@@ -71,7 +73,7 @@ function getReportErrorMessage(error: unknown): string {
   return message ?? fallback
 }
 
-export function ReviewDetailScreen({ reviewId }: Props) {
+export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [showRecordCard, setShowRecordCard] = useState(false)
@@ -233,6 +235,18 @@ export function ReviewDetailScreen({ reviewId }: Props) {
   }, [ui.isLiked, ui.likeCount, storeIsLiked])
 
   const handleBack = () => {
+    if (source === 'library') {
+      const targetWorksId =
+        sourceWorksId != null && Number.isFinite(sourceWorksId) && sourceWorksId > 0
+          ? sourceWorksId
+          : ui.worksId
+
+      if (targetWorksId) {
+        router.replace(`/works/${targetWorksId}` as never)
+        return
+      }
+    }
+
     if (router.canGoBack()) {
       router.back()
       return

@@ -65,6 +65,7 @@ export function LibraryScreen() {
 
       return {
         id: item.worksId,
+        reviewId: item.reviewId,
         title: item.worksName ?? '',
         meta: [item.artistName ?? '', item.worksType ?? '']
           .filter(Boolean)
@@ -103,6 +104,17 @@ export function LibraryScreen() {
   }
 
   const bottomClearance = Math.max(TAB_BAR_CLEARANCE, insets.bottom + 96)
+
+  const openWorkReview = (item: LibraryUiWork) => {
+    if (item.reviewId != null) {
+      router.push(
+        `/works/review/${item.reviewId}?from=library&worksId=${item.id}` as never,
+      )
+      return
+    }
+
+    router.push(`/works/${item.id}` as const)
+  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -163,7 +175,7 @@ export function LibraryScreen() {
                 void reviewQuery.fetchNextPage()
               }
             }}
-            onPressItem={(item) => router.push(`/works/${item.id}` as const)}
+            onPressItem={openWorkReview}
           />
         ) : (
           <LibraryGalleryCarousel
@@ -176,7 +188,7 @@ export function LibraryScreen() {
                 void reviewQuery.fetchNextPage()
               }
             }}
-            onPressItem={(item) => router.push(`/works/${item.id}` as const)}
+            onPressItem={openWorkReview}
           />
         )}
       </View>
