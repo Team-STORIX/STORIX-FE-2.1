@@ -5,7 +5,6 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-na
 import { C, Gray, Typography } from "../../../theme";
 import { useProfileFavoriteWorksPreview } from "../hooks";
 
-const findWritersButton = require("../../../../assets/icons/profile/find-writers.svg");
 const findBooksButton = require("../../../../assets/icons/profile/find-books.svg");
 const nextArrowIcon = require("../../../../assets/icons/common/icon-arrow-gray.svg");
 

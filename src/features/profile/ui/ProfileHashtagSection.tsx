@@ -39,7 +39,7 @@ export function ProfileHashtagSection() {
               onPress={() => router.push('/search')}
               style={({ pressed }) => [pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel="검색으로 이동"
+              accessibilityLabel="작품 찾기"
             >
               <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
             </Pressable>
