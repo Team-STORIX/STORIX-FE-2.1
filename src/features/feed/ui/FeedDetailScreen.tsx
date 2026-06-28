@@ -48,9 +48,12 @@ export function FeedDetailScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ boardId?: string }>()
+  const params = useLocalSearchParams<{ boardId?: string; commentId?: string }>()
   const boardId = parseBoardId(params.boardId)
+  const targetCommentId = parseBoardId(params.commentId)
   const scrollRef = useRef<ScrollView | null>(null)
+  const commentLayoutYRef = useRef<Record<number, number>>({})
+  const didScrollToCommentRef = useRef<number | null>(null)
   const commentInputRef = useRef<FeedCommentInputHandle>(null)
 
   const { data: me } = useMe()
@@ -108,6 +111,11 @@ export function FeedDetailScreen() {
     }
   }, [])
 
+  useEffect(() => {
+    didScrollToCommentRef.current = null
+    commentLayoutYRef.current = {}
+  }, [boardId, targetCommentId])
+
   const board = boardItem?.board
   const profile = boardItem?.profile
   const works = boardItem?.works
@@ -120,6 +128,44 @@ export function FeedDetailScreen() {
     isLiked: board?.isLiked ?? false,
     likeCount: board?.likeCount ?? 0,
   }
+
+  useEffect(() => {
+    if (!targetCommentId || didScrollToCommentRef.current === targetCommentId) return
+
+    const isLoaded = replies.some(
+      (item) =>
+        item.reply.replyId === targetCommentId ||
+        (item.childReplies ?? []).some(
+          (child) => child.reply.replyId === targetCommentId,
+        ) ||
+        (subRepliesMap[item.reply.replyId] ?? []).some(
+          (child) => child.reply.replyId === targetCommentId,
+        ),
+    )
+
+    if (!isLoaded) {
+      if (detailQuery.hasNextPage && !detailQuery.isFetchingNextPage) {
+        void detailQuery.fetchNextPage()
+      }
+      return
+    }
+
+    const y = commentLayoutYRef.current[targetCommentId]
+    if (typeof y !== 'number') return
+
+    didScrollToCommentRef.current = targetCommentId
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, y - 16),
+        animated: true,
+      })
+    })
+  }, [
+    detailQuery,
+    replies,
+    subRepliesMap,
+    targetCommentId,
+  ])
 
   const onTogglePostLike = useCallback(async () => {
     if (!boardId || !board) return
@@ -484,7 +530,13 @@ export function FeedDetailScreen() {
                 const merged = override ? { ...item, reply: { ...item.reply, ...override } } : item
 
                 return (
-                  <View key={item.reply.replyId}>
+                  <View
+                    key={item.reply.replyId}
+                    onLayout={(event) => {
+                      commentLayoutYRef.current[item.reply.replyId] =
+                        event.nativeEvent.layout.y
+                    }}
+                  >
                     <FeedCommentItem
                       variant="reply"
                       myUserId={myUserId}
@@ -524,32 +576,39 @@ export function FeedDetailScreen() {
                         : subReply
 
                       return (
-                        <FeedCommentItem
+                        <View
                           key={subReply.reply.replyId}
-                          variant="subReply"
-                          myUserId={myUserId}
-                          writerUserId={profile.userId}
-                          item={mergedSub}
-                          isMenuOpen={openSubReplyMenuId === subReply.reply.replyId}
-                          onToggleMenu={() =>
-                            setOpenSubReplyMenuId((prev) =>
-                              prev === subReply.reply.replyId ? null : subReply.reply.replyId,
-                            )
-                          }
-                          onToggleLike={() =>
-                            onToggleSubReplyLike(item.reply.replyId, subReply.reply.replyId, {
-                              isLiked: mergedSub.reply.isLiked,
-                              likeCount: mergedSub.reply.likeCount,
-                            })
-                          }
-                          onOpenDelete={() =>
-                            onDeleteReply(subReply.reply.replyId, item.reply.replyId)
-                          }
-                          onOpenReport={() =>
-                            onReportReply(subReply.reply.replyId, subReply.reply.userId, subReply.profile)
-                          }
-                          onOpenBlock={() => onBlockReply(subReply.reply.userId, subReply.profile)}
-                        />
+                          onLayout={(event) => {
+                            commentLayoutYRef.current[subReply.reply.replyId] =
+                              event.nativeEvent.layout.y
+                          }}
+                        >
+                          <FeedCommentItem
+                            variant="subReply"
+                            myUserId={myUserId}
+                            writerUserId={profile.userId}
+                            item={mergedSub}
+                            isMenuOpen={openSubReplyMenuId === subReply.reply.replyId}
+                            onToggleMenu={() =>
+                              setOpenSubReplyMenuId((prev) =>
+                                prev === subReply.reply.replyId ? null : subReply.reply.replyId,
+                              )
+                            }
+                            onToggleLike={() =>
+                              onToggleSubReplyLike(item.reply.replyId, subReply.reply.replyId, {
+                                isLiked: mergedSub.reply.isLiked,
+                                likeCount: mergedSub.reply.likeCount,
+                              })
+                            }
+                            onOpenDelete={() =>
+                              onDeleteReply(subReply.reply.replyId, item.reply.replyId)
+                            }
+                            onOpenReport={() =>
+                              onReportReply(subReply.reply.replyId, subReply.reply.userId, subReply.profile)
+                            }
+                            onOpenBlock={() => onBlockReply(subReply.reply.userId, subReply.profile)}
+                          />
+                        </View>
                       )
                     })}
                   </View>
