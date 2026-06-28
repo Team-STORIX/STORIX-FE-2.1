@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Ionicons } from '@expo/vector-icons'
 import type { TopicRoomItem } from '../../features/topicroom'
 import { formatTopicRoomSubtitle } from '../../features/topicroom'
 import { C, Gray, Magenta } from '../../theme/colors'
@@ -8,6 +7,7 @@ import { Typography } from '../../theme/typography'
 
 const fireIcon = require('../../../assets/icons/common/fire.svg')
 const peopleIcon = require('../../../assets/icons/common/icon-topicroom-people.svg')
+const enterIcon = require('../../../assets/topicroom/icon-topicroom-enter.svg')
 
 export const TOPICROOM_CARD_W = 266
 export const TOPICROOM_CARD_H = 354
@@ -94,7 +94,7 @@ export function TopicRoomCoverCard({
       </View>
 
       <View style={styles.enterButton}>
-        <Ionicons name="enter-outline" size={22} color={C.card} />
+        <Image source={enterIcon} style={styles.enterIcon} contentFit="contain" />
       </View>
     </Pressable>
   )
@@ -192,6 +192,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+  },
+  enterIcon: {
+    width: 24,
+    height: 24,
   },
   placeholderChip: {
     width: 40,

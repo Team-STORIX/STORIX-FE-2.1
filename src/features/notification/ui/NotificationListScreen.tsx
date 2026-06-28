@@ -20,17 +20,37 @@ import { NotificationHeader } from './NotificationHeader'
 import { NotificationMenu } from './NotificationMenu'
 import { NotificationListItem } from './NotificationListItem'
 import { NotificationEmptyState } from './NotificationEmptyState'
+import type { PushRoute } from '../services/pushPayload'
+
+function isValidId(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+}
 
 /** Resolves the in-app destination for a tapped notification. */
-function resolveTarget(item: NotificationItem): string {
+function resolveTarget(item: NotificationItem): PushRoute {
   const targetType = (item.targetType ?? '').toUpperCase()
-  const targetId = item.targetId
+  const notificationType = (item.notificationType ?? '').toUpperCase()
+  const category = (item.category ?? '').toUpperCase()
+  const targetKey = `${targetType} ${notificationType} ${category}`
+  const targetId = isValidId(item.targetId) ? item.targetId : null
+  const parentTargetId = isValidId(item.parentTargetId) ? item.parentTargetId : null
 
-  if (targetId != null && targetId > 0) {
-    if (targetType.includes('FEED')) return `/feed/${targetId}`
-    if (targetType.includes('WORKS')) return `/works/${targetId}`
-    if (targetType.includes('TOPIC')) return `/topicroom/${targetId}`
+  if (targetKey.includes('COMMENT') || targetKey.includes('REPLY')) {
+    if (parentTargetId != null) {
+      return targetId != null
+        ? { pathname: `/feed/${parentTargetId}`, params: { commentId: targetId } }
+        : `/feed/${parentTargetId}`
+    }
+    if (targetId != null && targetType.includes('FEED')) return `/feed/${targetId}`
   }
+
+  if (targetId != null) {
+    if (targetKey.includes('FEED')) return `/feed/${targetId}`
+    if (targetKey.includes('REVIEW')) return `/works/review/${targetId}`
+    if (targetKey.includes('WORKS')) return `/works/${targetId}`
+    if (targetKey.includes('TOPIC')) return `/topicroom/${targetId}`
+  }
+
   // No obvious target — fall back to the detail page.
   return `/notifications/${item.id}`
 }
