@@ -26,15 +26,13 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
-  TopicRoomCreateModal,
-  useCreateTopicRoom,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
 import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
 import { Typography } from '../../src/theme/typography'
 
-type EntryPhase = 'idle' | 'searching' | 'joining' | 'creating'
+type EntryPhase = 'idle' | 'searching' | 'joining'
 type TabKey = 'info' | 'review'
 type ActionToast = 'report' | 'block'
 
@@ -83,10 +81,8 @@ export default function WorksDetailScreen() {
 
   const likeMutation = useLikeWorksReview({ worksId })
   const joinMutation = useJoinTopicRoom()
-  const createMutation = useCreateTopicRoom()
 
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
-  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -94,8 +90,7 @@ export default function WorksDetailScreen() {
 
   const isEntering =
     entryPhase === 'searching' ||
-    entryPhase === 'joining' ||
-    entryPhase === 'creating'
+    entryPhase === 'joining'
 
   const showToast = useCallback(
     (message: string, variant: 'default' | 'success' = 'default') => {
@@ -133,11 +128,25 @@ export default function WorksDetailScreen() {
   const navigateToRoom = useCallback(
     (roomId: number) => {
       setEntryPhase('idle')
-      setCreateModalOpen(false)
       router.push(`/topicroom/${roomId}` as const)
     },
     [router],
   )
+
+  const navigateToCreateTopicRoom = useCallback(() => {
+    if (!works || !worksId) return
+    setEntryPhase('idle')
+    router.push({
+      pathname: '/topicroom/create',
+      params: {
+        worksId: String(worksId),
+        worksName: works.worksName,
+        thumbnailUrl: works.thumbnailUrl ?? '',
+        artistName: works.author ?? works.originalAuthor ?? works.illustrator ?? '',
+        worksType: works.worksType ?? '',
+      },
+    } as never)
+  }, [router, works, worksId])
 
   const enterTopicRoom = useCallback(async () => {
     if (!works?.worksName || isEntering) return
@@ -147,9 +156,7 @@ export default function WorksDetailScreen() {
     try {
       const roomId = await findTopicRoomIdByWorksName(works.worksName)
       if (!roomId) {
-        // No existing room — open the create flow instead of inline error.
-        setEntryPhase('idle')
-        setCreateModalOpen(true)
+        navigateToCreateTopicRoom()
         return
       }
 
@@ -160,31 +167,14 @@ export default function WorksDetailScreen() {
       setEntryPhase('idle')
       showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
-  }, [isEntering, joinMutation, navigateToRoom, showToast, works?.worksName])
-
-  const handleCreate = useCallback(
-    async (topicRoomName: string) => {
-      if (!worksId || createMutation.isPending) return
-
-      setEntryPhase('creating')
-      try {
-        const newRoomId = await createMutation.mutateAsync({
-          worksId,
-          topicRoomName,
-        })
-        try {
-          await joinMutation.mutateAsync(newRoomId)
-        } catch {
-          // Creator is auto-joined server-side in most setups; ignore join failures here.
-        }
-        navigateToRoom(newRoomId)
-      } catch {
-        setEntryPhase('idle')
-        showToast('토픽룸 생성에 실패했어요. 잠시 후 다시 시도해 주세요.')
-      }
-    },
-    [createMutation, joinMutation, navigateToRoom, showToast, worksId],
-  )
+  }, [
+    isEntering,
+    joinMutation,
+    navigateToCreateTopicRoom,
+    navigateToRoom,
+    showToast,
+    works?.worksName,
+  ])
 
   const backToPrevious = useCallback(() => {
     if (router.canGoBack()) {
@@ -293,22 +283,16 @@ export default function WorksDetailScreen() {
             bottomInset={insets.bottom}
             hasTopicRoom={works.hasTopicRoom ?? false}
             isCheckingRoom={isEntering}
-            onPress={() => void enterTopicRoom()}
+            onPress={() => {
+              if (works.hasTopicRoom) {
+                void enterTopicRoom()
+                return
+              }
+              navigateToCreateTopicRoom()
+            }}
           />
         </>
       )}
-
-      <TopicRoomCreateModal
-        visible={createModalOpen}
-        isSubmitting={entryPhase === 'creating' || createMutation.isPending}
-        onClose={() => {
-          if (entryPhase === 'creating' || createMutation.isPending) return
-          setCreateModalOpen(false)
-        }}
-        onConfirm={(topicRoomName) => {
-          void handleCreate(topicRoomName)
-        }}
-      />
 
       <Toast
         message={toastMessage}

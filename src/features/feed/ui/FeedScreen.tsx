@@ -22,7 +22,6 @@ import type { FeedBoardItem } from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
 import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
-import { TopicRoomCreateWorksBottomSheet } from '../../topicroom/ui/TopicRoomCreateWorksBottomSheet'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
@@ -79,39 +78,13 @@ export function FeedScreen() {
   } | null>(null)
   const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
 
-  const [createSheetOpen, setCreateSheetOpen] = useState(false)
-
   const handlePressSearchTopicRoom = useCallback(() => {
     router.push('/(tabs)/two' as never)
   }, [router])
 
   const handlePressAddTopicRoom = useCallback(() => {
-    setCreateSheetOpen(true)
-  }, [])
-
-  const createWorksSheet = (
-    <TopicRoomCreateWorksBottomSheet
-      visible={createSheetOpen}
-      onClose={() => setCreateSheetOpen(false)}
-      onAdvance={(works) => {
-        setCreateSheetOpen(false)
-        router.push({
-          pathname: '/topicroom/create',
-          params: {
-            worksId: String(works.worksId),
-            worksName: works.worksName,
-            thumbnailUrl: works.thumbnailUrl ?? '',
-            artistName: works.artistName ?? '',
-            worksType: works.worksType ?? '',
-          },
-        } as never)
-      }}
-      onEnterExisting={(roomId) => {
-        setCreateSheetOpen(false)
-        router.push(`/topicroom/${roomId}` as const)
-      }}
-    />
-  )
+    router.push('/topicroom/create' as never)
+  }, [router])
 
   const worksId = pick !== 'all' ? Number(pick) : 0
 
@@ -375,7 +348,6 @@ export function FeedScreen() {
         {reportModal}
         {blockModal}
         {deleteModal}
-        {createWorksSheet}
       </>
     )
   }
@@ -441,7 +413,6 @@ export function FeedScreen() {
     {reportModal}
     {blockModal}
     {deleteModal}
-    {createWorksSheet}
     </>
   )
 }

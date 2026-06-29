@@ -299,12 +299,12 @@ export default function TopicRoomScreen() {
         undefined;
 
   // First line: "웹툰 <상수리나무 아래>" when a works name exists; otherwise the
-  // room name; only "채팅방 #id" as a true last resort. Second line is the room
-  // name when the first line already shows the works.
+  // room name. Second line is the room name when the first line already shows
+  // the works.
   const hasWorks = !!worksName;
   const headerTitle = hasWorks
     ? formatTopicRoomSubtitle(worksType, worksName)
-    : topicRoomName || `채팅방 #${roomId}`;
+    : topicRoomName;
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
   // Room-age / D-Day source. The chat-history response carries the membership
