@@ -132,6 +132,9 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
   return (
     <>
       <View style={[styles.container, { height: barHeight, paddingBottom: insets.bottom }]}>
+        {insets.bottom > 0 ? (
+          <View style={[styles.safeAreaFill, { height: insets.bottom }]} />
+        ) : null}
         <View style={styles.navWrap}>
           <Image source={navBackground} style={styles.background} contentFit="fill" />
 
@@ -188,6 +191,13 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  safeAreaFill: {
     position: 'absolute',
     left: 0,
     right: 0,
