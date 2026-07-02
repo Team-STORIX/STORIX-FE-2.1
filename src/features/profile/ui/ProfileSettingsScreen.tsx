@@ -222,7 +222,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 10,
     borderRadius: 8,
     backgroundColor: C.card,
   },
@@ -236,6 +235,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   modalBody: {
+    marginTop: 10,
     paddingHorizontal: 24,
     fontSize: 12,
     fontWeight: '500',
@@ -245,6 +245,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   modalButtons: {
+    marginTop: 28,
     alignSelf: 'stretch',
     paddingHorizontal: 16,
     flexDirection: 'row',

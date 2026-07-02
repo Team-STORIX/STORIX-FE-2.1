@@ -11,6 +11,18 @@ type TitleAchievementModalProps = {
   topGenre?: string | null
 }
 
+function getDirectionParticle(text: string) {
+  const lastChar = text.trim().slice(-1)
+  const code = lastChar.charCodeAt(0)
+  const hangulStart = 0xac00
+  const hangulEnd = 0xd7a3
+
+  if (code < hangulStart || code > hangulEnd) return '로'
+
+  const jong = (code - hangulStart) % 28
+  return jong === 0 || jong === 8 ? '로' : '으로'
+}
+
 export function TitleAchievementModal({
   visible,
   onClose,
@@ -20,6 +32,7 @@ export function TitleAchievementModal({
 }: TitleAchievementModalProps) {
   const genreKey = topGenre ? normalizeGenreKey(topGenre) : null
   const genreSvg = genreKey ? GENRE_SVG[genreKey] : null
+  const titleParticle = getDirectionParticle(title)
 
   return (
     <Modal
@@ -34,7 +47,7 @@ export function TitleAchievementModal({
             <Text style={styles.highlight}>{nickname}</Text> 님의 칭호가
           </Text>
           <Text style={styles.subtitle}>
-            <Text style={styles.highlight}>{title}</Text>로 변경되었습니다!
+            <Text style={styles.highlight}>{title}</Text>{titleParticle} 변경되었습니다!
           </Text>
 
           {genreSvg ? (

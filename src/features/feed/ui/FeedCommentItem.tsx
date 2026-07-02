@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
     backgroundColor: C.card,
-    gap: 12,
   },
   subReplyRow: {
     flexDirection: 'row',
@@ -197,7 +196,6 @@ const styles = StyleSheet.create({
   subReplyInner: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 12,
   },
   header: {
     flexDirection: 'row',
@@ -286,9 +284,11 @@ const styles = StyleSheet.create({
   commentText: {
     ...Typography.body2Medium,
     fontFamily: undefined,
+    marginTop: 12,
     color: Gray[900],
   },
   actionRow: {
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -304,14 +304,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionIcon: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
   },
   count: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 16.8,
+    ...Typography.body2Medium,
     color: Gray[500],
+    textAlign: 'justify',
   },
   countLiked: {
     color: Magenta[300],
