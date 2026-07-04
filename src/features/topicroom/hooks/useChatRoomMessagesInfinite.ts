@@ -13,6 +13,8 @@ export const useChatRoomMessagesInfinite = (params: {
     queryKey: ['chat', 'room', 'messages', roomId, size, sort],
     enabled: isValidRoomId,
     initialPageParam: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
     queryFn: ({ pageParam }) =>
       getChatRoomMessages({ roomId, page: pageParam as number, size, sort }),
     getNextPageParam: (lastPage) => {

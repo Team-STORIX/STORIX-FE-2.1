@@ -8,7 +8,7 @@ import {
   TopicRoomItemSchema,
   TopicRoomMemberSchema,
   TopicRoomReportRequestSchema,
-  TopicRoomReportResultSchema,
+  TopicRoomReportResponseSchema,
   TopicRoomSearchSliceSchema,
   TopicRoomSearchWrappedSchema,
 } from './topicroom.schema'
@@ -192,13 +192,21 @@ export async function findTopicRoomInfoById(keyword: string, topicRoomId: number
 // POST /api/v1/topic-rooms/{roomId}/report
 export async function reportTopicRoomUser(
   roomId: number,
-  body: { reportedUserId: number; reason: string; otherReason?: string | null },
-) {
+  body: {
+    reportedUserId: number
+    chatMessageId?: number | null
+    reason: 'SPAM' | 'ABUSE' | 'OTHER'
+    otherReason?: string | null
+  },
+): Promise<void> {
   const parsedBody = TopicRoomReportRequestSchema.parse(body)
   const res = await apiClient.post(
     `/api/v1/topic-rooms/${roomId}/report`,
     parsedBody,
     { headers: { accept: '*/*' } },
   )
-  return ApiEnvelopeSchema(TopicRoomReportResultSchema).parse(res.data).result
+  const parsed = TopicRoomReportResponseSchema.parse(res.data)
+  if (!parsed.isSuccess) {
+    throw new Error(parsed.message ?? '토픽룸 신고 처리에 실패했어요.')
+  }
 }

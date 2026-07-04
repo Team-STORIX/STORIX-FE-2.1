@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -99,6 +99,8 @@ export default function TopicRoomScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [inputText, setInputText] = useState("");
+  const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [liveMemberCount, setLiveMemberCount] = useState<number | null>(null);
 
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
@@ -141,21 +143,60 @@ export default function TopicRoomScreen() {
     isFetchingNextPage,
   } = useChatRoomMessagesInfinite({ roomId });
 
-  const {
-    status,
-    messages: realtimeMsgs,
-    sendMessage,
-  } = useTopicRoomStomp({ roomId });
   const membersQuery = useTopicRoomMembers(roomId);
   const members = membersQuery.data ?? [];
   const memberCount = members.length;
   const leaveMutation = useLeaveTopicRoom();
+
+  const handleMemberChange = useCallback(
+    (activeUserNumber?: number) => {
+      if (typeof activeUserNumber === "number" && activeUserNumber >= 0) {
+        setLiveMemberCount(activeUserNumber);
+      }
+      void queryClient.invalidateQueries({
+        queryKey: ["topicroom", "members", roomId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["topicroom"] });
+    },
+    [queryClient, roomId],
+  );
+
+  const {
+    status,
+    messages: realtimeMsgs,
+    sendMessage,
+    disconnect: disconnectStomp,
+  } = useTopicRoomStomp({
+    roomId,
+    enabled: isScreenFocused,
+    onMemberChange: handleMemberChange,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsScreenFocused(true);
+      if (Number.isFinite(roomId) && roomId > 0) {
+        void queryClient.invalidateQueries({
+          queryKey: ["chat", "room", "messages", roomId],
+        });
+      }
+
+      return () => {
+        setIsScreenFocused(false);
+        void disconnectStomp();
+      };
+    }, [disconnectStomp, queryClient, roomId]),
+  );
 
   const memberAvatarById = useMemo(() => {
     const map = new Map<number, string | null>();
     for (const m of members) map.set(m.userId, m.profileImageUrl ?? null);
     return map;
   }, [members]);
+
+  useEffect(() => {
+    if (members.length > 0) setLiveMemberCount(members.length);
+  }, [members.length]);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -213,6 +254,7 @@ export default function TopicRoomScreen() {
   const goToReport = useCallback(
     (target?: {
       userId: number;
+      chatMessageId?: number;
       userName?: string;
       profileImageUrl?: string | null;
     }) => {
@@ -223,6 +265,9 @@ export default function TopicRoomScreen() {
           ...(target
             ? {
                 reportedUserId: String(target.userId),
+                ...(target.chatMessageId != null
+                  ? { chatMessageId: String(target.chatMessageId) }
+                  : {}),
                 reportedUserName: target.userName ?? "",
                 reportedUserProfileImageUrl: target.profileImageUrl ?? "",
               }
@@ -238,6 +283,7 @@ export default function TopicRoomScreen() {
     return historyData.pages.flatMap((page) =>
       page.content.map((m) => ({
         key: `h_${m.id}`,
+        chatMessageId: m.id,
         text: m.message,
         senderId: m.senderId,
         senderName: m.senderName,
@@ -252,6 +298,7 @@ export default function TopicRoomScreen() {
     () =>
       realtimeMsgs.map((m) => ({
         key: `rt_${m.id}`,
+        chatMessageId: m.chatMessageId,
         text: m.text,
         senderId: m.senderId,
         senderName: m.userName ?? "",
@@ -272,8 +319,14 @@ export default function TopicRoomScreen() {
 
   const handleSend = useCallback(() => {
     const sent = sendMessage(inputText.trim());
-    if (sent) setInputText("");
-  }, [sendMessage, inputText]);
+    if (sent) {
+      setInputText("");
+      void queryClient.invalidateQueries({
+        queryKey: ["chat", "room", "messages", roomId],
+        refetchType: "none",
+      });
+    }
+  }, [inputText, queryClient, roomId, sendMessage]);
 
   const canSend = status === "open" && !!inputText.trim();
 
@@ -292,7 +345,9 @@ export default function TopicRoomScreen() {
   const topicRoomName = params.topicRoomName || cachedRoom?.topicRoomName || "";
 
   const headerMemberCount =
-    memberCount > 0
+    liveMemberCount != null
+      ? liveMemberCount
+      : memberCount > 0
       ? memberCount
       : Number(params.activeUserNumber) ||
         cachedRoom?.activeUserNumber ||
@@ -339,11 +394,17 @@ export default function TopicRoomScreen() {
   // Build a target only for a valid other user — self / unknown senders get no
   // report/block entry point (Part C).
   const targetFromMsg = useCallback(
-    (msg: DisplayMsg): TopicRoomActionTarget | null => {
+    (
+      msg: DisplayMsg,
+      options?: { includeChatMessage?: boolean },
+    ): TopicRoomActionTarget | null => {
       if (typeof msg.senderId !== "number") return null;
       if (msg.senderId === myUserId) return null;
       return {
         userId: msg.senderId,
+        ...(options?.includeChatMessage && msg.chatMessageId != null
+          ? { chatMessageId: msg.chatMessageId }
+          : {}),
         nickname: msg.senderName,
         profileImageUrl: msg.profileImageUrl,
       };
@@ -365,7 +426,7 @@ export default function TopicRoomScreen() {
 
   const handlePressKebab = useCallback(
     (msg: DisplayMsg, anchor: KebabAnchor) => {
-      const target = targetFromMsg(msg);
+      const target = targetFromMsg(msg, { includeChatMessage: true });
       if (!target) return;
       setConfirmVariant(null);
       setProfileActionVisible(false);
@@ -405,6 +466,7 @@ export default function TopicRoomScreen() {
       closeUserActions();
       goToReport({
         userId: target.userId,
+        chatMessageId: target.chatMessageId,
         userName: target.nickname,
         profileImageUrl: target.profileImageUrl,
       });
@@ -447,7 +509,7 @@ export default function TopicRoomScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={0}
     >
       <Stack.Screen options={{ headerShown: false }} />
