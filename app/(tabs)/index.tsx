@@ -146,7 +146,9 @@ export default function HomeScreen() {
           <View>
             <HomeSection
               title="오늘의 피드"
-              onArrowPress={() => router.push('/(tabs)/feed' as never)}
+              onArrowPress={() =>
+                router.push('/(tabs)/feed?section=works' as never)
+              }
             >
               <HotFeedSlider
                 data={feeds}
