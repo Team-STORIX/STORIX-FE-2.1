@@ -47,7 +47,7 @@ export function TitleAchievementModal({
             <Text style={styles.highlight}>{nickname}</Text> 님의 칭호가
           </Text>
           <Text style={styles.subtitle}>
-            <Text style={styles.highlight}>{title}</Text>{titleParticle} 변경되었습니다!
+            <Text style={styles.highlight}>{title}</Text> {titleParticle} 변경되었습니다!
           </Text>
 
           {genreSvg ? (

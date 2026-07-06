@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Stack, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Gray, Magenta } from '../../../theme'
 import { useMe } from '../hooks'
@@ -26,8 +26,10 @@ import type { ProfileActivityTab } from './ProfileActivityTabs'
 
 const RATING_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const
 const savedToast = require('../../../../assets/common/cardshare/image-gallery-saved.svg')
+const profileEditToast = require('../../../../assets/common/cardshare/profile-fix-toast.svg')
 const PROFILE_TAB_BAR_HEIGHT = 80
 const PROFILE_CARD_TOAST_NAV_GAP = 36
+const PROFILE_EDIT_TOAST_BOTTOM = 36
 
 const GENRE_SVG: Record<string, string> = {
   ROMANCE: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M63.0588 23.8667H60.1765C59.379 23.8667 58.7353 23.2116 58.7353 22.4V18H47.2059V22.4C47.2059 23.2116 46.5525 23.8667 45.7647 23.8667H34.2353C33.4378 23.8667 32.7941 23.2116 32.7941 22.4V18H21.2647V22.4C21.2647 23.2116 20.6114 23.8667 19.8235 23.8667H15.5V44.4H19.8235C20.6114 44.4 21.2647 45.0551 21.2647 45.8667V50.2667H25.5882C26.3761 50.2667 27.0294 50.9218 27.0294 51.7333V56.1333H31.3529C32.1408 56.1333 32.7941 56.7884 32.7941 57.6V62H47.2059V57.6C47.2059 56.7884 47.8496 56.1333 48.6471 56.1333H52.9706V51.7333C52.9706 50.9218 53.6143 50.2667 54.4118 50.2667H58.7353V45.8667C58.7353 45.0551 59.379 44.4 60.1765 44.4H64.5V23.8667H63.0588ZM57.2941 44.4H52.9706V48.8C52.9706 49.6116 52.3173 50.2667 51.5294 50.2667H47.2059V54.6667C47.2059 55.4782 46.5525 56.1333 45.7647 56.1333H34.2353C33.4378 56.1333 32.7941 55.4782 32.7941 54.6667V50.2667H28.4706C27.6731 50.2667 27.0294 49.6116 27.0294 48.8V44.4H22.7059C21.9084 44.4 21.2647 43.7449 21.2647 42.9333V25.3333C21.2647 24.5218 21.9084 23.8667 22.7059 23.8667H31.3529C32.1408 23.8667 32.7941 24.5218 32.7941 25.3333V29.7333H47.2059V25.3333C47.2059 24.5218 47.8496 23.8667 48.6471 23.8667H57.2941C58.082 23.8667 58.7353 24.5218 58.7353 25.3333V42.9333C58.7353 43.7449 58.082 44.4 57.2941 44.4Z" fill="#010101"/></svg>`,
@@ -64,17 +66,31 @@ const getLevelTitle = (level: number): string => {
 
 export function ProfileScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ profileEditToast?: string }>()
   const insets = useSafeAreaInsets()
   const { data: me, isLoading, isError } = useMe()
   const [activeTab, setActiveTab] = useState<ProfilePreferenceTab>('analysis')
   const [activeActivityTab, setActiveActivityTab] = useState<ProfileActivityTab>('posts')
   const [showCardModal, setShowCardModal] = useState(false)
   const [showSavedToast, setShowSavedToast] = useState(false)
+  const [showProfileEditToast, setShowProfileEditToast] = useState(false)
+  const lastProfileEditToastRef = useRef<string | undefined>(undefined)
   const savedToastBottom =
     insets.bottom + PROFILE_TAB_BAR_HEIGHT + PROFILE_CARD_TOAST_NAV_GAP
+  const profileEditToastBottom = insets.bottom + PROFILE_EDIT_TOAST_BOTTOM
 
   const ratingsQuery = useProfileRatings()
   const genreStatsQuery = useProfileGenreStats()
+
+  useEffect(() => {
+    const toastKey = params.profileEditToast
+    if (!toastKey || lastProfileEditToastRef.current === toastKey) return
+
+    lastProfileEditToastRef.current = toastKey
+    setShowProfileEditToast(true)
+    const timer = setTimeout(() => setShowProfileEditToast(false), 1500)
+    return () => clearTimeout(timer)
+  }, [params.profileEditToast])
 
   // 평균 별점 및 리뷰 수 계산
   const { averageRating, totalReviews } = useMemo(() => {
@@ -159,6 +175,8 @@ export function ProfileScreen() {
           activeTab={activeActivityTab}
           onChangeTab={setActiveActivityTab}
           currentUserId={me.userId}
+          currentUserProfileImageUrl={me.profileImageUrl}
+          currentUserNickName={me.nickName}
           bottomInset={insets.bottom}
           header={
             <>
@@ -201,6 +219,13 @@ export function ProfileScreen() {
           <Modal visible transparent animationType="none" statusBarTranslucent>
             <View style={[styles.toastContainer, { bottom: savedToastBottom }]} pointerEvents="none">
               <Image source={savedToast} style={styles.toastImage} contentFit="contain" />
+            </View>
+          </Modal>
+        )}
+        {showProfileEditToast && (
+          <Modal visible transparent animationType="none" statusBarTranslucent>
+            <View style={[styles.toastContainer, { bottom: profileEditToastBottom }]} pointerEvents="none">
+              <Image source={profileEditToast} style={styles.toastImage} contentFit="contain" />
             </View>
           </Modal>
         )}
@@ -260,6 +285,13 @@ export function ProfileScreen() {
       <Modal visible transparent animationType="none" statusBarTranslucent>
         <View style={[styles.toastContainer, { bottom: savedToastBottom }]} pointerEvents="none">
           <Image source={savedToast} style={styles.toastImage} contentFit="contain" />
+        </View>
+      </Modal>
+    )}
+    {showProfileEditToast && (
+      <Modal visible transparent animationType="none" statusBarTranslucent>
+        <View style={[styles.toastContainer, { bottom: profileEditToastBottom }]} pointerEvents="none">
+          <Image source={profileEditToast} style={styles.toastImage} contentFit="contain" />
         </View>
       </Modal>
     )}

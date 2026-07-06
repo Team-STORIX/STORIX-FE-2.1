@@ -35,6 +35,13 @@
       "expo-router",
       "expo-secure-store",
       [
+        "@react-native-seoul/kakao-login",
+        {
+          "kakaoAppKey": "344d3d813aee8e9a15d97762d2da1001",
+          "kotlinVersion": "2.1.20"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/icons/common/logo-white.png",

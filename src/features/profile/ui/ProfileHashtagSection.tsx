@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   rank4: {
-    right: 73,
+    right: 104,
     top: 0,
     maxWidth: 220,
     overflow: 'hidden',
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   rank3: {
-    left: 104,
+    left: 52,
     top: 25.4,
     fontFamily: 'SUIT',
     fontSize: 18,
@@ -131,14 +131,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   rank2: {
-    right: 93,
+    right: 68,
     top: 90.2,
     ...Typography.heading2,
     color: Magenta[300],
     textAlign: 'right',
   },
   rank5: {
-    left: 115,
+    left: 114,
     top: 121.2,
     ...Typography.body2Medium,
     lineHeight: 19.6,

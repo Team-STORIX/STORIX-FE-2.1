@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useSegments } from 'expo-router'
 import { useMe } from '../hooks/useMe'
 import { TitleAchievementModal } from './TitleAchievementModal'
 
@@ -12,16 +13,24 @@ type TitleAchievementPayload = {
   topGenre: string | null
 }
 
+const isTitleAchievementModalRoute = (segments: readonly string[]): boolean => {
+  const [group, screen] = segments
+  return group === '(tabs)' && (screen == null || screen === 'index' || screen === 'profile')
+}
+
 export function TitleAchievementDetector() {
   const { data: me } = useMe()
+  const segments = useSegments()
   const previousTitleRef = useRef<string | null | undefined>(undefined)
   const [achievementModal, setAchievementModal] = useState<TitleAchievementPayload | null>(null)
-  const shownPendingRef = useRef(false)
+  const canShowAchievementModal = isTitleAchievementModalRoute(segments as readonly string[])
 
   const showAchievementModal = useCallback(async (payload: TitleAchievementPayload) => {
     await AsyncStorage.setItem(PENDING_TITLE_MODAL_KEY, JSON.stringify(payload))
-    setAchievementModal(payload)
-  }, [])
+    if (canShowAchievementModal) {
+      setAchievementModal(payload)
+    }
+  }, [canShowAchievementModal])
 
   const handleClose = useCallback(async () => {
     setAchievementModal(null)
@@ -41,22 +50,18 @@ export function TitleAchievementDetector() {
 
     const checkTitleChange = async () => {
       try {
-        if (!shownPendingRef.current) {
-          const pendingModal = await AsyncStorage.getItem(PENDING_TITLE_MODAL_KEY)
-          if (pendingModal) {
-            try {
-              const parsed = JSON.parse(pendingModal) as TitleAchievementPayload
-              shownPendingRef.current = true
-              if (parsed.title) {
-                await AsyncStorage.setItem(LAST_TITLE_KEY, parsed.title)
-              }
-              setAchievementModal(parsed)
-              return
-            } catch {
-              await AsyncStorage.removeItem(PENDING_TITLE_MODAL_KEY)
+        const pendingModal = await AsyncStorage.getItem(PENDING_TITLE_MODAL_KEY)
+        if (pendingModal && canShowAchievementModal && achievementModal == null) {
+          try {
+            const parsed = JSON.parse(pendingModal) as TitleAchievementPayload
+            if (parsed.title) {
+              await AsyncStorage.setItem(LAST_TITLE_KEY, parsed.title)
             }
+            setAchievementModal(parsed)
+            return
+          } catch {
+            await AsyncStorage.removeItem(PENDING_TITLE_MODAL_KEY)
           }
-          shownPendingRef.current = true
         }
 
         const lastTitle = await AsyncStorage.getItem(LAST_TITLE_KEY)
@@ -89,7 +94,7 @@ export function TitleAchievementDetector() {
     }
 
     checkTitleChange()
-  }, [me, showAchievementModal])
+  }, [achievementModal, canShowAchievementModal, me, showAchievementModal])
 
   return (
     <TitleAchievementModal

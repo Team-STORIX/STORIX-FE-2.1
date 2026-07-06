@@ -22,13 +22,25 @@ export function ProfileLikedWorkItem({
   onToggleFavorite,
 }: Props) {
   const router = useRouter()
+  const handlePress = () => {
+    if (showFavoriteButton) {
+      onToggleFavorite(item.worksId)
+      return
+    }
+
+    router.push(`/works/${item.worksId}` as const)
+  }
 
   return (
     <Pressable
-      onPress={() => router.push(`/works/${item.worksId}` as const)}
+      onPress={handlePress}
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`${item.worksName} ${'\uc0c1\uc138\ub85c \uc774\ub3d9'}`}
+      accessibilityLabel={
+        showFavoriteButton
+          ? `${item.worksName} ${'\uc120\ud0dd'}`
+          : `${item.worksName} ${'\uc0c1\uc138\ub85c \uc774\ub3d9'}`
+      }
     >
       <View style={styles.thumbnailWrap}>
         {item.thumbnailUrl ? (

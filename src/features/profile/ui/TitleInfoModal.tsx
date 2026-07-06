@@ -135,6 +135,7 @@ const styles = StyleSheet.create({
   noticeStrong: {
     ...Typography.caption1Semibold,
     color: Magenta[300],
+    fontWeight: '700',
   },
   confirmButton: {
     height: 49,

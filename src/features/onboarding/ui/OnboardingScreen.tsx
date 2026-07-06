@@ -38,7 +38,9 @@ export function OnboardingScreen() {
   const [step, setStep] = useState(1)
   const [nickname, setNickname] = useState('')
   const [nicknameVerified, setNicknameVerified] = useState(false)
-  const [nicknameStatus, setNicknameStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'>('idle')
+  const [nicknameStatus, setNicknameStatus] = useState<
+    'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden' | 'error'
+  >('idle')
   const [nicknameMessage, setNicknameMessage] = useState('')
   const [bio, setBio] = useState('')
   const [genres, setGenres] = useState<GenreKey[]>([])
