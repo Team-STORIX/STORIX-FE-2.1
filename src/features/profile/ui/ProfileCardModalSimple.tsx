@@ -3,12 +3,12 @@ import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useMemo, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { BlurView } from 'expo-blur'
 import ViewShot from 'react-native-view-shot'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import { useCardShare } from '../hooks/useCardShare'
 
 const idCardTitle = require('../../../../assets/icons/profile/id-card-title.svg')
+const fallbackGenreLogo = require('../../../../assets/logos/logo-pink.svg')
 const closeIcon = require('../../../../assets/icons/common/x.svg')
 const reviewIcon = require('../../../../assets/icons/profile/review.svg')
 const likedIcon = require('../../../../assets/icons/profile/icon-liked.svg')
@@ -38,7 +38,7 @@ export function ProfileCardModal({
   title,
   topGenreIconSvg,
   averageRating = 0,
-  topGenreName = '로맨스',
+  topGenreName,
   reviewCount = 0,
   onSaveSuccess,
 }: ProfileCardModalProps) {
@@ -50,6 +50,7 @@ export function ProfileCardModal({
     () => tintSvg(topGenreIconSvg, Magenta[300]),
     [topGenreIconSvg],
   )
+  const topGenreLabel = topGenreName?.trim() || '-'
   const trimmedTitle = title?.trim()
   const shouldShowTitleBadge = !!trimmedTitle && trimmedTitle !== '-'
   const cardDisplaySize = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
@@ -75,7 +76,6 @@ export function ProfileCardModal({
       statusBarTranslucent
     >
       <View style={styles.backdrop}>
-        <BlurView intensity={80} style={StyleSheet.absoluteFill} tint="dark" />
         <View style={styles.backdropDim} pointerEvents="none" />
         <Pressable style={styles.backdropPressable} onPress={onClose}>
           {/* X 버튼 */}
@@ -111,7 +111,7 @@ export function ProfileCardModal({
                 {tintedTopGenreIconSvg ? (
                   <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
                 ) : (
-                  <View style={styles.genreIconPlaceholder} />
+                  <Image source={fallbackGenreLogo} style={styles.fallbackGenreLogo} contentFit="contain" />
                 )}
               </View>
             </View>
@@ -129,7 +129,7 @@ export function ProfileCardModal({
 
               {/* 최애장르 */}
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{topGenreName}</Text>
+                <Text style={styles.statValue}>{topGenreLabel}</Text>
                 <Text style={styles.statLabel}>최애장르</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
@@ -183,7 +183,7 @@ export function ProfileCardModal({
               {tintedTopGenreIconSvg ? (
                 <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
               ) : (
-                <View style={styles.genreIconPlaceholder} />
+                <Image source={fallbackGenreLogo} style={styles.fallbackGenreLogo} contentFit="contain" />
               )}
             </View>
           </View>
@@ -193,7 +193,7 @@ export function ProfileCardModal({
             {/* 별점평균 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>별점평균</Text>
+              <Text style={styles.statLabel}>별점 평균</Text>
               <View style={styles.statIconWrap}>
                 <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
               </View>
@@ -201,8 +201,8 @@ export function ProfileCardModal({
 
             {/* 최애장르 */}
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{topGenreName}</Text>
-              <Text style={styles.statLabel}>최애장르</Text>
+              <Text style={styles.statValue}>{topGenreLabel}</Text>
+              <Text style={styles.statLabel}>최애 장르</Text>
               <View style={styles.statIconWrap}>
                 <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
               </View>
@@ -211,7 +211,7 @@ export function ProfileCardModal({
             {/* 작품 리뷰 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>작품 리뷰</Text>
+              <Text style={styles.statLabel}>리뷰 작품</Text>
               <View style={styles.statIconWrap}>
                 <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
               </View>
@@ -375,10 +375,9 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: Magenta[300],
   },
-  genreIconPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Gray[800],
+  fallbackGenreLogo: {
+    width: 142,
+    height: 142,
   },
   blackSectionRight: {
     width: 161,

@@ -1,8 +1,9 @@
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,10 +21,14 @@ import Svg, {
   Stop,
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
+import type { WorksSearchItem } from "../../src/features/search/api/search.schema";
+import { useWorksSearch } from "../../src/features/search/hooks/useSearch";
 import {
+  findTopicRoomIdByWorksName,
   isTopicRoomParticipationLimitError,
   TopicRoomLimitModal,
   useCreateTopicRoom,
+  useJoinTopicRoom,
 } from "../../src/features/topicroom";
 import { C, Gray, Magenta, Radius, Typography } from "../../src/theme";
 
@@ -40,6 +45,14 @@ type Params = {
   thumbnailUrl?: string;
   artistName?: string;
   worksType?: string;
+};
+
+type PickedWorks = {
+  worksId: number;
+  worksName: string;
+  thumbnailUrl?: string | null;
+  artistName?: string | null;
+  worksType?: string | null;
 };
 
 function pickParam(v: string | string[] | undefined): string | undefined {
@@ -70,20 +83,121 @@ export default function TopicRoomCreateScreen() {
   const params = useLocalSearchParams<Params>();
 
   const worksIdRaw = pickParam(params.worksId);
-  const worksId = worksIdRaw ? Number(worksIdRaw) : NaN;
-  const worksName = pickParam(params.worksName) ?? "";
-  const thumbnailUrl = pickParam(params.thumbnailUrl) ?? "";
-
-  const worksValid = Number.isFinite(worksId) && worksId > 0 && !!worksName;
+  const paramWorksId = worksIdRaw ? Number(worksIdRaw) : NaN;
+  const paramWorksName = pickParam(params.worksName) ?? "";
+  const paramThumbnailUrl = pickParam(params.thumbnailUrl) ?? "";
+  const paramWorks = useMemo<PickedWorks | null>(() => {
+    if (!Number.isFinite(paramWorksId) || paramWorksId <= 0 || !paramWorksName) {
+      return null;
+    }
+    return {
+      worksId: paramWorksId,
+      worksName: paramWorksName,
+      thumbnailUrl: paramThumbnailUrl,
+      artistName: pickParam(params.artistName) ?? "",
+      worksType: pickParam(params.worksType) ?? "",
+    };
+  }, [
+    paramThumbnailUrl,
+    paramWorksId,
+    paramWorksName,
+    params.artistName,
+    params.worksType,
+  ]);
 
   const [name, setName] = useState("");
   const [createdId, setCreatedId] = useState<number | null>(null);
   const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(paramWorks);
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [selectedId, setSelectedId] = useState<number | undefined>();
+  const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const checkSeqRef = useRef(0);
+
   const createMutation = useCreateTopicRoom();
+  const joinMutation = useJoinTopicRoom();
+
+  useEffect(() => {
+    if (paramWorks) setPickedWorks(paramWorks);
+  }, [paramWorks]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
+
+  const worksSearchQuery = useWorksSearch({
+    keyword: debouncedKeyword,
+    page: 0,
+  });
+
+  const searchResults: WorksSearchItem[] = useMemo(
+    () => worksSearchQuery.data?.result.content ?? [],
+    [worksSearchQuery.data?.result.content],
+  );
+
+  const selectedWork = useMemo(
+    () => searchResults.find((w) => w.worksId === selectedId) ?? null,
+    [searchResults, selectedId],
+  );
+
+  const runExistingCheck = (item: WorksSearchItem) => {
+    const seq = ++checkSeqRef.current;
+    setCheckingExisting(true);
+    setExistingRoomId(null);
+    void (async () => {
+      try {
+        const found = await findTopicRoomIdByWorksName(item.worksName);
+        if (seq !== checkSeqRef.current) return;
+        setExistingRoomId(found ?? null);
+      } finally {
+        if (seq === checkSeqRef.current) setCheckingExisting(false);
+      }
+    })();
+  };
+
+  const handleSelectWork = (item: WorksSearchItem) => {
+    if (joinMutation.isPending) return;
+    if (selectedId === item.worksId) {
+      checkSeqRef.current += 1;
+      setSelectedId(undefined);
+      setExistingRoomId(null);
+      setCheckingExisting(false);
+      return;
+    }
+    setSelectedId(item.worksId);
+    runExistingCheck(item);
+  };
+
+  const handleConfirmWork = () => {
+    if (!selectedWork || checkingExisting || joinMutation.isPending) return;
+
+    if (existingRoomId != null) {
+      joinMutation.mutate(existingRoomId, {
+        onSuccess: () => router.replace(`/topicroom/${existingRoomId}` as const),
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
+        },
+      });
+      return;
+    }
+
+    setPickedWorks({
+      worksId: Number(selectedWork.worksId),
+      worksName: selectedWork.worksName,
+      thumbnailUrl: selectedWork.thumbnailUrl ?? null,
+      artistName: selectedWork.artistName ?? null,
+      worksType: selectedWork.worksType ?? null,
+    });
+  };
 
   const trimmed = name.trim();
   const helperOk = TOPIC_NAME_PATTERN.test(trimmed);
-  const canCreate = worksValid && helperOk && !createMutation.isPending;
+  const canCreate = !!pickedWorks && helperOk && !createMutation.isPending;
 
   const showHelperWarning = !helperOk;
 
@@ -91,6 +205,10 @@ export default function TopicRoomCreateScreen() {
     router.replace("/(tabs)/feed?section=topicroom" as never);
 
   const handleBack = () => {
+    if (!paramWorks && pickedWorks) {
+      setPickedWorks(null);
+      return;
+    }
     if (router.canGoBack()) router.back();
     else goToFeedTopicRoom();
   };
@@ -105,7 +223,7 @@ export default function TopicRoomCreateScreen() {
   const handleCreate = () => {
     if (!canCreate) return;
     createMutation.mutate(
-      { worksId, topicRoomName: trimmed },
+      { worksId: pickedWorks.worksId, topicRoomName: trimmed },
       {
         onSuccess: (topicRoomId) => {
           setCreatedId(topicRoomId);
@@ -128,8 +246,8 @@ export default function TopicRoomCreateScreen() {
   };
 
   const initial = useMemo(
-    () => (worksName || "?").slice(0, 1).toUpperCase(),
-    [worksName],
+    () => (pickedWorks?.worksName || "?").slice(0, 1).toUpperCase(),
+    [pickedWorks?.worksName],
   );
 
   if (createdId != null) {
@@ -223,22 +341,114 @@ export default function TopicRoomCreateScreen() {
         </Pressable>
       </View>
 
-      {!worksValid ? (
-        <View style={styles.missingWrap}>
-          <Text style={styles.missingText}>
-            잘못된 접근이에요. 작품을 먼저 선택해 주세요.
-          </Text>
-          <Pressable
-            onPress={handleBack}
-            style={({ pressed }) => [
-              styles.missingBtn,
-              pressed && styles.pressed,
+      {!pickedWorks ? (
+        <>
+          <View style={styles.pickIntro}>
+            <Text style={styles.introTitle}>토픽룸을 만들 작품을 선택해주세요</Text>
+            <Text style={styles.introSubtitle}>
+              이미 토픽룸이 있는 작품은 바로 입장할 수 있어요
+            </Text>
+          </View>
+
+          <View style={styles.searchBlock}>
+            <TextInput
+              value={keyword}
+              onChangeText={setKeyword}
+              placeholder="작품명을 검색하세요"
+              placeholderTextColor={Gray[300]}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+          </View>
+
+          {worksSearchQuery.isLoading && debouncedKeyword ? (
+            <View style={styles.searchState}>
+              <ActivityIndicator size="small" color={C.primary} />
+            </View>
+          ) : null}
+
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item) => `topicroom-create-work-${item.worksId}`}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.workListContent,
+              { paddingBottom: insets.bottom + 92 },
             ]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.missingBtnText}>돌아가기</Text>
-          </Pressable>
-        </View>
+            ListEmptyComponent={
+              debouncedKeyword ? (
+                <Text style={styles.emptyText}>검색 결과가 없어요.</Text>
+              ) : (
+                <Text style={styles.emptyText}>작품명을 입력해 주세요.</Text>
+              )
+            }
+            renderItem={({ item }) => {
+              const selected = selectedId === item.worksId;
+              return (
+                <Pressable
+                  onPress={() => handleSelectWork(item)}
+                  style={({ pressed }) => [
+                    styles.workItem,
+                    selected && styles.workItemSelected,
+                    pressed && styles.pressed,
+                  ]}
+                  accessibilityRole="button"
+                >
+                  {item.thumbnailUrl ? (
+                    <Image
+                      source={{ uri: item.thumbnailUrl }}
+                      style={styles.workThumb}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.workThumb, styles.workThumbFallback]}>
+                      <Text style={styles.workThumbFallbackText}>
+                        {(item.worksName || "?").slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.workTextBlock}>
+                    <Text style={styles.workName} numberOfLines={1}>
+                      {item.worksName}
+                    </Text>
+                    <Text style={styles.workMeta} numberOfLines={1}>
+                      {[item.artistName, item.worksType].filter(Boolean).join(" · ")}
+                    </Text>
+                  </View>
+                  {selected ? <View style={styles.selectedDot} /> : null}
+                </Pressable>
+              );
+            }}
+          />
+
+          <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+            <Pressable
+              onPress={handleConfirmWork}
+              disabled={!selectedWork || checkingExisting || joinMutation.isPending}
+              style={({ pressed }) => [
+                styles.primaryBtn,
+                selectedWork && !checkingExisting && !joinMutation.isPending
+                  ? styles.primaryBtnActive
+                  : styles.primaryBtnDisabled,
+                pressed && selectedWork && styles.pressed,
+              ]}
+              accessibilityRole="button"
+            >
+              {checkingExisting || joinMutation.isPending ? (
+                <ActivityIndicator size="small" color={C.card} />
+              ) : (
+                <Text
+                  style={[
+                    styles.primaryBtnText,
+                    (!selectedWork || checkingExisting) && styles.primaryBtnTextDisabled,
+                  ]}
+                >
+                  {existingRoomId != null ? "토픽룸으로 이동하기" : "다음으로"}
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        </>
       ) : (
         <>
           <ScrollView
@@ -256,9 +466,9 @@ export default function TopicRoomCreateScreen() {
             </View>
 
             <View style={styles.thumbWrap}>
-              {thumbnailUrl ? (
+              {pickedWorks.thumbnailUrl ? (
                 <Image
-                  source={{ uri: thumbnailUrl }}
+                  source={{ uri: pickedWorks.thumbnailUrl }}
                   style={styles.thumb}
                   contentFit="cover"
                 />
@@ -337,12 +547,12 @@ export default function TopicRoomCreateScreen() {
               )}
             </Pressable>
           </View>
-          <TopicRoomLimitModal
-            visible={limitModalVisible}
-            onClose={() => setLimitModalVisible(false)}
-          />
         </>
       )}
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -368,26 +578,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-
-  missingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 16,
-  },
-  missingText: {
-    ...Typography.body1Medium,
-    color: C.textSecondary,
-    textAlign: "center",
-  },
-  missingBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: Radius.sm,
-    backgroundColor: C.primary,
-  },
-  missingBtnText: { ...Typography.body1Semibold, color: C.card },
 
   completeIntro: {
     paddingHorizontal: 16,
@@ -433,6 +623,87 @@ const styles = StyleSheet.create({
   introSubtitle: {
     ...Typography.body1Medium,
     color: Gray[500],
+  },
+  pickIntro: {
+    paddingHorizontal: 16,
+    paddingTop: 32,
+    gap: 5,
+  },
+  searchBlock: {
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  searchInput: {
+    height: 48,
+    borderRadius: Radius.sm,
+    backgroundColor: Gray[50],
+    paddingHorizontal: 16,
+    color: Gray[900],
+    ...Typography.body1Medium,
+  },
+  searchState: {
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+  workListContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 10,
+  },
+  emptyText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
+    textAlign: "center",
+    paddingTop: 32,
+  },
+  workItem: {
+    minHeight: 76,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Gray[100],
+    backgroundColor: C.card,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  workItemSelected: {
+    borderColor: C.primary,
+    backgroundColor: Magenta[50],
+  },
+  workThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: Gray[100],
+  },
+  workThumbFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  workThumbFallbackText: {
+    ...Typography.body1Bold,
+    color: C.primary,
+  },
+  workTextBlock: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+    gap: 3,
+  },
+  workName: {
+    ...Typography.body1Bold,
+    color: Gray[900],
+  },
+  workMeta: {
+    ...Typography.caption1Medium,
+    color: Gray[500],
+  },
+  selectedDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: C.primary,
   },
 
   thumbWrap: {

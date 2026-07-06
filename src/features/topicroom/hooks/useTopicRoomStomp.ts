@@ -52,11 +52,26 @@ const redactFrame = (msg: string): string =>
     .join('\n')
     .replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, '$1***')
 
-export const useTopicRoomStomp = (params: { roomId: number }) => {
-  const { roomId } = params
+const MEMBER_EVENT_TYPES = new Set([
+  'ENTER',
+  'JOIN',
+  'LEAVE',
+  'EXIT',
+  'QUIT',
+  'MEMBER_ENTER',
+  'MEMBER_LEAVE',
+])
+
+export const useTopicRoomStomp = (params: {
+  roomId: number
+  enabled?: boolean
+  onMemberChange?: (activeUserNumber?: number) => void
+}) => {
+  const { roomId, enabled = true, onMemberChange } = params
   const { accessToken } = useAuthStore()
   const myUserId = useProfileStore((s) => s.me?.userId ?? null)
   const myUserIdRef = useRef<number | null>(myUserId)
+  const onMemberChangeRef = useRef<typeof onMemberChange>(onMemberChange)
 
   const clientRef = useRef<Client | null>(null)
   const subRef = useRef<StompSubscription | null>(null)
@@ -80,11 +95,18 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
     statusRef.current = status
   }, [status])
 
-  const canConnect = useMemo(() => !!roomId && !!accessToken, [roomId, accessToken])
+  const canConnect = useMemo(
+    () => enabled && !!roomId && !!accessToken,
+    [enabled, roomId, accessToken],
+  )
 
   useEffect(() => {
     myUserIdRef.current = myUserId
   }, [myUserId])
+
+  useEffect(() => {
+    onMemberChangeRef.current = onMemberChange
+  }, [onMemberChange])
 
   const unsubscribe = useCallback(() => {
     try {
@@ -275,6 +297,25 @@ export const useTopicRoomStomp = (params: { roomId: number }) => {
                 myUserId: myUserIdRef.current,
               })
               if (!uiMsg) return
+
+              const eventType = uiMsg.eventType?.toUpperCase()
+              const isTalkEvent = !eventType || eventType === 'TALK'
+              const isMemberEvent =
+                !!eventType &&
+                (MEMBER_EVENT_TYPES.has(eventType) ||
+                  eventType.includes('JOIN') ||
+                  eventType.includes('ENTER') ||
+                  eventType.includes('LEAVE') ||
+                  eventType.includes('EXIT'))
+
+              if (
+                typeof uiMsg.activeUserNumber === 'number' ||
+                isMemberEvent
+              ) {
+                onMemberChangeRef.current?.(uiMsg.activeUserNumber)
+              }
+
+              if (!isTalkEvent || uiMsg.text.length === 0) return
 
               // If this is an echo of a message I just sent, replace the optimistic
               // entry (temp id → server id) instead of appending a duplicate.

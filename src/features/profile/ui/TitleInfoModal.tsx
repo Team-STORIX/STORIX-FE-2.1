@@ -49,7 +49,7 @@ export function TitleInfoModal({ visible, onClose, stage, topGenre, title }: Tit
             <View style={styles.labelChip}>
               <Text style={styles.labelText}>적용 칭호</Text>
             </View>
-            <Text style={styles.valueText}>{title || '-'}</Text>
+            <Text style={styles.valueText}>{title || '아직 칭호가 정해지지 않았어요!'}</Text>
           </View>
 
           {/* 안내 문구 */}
@@ -133,8 +133,9 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   noticeStrong: {
-    ...Typography.caption1Extrabold,
-    color: Gray[500],
+    ...Typography.caption1Semibold,
+    color: Magenta[300],
+    fontWeight: '700',
   },
   confirmButton: {
     height: 49,

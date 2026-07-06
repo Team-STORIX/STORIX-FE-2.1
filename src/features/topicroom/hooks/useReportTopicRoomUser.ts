@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { reportTopicRoomUser } from '../api/topicroom.api'
+import type { TopicRoomReportReason } from '../api/topicroom.schema'
 
 type Vars = {
   roomId: number
   reportedUserId: number
-  reason: string
+  chatMessageId?: number | null
+  reason: TopicRoomReportReason
   otherReason?: string | null
 }
 
@@ -16,8 +18,11 @@ export const useReportTopicRoomUser = () => {
     mutationFn: (vars: Vars) =>
       reportTopicRoomUser(vars.roomId, {
         reportedUserId: vars.reportedUserId,
+        ...(vars.chatMessageId != null
+          ? { chatMessageId: vars.chatMessageId }
+          : {}),
         reason: vars.reason,
-        otherReason: vars.otherReason ?? null,
+        ...(vars.otherReason != null ? { otherReason: vars.otherReason } : {}),
       }),
     onSettled: async (_data, _error, vars) => {
       await qc.invalidateQueries({

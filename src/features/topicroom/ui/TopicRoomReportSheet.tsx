@@ -20,8 +20,8 @@ const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
 const REPORT_REASONS: { value: string; label: string }[] = [
+  { value: "SPAM", label: "스팸 또는 도배성 메시지예요" },
   { value: "ABUSE", label: "욕설, 비방, 혐오 표현을 해요" },
-  { value: "PHISHING", label: "보이스 피싱과 같이 다른 채널로 유도해요" },
   { value: "OTHER", label: "기타" },
 ];
 

@@ -35,14 +35,11 @@ export function LevelProgress({
 
   // 최고 단계 달성 여부 (nextStage가 현재 stage와 같거나 비어있으면)
   const normalizedLevel = level.trim()
-  const percentageText =
-    normalizedLevel === '미진입'
-      ? `${Math.max(0, 100 - progressPercentage).toFixed(1)}%`
-      : `${progressPercentage.toFixed(1)}%`
+  const percentageText = `${progressPercentage.toFixed(1)}%`
   const isComplete = normalizedLevel === '몰입'
   const prefixText =
     normalizedLevel === '미진입'
-      ? '입문 단계까지'
+      ? '현재 미진입 단계'
       : isComplete
         ? '몰입 단계'
         : `현재 ${normalizedLevel} 단계`

@@ -7,9 +7,13 @@ export const TopicRoomStompMessageSchema = z
     messageId: z.union([z.string(), z.number()]).optional(),
     roomId: z.number().optional(),
     type: z.string().optional(), // TALK 등
-    message: z.string(),
+    message: z.string().optional(),
     senderId: z.number().optional(),
     senderName: z.string().optional(),
+    activeUserNumber: z.preprocess(
+      (v) => (v == null ? undefined : Number(v)),
+      z.number().optional(),
+    ),
     createdAt: z.string().optional(),
   })
   .passthrough()
@@ -19,6 +23,9 @@ export type TopicRoomStompMessage = z.infer<typeof TopicRoomStompMessageSchema>
 //   UI에서 쓰는 메시지 형태
 export type TopicRoomUiMsg = {
   id: string
+  chatMessageId?: number
+  eventType?: string
+  activeUserNumber?: number
   type: 'me' | 'other'
   userName?: string
   senderId?: number

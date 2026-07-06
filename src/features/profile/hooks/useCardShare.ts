@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { Alert, Linking, Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
-import Share, { Social } from 'react-native-share'
 import {
   createProfileCardShare,
   postProfileCardImagePresignedUrl,
@@ -18,6 +17,8 @@ const TWITTER_IOS_SCHEME = 'twitter://'
 const TWITTER_IOS_POST_URL = 'twitter://post'
 const TWITTER_WEB_INTENT_URL = 'https://twitter.com/intent/tweet'
 const TWITTER_HOME_URL = 'https://twitter.com'
+
+type NativeShareModule = typeof import('react-native-share')
 
 export function useCardShare() {
   const [isSaving, setIsSaving] = useState(false)
@@ -80,11 +81,20 @@ export function useCardShare() {
         return
       }
 
-      await Share.open({
-        ...getOsShareOptions(uri, message),
-        title: message,
-        failOnCancel: false,
-      })
+      const nativeShare = loadNativeShare()
+      if (nativeShare) {
+        await nativeShare.default.open({
+          ...getOsShareOptions(uri, message),
+          title: message,
+          failOnCancel: false,
+        })
+      } else {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: message,
+          UTI: 'public.png',
+        })
+      }
     } catch (error) {
       console.error('Share error:', error)
       Alert.alert('\uACF5\uC720 \uC2E4\uD328', '\uC774\uBBF8\uC9C0 \uACF5\uC720 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.')
@@ -119,8 +129,15 @@ export function useCardShare() {
         return
       }
 
-      await Share.shareSingle({
-        social: Social.Twitter,
+      const nativeShare = loadNativeShare()
+      if (!nativeShare) {
+        const shareUrl = await createWebShareUrlSafely(uri)
+        await openTwitterWebIntent(shareUrl, message)
+        return
+      }
+
+      await nativeShare.default.shareSingle({
+        social: nativeShare.Social.Twitter,
         url: normalizeShareUri(uri),
         type: 'image/png',
         message: getShareMessage(message),
@@ -143,6 +160,19 @@ export function useCardShare() {
     shareToTwitter,
     isSaving,
     isSharing,
+  }
+}
+
+function loadNativeShare(): NativeShareModule | null {
+  try {
+    return require('react-native-share') as NativeShareModule
+  } catch (error) {
+    if (__DEV__) {
+      console.log('[cardShare] react-native-share unavailable', {
+        message: error instanceof Error ? error.message : undefined,
+      })
+    }
+    return null
   }
 }
 
@@ -209,7 +239,10 @@ async function isTwitterAppInstalled() {
   }
 
   try {
-    const result = await Share.isPackageInstalled(TWITTER_ANDROID_PACKAGE)
+    const nativeShare = loadNativeShare()
+    if (!nativeShare) return false
+
+    const result = await nativeShare.default.isPackageInstalled(TWITTER_ANDROID_PACKAGE)
     return result.isInstalled
   } catch {
     return false

@@ -53,7 +53,7 @@ export const C = {
   // Text
   text: Gray[900], // #131112
   textSecondary: Gray[600], // #645c5f
-  textMuted: Gray[300], // #cdc4c8 — placeholder / hint / timestamp
+  textMuted: Gray[500], // #cdc4c8 — placeholder / hint / timestamp
 
   // Borders
   border: Gray[200], // #e3dcdf
@@ -97,26 +97,87 @@ export const FontFamily = {
 // lineHeight = round(fontSize × 1.4)  (2.0 --line-height-tight: 140%)
 
 export const Typography = {
-  heading1:        { fontFamily: FontFamily.bold,      fontSize: 24, lineHeight: 33.6 } as TextStyle,
-  heading2:        { fontFamily: FontFamily.bold,      fontSize: 20, lineHeight: 28 } as TextStyle,
-  heading3:        { fontFamily: FontFamily.semibold,  fontSize: 18, lineHeight: 25.2 } as TextStyle,
-  heading4:        { fontFamily: FontFamily.semibold,  fontSize: 16, lineHeight: 22.4 } as TextStyle,
+  heading1: {
+    fontFamily: FontFamily.bold,
+    fontSize: 24,
+    lineHeight: 33.6,
+  } as TextStyle,
+  heading2: {
+    fontFamily: FontFamily.bold,
+    fontSize: 20,
+    lineHeight: 28,
+  } as TextStyle,
+  heading3: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 18,
+    lineHeight: 25.2,
+  } as TextStyle,
+  heading4: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 16,
+    lineHeight: 22.4,
+  } as TextStyle,
 
-  body1Medium:     { fontFamily: FontFamily.medium,    fontSize: 16, lineHeight: 22.4 } as TextStyle,
-  body1Semibold:   { fontFamily: FontFamily.semibold,  fontSize: 16, lineHeight: 22.4 } as TextStyle,
-  body1Bold:       { fontFamily: FontFamily.bold,      fontSize: 16, lineHeight: 22.4 } as TextStyle,
+  body1Medium: {
+    fontFamily: FontFamily.medium,
+    fontSize: 16,
+    lineHeight: 22.4,
+  } as TextStyle,
+  body1Semibold: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 16,
+    lineHeight: 22.4,
+  } as TextStyle,
+  body1Bold: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22.4,
+  } as TextStyle,
 
-  body2Medium:     { fontFamily: FontFamily.medium,    fontSize: 14, lineHeight: 19.6 } as TextStyle,
-  body2Bold:       { fontFamily: FontFamily.bold,      fontSize: 14, lineHeight: 19.6 } as TextStyle,
+  body2Medium: {
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    lineHeight: 19.6,
+  } as TextStyle,
+  body2Bold: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    lineHeight: 19.6,
+  } as TextStyle,
 
-  caption1Medium:   { fontFamily: FontFamily.medium,   fontSize: 12, lineHeight: 16.8 } as TextStyle,
-  caption1Semibold: { fontFamily: FontFamily.semibold, fontSize: 12, lineHeight: 16.8 } as TextStyle,
-  caption1Extrabold:{ fontFamily: FontFamily.extrabold,fontSize: 12, lineHeight: 16.8 } as TextStyle,
+  caption1Medium: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    lineHeight: 16.8,
+  } as TextStyle,
+  caption1Semibold: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 12,
+    lineHeight: 16.8,
+  } as TextStyle,
+  caption1Extrabold: {
+    fontFamily: FontFamily.extrabold,
+    fontSize: 12,
+    lineHeight: 16.8,
+  } as TextStyle,
 
-  caption2Medium:   { fontFamily: FontFamily.medium,   fontSize: 10, lineHeight: 14 } as TextStyle,
-  caption2Extrabold:{ fontFamily: FontFamily.extrabold,fontSize: 10, lineHeight: 14 } as TextStyle,
+  caption2Medium: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    lineHeight: 14,
+  } as TextStyle,
+  caption2Extrabold: {
+    fontFamily: FontFamily.extrabold,
+    fontSize: 10,
+    lineHeight: 14,
+  } as TextStyle,
 
-  dateText: { fontFamily: FontFamily.bold, fontSize: 16, lineHeight: 22.4, color: Gray[500] } as TextStyle,
+  dateText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    lineHeight: 22.4,
+    color: Gray[500],
+  } as TextStyle,
 } as const;
 
 // ─── Spacing scale ────────────────────────────────────────────────────────────

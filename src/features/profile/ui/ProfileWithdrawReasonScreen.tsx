@@ -7,9 +7,6 @@ import { C, Gray } from '../../../theme'
 import { useWithdrawAccount } from '../hooks'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
-const checkboxIcon = require('../../../../assets/icons/profile/checkbox.svg')
-const checkboxPinkIcon = require('../../../../assets/icons/profile/checkbox-pink.svg')
-
 const DETAIL_MAX = 100
 
 const MODAL_BULLETS = [
@@ -111,11 +108,9 @@ export function ProfileWithdrawReasonScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: isSelected }}
                 >
-                  <Image
-                    source={isSelected ? checkboxPinkIcon : checkboxIcon}
-                    style={styles.checkbox}
-                    contentFit="contain"
-                  />
+                  <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    {isSelected ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                  </View>
                   <Text style={styles.reasonText}>{item.label}</Text>
                 </Pressable>
               )
@@ -270,7 +265,21 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
+    borderWidth: 1.5,
+    borderColor: Gray[800],
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
+  },
+  checkboxSelected: {
+    borderColor: C.primary,
+    backgroundColor: C.primary,
+  },
+  checkboxMark: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 20,
+    color: C.card,
   },
   reasonText: {
     fontSize: 16,
@@ -297,6 +306,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   charCount: {
+    fontFamily: 'SUIT',
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 19.6,

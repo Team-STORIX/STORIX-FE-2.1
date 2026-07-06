@@ -1,6 +1,4 @@
 export * from './TopicRoomCard'
-export * from './TopicRoomCreateModal'
-export * from './TopicRoomCreateWorksBottomSheet'
 export * from './TopicRoomListItem'
 export * from './TopicRoomMenuSheet'
 export * from './TopicRoomMenuDropdown'

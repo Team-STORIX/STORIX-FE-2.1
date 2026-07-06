@@ -139,16 +139,6 @@ apiClient.interceptors.request.use(
     if (token) {
       const authorization = `Bearer ${token}`;
       setAuthorizationHeader(config.headers, authorization);
-      if (__DEV__) {
-        // TODO: Remove this temporary auth header diagnostic before release.
-        // Never log the token value (or Bearer string) — path + method only.
-        console.log(
-          authorization,
-          "[api] Authorization attached",
-          config.method?.toUpperCase(),
-          config.url,
-        );
-      }
     }
 
     return config;

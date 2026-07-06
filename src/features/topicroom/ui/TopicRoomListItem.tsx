@@ -1,9 +1,9 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { formatTimeAgo } from "../../../lib/utils/formatTimeAgo";
 import { C } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
-import { formatTimeAgo } from "../../../lib/utils/formatTimeAgo";
 import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 
@@ -12,16 +12,31 @@ type Props = {
   onPress: () => void;
 };
 
+function formatLastChatTime(value?: string | null) {
+  if (!value) return "";
+  const relativeTime = formatTimeAgo(value);
+  if (relativeTime) return relativeTime;
+
+  const raw = value.trim();
+  if (!raw || raw === "string") return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return raw;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}.${month}.${day}`;
+}
+
 export function TopicRoomListItem({ item, onPress }: Props) {
   const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
 
-  // Prefer the membership join time when the backend provides it; otherwise
-  // fall back to lastChatTime (recent activity, not a join time). The shared
-  // formatter returns "" for missing/invalid/future values, so we never render
-  // "NaN일 전" and simply drop the time segment when there is nothing valid.
-  const selectedField = item.joinedAt ? "joinedAt" : "lastChatTime";
-  const timeSource = item.joinedAt ?? item.lastChatTime;
-  const formattedValue = formatTimeAgo(timeSource);
+  // Joined topic-room API provides lastChatTime as the latest chat activity.
+  // It may already be formatted by the backend ("6분 전"), so preserve that
+  // display value when it is not an ISO timestamp.
+  const timeSource = item.lastChatTime;
+  const formattedValue = formatLastChatTime(timeSource);
   const memberCount = item.activeUserNumber ?? 0;
   const rightText = formattedValue
     ? `${memberCount}명 · ${formattedValue}`
@@ -30,10 +45,10 @@ export function TopicRoomListItem({ item, onPress }: Props) {
   if (__DEV__) {
     console.log("[TOPICROOM_DATE] joined-list-item", {
       roomId: item.topicRoomId,
-      joinedAt: item.joinedAt ?? null,
       lastChatTime: item.lastChatTime ?? null,
-      selectedField,
+      selectedField: "lastChatTime",
       formattedValue,
+      rightText,
     });
   }
   const initial = (item.worksName || item.topicRoomName || "?")

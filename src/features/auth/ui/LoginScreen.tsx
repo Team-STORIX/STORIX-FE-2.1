@@ -52,7 +52,7 @@ export function LoginScreen() {
   const pending = mutation.isPending || devPending || xLoginPending || xLoginMutation.isPending;
   const loginErrorMessage =
     mutation.error instanceof Error
-      ? mutation.error.message
+      ? getLoginErrorMessage(mutation.error)
       : "로그인에 실패했습니다. 다시 시도해주세요.";
 
   const handleDevLogin = async () => {
@@ -177,6 +177,14 @@ export function LoginScreen() {
       </View>
     </View>
   );
+}
+
+function getLoginErrorMessage(error: Error) {
+  if (error.message.includes("카카오 로그인을 사용할 수 없는 앱 빌드")) {
+    return "앱을 다시 설치한 뒤 시도해 주세요.";
+  }
+
+  return error.message;
 }
 
 function LoginAssetButton({

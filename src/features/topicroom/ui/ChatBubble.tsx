@@ -12,6 +12,7 @@ export type KebabAnchor = { x: number; y: number };
 
 export type DisplayMsg = {
   key: string;
+  chatMessageId?: number;
   text: string;
   senderId?: number;
   senderName: string;

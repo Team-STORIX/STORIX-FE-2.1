@@ -14,6 +14,7 @@ const profileDefault = require("../../../../assets/placeholders/profile-default.
  */
 export type TopicRoomActionTarget = {
   userId: number;
+  chatMessageId?: number;
   nickname: string;
   profileImageUrl?: string | null;
 };
