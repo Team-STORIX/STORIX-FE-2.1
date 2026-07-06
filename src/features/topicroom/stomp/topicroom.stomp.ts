@@ -35,6 +35,11 @@ const safeId = (v: unknown) => {
   return `tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`
 }
 
+const safeNumericId = (v: unknown) => {
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+
 const formatKoTime = (iso?: string) => {
   if (!iso) return ''
   const d = new Date(iso)
@@ -61,6 +66,7 @@ export function normalizeTopicRoomStompMessage(
   if (!parsed.success) return null
 
   const m = parsed.data
+  const message = m.message ?? ''
   const isMe =
     !!options?.myUserId &&
     typeof m.senderId === 'number' &&
@@ -68,10 +74,13 @@ export function normalizeTopicRoomStompMessage(
 
   return {
     id: safeId(m.messageId ?? m.createdAt ?? Date.now()),
+    chatMessageId: safeNumericId(m.messageId),
+    eventType: m.type,
+    activeUserNumber: m.activeUserNumber,
     type: isMe ? 'me' : 'other',
     userName: m.senderName,
     senderId: m.senderId,
-    text: m.message,
+    text: message,
     time: formatKoTime(m.createdAt),
     createdAt: m.createdAt,
   }

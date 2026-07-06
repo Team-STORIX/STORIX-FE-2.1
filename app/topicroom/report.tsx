@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfileStore } from "../../src/features/profile";
 import {
+  type TopicRoomReportReason,
   useReportTopicRoomUser,
   useTopicRoomMembers,
 } from "../../src/features/topicroom";
@@ -25,9 +26,9 @@ const arrowDownIcon = require("../../assets/icons/common/arrow-down.svg");
 const arrowUpIcon = require("../../assets/icons/common/arrow-up.svg");
 const profileDefault = require("../../assets/placeholders/profile-default.png");
 
-const REPORT_REASONS: { value: string; label: string }[] = [
+const REPORT_REASONS: { value: TopicRoomReportReason; label: string }[] = [
+  { value: "SPAM", label: "스팸 또는 도배성 메시지예요" },
   { value: "ABUSE", label: "욕설, 비방, 혐오 표현을 해요" },
-  { value: "PHISHING", label: "보이스 피싱과 같이 다른 채널로 유도해요" },
   { value: "OTHER", label: "기타" },
 ];
 
@@ -43,6 +44,7 @@ export default function TopicRoomReportScreen() {
   const params = useLocalSearchParams<{
     roomId: string;
     reportedUserId?: string;
+    chatMessageId?: string;
     reportedUserName?: string;
     reportedUserProfileImageUrl?: string;
   }>();
@@ -59,11 +61,16 @@ export default function TopicRoomReportScreen() {
     params.reportedUserId != null && params.reportedUserId !== ""
       ? Number(params.reportedUserId)
       : null;
+  const chatMessageId =
+    params.chatMessageId != null && params.chatMessageId !== ""
+      ? Number(params.chatMessageId)
+      : undefined;
 
   const [selectedUserId, setSelectedUserId] = useState<number | null>(
     paramUserId,
   );
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
+  const [selectedReason, setSelectedReason] =
+    useState<TopicRoomReportReason | null>(null);
   const [detail, setDetail] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -111,12 +118,19 @@ export default function TopicRoomReportScreen() {
   const handleSubmit = async () => {
     if (!canSubmit || selectedUserId == null || selectedReason == null) return;
     setErrorText(null);
+    const submittedChatMessageId =
+      selectedUserId === paramUserId && Number.isFinite(chatMessageId)
+        ? chatMessageId
+        : undefined;
     try {
       await reportMutation.mutateAsync({
         roomId,
         reportedUserId: selectedUserId,
+        ...(submittedChatMessageId != null
+          ? { chatMessageId: submittedChatMessageId }
+          : {}),
         reason: selectedReason,
-        otherReason: trimmedDetail.length > 0 ? trimmedDetail : null,
+        otherReason: selectedReason === "OTHER" ? trimmedDetail : null,
       });
       // Return to the chat (reusing the existing screen instance so STOMP /
       // scroll survive) and flag it to show the report-complete snackbar.

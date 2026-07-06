@@ -106,10 +106,21 @@ export const TopicRoomMemberSchema = z
   }))
 
 /** 토픽룸 사용자 신고 (POST /api/v1/topic-rooms/{roomId}/report) */
+export const TopicRoomReportReasonSchema = z.enum([
+  'SPAM',
+  'ABUSE',
+  'OTHER',
+])
+export type TopicRoomReportReason = z.infer<typeof TopicRoomReportReasonSchema>
+
 export const TopicRoomReportRequestSchema = z.object({
-  reportedUserId: z.number(),
-  reason: z.string(),
-  otherReason: z.string().nullish(),
+  reportedUserId: z.preprocess((v) => Number(v), z.number().int().nonnegative()),
+  chatMessageId: z.preprocess(
+    (v) => (v == null ? undefined : Number(v)),
+    z.number().int().nonnegative().optional(),
+  ),
+  reason: TopicRoomReportReasonSchema,
+  otherReason: z.string().max(100).nullish(),
 })
 
 export type TopicRoomReportRequest = z.infer<
@@ -119,5 +130,11 @@ export type TopicRoomReportRequest = z.infer<
 export type TopicRoomMember = z.infer<typeof TopicRoomMemberSchema>
 export const TopicRoomSearchSliceSchema = SliceSchema(TopicRoomItemSchema)
 export type TopicRoomSearchSlice = z.infer<typeof TopicRoomSearchSliceSchema>
-export const TopicRoomReportResultSchema = z.string()
-export type TopicRoomReportResult = z.infer<typeof TopicRoomReportResultSchema>
+export const TopicRoomReportResponseSchema = z.object({
+  isSuccess: z.boolean(),
+  code: z.string().optional(),
+  message: z.string().optional(),
+  result: z.unknown().nullish(),
+  timestamp: z.string().optional(),
+})
+export type TopicRoomReportResponse = z.infer<typeof TopicRoomReportResponseSchema>
