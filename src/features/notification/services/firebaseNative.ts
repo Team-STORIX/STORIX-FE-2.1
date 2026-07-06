@@ -63,3 +63,21 @@ export const getFirebaseMessagingIfAvailable = (): {
 
 export const isFirebaseNativeAvailable = (): boolean =>
   getFirebaseMessagingIfAvailable() !== null
+
+export const getFirebaseNativeUnavailableReason = (): string | null => {
+  try {
+    const appModule = loadFirebaseApp()
+    if (!appModule) return '@react-native-firebase/app is not loadable'
+
+    const messagingModule = loadFirebaseMessaging()
+    if (!messagingModule) return '@react-native-firebase/messaging is not loadable'
+
+    if (appModule.getApps().length === 0) {
+      return 'Firebase app is not initialized'
+    }
+
+    return null
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err)
+  }
+}

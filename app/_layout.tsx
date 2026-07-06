@@ -227,8 +227,15 @@ function ProfileBootstrap() {
 // Mounted under the QueryClientProvider so the registration mutation has
 // access to React Query. The hook itself short-circuits until the auth
 // store reports an authenticated user, so this is safe to mount eagerly.
+let warnedExpoGoPushSkip = false
+
 function PushNotificationBootstrap() {
   if (Constants.appOwnership === 'expo') {
+    if (__DEV__ && !warnedExpoGoPushSkip) {
+      warnedExpoGoPushSkip = true
+      // eslint-disable-next-line no-console
+      console.warn('[push] device sync skipped in Expo Go; use a dev/native build')
+    }
     return null
   }
 

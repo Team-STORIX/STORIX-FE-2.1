@@ -25,6 +25,8 @@ import type { WorksSearchItem } from "../../src/features/search/api/search.schem
 import { useWorksSearch } from "../../src/features/search/hooks/useSearch";
 import {
   findTopicRoomIdByWorksName,
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
   useCreateTopicRoom,
   useJoinTopicRoom,
 } from "../../src/features/topicroom";
@@ -105,6 +107,7 @@ export default function TopicRoomCreateScreen() {
 
   const [name, setName] = useState("");
   const [createdId, setCreatedId] = useState<number | null>(null);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(paramWorks);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
@@ -174,6 +177,11 @@ export default function TopicRoomCreateScreen() {
     if (existingRoomId != null) {
       joinMutation.mutate(existingRoomId, {
         onSuccess: () => router.replace(`/topicroom/${existingRoomId}` as const),
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
+        },
       });
       return;
     }
@@ -219,6 +227,11 @@ export default function TopicRoomCreateScreen() {
       {
         onSuccess: (topicRoomId) => {
           setCreatedId(topicRoomId);
+        },
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
         },
       },
     );
@@ -536,6 +549,10 @@ export default function TopicRoomCreateScreen() {
           </View>
         </>
       )}
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

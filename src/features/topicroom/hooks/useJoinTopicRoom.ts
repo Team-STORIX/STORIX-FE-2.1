@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { joinTopicRoom } from '../api/topicroom.api'
+import { assertCanJoinTopicRoom } from '../services/topicRoomLimit'
 
 type JoinResult =
   | { joined: true; alreadyJoined?: false }
@@ -12,6 +13,11 @@ export const useJoinTopicRoom = () => {
   return useMutation<JoinResult, unknown, number>({
     mutationKey: ['topicroom', 'join'],
     mutationFn: async (roomId: number) => {
+      const limit = await assertCanJoinTopicRoom(roomId)
+      if (limit.alreadyJoined) {
+        return { joined: true, alreadyJoined: true }
+      }
+
       try {
         await joinTopicRoom(roomId)
         return { joined: true }

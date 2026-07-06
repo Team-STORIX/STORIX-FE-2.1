@@ -26,6 +26,8 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
 import { Toast } from '../../src/components/common/Toast'
@@ -83,6 +85,7 @@ export default function WorksDetailScreen() {
   const joinMutation = useJoinTopicRoom()
 
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
+  const [limitModalVisible, setLimitModalVisible] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -163,8 +166,12 @@ export default function WorksDetailScreen() {
       setEntryPhase('joining')
       await joinMutation.mutateAsync(roomId)
       navigateToRoom(roomId)
-    } catch {
+    } catch (err) {
       setEntryPhase('idle')
+      if (isTopicRoomParticipationLimitError(err)) {
+        setLimitModalVisible(true)
+        return
+      }
       showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
   }, [
@@ -293,6 +300,11 @@ export default function WorksDetailScreen() {
           />
         </>
       )}
+
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
 
       <Toast
         message={toastMessage}

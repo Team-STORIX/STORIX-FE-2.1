@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { useProfileStore } from '../../profile/store/profile.store'
 import { useAuthStore } from '../../../store/auth.store'
-import type { MarketingConsentResult } from '../api/notification.schema'
+import { updateNotificationSettings } from '../api/notification.api'
+import { notificationKeys } from '../api/notification.keys'
+import type {
+  MarketingConsentResult,
+  NotificationSettings,
+} from '../api/notification.schema'
 import { reconcilePushDevice } from '../services/pushDeviceSync'
 import {
   isNotificationConsentCompleted,
@@ -32,9 +38,9 @@ export type NotificationConsentModalState = {
  *  - no onboardingToken (i.e. onboarding finished, not mid-agreement)
  *  - the consent-completed flag is not set for this user/installation
  *
- * OS push permission + FCM/device sync are owned by usePushNotificationBootstrap
- * (PUSH-DEVICE-API-1); this hook does not duplicate them. It only records the
- * marketing-consent decision via the existing updateMarketingConsent API.
+ * OS push permission prompt + FCM/device sync happen only when the user taps
+ * the explicit agree action. Passive auth/foreground bootstrap only reads the
+ * existing permission and syncs when it is already granted.
  */
 export const useNotificationConsentModal = (): NotificationConsentModalState => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -42,6 +48,7 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
   const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
   const userId = useProfileStore((s) => s.me?.userId ?? null)
 
+  const queryClient = useQueryClient()
   const { mutateAsync: updateConsent } = useUpdateMarketingConsent()
 
   const [step, setStep] = useState<ConsentStep>('hidden')
@@ -95,13 +102,32 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
       // the rest of the app (onboarding agreement, settings).
       await setMarketingAgree(enabled)
 
-      // Product: the agree button is "동의 후 알림 받기" — agreeing also opts
-      // into OS push. reconcilePushDevice() (PUSH-DEVICE-API-1) requests the OS
-      // permission and, if granted, performs the FCM/device sync. Reused here
-      // rather than duplicated; best-effort and never blocks the result modal.
+      if (!enabled) {
+        const disabledSettings = {
+          myActivityEnabled: false,
+          contentCommunityEnabled: false,
+          operationPolicyEnabled: false,
+        }
+        await updateNotificationSettings(disabledSettings)
+        queryClient.setQueryData<NotificationSettings>(
+          notificationKeys.settings,
+          (previous) =>
+            previous
+              ? {
+                  ...previous,
+                  ...disabledSettings,
+                  eventBenefitEnabled: false,
+                }
+              : previous,
+        )
+      }
+
+      // Product: the agree button is "동의 후 알림 받기" — agreeing explicitly
+      // opts into OS push. The auth/foreground bootstrap only reads existing
+      // permission; the actual permission prompt belongs to this user action.
       if (enabled) {
         try {
-          await reconcilePushDevice()
+          await reconcilePushDevice({ requestPermission: true })
         } catch (pushErr) {
           if (__DEV__) {
             const detail =
