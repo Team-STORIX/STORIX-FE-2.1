@@ -279,6 +279,30 @@ export const handleFcmTokenRefresh = async (
   }
 }
 
+/**
+ * Best-effort deactivation for explicit account/session exits. Runs while the
+ * access token is still available, then clears local sync state so a future
+ * login performs a fresh full sync.
+ */
+export const deleteCurrentPushDevice = async (): Promise<void> => {
+  try {
+    if (inFlight) {
+      await inFlight.catch((err) => warn('wait before delete', err))
+    }
+
+    const installationId =
+      cache.installationId ?? (await getOrCreateInstallationId())
+    cache.installationId = installationId
+    await hydrateSyncState(installationId)
+
+    await deletePushDevice(installationId)
+  } catch (err) {
+    warn('delete current device', err)
+  } finally {
+    resetPushDeviceSyncCache()
+  }
+}
+
 /** Clears the in-memory sync cache (e.g. on logout) so the next authenticated
  * session performs a fresh full sync. */
 export const resetPushDeviceSyncCache = (): void => {
