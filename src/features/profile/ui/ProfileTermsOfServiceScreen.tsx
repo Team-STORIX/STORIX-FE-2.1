@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const arrowDownIcon = require('../../../../assets/icons/common/arrow-down.svg')
@@ -243,11 +243,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   contentText: {
-    fontFamily: 'SUIT',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
-    color: C.text,
+    ...Typography.body2Medium,
+    color: Gray[600],
   },
   pressed: {
     opacity: 0.7,

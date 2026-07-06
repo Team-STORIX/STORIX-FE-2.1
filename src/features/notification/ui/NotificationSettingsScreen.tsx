@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 24,
@@ -272,26 +272,30 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rowLabel: {
+    fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22.4,
     color: C.text,
   },
   rowDesc: {
-    fontSize: 11,
+    fontFamily: 'SUIT',
+    fontSize: 10.898,
     fontWeight: '500',
-    lineHeight: 15.4,
     color: Gray[500],
   },
   rowRight: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 4,
   },
   statusText: {
+    fontFamily: 'SUIT',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+    lineHeight: 19.6,
     color: C.primary,
+    textAlign: 'center',
   },
   chevron: {
     width: 16,
@@ -316,7 +320,6 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 16,
     alignItems: 'flex-start',
-    gap: 10,
     borderRadius: 8,
     backgroundColor: C.card,
   },
@@ -330,6 +333,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   modalBody: {
+    marginTop: 10,
     paddingHorizontal: 24,
     fontSize: 14,
     fontWeight: '500',
@@ -339,6 +343,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   modalButtons: {
+    marginTop: 28,
     alignSelf: 'stretch',
     paddingHorizontal: 16,
     flexDirection: 'row',

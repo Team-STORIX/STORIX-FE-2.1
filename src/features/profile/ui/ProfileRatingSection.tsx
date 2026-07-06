@@ -104,7 +104,7 @@ export function ProfileRatingSection() {
 
         {totalReviews === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 리뷰가 없어요</Text>
+            <Text style={styles.emptyText}>아직 별점 분포가 없어요</Text>
             <Pressable
               onPress={() => router.push('/search')}
               style={({ pressed }) => [pressed && styles.pressed]}

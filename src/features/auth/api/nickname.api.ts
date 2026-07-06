@@ -51,9 +51,27 @@ export const extractIsDuplicatedFromValidResponse = (
   data: NicknameValidResponse,
 ): boolean =>
   data.isSuccess === false &&
-  (data.code === 'NICKNAME_ERROR_001' || data.code === 'NICKNAME_ERROR_002')
+  (data.code === 'NICKNAME_ERROR_001' ||
+    data.code === 'NICKNAME_ERROR_002' ||
+    data.code === 'PROFILE_ERROR_001' ||
+    data.code === 'PROFILE_ERROR_002')
 
 /** Returns true when the nickname matches a writer's reserved name. */
 export const extractIsForbiddenFromValidResponse = (
   data: NicknameValidResponse,
-): boolean => data.isSuccess === false && data.code === 'NICKNAME_ERROR_003'
+): boolean => {
+  if (data.isSuccess !== false) return false
+
+  return (
+    data.code === 'NICKNAME_ERROR_003' ||
+    data.code === 'PROFILE_ERROR_003' ||
+    data.code.includes('FORBIDDEN') ||
+    data.code.includes('PROHIBITED') ||
+    data.code.includes('RESERVED') ||
+    data.code.includes('POLICY') ||
+    data.code.includes('BAD_WORD') ||
+    data.code.includes('SLANG') ||
+    data.code.includes('ADMIN') ||
+    data.code.includes('OFFICIAL')
+  )
+}

@@ -30,30 +30,34 @@ export function ProfileHashtagSection() {
     <View style={styles.section}>
       <Text style={styles.title}>선호 해시태그</Text>
 
-      <View style={styles.canvas}>
-        {!hasAnyRank ? (
-          <View style={styles.emptyOverlay}>
-            <Text style={styles.emptyText}>아직 선호 해시태그가 없어요</Text>
+      {!hasAnyRank ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>아직 선호 해시태그가 없어요</Text>
 
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="작품 찾기"
-            >
-              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.rank4, styles.absolute]}>{ranks[4] || ''}</Text>
-            <Text style={[styles.rank3, styles.absolute]}>{ranks[3] || ''}</Text>
-            <Text style={[styles.rank1, styles.absolute]}>{ranks[1] || ''}</Text>
-            <Text style={[styles.rank2, styles.absolute]}>{ranks[2] || ''}</Text>
-            <Text style={[styles.rank5, styles.absolute]}>{ranks[5] || ''}</Text>
-          </>
-        )}
-      </View>
+          <Pressable
+            onPress={() => router.push('/search')}
+            style={({ pressed }) => [pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="작품 찾기"
+          >
+            <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.canvas}>
+          <Text
+            style={[styles.rank4, styles.absolute]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {ranks[4] || ''}
+          </Text>
+          <Text style={[styles.rank3, styles.absolute]}>{ranks[3] || ''}</Text>
+          <Text style={[styles.rank1, styles.absolute]}>{ranks[1] || ''}</Text>
+          <Text style={[styles.rank2, styles.absolute]}>{ranks[2] || ''}</Text>
+          <Text style={[styles.rank5, styles.absolute]}>{ranks[5] || ''}</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -79,10 +83,9 @@ const styles = StyleSheet.create({
     height: 178,
     marginTop: 24,
   },
-  emptyOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  emptyState: {
+    marginTop: 24,
     alignItems: 'center',
-    justifyContent: 'flex-start',
   },
   emptyText: {
     ...Typography.heading3,
@@ -93,48 +96,50 @@ const styles = StyleSheet.create({
     width: 131,
     height: 36,
     marginTop: 20,
-    marginBottom: 40,
   },
   absolute: {
     position: 'absolute',
   },
   rank4: {
-    left: 205,
+    right: 104,
     top: 0,
+    maxWidth: 220,
+    overflow: 'hidden',
     fontFamily: 'SUIT',
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22.4,
     color: Gray[500],
-    opacity: 0.5,
+    textAlign: 'right',
   },
   rank3: {
-    left: 90,
-    top: 22.4,
+    left: 52,
+    top: 25.4,
     fontFamily: 'SUIT',
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 25.2,
     color: Magenta[200],
-    opacity: 0.5,
   },
   rank1: {
-    left: 138,
-    top: 47.6,
+    left: 0,
+    right: 0,
+    top: 53.6,
     ...Typography.heading1,
     lineHeight: 33.6,
     color: Magenta[400],
+    textAlign: 'center',
   },
   rank2: {
-    left: 211,
-    top: 81.2,
+    right: 68,
+    top: 90.2,
     ...Typography.heading2,
     color: Magenta[300],
-    opacity: 0.7,
+    textAlign: 'right',
   },
   rank5: {
-    left: 120,
-    top: 109.2,
+    left: 114,
+    top: 121.2,
     ...Typography.body2Medium,
     lineHeight: 19.6,
     color: Gray[400],

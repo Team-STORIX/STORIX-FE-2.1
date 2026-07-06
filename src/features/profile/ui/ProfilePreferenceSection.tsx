@@ -21,6 +21,7 @@ export function ProfilePreferenceSection() {
   );
 
   const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length);
+  const favoriteCount = worksQuery.data?.count ?? 0;
 
   const itemWidth = Math.floor((screenWidth - 32 - 4 * 3) / 4);
   const thumbHeight = Math.round(itemWidth * (116 / 87));
@@ -31,23 +32,25 @@ export function ProfilePreferenceSection() {
         <View style={styles.sectionHeader}>
           <View style={styles.titleWrap}>
             <Text style={styles.title}>관심 작품</Text>
-            <Text style={styles.count}>{worksQuery.data?.count ?? 0}</Text>
+            {favoriteCount > 0 ? <Text style={styles.count}>{favoriteCount}</Text> : null}
           </View>
 
-          <Pressable
-            onPress={() => router.push("/profile/likes")}
-            accessibilityRole="button"
-          >
-            <Image
-              source={nextArrowIcon}
-              style={styles.moreIcon}
-              contentFit="contain"
-              tintColor={Gray[300]}
-            />
-          </Pressable>
+          {favoriteCount > 0 ? (
+            <Pressable
+              onPress={() => router.push("/profile/likes")}
+              accessibilityRole="button"
+            >
+              <Image
+                source={nextArrowIcon}
+                style={styles.moreIcon}
+                contentFit="contain"
+                tintColor={Gray[300]}
+              />
+            </Pressable>
+          ) : null}
         </View>
 
-        {(worksQuery.data?.count ?? 0) > 0 ? (
+        {favoriteCount > 0 ? (
           <View style={styles.worksContent}>
             <View style={styles.worksRow}>
               {works.map((work) => (

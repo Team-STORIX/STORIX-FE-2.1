@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg'
 import { OnboardingTopBar } from './OnboardingTopBar'
-import { C, Gray } from '../../../theme'
+import { C, Gray, Magenta } from '../../../theme'
 
 const manualImages = [
   require('../../../../assets/manual/manual-1.png'),
@@ -52,7 +52,7 @@ export function ManualScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <OnboardingTopBar onSkip={handleSkip} />
+      <OnboardingTopBar onSkip={isLast ? undefined : handleSkip} />
 
       <View style={styles.content}>
         <Text style={styles.title}>{copy[step].title}</Text>
@@ -86,7 +86,7 @@ export function ManualScreen() {
       </View>
 
       <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
-        <Pressable onPress={handleNext} style={styles.nextButton}>
+        <Pressable onPress={handleNext} style={[styles.nextButton, isLast && styles.startButton]}>
           <Text style={styles.nextButtonText}>
             {isLast ? '탐험 시작하기' : '다음으로'}
           </Text>
@@ -163,6 +163,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#100F0F',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  startButton: {
+    backgroundColor: Magenta[300],
   },
   nextButtonText: {
     fontFamily: 'SUITMedium',

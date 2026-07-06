@@ -100,8 +100,10 @@ export const useNativeSocialLogin = () => {
         return;
       }
 
-      // Neither branch matched — log for debugging.
-      console.error("[useNativeSocialLogin] unexpected response shape:", data);
+      // Neither branch matched — log for debugging without surfacing LogBox.
+      if (__DEV__) {
+        console.warn("[useNativeSocialLogin] unexpected response shape:", data);
+      }
       throw new Error("[SocialLogin] Unexpected backend response shape.");
     },
 
@@ -109,11 +111,13 @@ export const useNativeSocialLogin = () => {
       // Do NOT use Alert.alert here — on iOS, calling alert() immediately after
       // a WKWebView / SafariViewController dismissal can cause a crash.
       // The calling screen should observe mutation.isError and render its own UI.
-      console.error("[useNativeSocialLogin] failed:", {
-        message: error instanceof Error ? error.message : String(error),
-        status: isAxiosError(error) ? error.response?.status : undefined,
-        data: isAxiosError(error) ? error.response?.data : undefined,
-      });
+      if (__DEV__) {
+        console.warn("[useNativeSocialLogin] failed:", {
+          message: error instanceof Error ? error.message : String(error),
+          status: isAxiosError(error) ? error.response?.status : undefined,
+          data: isAxiosError(error) ? error.response?.data : undefined,
+        });
+      }
     },
   });
 };

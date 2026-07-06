@@ -821,9 +821,10 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     marginLeft: 4,
+    fontFamily: "SUIT",
     fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
+    fontWeight: "500",
+    lineHeight: 19.6,
     color: Gray[500],
   },
   reactionCountLiked: {

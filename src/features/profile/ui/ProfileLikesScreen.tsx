@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { Stack, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
@@ -11,6 +12,9 @@ import { ProfileLikedWorkItem } from './ProfileLikedWorkItem'
 import { ProfileLikesEmptyState } from './ProfileLikesEmptyState'
 import { ProfileLikesTopBar } from './ProfileLikesTopBar'
 
+const deleteToast = require('../../../../assets/common/cardshare/like-delete-toast.svg')
+const DELETE_TOAST_BOTTOM = 36
+
 export function ProfileLikesScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
@@ -20,6 +24,8 @@ export function ProfileLikesScreen() {
   const [selectedWorkIds, setSelectedWorkIds] = useState<Set<number>>(new Set())
   const [removedWorkIds, setRemovedWorkIds] = useState<Set<number>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [showDeleteToast, setShowDeleteToast] = useState(false)
 
   const selectedCount = selectedWorkIds.size
 
@@ -47,6 +53,32 @@ export function ProfileLikesScreen() {
     }
     setIsEditing(true)
   }, [isEditing])
+
+  const handleDeleteSelected = useCallback(async () => {
+    if (selectedWorkIds.size === 0 || isDeleting) return
+
+    const targets = Array.from(selectedWorkIds)
+    setDeleteModalOpen(false)
+    setRemovedWorkIds((current) => {
+      const next = new Set(current)
+      targets.forEach((worksId) => next.add(worksId))
+      return next
+    })
+    setSelectedWorkIds(new Set())
+    setIsEditing(false)
+    setShowDeleteToast(true)
+    setTimeout(() => setShowDeleteToast(false), 1500)
+    setIsDeleting(true)
+    try {
+      await Promise.allSettled(targets.map((worksId) => deleteFavoriteWork(worksId)))
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] }),
+        queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works-preview'] }),
+      ])
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [isDeleting, queryClient, selectedWorkIds])
 
   const renderHeader = useCallback(() => (
     <>
@@ -135,26 +167,9 @@ export function ProfileLikesScreen() {
       <View style={[styles.ctaWrap, { paddingBottom: insets.bottom + 12 }]}>
         <Pressable
           disabled={selectedCount === 0 || isDeleting}
-          onPress={async () => {
+          onPress={() => {
             if (selectedCount === 0 || isDeleting) return
-            const targets = Array.from(selectedWorkIds)
-            setRemovedWorkIds((current) => {
-              const next = new Set(current)
-              targets.forEach((worksId) => next.add(worksId))
-              return next
-            })
-            setSelectedWorkIds(new Set())
-            setIsEditing(false)
-            setIsDeleting(true)
-            try {
-              await Promise.allSettled(targets.map((worksId) => deleteFavoriteWork(worksId)))
-              await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works'] }),
-                queryClient.invalidateQueries({ queryKey: ['profile', 'favorite-works-preview'] }),
-              ])
-            } finally {
-              setIsDeleting(false)
-            }
+            setDeleteModalOpen(true)
           }}
           style={({ pressed }) => [
             styles.deleteButton,
@@ -174,6 +189,52 @@ export function ProfileLikesScreen() {
           </Text>
         </Pressable>
       </View>
+    ) : null}
+    <Modal
+      visible={deleteModalOpen}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setDeleteModalOpen(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.confirmModal}>
+          <Text style={styles.confirmTitle}>삭제하기</Text>
+          <Text style={styles.confirmBody}>정말 삭제하시겠습니까?</Text>
+          <View style={styles.confirmButtons}>
+            <Pressable
+              onPress={() => setDeleteModalOpen(false)}
+              disabled={isDeleting}
+              style={({ pressed }) => [
+                styles.cancelButton,
+                pressed && styles.confirmButtonPressed,
+              ]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelButtonText}>취소</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void handleDeleteSelected()}
+              disabled={isDeleting}
+              style={({ pressed }) => [
+                styles.confirmDeleteButton,
+                pressed && styles.confirmButtonPressed,
+              ]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.confirmDeleteButtonText}>삭제하기</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    {showDeleteToast ? (
+      <Modal visible transparent animationType="none" statusBarTranslucent>
+        <View style={styles.toastModalRoot} pointerEvents="none">
+          <View style={[styles.toastContainer, { bottom: insets.bottom + DELETE_TOAST_BOTTOM }]}>
+            <Image source={deleteToast} style={styles.toastImage} contentFit="contain" />
+          </View>
+        </View>
+      </Modal>
     ) : null}
     </View>
   )
@@ -240,5 +301,108 @@ const styles = StyleSheet.create({
   },
   deleteButtonTextActive: {
     color: C.card,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(19, 17, 18, 0.60)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmModal: {
+    width: 306,
+    paddingTop: 28,
+    paddingBottom: 16,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    borderRadius: 8,
+    backgroundColor: C.card,
+  },
+  confirmTitle: {
+    alignSelf: 'stretch',
+    paddingHorizontal: 24,
+    color: Gray[900],
+    fontFamily: 'SUIT',
+    fontSize: 20,
+    fontStyle: 'normal',
+    fontWeight: '700',
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  confirmBody: {
+    alignSelf: 'stretch',
+    marginTop: 4,
+    paddingHorizontal: 24,
+    color: Gray[500],
+    fontFamily: 'SUIT',
+    fontSize: 14,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 19.6,
+    textAlign: 'center',
+  },
+  confirmButtons: {
+    alignSelf: 'stretch',
+    marginTop: 28,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  cancelButton: {
+    width: 135,
+    height: 49,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Gray[200],
+    backgroundColor: Gray[50],
+  },
+  cancelButtonText: {
+    color: Gray[700],
+    fontFamily: 'SUIT',
+    fontSize: 16,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 22.4,
+  },
+  confirmDeleteButton: {
+    width: 135,
+    height: 49,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#EF433E',
+  },
+  confirmDeleteButtonText: {
+    color: C.card,
+    fontFamily: 'SUIT',
+    fontSize: 16,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 22.4,
+  },
+  confirmButtonPressed: {
+    opacity: 0.8,
+  },
+  toastModalRoot: {
+    flex: 1,
+  },
+  toastContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+    elevation: 100,
+  },
+  toastImage: {
+    width: 320,
+    height: 82,
   },
 })

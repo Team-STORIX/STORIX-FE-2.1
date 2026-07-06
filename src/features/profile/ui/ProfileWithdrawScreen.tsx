@@ -31,7 +31,6 @@ export function ProfileWithdrawScreen() {
           >
             <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
           </Pressable>
-          <Text style={styles.topBarTitle}>회원 탈퇴</Text>
         </View>
       </View>
 
@@ -47,9 +46,7 @@ export function ProfileWithdrawScreen() {
           </View>
         </View>
 
-        <View style={styles.logoContainer}>
-          <Image source={logoIcon} style={styles.logo} contentFit="contain" />
-        </View>
+        <Image source={logoIcon} style={styles.logo} contentFit="contain" />
 
         <View style={[styles.buttonArea, { paddingBottom: insets.bottom + 28 }]}>
           <View style={styles.buttonRow}>
@@ -102,15 +99,11 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: C.text,
-  },
   content: {
     flex: 1,
     paddingTop: 24,
+    position: 'relative',
+    justifyContent: 'space-between',
   },
   infoSection: {
     alignItems: 'center',
@@ -133,14 +126,14 @@ const styles = StyleSheet.create({
     color: Gray[500],
     textAlign: 'center',
   },
-  logoContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   logo: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
     width: 180,
     height: 180,
+    marginLeft: -90,
+    marginTop: -90,
   },
   buttonArea: {
     paddingHorizontal: 16,

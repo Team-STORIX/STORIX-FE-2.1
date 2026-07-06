@@ -7,6 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { C, Gray, Typography } from '../../../theme'
 import { useProfileStore } from '../store/profile.store'
+import {
+  extractIsDuplicatedFromValidResponse,
+  extractIsForbiddenFromValidResponse,
+} from '../../auth/api/nickname.api'
+import { NICKNAME_MESSAGES } from '../../auth/lib/nickname-validation'
+import type { ApiResponse } from '../../../lib/api/types'
 import { updateProfileDescription, updateProfileNickname, uploadAndSetProfileImage } from '../api'
 import { ME_QUERY_KEY, useMe } from '../hooks/useMe'
 import { BioStep } from '../../onboarding/ui/BioStep'
@@ -15,6 +21,25 @@ import { ProfileEditTopBar } from './ProfileEditTopBar'
 
 const defaultProfileImage = require('../../../../assets/onboarding/profilephoto.svg')
 const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
+
+const SESSION_EXPIRED_MESSAGE =
+  '\ub85c\uadf8\uc778\uc774 \ub9cc\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \ub85c\uadf8\uc778\ud574 \uc8fc\uc138\uc694.'
+
+const getNicknameUpdateErrorMessage = (response: ApiResponse<string>): string => {
+  if (extractIsDuplicatedFromValidResponse(response)) {
+    return NICKNAME_MESSAGES.duplicated
+  }
+
+  if (extractIsForbiddenFromValidResponse(response)) {
+    return NICKNAME_MESSAGES.forbidden
+  }
+
+  if (response.code.startsWith('TOKEN_') || response.message.includes('\ud1a0\ud070')) {
+    return SESSION_EXPIRED_MESSAGE
+  }
+
+  return response.message || NICKNAME_MESSAGES.unknownError
+}
 
 export function ProfileEditScreen() {
   const router = useRouter()
@@ -32,7 +57,6 @@ export function ProfileEditScreen() {
   const [nicknameVerified, setNicknameVerified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [localProfileImageUri, setLocalProfileImageUri] = useState<string | undefined>()
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -49,12 +73,13 @@ export function ProfileEditScreen() {
 
   const nicknameChanged = nickname !== initialNickname
   const bioChanged = bioText !== initialBioText
+  const profileImageChanged = Boolean(localProfileImageUri)
 
   const canSubmit = useMemo(() => {
     if (!nickname.trim()) return false
-    if (!nicknameVerified) return false
-    return nicknameChanged || bioChanged
-  }, [bioChanged, nickname, nicknameChanged, nicknameVerified])
+    if (nicknameChanged && !nicknameVerified) return false
+    return nicknameChanged || bioChanged || profileImageChanged
+  }, [bioChanged, nickname, nicknameChanged, nicknameVerified, profileImageChanged])
 
   const handleBack = () => {
     if ('canGoBack' in router && router.canGoBack()) {
@@ -79,17 +104,6 @@ export function ProfileEditScreen() {
 
     const uri = result.assets[0].uri
     setLocalProfileImageUri(uri)
-    setIsUploadingImage(true)
-    try {
-      await uploadAndSetProfileImage(uri)
-      patchMe({ profileImageUrl: uri })
-      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
-    } catch {
-      Alert.alert('\uc624\ub958', '\ud504\ub85c\ud544 \uc774\ubbf8\uc9c0 \uc5c5\ub85c\ub4dc\uc5d0 \uc2e4\ud328\ud588\uc5b4\uc694.')
-      setLocalProfileImageUri(undefined)
-    } finally {
-      setIsUploadingImage(false)
-    }
   }
 
   const handleSubmit = async () => {
@@ -101,7 +115,7 @@ export function ProfileEditScreen() {
       if (nicknameChanged) {
         const response = await updateProfileNickname(nickname.trim())
         if (!response.isSuccess) {
-          throw new Error(response.message || '닉네임 변경에 실패했어요.')
+          throw new Error(getNicknameUpdateErrorMessage(response))
         }
         patchMe({ nickName: nickname.trim() })
       }
@@ -114,13 +128,16 @@ export function ProfileEditScreen() {
         patchMe({ profileDescription: bioText })
       }
 
+      if (localProfileImageUri) {
+        await uploadAndSetProfileImage(localProfileImageUri)
+        patchMe({ profileImageUrl: localProfileImageUri })
+      }
+
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
-      Alert.alert('완료', '프로필 수정이 완료되었어요.', [
-        {
-          text: '확인',
-          onPress: () => router.replace('/(tabs)/profile'),
-        },
-      ])
+      router.replace({
+        pathname: '/(tabs)/profile',
+        params: { profileEditToast: Date.now().toString() },
+      })
     } catch (error) {
       const message =
         error instanceof Error
@@ -163,13 +180,13 @@ export function ProfileEditScreen() {
                   ? { uri: me.profileImageUrl }
                   : defaultProfileImage
             }
-            style={[styles.profileImage, isUploadingImage && styles.imageUploading]}
+            style={[styles.profileImage, isSaving && styles.imageUploading]}
             contentFit="cover"
           />
 
           <Pressable
             onPress={() => void handleProfileImagePress()}
-            disabled={isUploadingImage}
+            disabled={isSaving}
             style={({ pressed }) => [styles.imageEditButton, pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel="프로필 이미지 변경"

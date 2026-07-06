@@ -9,18 +9,17 @@ import {
   extractIsDuplicatedFromValidResponse,
   extractIsForbiddenFromValidResponse,
 } from '../../auth/api/nickname.api'
+import {
+  getNicknameFallbackErrorMessage,
+  getNicknameFormatErrorMessage,
+  NICKNAME_MESSAGES,
+} from '../../auth/lib/nickname-validation'
 
 const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
 const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
 const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
 
-type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'
-
-const NICKNAME_RULE_MESSAGE = '한글,영문,숫자 2~10자까지 입력 가능해요'
-const NICKNAME_PATTERN = /^[가-힣A-Za-z0-9]+$/
-
-const isValidNicknameFormat = (nickname: string) =>
-  nickname.length >= 2 && nickname.length <= 10 && NICKNAME_PATTERN.test(nickname)
+type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden' | 'error'
 
 export function NicknameStep({
   value,
@@ -44,8 +43,7 @@ export function NicknameStep({
   profileImageUri?: string
   onProfileImageChange: (uri: string) => void
 }) {
-  const normalized = value.trim()
-  const canCheckNickname = normalized.length > 0 && status === 'idle'
+  const canCheckNickname = value.length > 0
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -64,49 +62,50 @@ export function NicknameStep({
   }
 
   const handleCheck = async () => {
-    if (!isValidNicknameFormat(normalized)) {
+    const formatErrorMessage = getNicknameFormatErrorMessage(value)
+    if (formatErrorMessage) {
       onVerifiedChange(false)
       onStatusChange('invalid')
-      onMessageChange(NICKNAME_RULE_MESSAGE)
+      onMessageChange(formatErrorMessage)
       return
     }
 
     try {
-      const response = await checkNicknameValid(normalized)
+      const response = await checkNicknameValid(value)
       if (extractIsAvailableFromValidResponse(response)) {
         onVerifiedChange(true)
         onStatusChange('ok')
-        onMessageChange('사용 가능한 닉네임이에요')
+        onMessageChange(NICKNAME_MESSAGES.available)
         return
       }
       if (extractIsDuplicatedFromValidResponse(response)) {
         onVerifiedChange(false)
         onStatusChange('taken')
-        onMessageChange('이미 사용 중인 닉네임이에요')
+        onMessageChange(NICKNAME_MESSAGES.duplicated)
         return
       }
       if (extractIsForbiddenFromValidResponse(response)) {
         onVerifiedChange(false)
         onStatusChange('forbidden')
-        onMessageChange('사용할 수 없는 닉네임이에요')
+        onMessageChange(NICKNAME_MESSAGES.forbidden)
         return
       }
       onVerifiedChange(false)
-      onStatusChange('taken')
-      onMessageChange(response.message || '닉네임 확인에 실패했어요')
+      onStatusChange('error')
+      onMessageChange(getNicknameFallbackErrorMessage(response.message))
     } catch {
       onVerifiedChange(false)
-      onStatusChange('taken')
-      onMessageChange('닉네임 확인 중 오류가 발생했어요')
+      onStatusChange('error')
+      onMessageChange(NICKNAME_MESSAGES.unknownError)
     }
   }
 
   const inputBorderColor =
     status === 'ok'
       ? C.activeDot
-      : status === 'taken' || status === 'invalid' || status === 'forbidden'
+      : status === 'taken' || status === 'invalid' || status === 'forbidden' || status === 'error'
         ? C.error
-        : normalized.length > 0
+        : value.length > 0
           ? C.text
           : Gray[300]
 
@@ -149,7 +148,6 @@ export function NicknameStep({
             placeholderTextColor={Gray[300]}
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={10}
             style={[styles.input, { borderBottomColor: inputBorderColor }]}
           />
 

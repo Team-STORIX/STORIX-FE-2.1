@@ -37,6 +37,8 @@ const likeIcon = require('../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
 const menuDotsIcon = require('../../../assets/icons/common/menu-3dots.svg')
 const savedToast = require('../../../assets/common/cardshare/image-gallery-saved.svg')
+const TAB_BAR_HEIGHT = 80
+const CARD_TOAST_NAV_GAP = 36
 
 type Props = {
   reviewId: number
@@ -78,6 +80,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
   const insets = useSafeAreaInsets()
   const [showRecordCard, setShowRecordCard] = useState(false)
   const [showSavedToast, setShowSavedToast] = useState(false)
+  const savedToastBottom = insets.bottom + TAB_BAR_HEIGHT + CARD_TOAST_NAV_GAP
 
   const isValidReviewId = Number.isFinite(reviewId) && reviewId > 0
   const { data, isLoading, isError } = useWorksReviewDetail(
@@ -554,7 +557,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
       {/* 저장 완료 토스트 */}
       {showSavedToast && (
         <Modal visible transparent animationType="none" statusBarTranslucent>
-          <View style={[styles.toastContainer, { bottom: 88 }]} pointerEvents="none">
+          <View style={[styles.toastContainer, { bottom: savedToastBottom }]} pointerEvents="none">
             <Image source={savedToast} style={styles.toastImage} contentFit="contain" />
           </View>
         </Modal>

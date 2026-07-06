@@ -27,9 +27,7 @@ const assertKakaoNativeModule = (): void => {
   if (NativeModules.RNKakaoLogins) return
 
   throw new Error(
-    '[KakaoLogin] Native module RNKakaoLogins is not installed in this app build. ' +
-      'Run npm run android or npx expo run:android after prebuild, then open the newly installed development build. ' +
-      'Expo Go / an old dev build cannot run native Kakao login.',
+    '카카오 로그인을 사용할 수 없는 앱 빌드입니다. 앱을 다시 설치한 뒤 시도해 주세요.',
   )
 }
 

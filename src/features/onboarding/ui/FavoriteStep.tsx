@@ -3,6 +3,8 @@ import { Image } from 'expo-image'
 import type { OnboardingWork } from '../api/onboarding.api'
 import { C, Gray, Typography } from '../../../theme'
 
+const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
+
 const COLUMNS = 3
 const HORIZONTAL_PADDING = 16 // OnboardingScreen scrollContent paddingHorizontal
 const COLUMN_GAP = 8
@@ -71,9 +73,7 @@ export function FavoriteStep({
                 {selected ? (
                   <>
                     <View style={styles.thumbOverlay} />
-                    <View style={styles.checkIcon}>
-                      <Text style={styles.checkText}>✓</Text>
-                    </View>
+                    <Image source={checkPinkIcon} style={styles.checkIcon} contentFit="contain" />
                   </>
                 ) : null}
               </View>
@@ -143,18 +143,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 8,
     top: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 20,
-    color: C.card,
+    width: 20,
+    height: 20,
   },
   metaWrap: {
     marginTop: 8,
