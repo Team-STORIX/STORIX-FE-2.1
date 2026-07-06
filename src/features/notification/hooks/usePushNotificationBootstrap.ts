@@ -7,6 +7,7 @@ import { markNotificationRead } from "../api/notification.api";
 import { notificationKeys } from "../api/notification.keys";
 import { subscribeFcmTokenRefresh } from "../services/fcmToken";
 import {
+  getFirebaseNativeUnavailableReason,
   getFirebaseMessagingIfAvailable,
   isFirebaseNativeAvailable,
 } from "../services/firebaseNative";
@@ -170,6 +171,7 @@ export const usePushNotificationBootstrap = (): void => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   // useRef so cleanup can fire even after the component unmounts mid-bootstrap.
   const cleanupRef = useRef<(() => void) | null>(null);
+  const warnedUnavailable = useRef(false);
 
   // Backend reconcile (permission / token / meta) on auth + foreground.
   usePushDeviceSync();
@@ -180,6 +182,14 @@ export const usePushNotificationBootstrap = (): void => {
     }
 
     if (!isFirebaseNativeAvailable()) {
+      if (__DEV__ && !warnedUnavailable.current) {
+        warnedUnavailable.current = true;
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[push] listeners skipped:",
+          getFirebaseNativeUnavailableReason() ?? "unknown Firebase state",
+        );
+      }
       return;
     }
 

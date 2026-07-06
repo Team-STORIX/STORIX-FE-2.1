@@ -18,8 +18,10 @@ import type { TopicRoomItem } from "../api/topicroom.schema";
 import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
+import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
 import { HotTopicRoomCard } from "./HotTopicRoomCard";
 import { TopicRoomListItem } from "./TopicRoomListItem";
+import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
 
 const PADDING_H = 16; // section title horizontal padding
 const CAROUSEL_PAD = 20; // carousel horizontal padding (card start x)
@@ -47,6 +49,7 @@ export function TopicRoomFeedSection() {
   const popularQuery = usePopularTopicRooms();
   const myQuery = useMyTopicRoomsAll();
   const joinMutation = useJoinTopicRoom();
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const joiningId = joinMutation.isPending ? joinMutation.variables : null;
 
   const handleEnter = (item: TopicRoomItem) => {
@@ -65,7 +68,14 @@ export function TopicRoomFeedSection() {
       navigate();
       return;
     }
-    joinMutation.mutate(item.topicRoomId, { onSuccess: navigate });
+    joinMutation.mutate(item.topicRoomId, {
+      onSuccess: navigate,
+      onError: (err) => {
+        if (isTopicRoomParticipationLimitError(err)) {
+          setLimitModalVisible(true);
+        }
+      },
+    });
   };
 
   const popularPages = useMemo(
@@ -179,6 +189,10 @@ export function TopicRoomFeedSection() {
           })}
         </View>
       )}
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </View>
   );
 }

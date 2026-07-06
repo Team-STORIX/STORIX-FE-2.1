@@ -19,6 +19,8 @@ import type { WorksSearchItem } from "../../search/api/search.schema";
 import { useWorksSearch } from "../../search/hooks/useSearch";
 import { findTopicRoomIdByWorksName } from "../api/topicroom.api";
 import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
+import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
+import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
 
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
@@ -54,6 +56,7 @@ export function TopicRoomCreateWorksBottomSheet({
   const [selectedId, setSelectedId] = useState<number | undefined>();
   const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
 
   const checkSeqRef = useRef(0);
 
@@ -69,6 +72,7 @@ export function TopicRoomCreateWorksBottomSheet({
     setSelectedId(undefined);
     setExistingRoomId(null);
     setChecking(false);
+    setLimitModalVisible(false);
 
     Animated.timing(progress, {
       toValue: 1,
@@ -147,6 +151,11 @@ export function TopicRoomCreateWorksBottomSheet({
       joinMutation.mutate(existingRoomId, {
         onSuccess: () => {
           handleClose(() => onEnterExisting(existingRoomId));
+        },
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
         },
       });
       return;
@@ -356,6 +365,10 @@ export function TopicRoomCreateWorksBottomSheet({
             </View>
           </KeyboardAvoidingView>
         </Animated.View>
+        <TopicRoomLimitModal
+          visible={limitModalVisible}
+          onClose={() => setLimitModalVisible(false)}
+        />
       </Animated.View>
     </Modal>
   );

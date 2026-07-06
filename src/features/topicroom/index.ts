@@ -1,4 +1,5 @@
 export * from './api'
 export * from './hooks'
 export * from './ui'
+export * from './services/topicRoomLimit'
 export * from './stomp'

@@ -26,7 +26,9 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
+  isTopicRoomParticipationLimitError,
   TopicRoomCreateModal,
+  TopicRoomLimitModal,
   useCreateTopicRoom,
   useJoinTopicRoom,
 } from '../../src/features/topicroom'
@@ -87,6 +89,7 @@ export default function WorksDetailScreen() {
 
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [limitModalVisible, setLimitModalVisible] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -156,8 +159,12 @@ export default function WorksDetailScreen() {
       setEntryPhase('joining')
       await joinMutation.mutateAsync(roomId)
       navigateToRoom(roomId)
-    } catch {
+    } catch (err) {
       setEntryPhase('idle')
+      if (isTopicRoomParticipationLimitError(err)) {
+        setLimitModalVisible(true)
+        return
+      }
       showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
   }, [isEntering, joinMutation, navigateToRoom, showToast, works?.worksName])
@@ -178,8 +185,13 @@ export default function WorksDetailScreen() {
           // Creator is auto-joined server-side in most setups; ignore join failures here.
         }
         navigateToRoom(newRoomId)
-      } catch {
+      } catch (err) {
         setEntryPhase('idle')
+        if (isTopicRoomParticipationLimitError(err)) {
+          setCreateModalOpen(false)
+          setLimitModalVisible(true)
+          return
+        }
         showToast('토픽룸 생성에 실패했어요. 잠시 후 다시 시도해 주세요.')
       }
     },
@@ -308,6 +320,11 @@ export default function WorksDetailScreen() {
         onConfirm={(topicRoomName) => {
           void handleCreate(topicRoomName)
         }}
+      />
+
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
       />
 
       <Toast

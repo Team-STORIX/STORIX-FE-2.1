@@ -66,6 +66,13 @@ export function NotificationSettingsScreen() {
   const [permissionModalOpen, setPermissionModalOpen] = useState(false)
 
   const isPending = updateSettings.isPending || updateEventBenefit.isPending
+  const appNotificationEnabled =
+    !!settings &&
+    (settings.myActivityEnabled ||
+      settings.contentCommunityEnabled ||
+      settings.eventBenefitEnabled ||
+      settings.operationPolicyEnabled)
+  const pushReceiptEnabled = pushGranted === true && appNotificationEnabled
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
@@ -135,7 +142,7 @@ export function NotificationSettingsScreen() {
         </View>
       ) : (
         <View style={styles.content}>
-          {/* 알림 수신 — reflects OS push permission, not a settings field. */}
+          {/* 알림 수신 — OS permission plus the app's notification preferences. */}
           <Pressable
             onPress={handlePushReceiptPress}
             accessibilityRole="button"
@@ -151,7 +158,7 @@ export function NotificationSettingsScreen() {
             </View>
             <View style={styles.rowRight}>
               <Text style={styles.statusText}>
-                {pushGranted === null ? '' : pushGranted ? 'ON' : 'OFF'}
+                {pushGranted === null ? '' : pushReceiptEnabled ? 'ON' : 'OFF'}
               </Text>
               <Image
                 source={chevronIcon}

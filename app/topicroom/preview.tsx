@@ -11,6 +11,8 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   formatTopicRoomSubtitle,
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
   useJoinTopicRoom,
   useTopicRoomInfoById,
 } from "../../src/features/topicroom";
@@ -80,6 +82,7 @@ export default function TopicRoomPreviewScreen() {
 
   const joinMutation = useJoinTopicRoom();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
 
   const handleEnter = async () => {
     if (joinMutation.isPending || !roomId) return;
@@ -98,7 +101,11 @@ export default function TopicRoomPreviewScreen() {
           activeUserNumber: String(activeUserNumber),
         },
       });
-    } catch {
+    } catch (err) {
+      if (isTopicRoomParticipationLimitError(err)) {
+        setLimitModalVisible(true);
+        return;
+      }
       setErrorMessage("토픽룸에 입장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     }
   };
@@ -195,6 +202,11 @@ export default function TopicRoomPreviewScreen() {
           )}
         </Pressable>
       </View>
+
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </View>
   );
 }

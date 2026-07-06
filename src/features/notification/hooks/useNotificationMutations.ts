@@ -10,6 +10,7 @@ import { notificationKeys } from '../api/notification.keys'
 import type {
   AdminTestDispatchPayload,
   AdminTestPushPayload,
+  NotificationSettings,
 } from '../api/notification.schema'
 
 /** Mark every notification as read. */
@@ -37,14 +38,35 @@ export function useMarkNotificationRead() {
 }
 
 /**
- * Update marketing-consent opt-in. This endpoint does not affect the
- * notification-settings resource, so we deliberately do NOT invalidate
- * ['notifications','settings'] to avoid over-fetching.
+ * Update marketing-consent opt-in. This also affects eventBenefitEnabled in
+ * the notification-settings resource, so keep that cache aligned.
  */
 export function useUpdateMarketingConsent() {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (marketingEnabled: boolean) =>
       updateMarketingConsent(marketingEnabled),
+    onMutate: async (marketingEnabled) => {
+      await qc.cancelQueries({ queryKey: notificationKeys.settings })
+      const previous = qc.getQueryData<NotificationSettings>(
+        notificationKeys.settings,
+      )
+      if (previous) {
+        qc.setQueryData<NotificationSettings>(notificationKeys.settings, {
+          ...previous,
+          eventBenefitEnabled: marketingEnabled,
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _marketingEnabled, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(notificationKeys.settings, ctx.previous)
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: notificationKeys.settings })
+    },
   })
 }
 

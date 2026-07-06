@@ -70,11 +70,20 @@ export function SearchTopicRoomResultList({
     )
   }
 
+  if (data.length === 0) {
+    return (
+      <SearchEmptyState
+        recommendationKeyword={recommendationKeyword}
+        onPressRecommendation={onPressRecommendation}
+      />
+    )
+  }
+
   return (
     <FlatList
       data={data}
       keyExtractor={(item) => `topicroom-search-${item.topicRoomId}`}
-      contentContainerStyle={data.length === 0 ? styles.emptyContent : styles.content}
+      contentContainerStyle={styles.content}
       renderItem={({ item }) => {
         const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
         const timeAgo = formatTimeAgo(item.lastChatTime)
@@ -130,12 +139,6 @@ export function SearchTopicRoomResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={
-        <SearchEmptyState
-          recommendationKeyword={recommendationKeyword}
-          onPressRecommendation={onPressRecommendation}
-        />
-      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -216,9 +219,6 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     color: C.textMuted,
     textAlign: 'center',
-  },
-  emptyContent: {
-    flexGrow: 1,
   },
   footer: {
     paddingVertical: 20,

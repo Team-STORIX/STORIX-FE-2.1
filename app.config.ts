@@ -56,26 +56,32 @@ const androidGoogleServicesFile =
 const iosGoogleServicesPlist =
   process.env.GOOGLE_SERVICE_INFO_PLIST ??
   "./ios/STORIXFE21/GoogleService-Info.plist";
+const iosApsEnvironment =
+  process.env.EXPO_IOS_APS_ENVIRONMENT === "production"
+    ? "production"
+    : "development";
 
-// ─── Apple Sign In entitlement plugin ────────────────────────────────────────
+// ─── iOS entitlement plugin ──────────────────────────────────────────────────
 // @invertase/react-native-apple-authentication ships no Expo config plugin.
 // Applied as a config wrapper (not in the plugins array) because the ExpoConfig
 // type only permits string/tuple entries there — functions must wrap the config.
 // Also requires "Sign In with Apple" to be enabled for the bundle ID in the
 // Apple Developer portal (App ID → Capabilities).
-const withAppleSignIn = (config: ExpoConfig): ExpoConfig =>
+const withIosEntitlements = (config: ExpoConfig): ExpoConfig =>
   withEntitlementsPlist(config, (c) => {
     c.modResults["com.apple.developer.applesignin"] = ["Default"];
+    c.modResults["aps-environment"] = iosApsEnvironment;
     return c;
   });
 
 // ─── Exported config ─────────────────────────────────────────────────────────
 // app.json provides the base; this file extends ios/android and APPENDS to
 // plugins so app.json plugins (expo-router, expo-secure-store) are preserved.
-// withAppleSignIn wraps the final config to set the iOS entitlement.
+// withIosEntitlements wraps the final config to set iOS capabilities that must
+// be present in the generated native project.
 
 export default ({ config }: ConfigContext): ExpoConfig =>
-  withAppleSignIn({
+  withIosEntitlements({
     ...config,
     // name and slug are required on ExpoConfig but typed as optional on ConfigContext.
     // The values below come from app.json; the fallbacks are only for TypeScript's sake.
@@ -88,8 +94,8 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       supportsTablet: true,
       googleServicesFile: iosGoogleServicesPlist,
       // Push Notifications + Background Modes (remote-notification) are
-      // required for APNs delivery. The Firebase config plugin adds the
-      // aps-environment entitlement automatically during prebuild.
+      // required for APNs delivery. aps-environment is set explicitly in
+      // withIosEntitlements above so the generated entitlements cannot miss it.
       infoPlist: {
         ...(config.ios?.infoPlist ?? {}),
         UIBackgroundModes: Array.from(

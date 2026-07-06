@@ -155,19 +155,11 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
   };
 
   const reviewBlocked = duplicateQuery.data?.result.isDuplicated ?? false;
-  const reviewButtonDisabled =
-    !selectedWork ||
-    duplicateQuery.isLoading ||
-    duplicateQuery.isFetching ||
-    reviewBlocked;
-
-  const reviewButtonLabel = !selectedWork
-    ? "작품을 선택해 주세요"
-    : duplicateQuery.isLoading || duplicateQuery.isFetching
-      ? "리뷰 작성 여부를 확인 중이에요"
-      : reviewBlocked
-        ? "이미 리뷰를 작성한 작품이에요"
-        : "선택 작품 리뷰 쓰기";
+  const isCheckingReviewStatus =
+    selectedWork != null &&
+    (duplicateQuery.isLoading || duplicateQuery.isFetching);
+  const canWriteSelectedReview =
+    selectedWork != null && !isCheckingReviewStatus && !reviewBlocked;
 
   if (!visible) {
     return null;
@@ -332,35 +324,32 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
               )}
             </View>
 
-            {selectedWork ? (
+            {selectedWork && !isCheckingReviewStatus ? (
               <View style={styles.footer}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    reviewButtonDisabled && styles.primaryButtonDisabled,
-                    pressed && !reviewButtonDisabled && styles.pressed,
-                  ]}
-                  disabled={reviewButtonDisabled}
-                  onPress={() => {
-                    if (!selectedWork) return;
-
-                    handleClose(() => {
-                      router.push(
-                        `/review/write?worksId=${selectedWork.worksId}` as never,
-                      );
-                    });
-                  }}
-                  accessibilityRole="button"
-                >
-                  <Text
-                    style={[
-                      styles.primaryButtonText,
-                      reviewButtonDisabled && styles.primaryButtonTextDisabled,
+                {canWriteSelectedReview ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      pressed && styles.pressed,
                     ]}
+                    onPress={() => {
+                      handleClose(() => {
+                        router.push(
+                          `/review/write?worksId=${selectedWork.worksId}` as never,
+                        );
+                      });
+                    }}
+                    accessibilityRole="button"
                   >
-                    {reviewButtonLabel}
+                    <Text style={styles.primaryButtonText}>
+                      선택 작품 리뷰 쓰기
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.footerCaption}>
+                    이미 리뷰를 작성한 작품이에요
                   </Text>
-                </Pressable>
+                )}
               </View>
             ) : null}
           </KeyboardAvoidingView>
@@ -528,15 +517,9 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[900],
     paddingVertical: 15,
   },
-  primaryButtonDisabled: {
-    backgroundColor: C.primaryLight,
-  },
   primaryButtonText: {
     ...Typography.body1Semibold,
     color: C.card,
-  },
-  primaryButtonTextDisabled: {
-    color: C.primary,
   },
   pressed: {
     opacity: 0.75,

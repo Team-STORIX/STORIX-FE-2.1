@@ -20,6 +20,7 @@ import {
   useTodayTopicRooms,
   useTopicRoomSearchInfinite,
 } from '../hooks'
+import { isTopicRoomParticipationLimitError } from '../services/topicRoomLimit'
 import { TopicRoomCard } from './TopicRoomCard'
 import { TopicRoomParticipationPager } from './TopicRoomParticipationPager'
 import {
@@ -27,11 +28,13 @@ import {
   TopicRoomSearchList,
 } from './TopicRoomSearchList'
 import { TopicRoomSearchBar } from './TopicRoomSearchBar'
+import { TopicRoomLimitModal } from './TopicRoomLimitModal'
 
 export function TopicRoomTabScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [keyword, setKeyword] = useState('')
+  const [limitModalVisible, setLimitModalVisible] = useState(false)
 
   const nickname = useProfileStore((state) => state.me?.nickName ?? '나의')
 
@@ -68,7 +71,14 @@ export function TopicRoomTabScreen() {
         return
       }
 
-      joinMutation.mutate(item.topicRoomId, { onSuccess: navigate })
+      joinMutation.mutate(item.topicRoomId, {
+        onSuccess: navigate,
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true)
+          }
+        },
+      })
     },
     [joinMutation, router],
   )
@@ -116,6 +126,10 @@ export function TopicRoomTabScreen() {
               />
             ) : null
           }
+        />
+        <TopicRoomLimitModal
+          visible={limitModalVisible}
+          onClose={() => setLimitModalVisible(false)}
         />
       </View>
     )
@@ -174,6 +188,10 @@ export function TopicRoomTabScreen() {
           hotLabel="HOT"
         />
       </ScrollView>
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </View>
   )
 }

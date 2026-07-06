@@ -20,7 +20,11 @@ import Svg, {
   Stop,
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
-import { useCreateTopicRoom } from "../../src/features/topicroom";
+import {
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
+  useCreateTopicRoom,
+} from "../../src/features/topicroom";
 import { C, Gray, Magenta, Radius, Typography } from "../../src/theme";
 
 const backIcon = require("../../assets/icons/common/back.svg");
@@ -74,6 +78,7 @@ export default function TopicRoomCreateScreen() {
 
   const [name, setName] = useState("");
   const [createdId, setCreatedId] = useState<number | null>(null);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const createMutation = useCreateTopicRoom();
 
   const trimmed = name.trim();
@@ -104,6 +109,11 @@ export default function TopicRoomCreateScreen() {
       {
         onSuccess: (topicRoomId) => {
           setCreatedId(topicRoomId);
+        },
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
         },
       },
     );
@@ -327,6 +337,10 @@ export default function TopicRoomCreateScreen() {
               )}
             </Pressable>
           </View>
+          <TopicRoomLimitModal
+            visible={limitModalVisible}
+            onClose={() => setLimitModalVisible(false)}
+          />
         </>
       )}
     </KeyboardAvoidingView>
