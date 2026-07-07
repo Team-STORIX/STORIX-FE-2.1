@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { formatTimeAgo } from "../../../lib/utils/formatTimeAgo";
 import { C } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
@@ -12,43 +11,15 @@ type Props = {
   onPress: () => void;
 };
 
-function formatLastChatTime(value?: string | null) {
-  if (!value) return "";
-  const relativeTime = formatTimeAgo(value);
-  if (relativeTime) return relativeTime;
-
-  const raw = value.trim();
-  if (!raw || raw === "string") return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return raw;
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
-}
-
 export function TopicRoomListItem({ item, onPress }: Props) {
   const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
-
-  // Joined topic-room API provides lastChatTime as the latest chat activity.
-  // It may already be formatted by the backend ("6분 전"), so preserve that
-  // display value when it is not an ISO timestamp.
-  const timeSource = item.lastChatTime;
-  const formattedValue = formatLastChatTime(timeSource);
   const memberCount = item.activeUserNumber ?? 0;
-  const rightText = formattedValue
-    ? `${memberCount}명 · ${formattedValue}`
-    : `${memberCount}명`;
 
   if (__DEV__) {
     console.log("[TOPICROOM_DATE] joined-list-item", {
       roomId: item.topicRoomId,
       lastChatTime: item.lastChatTime ?? null,
-      selectedField: "lastChatTime",
-      formattedValue,
-      rightText,
+      memberCount,
     });
   }
   const initial = (item.worksName || item.topicRoomName || "?")
@@ -80,7 +51,7 @@ export function TopicRoomListItem({ item, onPress }: Props) {
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
-          <Text style={styles.rightText}>{rightText}</Text>
+          <Text style={styles.rightText}>{memberCount}명</Text>
         </View>
 
         <View style={styles.bottomRow}>

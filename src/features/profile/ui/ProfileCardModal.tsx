@@ -3,6 +3,7 @@ import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useRef } from 'react'
 import ViewShot from 'react-native-view-shot'
+import { XLogo } from '../../../components/common/XLogo'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import { useCardShare } from '../hooks/useCardShare'
 
@@ -13,7 +14,6 @@ const likedIcon = require('../../../../assets/icons/profile/icon-liked.svg')
 const libraryIcon = require('../../../../assets/icons/profile/icon-library.svg')
 const downloadIcon = require('../../../../assets/icons/common/icon-download.svg')
 const shareIcon = require('../../../../assets/icons/common/icon-share.svg')
-const twitterIcon = require('../../../../assets/icons/common/icon-twitter.svg')
 
 export type ProfileCardModalProps = {
   visible: boolean
@@ -160,7 +160,7 @@ export function ProfileCardModal({
               style={styles.actionButton}
             >
               <View style={styles.actionButtonCircle}>
-                <Image source={twitterIcon} style={styles.twitterIcon} contentFit="contain" />
+                <XLogo size={20} color={Gray[900]} />
               </View>
               <Text style={styles.actionButtonText}>X에 공유</Text>
             </Pressable>
@@ -313,10 +313,6 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 24,
     height: 24,
-  },
-  twitterIcon: {
-    width: 48,
-    height: 48,
   },
   actionButtonText: {
     ...Typography.caption1Medium,

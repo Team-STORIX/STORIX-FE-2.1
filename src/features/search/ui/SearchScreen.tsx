@@ -150,6 +150,14 @@ export function SearchScreen() {
       : TOPIC_ROOM_SORT_LABELS[topicRoomSort]
   const typeLabel = summarizeSelected(selectedTypes, '작품유형', WORKS_TYPE_LABELS)
   const genreLabel = summarizeSelected(selectedGenres, '장르', GENRE_LABELS)
+  const isActiveResultLoading =
+    activeTab === 'works' ? worksQuery.isLoading : topicRoomQuery.isLoading
+  const isActiveResultEmpty =
+    activeTab === 'works'
+      ? worksQuery.isError || (!worksQuery.isLoading && worksQuery.items.length === 0)
+      : topicRoomQuery.isError ||
+        (!topicRoomQuery.isLoading && topicRoomQuery.items.length === 0)
+  const showFilters = !isActiveResultLoading && !isActiveResultEmpty
 
   const worksSortOptions = useMemo(
     () =>
@@ -233,6 +241,7 @@ export function SearchScreen() {
         onChangeText={setInputValue}
         onSubmit={() => submitKeyword(inputValue)}
         onBackPress={() => router.back()}
+        autoFocus={!submittedKeyword}
         showCancelIcon={
           submittedKeyword.length > 0 && normalizeKeyword(inputValue) === submittedKeyword
         }
@@ -247,27 +256,29 @@ export function SearchScreen() {
             }}
           />
 
-          <View style={styles.filtersWrap}>
-            <SearchFilterChip
-              label={sortLabel}
-              selected={
-                activeTab === 'works'
-                  ? worksSort !== 'NAME'
-                  : topicRoomSort !== 'DEFAULT'
-              }
-              onPress={() => setActiveSheet('sort')}
-            />
-            <SearchFilterChip
-              label={typeLabel}
-              selected={selectedTypes.length > 0}
-              onPress={() => setActiveSheet('type')}
-            />
-            <SearchFilterChip
-              label={genreLabel}
-              selected={selectedGenres.length > 0}
-              onPress={() => setActiveSheet('genre')}
-            />
-          </View>
+          {showFilters ? (
+            <View style={styles.filtersWrap}>
+              <SearchFilterChip
+                label={sortLabel}
+                selected={
+                  activeTab === 'works'
+                    ? worksSort !== 'NAME'
+                    : topicRoomSort !== 'DEFAULT'
+                }
+                onPress={() => setActiveSheet('sort')}
+              />
+              <SearchFilterChip
+                label={typeLabel}
+                selected={selectedTypes.length > 0}
+                onPress={() => setActiveSheet('type')}
+              />
+              <SearchFilterChip
+                label={genreLabel}
+                selected={selectedGenres.length > 0}
+                onPress={() => setActiveSheet('genre')}
+              />
+            </View>
+          ) : null}
 
           <View style={styles.listWrap}>
             {activeTab === 'works' ? (

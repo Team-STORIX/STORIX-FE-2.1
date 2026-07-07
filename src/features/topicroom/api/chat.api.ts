@@ -10,9 +10,10 @@ const MessagesEnvelopeSchema = ApiEnvelopeSchema(ChatRoomMessageHistorySchema)
 
 // GET /api/v1/chat/rooms/{roomId}/messages
 //
-// The backend now returns { joinedAt, messages: <page> }, but older deployments
-// return the page directly. We accept both and collapse them into a single
-// normalized page so the screen/infinite-query layer never branches on shape.
+// The backend now returns { joinedDays, activeUserNumber, messages: <page> },
+// but older deployments may return either { joinedAt, messages } or the page
+// directly. We accept all shapes and collapse them into a single normalized
+// page so the screen/infinite-query layer never branches on shape.
 export async function getChatRoomMessages(params: {
   roomId: number
   page?: number
@@ -33,26 +34,27 @@ export async function getChatRoomMessages(params: {
 
   const result = MessagesEnvelopeSchema.parse(res.data).result
 
-  // New wrapped shape: { joinedAt, messages }. Legacy shape: the page itself.
+  // Wrapped shape: { joinedDays, activeUserNumber, messages }. Legacy direct
+  // shape: the page itself.
   const isWrapped = 'messages' in result
   const page = isWrapped ? result.messages : result
-  const rawJoinedAt = isWrapped ? result.joinedAt : undefined
-  const joinedAt = rawJoinedAt ?? null
+  const joinedDays = isWrapped ? result.joinedDays ?? null : null
+  const activeUserNumber =
+    isWrapped && typeof result.activeUserNumber === 'number'
+      ? result.activeUserNumber
+      : null
 
   if (__DEV__) {
-    const parsedTimestamp = joinedAt ? Date.parse(joinedAt) : NaN
-    // Dev-only date audit. No message contents or tokens are logged.
     console.log('[TOPICROOM_DATE] history', {
       roomId: params.roomId,
-      rawJoinedAt,
-      normalizedJoinedAt: joinedAt,
-      parsedTimestamp,
-      isValidDate: Number.isFinite(parsedTimestamp),
+      joinedDays,
+      activeUserNumber,
     })
   }
 
   return {
-    joinedAt,
+    joinedDays,
+    activeUserNumber,
     content: page.content,
     last: page.last,
     empty: page.empty,

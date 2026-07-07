@@ -13,6 +13,7 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg'
+import { XLogo } from '../common/XLogo'
 import { C, Gray, Typography } from '../../theme'
 import { useCardShare } from '../../features/profile/hooks/useCardShare'
 
@@ -20,7 +21,6 @@ const recordCardTitle = require('../../../assets/icons/library/review-card-title
 const closeIcon = require('../../../assets/icons/common/x.svg')
 const downloadIcon = require('../../../assets/icons/common/icon-download.svg')
 const shareIcon = require('../../../assets/icons/common/icon-share.svg')
-const twitterIcon = require('../../../assets/icons/common/icon-twitter.svg')
 const star = require('../../../assets/onboarding/star-gray.svg')
 const storixLogo = require('../../../assets/logos/logo-white.svg')
 
@@ -265,7 +265,7 @@ export function RecordCardModal({
                 style={styles.actionButton}
               >
                 <View style={styles.actionButtonCircle}>
-                  <Image source={twitterIcon} style={styles.twitterIcon} contentFit="contain" />
+                  <XLogo size={20} color={Gray[900]} />
                 </View>
                 <Text style={styles.actionButtonText}>X에 공유</Text>
               </Pressable>
@@ -407,10 +407,6 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 24,
     height: 24,
-  },
-  twitterIcon: {
-    width: 48,
-    height: 48,
   },
   actionButtonText: {
     ...Typography.caption1Medium,

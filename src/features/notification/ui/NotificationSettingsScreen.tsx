@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   ActivityIndicator,
@@ -73,6 +73,29 @@ export function NotificationSettingsScreen() {
       settings.eventBenefitEnabled ||
       settings.operationPolicyEnabled)
   const pushReceiptEnabled = pushGranted === true && appNotificationEnabled
+
+  useEffect(() => {
+    if (!settings || pushGranted !== false || isPending) return
+
+    const disabledSettings = {
+      myActivityEnabled: false,
+      contentCommunityEnabled: false,
+      operationPolicyEnabled: false,
+    }
+
+    const hasSettingsEnabled =
+      settings.myActivityEnabled ||
+      settings.contentCommunityEnabled ||
+      settings.operationPolicyEnabled
+
+    if (hasSettingsEnabled) {
+      updateSettings.mutate(disabledSettings)
+    }
+
+    if (settings.eventBenefitEnabled) {
+      updateEventBenefit.mutate(false)
+    }
+  }, [settings, pushGranted, isPending, updateSettings, updateEventBenefit])
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()

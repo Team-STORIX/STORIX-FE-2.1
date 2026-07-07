@@ -14,6 +14,7 @@ type Props = {
   onSubmit: () => void;
   onBackPress: () => void;
   showCancelIcon: boolean;
+  autoFocus?: boolean;
 };
 
 export function SearchHeader({
@@ -22,6 +23,7 @@ export function SearchHeader({
   onSubmit,
   onBackPress,
   showCancelIcon,
+  autoFocus = true,
 }: Props) {
   return (
     <View style={styles.container}>
@@ -45,7 +47,7 @@ export function SearchHeader({
           placeholder="좋아하는 작품/토픽룸을 검색해보세요"
           placeholderTextColor={C.textMuted}
           style={styles.input}
-          autoFocus
+          autoFocus={autoFocus}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"

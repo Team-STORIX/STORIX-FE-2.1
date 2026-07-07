@@ -27,6 +27,7 @@ import {
   useBlockTopicRoomUser,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
+  useReportTopicRoomUser,
   useTopicRoomMembers,
   useTopicRoomStomp,
   type ConfirmVariant,
@@ -84,9 +85,6 @@ export default function TopicRoomScreen() {
     worksType?: string;
     activeUserNumber?: string;
     startDate?: string;
-    // Set by the report page on successful submission so the chat shows the
-    // report-complete snackbar after navigating back. Cleared once consumed.
-    userActionToast?: string;
   }>();
   // useLocalSearchParams can yield a string or a string[]; normalize either to a
   // single number. Invalid values become NaN, which downstream guards (history
@@ -114,6 +112,7 @@ export default function TopicRoomScreen() {
     null,
   );
   const blockMutation = useBlockTopicRoomUser();
+  const reportMutation = useReportTopicRoomUser();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,6 +160,10 @@ export default function TopicRoomScreen() {
     [queryClient, roomId],
   );
 
+  const handleActiveUserNumber = useCallback((activeUserNumber: number) => {
+    if (activeUserNumber >= 0) setLiveMemberCount(activeUserNumber);
+  }, []);
+
   const {
     status,
     messages: realtimeMsgs,
@@ -170,6 +173,7 @@ export default function TopicRoomScreen() {
     roomId,
     enabled: isScreenFocused,
     onMemberChange: handleMemberChange,
+    onActiveUserNumber: handleActiveUserNumber,
   });
 
   useFocusEffect(
@@ -194,9 +198,19 @@ export default function TopicRoomScreen() {
     return map;
   }, [members]);
 
+  const historyActiveUserNumber =
+    historyData?.pages?.find(
+      (page) => typeof page.activeUserNumber === "number",
+    )?.activeUserNumber ?? null;
+
   useEffect(() => {
-    if (members.length > 0) setLiveMemberCount(members.length);
-  }, [members.length]);
+    if (
+      typeof historyActiveUserNumber === "number" &&
+      historyActiveUserNumber >= 0
+    ) {
+      setLiveMemberCount(historyActiveUserNumber);
+    }
+  }, [historyActiveUserNumber]);
 
   const handleBack = useCallback(() => {
     if (router.canGoBack()) {
@@ -249,34 +263,6 @@ export default function TopicRoomScreen() {
       showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
     }
   }, [rawRoomId, roomId, leaveMutation, router, showToast]);
-
-  // Report is now a full page (app/topicroom/report.tsx), not a bottom sheet.
-  const goToReport = useCallback(
-    (target?: {
-      userId: number;
-      chatMessageId?: number;
-      userName?: string;
-      profileImageUrl?: string | null;
-    }) => {
-      router.push({
-        pathname: "/topicroom/report",
-        params: {
-          roomId: String(roomId),
-          ...(target
-            ? {
-                reportedUserId: String(target.userId),
-                ...(target.chatMessageId != null
-                  ? { chatMessageId: String(target.chatMessageId) }
-                  : {}),
-                reportedUserName: target.userName ?? "",
-                reportedUserProfileImageUrl: target.profileImageUrl ?? "",
-              }
-            : {}),
-        },
-      });
-    },
-    [router, roomId],
-  );
 
   const historyDisplay: DisplayMsg[] = useMemo(() => {
     if (!historyData?.pages) return [];
@@ -362,25 +348,15 @@ export default function TopicRoomScreen() {
     : topicRoomName;
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
-  // Room-age / D-Day source. The chat-history response carries the membership
-  // `joinedAt`. It rides on the wrapped page, so scan all loaded pages for the
-  // first non-null value rather than assuming it sits on page[0] (defensive in
-  // case the first page back is a legacy direct-page with no joinedAt). Prefer
-  // joinedAt, fall back to a valid route param, then null. Never use
-  // lastChatTime (last activity, not join) or "now".
-  const historyJoinedAt =
-    historyData?.pages?.find((page) => page.joinedAt != null)?.joinedAt ?? null;
-  const validRouteStartDate =
-    params.startDate && !Number.isNaN(Date.parse(params.startDate))
-      ? params.startDate
-      : null;
-  const ddayStartDate = historyJoinedAt ?? validRouteStartDate ?? null;
+  // Room-age / D-Day source. The chat-history response now carries a display
+  // label (`joinedDays`, e.g. "3일") rather than the exact membership timestamp.
+  const joinedDays =
+    historyData?.pages?.find((page) => page.joinedDays != null)?.joinedDays ??
+    null;
 
   if (__DEV__) {
     console.log("[TOPICROOM_DATE] dday-source", {
-      historyJoinedAt,
-      routeStartDate: params.startDate ?? null,
-      selectedStartDate: ddayStartDate,
+      joinedDays,
     });
   }
 
@@ -451,25 +427,40 @@ export default function TopicRoomScreen() {
   }, []);
 
   const handleCancelConfirm = useCallback(() => {
-    if (blockMutation.isPending) return;
+    if (blockMutation.isPending || reportMutation.isPending) return;
     setConfirmVariant(null);
     setActionTarget(null);
-  }, [blockMutation.isPending]);
+  }, [blockMutation.isPending, reportMutation.isPending]);
 
   const handleConfirmAction = useCallback(() => {
     if (!actionTarget || !confirmVariant) return;
 
     if (confirmVariant === "report") {
-      // Reason selection is mandatory, so hand off to the existing report page
-      // with the target prefilled; the snackbar fires on its return.
-      const target = actionTarget;
-      closeUserActions();
-      goToReport({
-        userId: target.userId,
-        chatMessageId: target.chatMessageId,
-        userName: target.nickname,
-        profileImageUrl: target.profileImageUrl,
-      });
+      if (reportMutation.isPending) return;
+      if (!Number.isFinite(roomId) || roomId <= 0) {
+        closeUserActions();
+        showToast("채팅방 정보를 확인할 수 없어요.");
+        return;
+      }
+
+      reportMutation.mutate(
+        {
+          roomId,
+          reportedUserId: actionTarget.userId,
+          chatMessageId: actionTarget.chatMessageId,
+          reason: "SPAM",
+        },
+        {
+          onSuccess: () => {
+            closeUserActions();
+            showToast(USER_ACTION_SNACK.report);
+          },
+          onError: () => {
+            closeUserActions();
+            showToast("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
+          },
+        },
+      );
       return;
     }
 
@@ -491,20 +482,11 @@ export default function TopicRoomScreen() {
     actionTarget,
     confirmVariant,
     blockMutation,
+    reportMutation,
     roomId,
-    goToReport,
     closeUserActions,
     showToast,
   ]);
-
-  // Report page hands back `userActionToast=report` on success; show the
-  // snackbar once and clear the param so it does not re-fire on re-render.
-  useEffect(() => {
-    if (params.userActionToast === "report") {
-      showToast(USER_ACTION_SNACK.report);
-      router.setParams({ userActionToast: "" });
-    }
-  }, [params.userActionToast, showToast, router]);
 
   return (
     <KeyboardAvoidingView
@@ -525,7 +507,7 @@ export default function TopicRoomScreen() {
         />
       </View>
 
-      <TopicRoomDdayBar startDate={ddayStartDate} />
+      <TopicRoomDdayBar joinedDays={joinedDays} />
 
       {historyLoading && !historyData ? (
         <ActivityIndicator
@@ -613,7 +595,11 @@ export default function TopicRoomScreen() {
           visible
           variant={confirmVariant}
           target={actionTarget}
-          isPending={confirmVariant === "block" && blockMutation.isPending}
+          isPending={
+            confirmVariant === "report"
+              ? reportMutation.isPending
+              : blockMutation.isPending
+          }
           onCancel={handleCancelConfirm}
           onConfirm={handleConfirmAction}
         />

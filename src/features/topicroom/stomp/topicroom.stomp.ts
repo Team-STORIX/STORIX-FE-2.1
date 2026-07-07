@@ -1,5 +1,6 @@
 // src/features/topicroom/stomp/topicroom.stomp.ts
 import {
+  TopicRoomActiveUsersMessageSchema,
   TopicRoomStompMessageSchema,
   type TopicRoomUiMsg,
 } from './topicroom.stomp.schema'
@@ -27,6 +28,8 @@ const resolveBrokerURL = (): string => {
 export const STORIX_STOMP_BROKER_URL = resolveBrokerURL()
 
 export const topicRoomSubPath = (roomId: number) => `/sub/chat/room/${roomId}`
+export const topicRoomActiveUsersSubPath = (roomId: number) =>
+  `/sub/topic-rooms/${roomId}/active-users`
 export const topicRoomPubPath = () => `/pub/chat/message`
 
 const safeId = (v: unknown) => {
@@ -84,6 +87,20 @@ export function normalizeTopicRoomStompMessage(
     time: formatKoTime(m.createdAt),
     createdAt: m.createdAt,
   }
+}
+
+export function normalizeTopicRoomActiveUsersMessage(
+  rawBody: string,
+): { topicRoomId: number; activeUserNumber: number } | null {
+  let obj: unknown = null
+  try {
+    obj = JSON.parse(rawBody)
+  } catch {
+    return null
+  }
+
+  const parsed = TopicRoomActiveUsersMessageSchema.safeParse(obj)
+  return parsed.success ? parsed.data : null
 }
 
 export const makeSubscriptionId = (roomId: number) => {
