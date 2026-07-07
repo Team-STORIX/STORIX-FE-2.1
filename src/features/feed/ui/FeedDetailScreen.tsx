@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Pressable,
@@ -49,9 +50,15 @@ export function FeedDetailScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ boardId?: string; commentId?: string }>()
+  const params = useLocalSearchParams<{
+    boardId?: string
+    commentId?: string
+    from?: string | string[]
+  }>()
   const boardId = parseBoardId(params.boardId)
   const targetCommentId = parseBoardId(params.commentId)
+  const fromParam = Array.isArray(params.from) ? params.from[0] : params.from
+  const shouldBackToInterestFeed = fromParam === 'todayFeed'
   const scrollRef = useRef<ScrollView | null>(null)
   const commentLayoutYRef = useRef<Record<number, number>>({})
   const didScrollToCommentRef = useRef<number | null>(null)
@@ -103,6 +110,26 @@ export function FeedDetailScreen() {
     parentReplyId?: number
   } | null>(null)
 
+  const goInterestFeed = useCallback(() => {
+    router.replace(
+      `/(tabs)/feed?section=works&landingKey=${Date.now()}` as never,
+    )
+  }, [router])
+
+  const handleBack = useCallback(() => {
+    if (shouldBackToInterestFeed) {
+      goInterestFeed()
+      return
+    }
+
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+
+    goInterestFeed()
+  }, [goInterestFeed, router, shouldBackToInterestFeed])
+
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true)
@@ -116,6 +143,17 @@ export function FeedDetailScreen() {
       hideSubscription.remove()
     }
   }, [])
+
+  useEffect(() => {
+    if (!shouldBackToInterestFeed) return undefined
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack()
+      return true
+    })
+
+    return () => subscription.remove()
+  }, [handleBack, shouldBackToInterestFeed])
 
   useEffect(() => {
     didScrollToCommentRef.current = null
@@ -271,10 +309,10 @@ export function FeedDetailScreen() {
         qc.invalidateQueries({ queryKey: ['boardComments'] })
         qc.invalidateQueries({ queryKey: ['topicroom'] })
         qc.invalidateQueries({ queryKey: ['worksReviews'] })
-        router.back()
+        handleBack()
       },
     })
-  }, [profile, qc, router])
+  }, [handleBack, profile, qc])
 
   const onDeleteReply = useCallback(
     (replyId: number, parentReplyId?: number) => {
@@ -292,7 +330,7 @@ export function FeedDetailScreen() {
         await deleteBoard(boardId)
         await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
         await qc.invalidateQueries({ queryKey: ['profile', 'activity'] })
-        router.back()
+        handleBack()
         return
       }
 
@@ -311,7 +349,7 @@ export function FeedDetailScreen() {
     } catch {
       Alert.alert('오류', '삭제에 실패했어요.')
     }
-  }, [boardId, deleteTarget, detailQuery, qc, router])
+  }, [boardId, deleteTarget, detailQuery, handleBack, qc])
 
   const onReportReply = useCallback(
     (
@@ -448,7 +486,7 @@ export function FeedDetailScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={handleBack} style={styles.backButton}>
           <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
         </Pressable>
         <Text style={styles.topBarTitle}>피드</Text>

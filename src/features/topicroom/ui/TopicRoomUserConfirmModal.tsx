@@ -43,8 +43,7 @@ const COPY: Record<
 
 /**
  * Figma nodes 9085:46663 / 9085:46667 — centered confirmation popup shared by
- * the report and block flows. The report variant navigates to the reason page
- * on confirm (no API here); the block variant runs the block mutation and shows
+ * the report and block flows. Confirm actions run the matching mutation and show
  * a pending spinner. Backdrop / cancel dismisses without side effects.
  */
 export function TopicRoomUserConfirmModal({

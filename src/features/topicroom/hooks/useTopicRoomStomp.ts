@@ -6,7 +6,9 @@ import { useProfileStore } from '../../profile/store/profile.store'
 import {
   STORIX_STOMP_BROKER_URL,
   makeSubscriptionId,
+  normalizeTopicRoomActiveUsersMessage,
   normalizeTopicRoomStompMessage,
+  topicRoomActiveUsersSubPath,
   topicRoomPubPath,
   topicRoomSubPath,
 } from '../stomp'
@@ -66,16 +68,21 @@ export const useTopicRoomStomp = (params: {
   roomId: number
   enabled?: boolean
   onMemberChange?: (activeUserNumber?: number) => void
+  onActiveUserNumber?: (activeUserNumber: number) => void
 }) => {
-  const { roomId, enabled = true, onMemberChange } = params
+  const { roomId, enabled = true, onMemberChange, onActiveUserNumber } = params
   const { accessToken } = useAuthStore()
   const myUserId = useProfileStore((s) => s.me?.userId ?? null)
   const myUserIdRef = useRef<number | null>(myUserId)
   const onMemberChangeRef = useRef<typeof onMemberChange>(onMemberChange)
+  const onActiveUserNumberRef =
+    useRef<typeof onActiveUserNumber>(onActiveUserNumber)
 
   const clientRef = useRef<Client | null>(null)
   const subRef = useRef<StompSubscription | null>(null)
+  const activeUsersSubRef = useRef<StompSubscription | null>(null)
   const subIdRef = useRef<string | null>(null)
+  const activeUsersSubIdRef = useRef<string | null>(null)
 
   // Prevents duplicate connect when roomId/token haven't changed (StrictMode / re-render).
   const sessionKeyRef = useRef<string>('')
@@ -108,6 +115,10 @@ export const useTopicRoomStomp = (params: {
     onMemberChangeRef.current = onMemberChange
   }, [onMemberChange])
 
+  useEffect(() => {
+    onActiveUserNumberRef.current = onActiveUserNumber
+  }, [onActiveUserNumber])
+
   const unsubscribe = useCallback(() => {
     try {
       if (subRef.current) {
@@ -115,11 +126,18 @@ export const useTopicRoomStomp = (params: {
       } else if (clientRef.current && subIdRef.current) {
         clientRef.current.unsubscribe(subIdRef.current)
       }
+      if (activeUsersSubRef.current) {
+        activeUsersSubRef.current.unsubscribe()
+      } else if (clientRef.current && activeUsersSubIdRef.current) {
+        clientRef.current.unsubscribe(activeUsersSubIdRef.current)
+      }
     } catch {
       // noop — ignore if already unsubscribed or connection is gone
     } finally {
       subRef.current = null
       subIdRef.current = null
+      activeUsersSubRef.current = null
+      activeUsersSubIdRef.current = null
     }
   }, [])
 
@@ -272,7 +290,9 @@ export const useTopicRoomStomp = (params: {
           setStatus('open')
 
           const subId = makeSubscriptionId(roomId)
+          const activeUsersSubId = `sub_active_users_${roomId}_${subId}`
           subIdRef.current = subId
+          activeUsersSubIdRef.current = activeUsersSubId
 
           // On reconnect, clean up the previous subscription before re-subscribing.
           unsubscribe()
@@ -282,11 +302,16 @@ export const useTopicRoomStomp = (params: {
               roomId,
               connectedHeaders: maskAuthHeaders(frame.headers),
               subscribeDestination: topicRoomSubPath(roomId),
+              activeUsersSubscribeDestination: topicRoomActiveUsersSubPath(roomId),
               clientConnected: client.connected,
             })
             console.debug('[STOMP_DIAG] subscribe', {
               destination: topicRoomSubPath(roomId),
               subscriptionId: subId,
+            })
+            console.debug('[STOMP_DIAG] subscribe', {
+              destination: topicRoomActiveUsersSubPath(roomId),
+              subscriptionId: activeUsersSubId,
             })
           }
 
@@ -351,8 +376,19 @@ export const useTopicRoomStomp = (params: {
             { id: subId },
           )
 
+          activeUsersSubRef.current = client.subscribe(
+            topicRoomActiveUsersSubPath(roomId),
+            (frame) => {
+              const activeUsers = normalizeTopicRoomActiveUsersMessage(frame.body)
+              if (!activeUsers || activeUsers.topicRoomId !== roomId) return
+              onActiveUserNumberRef.current?.(activeUsers.activeUserNumber)
+            },
+            { id: activeUsersSubId },
+          )
+
           if (__DEV__) {
             console.debug('[STOMP] subscribed', topicRoomSubPath(roomId))
+            console.debug('[STOMP] subscribed', topicRoomActiveUsersSubPath(roomId))
           }
           console.log('[STOMP] connected', roomId)
         },

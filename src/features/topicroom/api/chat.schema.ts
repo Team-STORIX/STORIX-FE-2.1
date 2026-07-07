@@ -44,15 +44,19 @@ export const ChatRoomMessagePageSchema = z.object({
 export type ChatRoomMessagePage = z.infer<typeof ChatRoomMessagePageSchema>
 
 /**
- * New wrapped chat-history response:
- *   { joinedAt: string | null, messages: <paginated message page> }
+ * Wrapped chat-history response:
+ *   { joinedDays: string | null, activeUserNumber: number | null, messages: <page> }
  *
- * joinedAt is the membership start date (do NOT confuse with message.createdAt).
- * Kept nullable/optional so old direct-page responses (no wrapper) stay valid
- * via the union below.
+ * joinedAt is retained as optional legacy input so older deployments remain
+ * valid via this wrapper while the app reads joinedDays going forward.
  */
 export const ChatRoomMessageHistoryWrappedSchema = z.object({
   joinedAt: z.string().nullish(),
+  joinedDays: z.string().nullish(),
+  activeUserNumber: z.preprocess(
+    (v) => (v == null ? undefined : Number(v)),
+    z.number().optional().nullish(),
+  ),
   messages: ChatRoomMessagePageSchema,
 })
 
@@ -71,7 +75,8 @@ export const ChatRoomMessageHistorySchema = z.union([
  * backend sent the wrapped or the legacy direct-page response.
  */
 export type NormalizedChatRoomMessagePage = {
-  joinedAt: string | null
+  joinedDays: string | null
+  activeUserNumber: number | null
   content: ChatRoomMessage[]
   last: boolean
   empty: boolean

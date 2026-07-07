@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -16,7 +16,14 @@ import {
   isPreferenceDailyLimitError,
   usePreferenceExploration,
 } from '../../src/features/preference'
-import { useTodayTopicRooms } from '../../src/features/topicroom'
+import {
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
+  type TopicRoomItem,
+  useJoinTopicRoom,
+  usePopularTopicRooms,
+  useTodayTopicRooms,
+} from '../../src/features/topicroom'
 import { useNotificationConsentModal } from '../../src/features/notification/hooks/useNotificationConsentModal'
 import { useUnreadNotificationCount } from '../../src/features/notification/hooks/useNotifications'
 import { NotificationConsentModal } from '../../src/features/notification/ui/NotificationConsentModal'
@@ -33,6 +40,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [limitModalVisible, setLimitModalVisible] = useState(false)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
@@ -44,6 +52,11 @@ export default function HomeScreen() {
     isLoading: todayLoading,
   } = useTodayTopicRooms()
   const {
+    data: popularRooms,
+    isLoading: popularLoading,
+  } = usePopularTopicRooms()
+  const joinTopicRoomMutation = useJoinTopicRoom()
+  const {
     refetch: refetchExploration,
     isFetching: checkingExploration,
   } = usePreferenceExploration(false)
@@ -51,6 +64,21 @@ export default function HomeScreen() {
 
   // One-time event/benefit consent overlay on first Home entry after onboarding.
   const consent = useNotificationConsentModal()
+
+  const topicRooms = useMemo(() => {
+    const today = todayRooms ?? []
+    if (today.length >= 3) return today
+
+    const todayIds = new Set(today.map((room) => room.topicRoomId))
+    const fill = (popularRooms ?? [])
+      .filter((room) => !todayIds.has(room.topicRoomId))
+      .slice(0, 3 - today.length)
+
+    return [...today, ...fill]
+  }, [popularRooms, todayRooms])
+
+  const topicRoomsLoading =
+    todayLoading || ((todayRooms?.length ?? 0) < 3 && popularLoading)
 
   useEffect(() => {
     return () => {
@@ -106,6 +134,44 @@ export default function HomeScreen() {
     router.push(`/search?keyword=${encodeURIComponent(keyword)}` as never)
   }
 
+  const goFeedSection = (section: 'topicroom' | 'works') => {
+    router.push(
+      `/(tabs)/feed?section=${section}&landingKey=${Date.now()}` as never,
+    )
+  }
+
+  const enterTopicRoom = useCallback(
+    (room: TopicRoomItem) => {
+      const navigate = () => {
+        router.push({
+          pathname: '/topicroom/[roomId]',
+          params: {
+            roomId: String(room.topicRoomId),
+            topicRoomName: room.topicRoomName ?? '',
+            worksName: room.worksName ?? '',
+            worksType: room.worksType ?? '',
+            activeUserNumber: String(room.activeUserNumber ?? ''),
+          },
+        })
+      }
+
+      if (room.isJoined) {
+        navigate()
+        return
+      }
+
+      joinTopicRoomMutation.mutate(room.topicRoomId, {
+        onSuccess: navigate,
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true)
+          }
+        },
+      })
+    },
+    [joinTopicRoomMutation, router],
+  )
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -127,18 +193,14 @@ export default function HomeScreen() {
             {/* TODO: Upcoming TopicRoom UI redesign — Figma "STORIX 2.0 mid-fi > 소통(토픽룸) > 토픽룸 ver2" (node 8009:38269). */}
             <HomeSection
               title="실시간 작품 이야기!"
-              onArrowPress={() =>
-                router.push('/(tabs)/feed?section=topicroom' as never)
-              }
+              onArrowPress={() => goFeedSection('topicroom')}
             >
               <TopicRoomCoverCarousel
-                data={todayRooms}
-                isLoading={todayLoading}
+                data={topicRooms}
+                isLoading={topicRoomsLoading}
                 badgeLabel="HOT"
                 emptyText="오늘 참여중인 토픽룸이 아직 없어요"
-                onPressItem={() =>
-                  router.push('/(tabs)/feed?section=topicroom' as never)
-                }
+                onPressItem={enterTopicRoom}
               />
             </HomeSection>
           </View>
@@ -146,22 +208,15 @@ export default function HomeScreen() {
           <View>
             <HomeSection
               title="오늘의 피드"
-              onArrowPress={() =>
-                router.push('/(tabs)/feed?section=works' as never)
-              }
+              onArrowPress={() => goFeedSection('works')}
             >
               <HotFeedSlider
                 data={feeds}
                 isLoading={feedsLoading}
                 onPressItem={(item) => {
-                  const worksId =
-                    item.board.isWorksSelected &&
-                    item.board.worksId != null &&
-                    item.board.worksId > 0
-                      ? item.board.worksId
-                      : null
-                  if (worksId == null) return
-                  router.push(`/works/${worksId}` as const)
+                  router.push(
+                    `/feed/${item.board.boardId}?from=todayFeed` as never,
+                  )
                 }}
               />
             </HomeSection>
@@ -189,6 +244,10 @@ export default function HomeScreen() {
       />
 
       <NotificationConsentModal {...consent} />
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </View>
   )
 }

@@ -41,10 +41,16 @@ export function FeedScreen() {
   const listRef = useRef<FlatList<FeedBoardItem> | null>(null)
 
   // Home section arrows pin the landing tab explicitly.
-  const params = useLocalSearchParams<{ section?: string | string[] }>()
+  const params = useLocalSearchParams<{
+    section?: string | string[]
+    landingKey?: string | string[]
+  }>()
   const sectionParam = Array.isArray(params.section)
     ? params.section[0]
     : params.section
+  const landingKeyParam = Array.isArray(params.landingKey)
+    ? params.landingKey[0]
+    : params.landingKey
 
   const sectionTab: FeedTab =
     sectionParam === 'topicroom' ? 'writers' : 'works'
@@ -55,7 +61,7 @@ export function FeedScreen() {
   useEffect(() => {
     setTab(sectionTab)
     setPick('all')
-  }, [sectionTab])
+  }, [landingKeyParam, sectionParam, sectionTab])
 
   useEffect(() => {
     return subscribeFeedTabReselected(() => {
