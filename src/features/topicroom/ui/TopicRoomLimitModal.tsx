@@ -14,8 +14,8 @@ export function TopicRoomLimitModal({ visible, onClose }: Props) {
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -53,7 +53,7 @@ export function TopicRoomLimitModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(19, 17, 18, 0.6)',
+    backgroundColor: '#302d2f',
     alignItems: 'center',
     justifyContent: 'center',
   },

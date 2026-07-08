@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C } from "../../theme/colors";
+import { C, Gray } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
-import { Typography } from "../../theme/typography";
+import { FontFamily, Typography } from "../../theme/typography";
 
 const ratingStarIcon = require("../../../assets/icons/common/ratingStar.svg");
 const likeIcon = require("../../../assets/icons/common/icon-like.svg");
@@ -37,6 +37,7 @@ function StaticRatingStars({
               source={ratingStarIcon}
               style={{ width: size, height: size }}
               contentFit="contain"
+              tintColor={Gray[200]}
             />
             {fill > 0 ? (
               <View
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   },
   ratingValue: {
     ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   likePill: {
     flexDirection: "row",
@@ -153,12 +154,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   likeIcon: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
   },
   likeCount: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    lineHeight: 19.6,
+    color: Gray[500],
   },
   pressed: {
     opacity: 0.7,

@@ -127,10 +127,9 @@ export default function TopicRoomPreviewScreen() {
             <Text style={styles.fallbackText}>{initial}</Text>
           </View>
         )}
-        {/* Dark scrims for legibility (no gradient lib in project) */}
-        <View style={styles.scrim} />
-        <View style={styles.bottomScrim} />
       </View>
+
+      <View pointerEvents="none" style={styles.dimOverlay} />
 
       {/* Header with back arrow */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -229,17 +228,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: C.card,
   },
-  scrim: {
+  dimOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(19, 17, 18, 0.4)",
-  },
-  bottomScrim: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "50%",
-    backgroundColor: "rgba(19, 17, 18, 0.45)",
+    backgroundColor: "rgba(19, 17, 18, 0.6)",
   },
   header: {
     flexDirection: "row",

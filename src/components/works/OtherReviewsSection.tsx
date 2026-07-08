@@ -1,20 +1,14 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import type { WorksReviewItem } from '../../features/works'
 import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
 import { OtherReviewCard } from './OtherReviewCard'
-
-const arrowForwardSmall = require('../../../assets/icons/common/icon-arrow-forward-small.svg')
 
 type Props = {
   reviews: WorksReviewItem[]
   isLoading?: boolean
   isError?: boolean
-  hasNextPage?: boolean
   isFetchingNextPage?: boolean
-  onFetchNextPage?: () => void
   onPressDetail: (reviewId: number) => void
   onPressLike: (reviewId: number) => void
   likingReviewId?: number | null
@@ -24,9 +18,7 @@ export function OtherReviewsSection({
   reviews,
   isLoading = false,
   isError = false,
-  hasNextPage = false,
   isFetchingNextPage = false,
-  onFetchNextPage,
   onPressDetail,
   onPressLike,
   likingReviewId,
@@ -61,30 +53,10 @@ export function OtherReviewsSection({
         />
       ))}
 
-      {hasNextPage && onFetchNextPage ? (
-        <Pressable
-          style={({ pressed }) => [
-            styles.loadMoreButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={onFetchNextPage}
-          disabled={isFetchingNextPage}
-          accessibilityRole="button"
-          accessibilityLabel="리뷰 더 보기"
-        >
-          {isFetchingNextPage ? (
-            <ActivityIndicator size="small" color={C.primary} />
-          ) : (
-            <>
-              <Text style={styles.loadMoreText}>리뷰 더 보기</Text>
-              <Image
-                source={arrowForwardSmall}
-                style={styles.loadMoreIcon}
-                contentFit="contain"
-              />
-            </>
-          )}
-        </Pressable>
+      {!isLoading && isFetchingNextPage ? (
+        <View style={styles.nextLoaderRow}>
+          <ActivityIndicator size="small" color={C.primary} />
+        </View>
       ) : null}
     </View>
   )
@@ -115,29 +87,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  loadMoreButton: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    minHeight: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
+  nextLoaderRow: {
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  loadMoreText: {
-    ...Typography.body2Bold,
-    color: C.primary,
-  },
-  loadMoreIcon: {
-    width: 16,
-    height: 16,
-    tintColor: C.primary,
-  },
-  pressed: {
-    opacity: 0.7,
   },
 })

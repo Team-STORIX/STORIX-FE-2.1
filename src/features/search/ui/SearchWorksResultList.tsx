@@ -1,6 +1,6 @@
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
+import { C, Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import type { WorksSearchItem } from '../api'
 import { SearchEmptyState } from './SearchEmptyState'
@@ -117,7 +117,7 @@ export function SearchWorksResultList({
 const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
     paddingHorizontal: 16,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   title: {
     ...Typography.body2Medium,
@@ -148,13 +148,12 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
+    gap: 2,
   },
   star: {
     width: 9,

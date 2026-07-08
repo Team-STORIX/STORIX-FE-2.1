@@ -158,7 +158,8 @@ export function BirthdayThemePreviewBottomSheet({
 
           <ScrollView
             style={styles.previewScroll}
-            scrollEnabled={false}
+            contentContainerStyle={styles.previewScrollContent}
+            scrollEnabled
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.previewCardWrap}>
@@ -179,6 +180,8 @@ export function BirthdayThemePreviewBottomSheet({
                 replyCount={9}
                 onToggleLike={() => {}}
                 birthdayTheme={previewBirthdayEnabled}
+                birthdayPreview
+                disableSpoilerMask
               />
             </View>
           </ScrollView>
@@ -203,7 +206,7 @@ export function BirthdayThemePreviewBottomSheet({
                 style={[
                   styles.toggleIcon,
                   {
-                    tintColor: previewBirthdayEnabled ? C.card : Gray[400],
+                    tintColor: previewBirthdayEnabled ? Magenta[300] : Gray[400],
                   },
                 ]}
                 contentFit="contain"
@@ -246,20 +249,28 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
+    flex: 1,
     ...Typography.body1Medium,
     color: C.text,
+    textAlign: "center",
   },
   badge: {
     ...Typography.body1Medium,
     color: C.badgeText,
   },
   closeButton: {
+    width: 48,
+    minHeight: 24,
     alignItems: "center",
     justifyContent: "center",
   },
   previewScroll: {
+    flexShrink: 1,
     maxHeight: 480,
+  },
+  previewScrollContent: {
     paddingVertical: 20,
+    paddingBottom: 28,
   },
   previewCardWrap: {
     marginHorizontal: 16,
@@ -287,8 +298,8 @@ const styles = StyleSheet.create({
     borderColor: Gray[200],
   },
   toggleButtonOn: {
-    backgroundColor: Magenta[100],
-    borderColor: Magenta[300],
+    backgroundColor: Magenta[20],
+    borderColor: Magenta[100],
   },
   toggleIcon: {
     width: 36,

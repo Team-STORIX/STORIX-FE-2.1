@@ -80,18 +80,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 24,
-    shadowOffset: { width: 8, height: 9 },
-    shadowOpacity: 0.16,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.32,
     shadowRadius: 22,
-    elevation: 4,
+    elevation: 8,
   },
   buttonActive: {
     backgroundColor: C.primary,
-    shadowColor: "#d11d6b",
+    shadowColor: C.primary,
   },
   buttonInactive: {
     backgroundColor: C.text,
-    shadowColor: "#302f30",
+    shadowColor: C.text,
   },
   fireIcon: {
     width: 24,

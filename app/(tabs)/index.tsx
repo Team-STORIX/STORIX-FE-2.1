@@ -255,11 +255,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: C.card,
   },
   screen: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: C.card,
   },
   content: {
     paddingHorizontal: HOME_PAD,

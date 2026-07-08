@@ -60,7 +60,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -HOME_PAD,
   },
   content: {
-    paddingHorizontal: HOME_PAD,
+    paddingLeft: HOME_PAD,
+    paddingRight: HOME_PAD + 8,
   },
   gap: {
     marginLeft: ITEM_GAP,

@@ -14,7 +14,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
 import { C, Gray, Magenta } from "../../../theme/colors";
-import { Typography } from "../../../theme/typography";
+import { FontFamily, Typography } from "../../../theme/typography";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
@@ -67,6 +67,8 @@ type FeedPostCardProps = {
   onOpenBlock?: () => void;
   onPressCard?: () => void;
   birthdayTheme?: boolean;
+  birthdayPreview?: boolean;
+  disableSpoilerMask?: boolean;
 };
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
@@ -202,6 +204,8 @@ export function FeedPostCard({
   onOpenBlock,
   onPressCard,
   birthdayTheme = false,
+  birthdayPreview = false,
+  disableSpoilerMask = false,
 }: FeedPostCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuDropdownTop, setMenuDropdownTop] = useState(0);
@@ -234,8 +238,9 @@ export function FeedPostCard({
   };
 
   const isMine = currentUserId != null && writerUserId === currentUserId;
-  const isSpoilerHidden = isSpoiler && !spoilerRevealed;
+  const isSpoilerHidden = isSpoiler && !spoilerRevealed && !disableSpoilerMask;
   const displayCreatedAt = formatCreatedAtLabel(createdAt);
+  const useBirthdayPreviewLayout = birthdayPreview || birthdayTheme;
 
   const showWorks =
     works != null &&
@@ -243,7 +248,7 @@ export function FeedPostCard({
     !!works.worksName &&
     !!works.artistName;
   const cardBody = (
-    <View style={styles.card}>
+    <View style={[styles.card, useBirthdayPreviewLayout && styles.birthdayCard]}>
       {/* ── Birthday theme decorations ────────────────────────── */}
       {birthdayTheme && (
         <>
@@ -412,10 +417,22 @@ export function FeedPostCard({
 
             <View style={styles.worksInfo}>
               <View>
-                <Text style={styles.worksName} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.worksName,
+                    useBirthdayPreviewLayout && styles.birthdayWorksName,
+                  ]}
+                  numberOfLines={1}
+                >
                   {works!.worksName}
                 </Text>
-                <Text style={styles.worksMeta} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.worksMeta,
+                    useBirthdayPreviewLayout && styles.birthdayWorksMeta,
+                  ]}
+                  numberOfLines={1}
+                >
                   {[works!.artistName, works!.worksType, works!.genre]
                     .filter(Boolean)
                     .join(" · ")}
@@ -453,10 +470,24 @@ export function FeedPostCard({
                 contentContainerStyle={styles.imageContent}
               >
                 {images.slice(0, 3).map((src, idx) => (
-                  <Pressable key={`${boardId}-img-${idx}`} style={styles.imageBox} onPress={() => { setLightboxIndex(idx); setLightboxCurrent(idx); setLightboxControls(false); }}>
+                  <Pressable
+                    key={`${boardId}-img-${idx}`}
+                    style={[
+                      styles.imageBox,
+                      useBirthdayPreviewLayout && styles.birthdayImageBox,
+                    ]}
+                    onPress={() => {
+                      setLightboxIndex(idx);
+                      setLightboxCurrent(idx);
+                      setLightboxControls(false);
+                    }}
+                  >
                     <Image
                       source={{ uri: src }}
-                      style={styles.imageFill}
+                      style={[
+                        styles.imageFill,
+                        useBirthdayPreviewLayout && styles.birthdayImageFill,
+                      ]}
                       contentFit="cover"
                     />
                   </Pressable>
@@ -465,7 +496,10 @@ export function FeedPostCard({
             )}
             <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
               <Text
-                style={styles.contentText}
+                style={[
+                  styles.contentText,
+                  useBirthdayPreviewLayout && styles.birthdayContentText,
+                ]}
                 numberOfLines={variant === "detail" ? undefined : 3}
               >
                 {content}
@@ -487,7 +521,12 @@ export function FeedPostCard({
         </View>
 
         {/* ── Reactions row ────────────────────────────────────── */}
-        <View style={styles.reactionRow}>
+        <View
+          style={[
+            styles.reactionRow,
+            useBirthdayPreviewLayout && styles.birthdayReactionRow,
+          ]}
+        >
           <Pressable
             onPress={onToggleLike}
             style={styles.reactionItem}
@@ -504,6 +543,7 @@ export function FeedPostCard({
                 style={[
                   styles.reactionCount,
                   isLiked ? styles.reactionCountLiked : null,
+                  useBirthdayPreviewLayout && styles.birthdayReactionCount,
                 ]}
               >
                 {likeCount}
@@ -511,14 +551,27 @@ export function FeedPostCard({
             )}
           </Pressable>
 
-          <View style={[styles.reactionItem, styles.commentItem]}>
+          <View
+            style={[
+              styles.reactionItem,
+              styles.commentItem,
+              useBirthdayPreviewLayout && styles.birthdayCommentItem,
+            ]}
+          >
             <Image
               source={commentIcon}
               style={styles.reactionIcon}
               contentFit="contain"
             />
             {replyCount > 0 && (
-              <Text style={styles.reactionCount}>{replyCount}</Text>
+              <Text
+                style={[
+                  styles.reactionCount,
+                  useBirthdayPreviewLayout && styles.birthdayReactionCount,
+                ]}
+              >
+                {replyCount}
+              </Text>
             )}
           </View>
         </View>
@@ -558,6 +611,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     position: "relative",
     overflow: "hidden",
+  },
+  birthdayCard: {
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 0,
+    borderRadius: 12,
   },
   birthdayThemeTop: {
     position: "absolute",
@@ -671,6 +730,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 16,
   },
+  birthdayWorksSection: {
+    marginTop: 16,
+  },
   worksCard: {
     padding: 12,
     borderRadius: 8,
@@ -682,6 +744,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  birthdayWorksCard: {
+    borderColor: Gray[100],
+    backgroundColor: Gray[50],
+  },
   worksThumbnailBox: {
     width: 62,
     height: 83,
@@ -690,9 +756,17 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
+  birthdayWorksThumbnailBox: {
+    width: 55,
+    height: 74,
+  },
   worksThumbnail: {
     width: 62,
     height: 83,
+  },
+  birthdayWorksThumbnail: {
+    width: 55,
+    height: 74,
   },
   worksInfo: {
     flex: 1,
@@ -701,14 +775,28 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "space-between",
   },
+  birthdayWorksInfo: {
+    height: 74,
+  },
   worksName: {
     ...Typography.body2Bold,
     color: Gray[800],
     marginBottom: 4,
   },
+  birthdayWorksName: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12.86,
+    lineHeight: 18.004,
+    marginBottom: 0,
+  },
   worksMeta: {
     ...Typography.caption1Medium,
     color: Gray[500],
+  },
+  birthdayWorksMeta: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11.023,
+    lineHeight: 15.432,
   },
   worksArrowBtn: {
     paddingLeft: 12,
@@ -767,7 +855,14 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
+  birthdayImageBox: {
+    borderRadius: 8,
+  },
   imageFill: {
+    width: 200,
+    height: 200,
+  },
+  birthdayImageFill: {
     width: 200,
     height: 200,
   },
@@ -779,10 +874,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   contentText: {
+    fontFamily: FontFamily.medium,
     fontSize: 14,
     fontWeight: "500",
     lineHeight: 20,
     color: Gray[800],
+  },
+  birthdayContentText: {
+    color: Gray[900],
   },
   spoilerOverlay: {
     position: "absolute",
@@ -808,6 +907,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 16,
   },
+  birthdayReactionRow: {
+    marginTop: 12,
+  },
   reactionItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -815,15 +917,24 @@ const styles = StyleSheet.create({
   commentItem: {
     marginLeft: 16,
   },
+  birthdayCommentItem: {
+    marginLeft: 12,
+  },
   reactionIcon: {
     width: 24,
     height: 24,
   },
   reactionCount: {
     marginLeft: 4,
-    fontFamily: "SUIT",
+    fontFamily: FontFamily.medium,
     fontSize: 14,
     fontWeight: "500",
+    lineHeight: 19.6,
+    color: Gray[500],
+  },
+  birthdayReactionCount: {
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
     lineHeight: 19.6,
     color: Gray[500],
   },

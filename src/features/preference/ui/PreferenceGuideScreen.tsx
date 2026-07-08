@@ -1,21 +1,21 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { C, Gray, Typography } from '../../../theme'
-import { usePreferenceFlow } from '../hooks/usePreferenceFlow'
-import { PreferencePrimaryButton } from './PreferencePrimaryButton'
-import { PreferenceToast } from './PreferenceToast'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray, Typography } from "../../../theme";
+import { usePreferenceFlow } from "../hooks/usePreferenceFlow";
+import { PreferencePrimaryButton } from "./PreferencePrimaryButton";
+import { PreferenceToast } from "./PreferenceToast";
 
-const preferenceGuide = require('../../../../assets/preference/preferenceGuide.webp')
+const preferenceGuide = require("../../../../assets/preference/preferenceGuide.png");
 
 export function PreferenceGuideScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { isLoading, isInitializing, isLimitedDay, toastMessage } =
-    usePreferenceFlow()
+    usePreferenceFlow();
 
-  const isBusy = isLoading || isInitializing
+  const isBusy = isLoading || isInitializing;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -23,7 +23,7 @@ export function PreferenceGuideScreen() {
         <View style={styles.copyBlock}>
           <Text style={styles.title}>작품 탐색을 시작해볼까요?</Text>
           <Text style={styles.body}>
-            마음에 들면 오른쪽으로{'\n'}
+            마음에 들면 오른쪽으로{"\n"}
             아니면 왼쪽으로 스와이프하세요!
           </Text>
         </View>
@@ -40,8 +40,8 @@ export function PreferenceGuideScreen() {
           label="다음으로"
           disabled={isBusy || isLimitedDay}
           onPress={() => {
-            if (isBusy || isLimitedDay) return
-            router.push('/home/preference/swipe' as never)
+            if (isBusy || isLimitedDay) return;
+            router.push("/home/preference/swipe" as never);
           }}
         />
       </View>
@@ -58,7 +58,7 @@ export function PreferenceGuideScreen() {
         bottomOffset={24}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -72,23 +72,23 @@ const styles = StyleSheet.create({
   },
   copyBlock: {
     marginTop: 96,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     ...Typography.heading1,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   body: {
     marginTop: 4,
     ...Typography.body1Medium,
     color: Gray[500],
-    textAlign: 'center',
+    textAlign: "center",
   },
   illustration: {
     width: 280,
     height: 280,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: 96,
     transform: [{ translateY: -24 }],
   },
@@ -96,8 +96,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   loadingWrap: {
-    position: 'absolute',
+    position: "absolute",
     right: 24,
     top: 24,
   },
-})
+});

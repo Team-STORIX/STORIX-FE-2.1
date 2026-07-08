@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   hotChip: {
-    backgroundColor: Magenta[500],
+    backgroundColor: Magenta[300],
   },
   peopleChip: {
     backgroundColor: C.card,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 9999,
-    backgroundColor: Magenta[500],
+    backgroundColor: Magenta[300],
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: C.black,

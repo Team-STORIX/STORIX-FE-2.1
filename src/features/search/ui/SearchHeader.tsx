@@ -55,7 +55,10 @@ export function SearchHeader({
         />
 
         <Pressable
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.pressed,
+          ]}
           onPress={showCancelIcon ? () => onChangeText("") : onSubmit}
           accessibilityRole="button"
           accessibilityLabel={showCancelIcon ? "검색어 지우기" : "검색"}
@@ -77,7 +80,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 12,
     backgroundColor: C.card,
   },
   backButton: {
@@ -117,8 +119,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   cancelIcon: {
-    width: 12,
-    height: 12,
+    width: 18,
+    height: 18,
   },
   pressed: {
     opacity: 0.7,

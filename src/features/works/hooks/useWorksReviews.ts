@@ -64,6 +64,7 @@ export const useLikeWorksReview = (params: { worksId: number }) => {
     onSettled: () => {
       // Invalidate on both success and error so the list re-fetches server state.
       qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
       qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
     },
   })

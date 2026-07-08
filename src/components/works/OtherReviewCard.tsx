@@ -2,13 +2,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useLikesStore } from '../../store/likes.store'
 import type { WorksReviewItem } from '../../features/works'
-import { C } from '../../theme/colors'
+import { C, Gray } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
 import { ReviewMetaBar } from './ReviewMetaBar'
 import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
 
-const reviewProfileIcon = require('../../../assets/icons/common/reviewProfile.svg')
+const defaultProfileImage = require('../../../assets/placeholders/profile-default.png')
 const arrowForwardIcon = require('../../../assets/icons/common/icon-arrow-forward.svg')
 
 type Props = {
@@ -27,6 +27,7 @@ export function OtherReviewCard({
   const isLiked = useLikesStore(
     (state) => !!state.likedIds[String(item.reviewId)],
   )
+  const profileImageUrl = item.profileImageUrl?.trim()
 
   return (
     <View style={styles.card}>
@@ -34,9 +35,9 @@ export function OtherReviewCard({
         <View style={styles.avatar}>
           <Image
             source={
-              item.profileImageUrl
-                ? { uri: item.profileImageUrl }
-                : reviewProfileIcon
+              profileImageUrl
+                ? { uri: profileImageUrl }
+                : defaultProfileImage
             }
             style={styles.avatarImage}
             contentFit="cover"
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   contentText: {
     ...Typography.body2Medium,
     fontFamily: undefined,
-    color: C.textSecondary,
+    color: Gray[500],
     paddingRight: 4,
   },
   arrowForward: {

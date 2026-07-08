@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
   applyLabel: {
     ...Typography.body1Bold,
     color: C.card,
-    fontFamily: "SUIT",
   },
   pressed: {
     opacity: 0.85,

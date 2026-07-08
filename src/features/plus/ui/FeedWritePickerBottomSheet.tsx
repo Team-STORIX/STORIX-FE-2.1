@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { C, Gray } from "../../../theme/colors";
+import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { S } from "../../../theme/spacing";
 import { Typography } from "../../../theme/typography";
@@ -23,8 +23,8 @@ import { usePlusWorksSearch } from "../hooks";
 
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
-const activeIcon = require("../../../../assets/icons/common/active.svg");
-const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
+const clearSearchIcon = require("../../../../assets/icons/plus/icon-search-cancle.svg");
+const warningIcon = require("../../../../assets/icons/search/warning.png");
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
@@ -141,6 +141,7 @@ export function FeedWritePickerBottomSheet({
     () => works.find((w) => w.worksId === selectedWorkId),
     [selectedWorkId, works],
   );
+  const recommendedKeyword = "로맨스";
 
   const handleClose = (after?: () => void) => {
     Animated.timing(progress, {
@@ -173,6 +174,12 @@ export function FeedWritePickerBottomSheet({
     };
     handleClose(() => onPick(picked));
   };
+
+  const showEmptyState =
+    !!debouncedKeyword &&
+    !searchQuery.isLoading &&
+    !searchQuery.isError &&
+    works.length === 0;
 
   return (
     <Modal
@@ -238,7 +245,7 @@ export function FeedWritePickerBottomSheet({
                 value={keyword}
                 onChangeText={setKeyword}
                 placeholder="함께 이야기하고 싶은 작품을 검색하세요"
-                placeholderTextColor={C.textMuted}
+                placeholderTextColor={Gray[400]}
                 style={styles.searchInput}
                 returnKeyType="search"
                 autoCorrect={false}
@@ -255,7 +262,7 @@ export function FeedWritePickerBottomSheet({
                   accessibilityLabel="검색어 지우기"
                 >
                   <Image
-                    source={cancelIcon}
+                    source={clearSearchIcon}
                     style={styles.clearIcon}
                     contentFit="contain"
                   />
@@ -282,10 +289,8 @@ export function FeedWritePickerBottomSheet({
                 <View style={styles.stateWrap}>
                   <Text style={styles.stateText}>검색에 실패했어요</Text>
                 </View>
-              ) : works.length === 0 ? (
-                <View style={styles.stateWrap}>
-                  <Text style={styles.stateText}>검색 결과가 없습니다</Text>
-                </View>
+              ) : showEmptyState ? (
+                <View style={styles.emptyListSpace} />
               ) : (
                 <FlatList
                   data={works}
@@ -343,6 +348,41 @@ export function FeedWritePickerBottomSheet({
               </View>
             ) : null}
           </KeyboardAvoidingView>
+
+          {showEmptyState ? (
+            <View pointerEvents="box-none" style={styles.emptyStateLayer}>
+              <Image
+                source={warningIcon}
+                style={styles.emptyIcon}
+                contentFit="contain"
+              />
+              <View style={styles.emptyTextGroup}>
+                <Text style={styles.emptyTitle}>검색 결과가 없어요</Text>
+                <Text style={styles.emptyDescription}>
+                  이런 검색어는 어때요?
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  setKeyword(recommendedKeyword);
+                  setSelectedWorkId(undefined);
+                }}
+                style={({ pressed }) => [
+                  styles.recommendChip,
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`${recommendedKeyword} 검색하기`}
+              >
+                <Image
+                  source={searchIcon}
+                  style={styles.recommendIcon}
+                  contentFit="contain"
+                />
+                <Text style={styles.recommendText}>{recommendedKeyword}</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -356,9 +396,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   sheet: {
-    height: "80%",
-    borderTopLeftRadius: Radius.lg,
-    borderTopRightRadius: Radius.lg,
+    height: 742,
+    maxHeight: "88%",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     backgroundColor: C.card,
     paddingHorizontal: S.cardPad,
   },
@@ -375,6 +416,7 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.heading2,
     color: C.text,
+    paddingLeft: 4,
   },
   closeButton: {
     width: 24,
@@ -387,37 +429,38 @@ const styles = StyleSheet.create({
     height: 20,
   },
   searchWrap: {
+    height: 47,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Gray[50],
+    backgroundColor: Gray[50],
+    paddingHorizontal: 12,
     marginBottom: 16,
-    justifyContent: "center",
   },
   searchInput: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.card,
-    paddingLeft: 16,
-    paddingRight: 44,
-    paddingVertical: 14,
+    flex: 1,
+    minWidth: 0,
+    padding: 0,
+    margin: 0,
     color: C.text,
-    ...Typography.body2Medium,
+    ...Typography.body1Medium,
+    fontFamily: undefined,
   },
   searchFieldIcon: {
-    position: "absolute",
-    right: 16,
-    width: 20,
-    height: 20,
-  },
-  clearButton: {
-    position: "absolute",
-    right: 12,
     width: 24,
     height: 24,
+  },
+  clearButton: {
+    width: 18,
+    height: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   clearIcon: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
   },
   listWrap: {
     flex: 1,
@@ -469,6 +512,58 @@ const styles = StyleSheet.create({
   stateText: {
     ...Typography.body2Medium,
     color: C.textMuted,
+  },
+  emptyListSpace: {
+    flex: 1,
+  },
+  emptyStateLayer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+  },
+  emptyTextGroup: {
+    alignItems: "center",
+    gap: 5,
+  },
+  emptyTitle: {
+    ...Typography.heading2,
+    color: C.text,
+    textAlign: "center",
+  },
+  emptyDescription: {
+    ...Typography.body2Medium,
+    color: Gray[500],
+    textAlign: "center",
+  },
+  recommendChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
+    paddingLeft: 8,
+    paddingRight: 12,
+    paddingVertical: 6,
+  },
+  recommendIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Magenta[300],
+  },
+  recommendText: {
+    ...Typography.caption1Medium,
+    color: Magenta[300],
   },
   nextPageLoader: {
     marginVertical: 16,

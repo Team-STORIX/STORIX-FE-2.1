@@ -1,9 +1,8 @@
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,16 +20,14 @@ import Svg, {
   Stop,
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
-import type { WorksSearchItem } from "../../src/features/search/api/search.schema";
-import { useWorksSearch } from "../../src/features/search/hooks/useSearch";
 import {
-  findTopicRoomIdByWorksName,
   isTopicRoomParticipationLimitError,
   TopicRoomLimitModal,
+  TopicRoomWorksPickerBottomSheet,
   useCreateTopicRoom,
-  useJoinTopicRoom,
+  type PickedWorks,
 } from "../../src/features/topicroom";
-import { C, Gray, Magenta, Radius, Typography } from "../../src/theme";
+import { C, Gray, Magenta, Typography } from "../../src/theme";
 
 const backIcon = require("../../assets/icons/common/back.svg");
 const topicRoomGraphic = require("../../assets/topicroom/topicroom-graphic.png");
@@ -45,14 +42,6 @@ type Params = {
   thumbnailUrl?: string;
   artistName?: string;
   worksType?: string;
-};
-
-type PickedWorks = {
-  worksId: number;
-  worksName: string;
-  thumbnailUrl?: string | null;
-  artistName?: string | null;
-  worksType?: string | null;
 };
 
 function pickParam(v: string | string[] | undefined): string | undefined {
@@ -109,91 +98,12 @@ export default function TopicRoomCreateScreen() {
   const [createdId, setCreatedId] = useState<number | null>(null);
   const [limitModalVisible, setLimitModalVisible] = useState(false);
   const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(paramWorks);
-  const [keyword, setKeyword] = useState("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [selectedId, setSelectedId] = useState<number | undefined>();
-  const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
-  const [checkingExisting, setCheckingExisting] = useState(false);
-  const checkSeqRef = useRef(0);
 
   const createMutation = useCreateTopicRoom();
-  const joinMutation = useJoinTopicRoom();
 
   useEffect(() => {
     if (paramWorks) setPickedWorks(paramWorks);
   }, [paramWorks]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedKeyword(keyword.trim()), 300);
-    return () => clearTimeout(t);
-  }, [keyword]);
-
-  const worksSearchQuery = useWorksSearch({
-    keyword: debouncedKeyword,
-    page: 0,
-  });
-
-  const searchResults: WorksSearchItem[] = useMemo(
-    () => worksSearchQuery.data?.result.content ?? [],
-    [worksSearchQuery.data?.result.content],
-  );
-
-  const selectedWork = useMemo(
-    () => searchResults.find((w) => w.worksId === selectedId) ?? null,
-    [searchResults, selectedId],
-  );
-
-  const runExistingCheck = (item: WorksSearchItem) => {
-    const seq = ++checkSeqRef.current;
-    setCheckingExisting(true);
-    setExistingRoomId(null);
-    void (async () => {
-      try {
-        const found = await findTopicRoomIdByWorksName(item.worksName);
-        if (seq !== checkSeqRef.current) return;
-        setExistingRoomId(found ?? null);
-      } finally {
-        if (seq === checkSeqRef.current) setCheckingExisting(false);
-      }
-    })();
-  };
-
-  const handleSelectWork = (item: WorksSearchItem) => {
-    if (joinMutation.isPending) return;
-    if (selectedId === item.worksId) {
-      checkSeqRef.current += 1;
-      setSelectedId(undefined);
-      setExistingRoomId(null);
-      setCheckingExisting(false);
-      return;
-    }
-    setSelectedId(item.worksId);
-    runExistingCheck(item);
-  };
-
-  const handleConfirmWork = () => {
-    if (!selectedWork || checkingExisting || joinMutation.isPending) return;
-
-    if (existingRoomId != null) {
-      joinMutation.mutate(existingRoomId, {
-        onSuccess: () => router.replace(`/topicroom/${existingRoomId}` as const),
-        onError: (err) => {
-          if (isTopicRoomParticipationLimitError(err)) {
-            setLimitModalVisible(true);
-          }
-        },
-      });
-      return;
-    }
-
-    setPickedWorks({
-      worksId: Number(selectedWork.worksId),
-      worksName: selectedWork.worksName,
-      thumbnailUrl: selectedWork.thumbnailUrl ?? null,
-      artistName: selectedWork.artistName ?? null,
-      worksType: selectedWork.worksType ?? null,
-    });
-  };
 
   const trimmed = name.trim();
   const helperOk = TOPIC_NAME_PATTERN.test(trimmed);
@@ -209,6 +119,12 @@ export default function TopicRoomCreateScreen() {
       setPickedWorks(null);
       return;
     }
+    if (router.canGoBack()) router.back();
+    else goToFeedTopicRoom();
+  };
+
+  // Closing the works-picker sheet (X / backdrop) leaves the creation flow.
+  const handleSelectionClose = () => {
     if (router.canGoBack()) router.back();
     else goToFeedTopicRoom();
   };
@@ -305,7 +221,27 @@ export default function TopicRoomCreateScreen() {
           </Svg>
         </View>
 
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <Svg
+          style={styles.completeBottomFade}
+          pointerEvents="none"
+          preserveAspectRatio="none"
+        >
+          <Defs>
+            <SvgLinearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+              <Stop offset="1" stopColor="#FFFFFF" stopOpacity={1} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#bottomFade)" />
+        </Svg>
+
+        <View
+          style={[
+            styles.bottomBar,
+            styles.completeBottomBar,
+            { paddingBottom: insets.bottom + 12 },
+          ]}
+        >
           <Pressable
             onPress={handleEnterRoom}
             style={({ pressed }) => [
@@ -318,6 +254,19 @@ export default function TopicRoomCreateScreen() {
             <Text style={styles.primaryBtnText}>토픽룸으로 이동하기</Text>
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  if (!pickedWorks) {
+    return (
+      <View style={styles.screen}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <TopicRoomWorksPickerBottomSheet
+          visible
+          onClose={handleSelectionClose}
+          onPickWork={setPickedWorks}
+        />
       </View>
     );
   }
@@ -341,119 +290,9 @@ export default function TopicRoomCreateScreen() {
         </Pressable>
       </View>
 
-      {!pickedWorks ? (
-        <>
-          <View style={styles.pickIntro}>
-            <Text style={styles.introTitle}>토픽룸을 만들 작품을 선택해주세요</Text>
-            <Text style={styles.introSubtitle}>
-              이미 토픽룸이 있는 작품은 바로 입장할 수 있어요
-            </Text>
-          </View>
-
-          <View style={styles.searchBlock}>
-            <TextInput
-              value={keyword}
-              onChangeText={setKeyword}
-              placeholder="작품명을 검색하세요"
-              placeholderTextColor={Gray[300]}
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-          </View>
-
-          {worksSearchQuery.isLoading && debouncedKeyword ? (
-            <View style={styles.searchState}>
-              <ActivityIndicator size="small" color={C.primary} />
-            </View>
-          ) : null}
-
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) => `topicroom-create-work-${item.worksId}`}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[
-              styles.workListContent,
-              { paddingBottom: insets.bottom + 92 },
-            ]}
-            ListEmptyComponent={
-              debouncedKeyword ? (
-                <Text style={styles.emptyText}>검색 결과가 없어요.</Text>
-              ) : (
-                <Text style={styles.emptyText}>작품명을 입력해 주세요.</Text>
-              )
-            }
-            renderItem={({ item }) => {
-              const selected = selectedId === item.worksId;
-              return (
-                <Pressable
-                  onPress={() => handleSelectWork(item)}
-                  style={({ pressed }) => [
-                    styles.workItem,
-                    selected && styles.workItemSelected,
-                    pressed && styles.pressed,
-                  ]}
-                  accessibilityRole="button"
-                >
-                  {item.thumbnailUrl ? (
-                    <Image
-                      source={{ uri: item.thumbnailUrl }}
-                      style={styles.workThumb}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View style={[styles.workThumb, styles.workThumbFallback]}>
-                      <Text style={styles.workThumbFallbackText}>
-                        {(item.worksName || "?").slice(0, 1).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.workTextBlock}>
-                    <Text style={styles.workName} numberOfLines={1}>
-                      {item.worksName}
-                    </Text>
-                    <Text style={styles.workMeta} numberOfLines={1}>
-                      {[item.artistName, item.worksType].filter(Boolean).join(" · ")}
-                    </Text>
-                  </View>
-                  {selected ? <View style={styles.selectedDot} /> : null}
-                </Pressable>
-              );
-            }}
-          />
-
-          <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
-            <Pressable
-              onPress={handleConfirmWork}
-              disabled={!selectedWork || checkingExisting || joinMutation.isPending}
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                selectedWork && !checkingExisting && !joinMutation.isPending
-                  ? styles.primaryBtnActive
-                  : styles.primaryBtnDisabled,
-                pressed && selectedWork && styles.pressed,
-              ]}
-              accessibilityRole="button"
-            >
-              {checkingExisting || joinMutation.isPending ? (
-                <ActivityIndicator size="small" color={C.card} />
-              ) : (
-                <Text
-                  style={[
-                    styles.primaryBtnText,
-                    (!selectedWork || checkingExisting) && styles.primaryBtnTextDisabled,
-                  ]}
-                >
-                  {existingRoomId != null ? "토픽룸으로 이동하기" : "다음으로"}
-                </Text>
-              )}
-            </Pressable>
-          </View>
-        </>
-      ) : (
-        <>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.intro}>
@@ -485,7 +324,10 @@ export default function TopicRoomCreateScreen() {
                 onChangeText={(v) => setName(v.slice(0, MAX_NAME_LENGTH))}
                 placeholder="토픽룸 제목을 입력하세요"
                 placeholderTextColor={Gray[300]}
-                style={styles.input}
+                style={[
+                  styles.input,
+                  !name.trim() && styles.inputEmpty,
+                ]}
                 maxLength={MAX_NAME_LENGTH}
               />
               <View style={styles.inputMetaRow}>
@@ -547,8 +389,6 @@ export default function TopicRoomCreateScreen() {
               )}
             </Pressable>
           </View>
-        </>
-      )}
       <TopicRoomLimitModal
         visible={limitModalVisible}
         onClose={() => setLimitModalVisible(false)}
@@ -624,88 +464,6 @@ const styles = StyleSheet.create({
     ...Typography.body1Medium,
     color: Gray[500],
   },
-  pickIntro: {
-    paddingHorizontal: 16,
-    paddingTop: 32,
-    gap: 5,
-  },
-  searchBlock: {
-    marginHorizontal: 16,
-    marginTop: 24,
-  },
-  searchInput: {
-    height: 48,
-    borderRadius: Radius.sm,
-    backgroundColor: Gray[50],
-    paddingHorizontal: 16,
-    color: Gray[900],
-    ...Typography.body1Medium,
-  },
-  searchState: {
-    paddingVertical: 18,
-    alignItems: "center",
-  },
-  workListContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 10,
-  },
-  emptyText: {
-    ...Typography.body2Medium,
-    color: Gray[500],
-    textAlign: "center",
-    paddingTop: 32,
-  },
-  workItem: {
-    minHeight: 76,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: C.card,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  workItemSelected: {
-    borderColor: C.primary,
-    backgroundColor: Magenta[50],
-  },
-  workThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-    backgroundColor: Gray[100],
-  },
-  workThumbFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  workThumbFallbackText: {
-    ...Typography.body1Bold,
-    color: C.primary,
-  },
-  workTextBlock: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
-    gap: 3,
-  },
-  workName: {
-    ...Typography.body1Bold,
-    color: Gray[900],
-  },
-  workMeta: {
-    ...Typography.caption1Medium,
-    color: Gray[500],
-  },
-  selectedDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: C.primary,
-  },
-
   thumbWrap: {
     alignSelf: "center",
     marginTop: 48,
@@ -735,9 +493,12 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     paddingVertical: 12,
     borderBottomWidth: 2,
-    borderBottomColor: Gray[300],
+    borderBottomColor: Gray[900],
     color: Gray[900],
     ...Typography.body1Medium,
+  },
+  inputEmpty: {
+    borderBottomColor: Gray[300],
   },
   inputMetaRow: {
     flexDirection: "row",
@@ -797,6 +558,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     backgroundColor: C.card,
+  },
+  completeBottomBar: {
+    backgroundColor: "transparent",
+  },
+  completeBottomFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 165,
   },
   primaryBtn: {
     height: 50,

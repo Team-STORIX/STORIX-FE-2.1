@@ -43,6 +43,7 @@ export type PreferenceWork = {
   hashtags: string[]
   meta?: string
   ratingText?: string
+  averageRating?: number | null
 }
 
 type PreferenceFlowContextValue = {
@@ -116,6 +117,7 @@ function mapResultToWork(work: PreferenceResultWork): PreferenceWork {
     author: work.author ?? '',
     illustrator: work.illustrator ?? '',
     originalAuthor: work.originalAuthor ?? '',
+    averageRating: work.avgRating,
   }
 }
 

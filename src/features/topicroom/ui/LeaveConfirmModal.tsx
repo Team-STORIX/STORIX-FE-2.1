@@ -37,8 +37,8 @@ export function LeaveConfirmModal({
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={handleBackdrop}
     >
       <View style={styles.backdrop}>
@@ -86,7 +86,7 @@ export function LeaveConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "#302d2f",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingTop: 28,
     paddingBottom: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: 14,
     alignItems: "center",
     shadowColor: C.black,
     shadowOpacity: 0.25,

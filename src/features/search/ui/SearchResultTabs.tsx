@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C } from "../../../theme/colors";
+import { C, Gray } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
 
 export type SearchTab = "works" | "topicroom";
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     ...Typography.body1Medium,
-    color: C.textMuted,
+    color: Gray[400],
   },
   tabTextActive: {
     color: C.text,

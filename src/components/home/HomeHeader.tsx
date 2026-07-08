@@ -1,15 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
 import { C } from '../../theme'
 
 const logoBlack = require('../../../assets/icons/common/logo-black.svg')
 const searchIcon = require('../../../assets/icons/common/search.svg')
 const notificationIcon = require('../../../assets/icons/common/notification.svg')
+const notificationActiveIcon = require('../../../assets/notification/icon-notification-active.svg')
 
 type HomeHeaderProps = {
   onSearchPress?: () => void
   onNotificationPress?: () => void
-  /** Unread notification count — renders a small badge when > 0. */
+  /** Unread notification count — swaps to the active notification icon when > 0. */
   unreadCount?: number
 }
 
@@ -19,7 +20,6 @@ export function HomeHeader({
   unreadCount = 0,
 }: HomeHeaderProps) {
   const hasUnread = unreadCount > 0
-  const badgeLabel = unreadCount > 99 ? '99+' : String(unreadCount)
   return (
     <View style={styles.header}>
       <View style={styles.logoBox}>
@@ -45,17 +45,10 @@ export function HomeHeader({
           style={styles.iconBox}
         >
           <Image
-            source={notificationIcon}
+            source={hasUnread ? notificationActiveIcon : notificationIcon}
             style={styles.icon}
             contentFit="contain"
           />
-          {hasUnread ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText} numberOfLines={1}>
-                {badgeLabel}
-              </Text>
-            </View>
-          ) : null}
         </Pressable>
       </View>
     </View>
@@ -93,23 +86,5 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    lineHeight: 14,
-    color: C.card,
   },
 })

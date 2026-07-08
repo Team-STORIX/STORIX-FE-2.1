@@ -2,11 +2,11 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { C, Gray } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
-import { Typography } from "../../../theme/typography";
+import { FontFamily, Typography } from "../../../theme/typography";
 
 const activeIcon = require("../../../../assets/icons/common/active.svg");
 const deactiveIcon = require("../../../../assets/icons/common/deactive.svg");
-const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
+const checkPinkIcon = require("../../../../assets/icons/common/check-pink-200-xs.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 
 const MAX_SPOILER_LENGTH = 50;
@@ -70,7 +70,7 @@ export function SpoilerToggleSection({
               : next,
           )
         }
-        placeholder="스포일러 안내 문구를 입력하세요 (예: 괴출 최신화 포함)"
+        placeholder="스포일러 방지 문구를 입력하세요 (예: 괴출 최신화 포함)"
         placeholderTextColor={enabled ? C.textMuted : Gray[200]}
         style={[styles.input, !enabled && styles.inputDisabled]}
       />
@@ -102,14 +102,14 @@ export function SpoilerToggleSection({
 }
 
 const styles = StyleSheet.create({
-  // 2.0: -mx-4 px-4 py-6 border-bottom gap-2.5 (10px)
+  // 2.0: -mx-4 px-4 py-6 border-bottom gap-4
   section: {
     paddingHorizontal: 16,
     paddingVertical: 24,
     marginHorizontal: -16,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
-    gap: 10,
+    gap: 16,
   },
   headerRow: {
     flexDirection: "row",
@@ -119,6 +119,7 @@ const styles = StyleSheet.create({
   heading: {
     ...Typography.body1Bold,
     color: C.text,
+    paddingLeft: 4,
   },
   toggleArea: {
     flexDirection: "row",
@@ -134,15 +135,19 @@ const styles = StyleSheet.create({
     height: 18,
   },
   input: {
+    height: 40,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.card,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 0,
+    paddingBottom: 2,
     ...Typography.body2Medium,
-    fontFamily: undefined,
+    fontFamily: FontFamily.medium,
     color: C.text,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
   inputDisabled: {
     backgroundColor: C.card,
@@ -151,11 +156,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 4,
   },
   defaultRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
   },
   checkIcon: {
     width: 18,
@@ -172,9 +178,6 @@ const styles = StyleSheet.create({
     color: Gray[500],
   },
   counterWarning: {
-    color: C.error,
-  },
-  counterTotal: {
-    color: C.textMuted,
+    color: Gray[500],
   },
 });

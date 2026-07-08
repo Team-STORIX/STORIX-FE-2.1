@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Typography } from '../../../theme'
 
-type DeleteTargetType = 'comment' | 'post'
+type DeleteTargetType = 'comment' | 'post' | 'review'
 
 type FeedDeleteConfirmModalProps = {
   visible: boolean
@@ -19,6 +19,10 @@ const COPY = {
   post: {
     title: '피드글 삭제',
     description: '정말 피드글을 삭제하시겠습니까?',
+  },
+  review: {
+    title: '리뷰 삭제',
+    description: '정말 리뷰를 삭제하시겠습니까?',
   },
 } as const
 
@@ -117,8 +121,8 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 23,
+    gap: 8,
+    marginTop: 28,
   },
   cancelButton: {
     flex: 1,

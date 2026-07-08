@@ -24,10 +24,11 @@ import { TopicRoomListItem } from "./TopicRoomListItem";
 import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
 
 const PADDING_H = 16; // section title horizontal padding
-const CAROUSEL_PAD = 20; // carousel horizontal padding (card start x)
+const CAROUSEL_PAD = 16; // carousel horizontal padding (card start x)
 const PAGE_GAP = 16; // gap between page columns (creates next-page peek)
 const CARD_GAP = 12; // vertical gap between the 3 cards in a page
 const CARDS_PER_PAGE = 3;
+const HOT_PAGE_WIDTH = 336;
 
 function chunk<T>(items: T[], size: number): T[][] {
   if (size <= 0) return [items];
@@ -41,9 +42,9 @@ function chunk<T>(items: T[], size: number): T[][] {
 export function TopicRoomFeedSection() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  // Each page is a column of 3 cards, inset by CAROUSEL_PAD on both sides; the
-  // PAGE_GAP between pages lets the next page peek in (matches Figma).
-  const itemWidth = Math.max(0, width - CAROUSEL_PAD * 2);
+  // Each page is one white card containing 3 topic-room rows. Keep the Figma
+  // width on normal phones while still fitting narrower devices.
+  const itemWidth = Math.max(0, Math.min(HOT_PAGE_WIDTH, width - CAROUSEL_PAD * 2));
   const snapInterval = itemWidth + PAGE_GAP;
 
   const popularQuery = usePopularTopicRooms();
@@ -124,13 +125,15 @@ export function TopicRoomFeedSection() {
                   ]}
                 >
                   {pageRooms.map((room, i) => (
-                    <HotTopicRoomCard
-                      key={room.topicRoomId}
-                      item={room}
-                      rank={pageIdx * CARDS_PER_PAGE + i + 1}
-                      isJoining={joiningId === room.topicRoomId}
-                      onPress={() => handleEnter(room)}
-                    />
+                    <View key={room.topicRoomId}>
+                      <HotTopicRoomCard
+                        item={room}
+                        rank={pageIdx * CARDS_PER_PAGE + i + 1}
+                        isJoining={joiningId === room.topicRoomId}
+                        onPress={() => handleEnter(room)}
+                      />
+                      {i < pageRooms.length - 1 ? <View style={styles.rowDivider} /> : null}
+                    </View>
                   ))}
                 </View>
               );
@@ -228,7 +231,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: CAROUSEL_PAD,
   },
   page: {
+    padding: 12,
     gap: CARD_GAP,
+    backgroundColor: C.card,
+    borderRadius: 8,
+    shadowColor: C.text,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  rowDivider: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: -CARD_GAP / 2,
+    height: 1,
+    backgroundColor: Gray[100],
   },
   dots: {
     flexDirection: "row",

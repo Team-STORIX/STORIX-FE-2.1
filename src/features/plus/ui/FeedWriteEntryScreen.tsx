@@ -21,11 +21,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
-import { Typography } from "../../../theme/typography";
+import { FontFamily, Typography } from "../../../theme/typography";
+import type { BoardTheme } from "../../feed/api/plus/plusWrite";
 import { useMe } from "../../profile";
 import { useWorksDetail } from "../../works";
 import { useCreateReaderBoard, type FeedWriteImage } from "../hooks";
-import type { BoardTheme } from "../../feed/api/plus/plusWrite";
 import { BirthdayThemePreviewBottomSheet } from "./BirthdayThemePreviewBottomSheet";
 import {
   FeedWritePickerBottomSheet,
@@ -45,11 +45,7 @@ const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const MAX_CONTENT_LENGTH = 300;
 const MAX_IMAGE_COUNT = 3;
 const FEED_DEFAULT_SPOILER = "스포일러가 포함된 피드 보기";
-const ACCEPTED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 // iPhone camera default — not accepted by the backend, but losslessly
 // convertible to JPEG before upload (see resolveImageContentType).
 const CONVERTIBLE_IMAGE_EXTENSIONS = new Set(["heic", "heif"]);
@@ -81,7 +77,12 @@ function parseWorksId(raw?: string | string[]) {
 }
 
 type ResolvedImage =
-  | { ok: true; contentType: string; extension: string; needsConversion: boolean }
+  | {
+      ok: true;
+      contentType: string;
+      extension: string;
+      needsConversion: boolean;
+    }
   | { ok: false; reason: "unsupported" };
 
 function getExtension(value?: string | null) {
@@ -268,7 +269,9 @@ export function FeedWriteEntryScreen() {
 
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["plus", "board"] });
-      queryClient.invalidateQueries({ queryKey: ["profile", "activity", "boards"] });
+      queryClient.invalidateQueries({
+        queryKey: ["profile", "activity", "boards"],
+      });
 
       router.replace("/(tabs)/feed" as never);
     } catch (e) {
@@ -469,7 +472,7 @@ export function FeedWriteEntryScreen() {
         <View style={styles.worksHeaderRow}>
           <Text style={styles.sectionHeading}>작품선택</Text>
           <View style={styles.notNeededRow}>
-            <Text style={styles.notNeededLabel}>작품선택이 필요없어요</Text>
+            <Text style={styles.notNeededLabel}>작품선택이 필요 없어요</Text>
             <Pressable
               onPress={handleToggleNotNeeded}
               hitSlop={6}
@@ -662,7 +665,13 @@ export function FeedWriteEntryScreen() {
             >
               {contentLength}
             </Text>
-            <Text style={styles.contentCounterTotal}>
+            <Text
+              style={
+                contentLength === MAX_CONTENT_LENGTH
+                  ? styles.contentCounterWarn
+                  : styles.contentCounterTotal
+              }
+            >
               /{MAX_CONTENT_LENGTH}
             </Text>
           </Text>
@@ -768,6 +777,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     ...Typography.heading2,
     color: C.text,
+    paddingLeft: 4,
   },
   notNeededRow: {
     flexDirection: "row",
@@ -790,9 +800,10 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[50],
     borderWidth: 1,
     borderColor: Gray[50],
-    paddingHorizontal: 8,
+    paddingLeft: 12,
+    paddingRight: 8,
     paddingVertical: 12,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   searchPlaceholder: {
     ...Typography.body1Medium,
@@ -819,20 +830,21 @@ const styles = StyleSheet.create({
     borderTopColor: C.divider,
     paddingTop: 24,
   },
-  // 2.0: -mx-4 px-4 mt-4 h-60 (240px) border-bottom
+  // 2.0: -mx-4 px-5 mt-4 h-[272px] pb-6 border-bottom
   textareaWrap: {
     marginHorizontal: -16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
     marginTop: 16,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },
   textarea: {
-    height: 240,
+    height: 272,
     width: "100%",
-    ...Typography.body1Medium,
-    fontFamily: undefined,
-    color: Gray[700],
+    ...Typography.body2Medium,
+    fontFamily: FontFamily.medium,
+    color: Gray[900],
     padding: 0,
     textAlignVertical: "top",
   },
@@ -845,7 +857,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: C.card,
     borderTopWidth: 1,
-    borderTopColor: C.border,
+    borderTopColor: Gray[300],
     paddingHorizontal: 16,
     paddingTop: 12,
   },
@@ -859,8 +871,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   imageCount: {
-    ...Typography.caption1Medium,
-    color: C.textMuted,
+    ...Typography.body1Bold,
+    color: Gray[500],
   },
   // Image preview row — matches the feed post card (236 square, radius 12,
   // gray-100 border, gap 12, left padding 16, horizontal scroll).
@@ -907,13 +919,13 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   contentCounterValue: {
-    color: Gray[400],
+    color: Gray[500],
   },
   contentCounterWarn: {
     color: C.error,
   },
   contentCounterTotal: {
-    color: C.textMuted,
+    color: Gray[500],
   },
   themeRow: {
     flexDirection: "row",
@@ -921,7 +933,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginHorizontal: -16,
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 24,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },
@@ -929,16 +941,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingLeft: 4,
   },
   themeRowLabel: {
     ...Typography.body1Bold,
     color: C.text,
   },
   betaBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-    backgroundColor: Magenta[20],
+    height: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Magenta[50],
   },
   betaBadgeText: {
     ...Typography.caption2Extrabold,
@@ -950,15 +966,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   themeRowStatus: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
+    ...Typography.caption1Medium,
+    color: Gray[500],
   },
   themeRowStatusActive: {
     color: Magenta[300],
   },
   themeRowArrow: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     tintColor: Gray[400],
   },
 });

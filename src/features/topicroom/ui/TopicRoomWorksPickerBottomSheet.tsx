@@ -16,8 +16,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray, Radius, S, Typography } from "../../../theme";
-import type { PlusWorksSearchItem } from "../api";
-import { usePlusReviewDuplicateCheck, usePlusWorksSearch } from "../hooks";
+import { useRecommendedHashtags } from "../../feed/hooks/hashtag";
+import { SearchEmptyState } from "../../search";
+import type { WorksSearchItem } from "../../search/api/search.schema";
+import { useWorksSearch } from "../../search/hooks/useSearch";
+import { findTopicRoomIdByWorksName } from "../api/topicroom.api";
+import { useJoinTopicRoom } from "../hooks";
+import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
+import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
 
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
@@ -25,22 +31,32 @@ const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 const searchCancelIcon = require("../../../../assets/icons/plus/icon-search-cancle.svg");
 
+export type PickedWorks = {
+  worksId: number;
+  worksName: string;
+  thumbnailUrl?: string | null;
+  artistName?: string | null;
+  worksType?: string | null;
+};
+
 type Props = {
   visible: boolean;
   onClose: () => void;
+  onPickWork: (work: PickedWorks) => void;
 };
 
 function WorkResultItem({
   item,
   selected,
+  hasExistingRoom,
   onPress,
 }: {
-  item: PlusWorksSearchItem;
+  item: WorksSearchItem;
   selected: boolean;
+  hasExistingRoom: boolean;
   onPress: () => void;
 }) {
   const summary = [item.artistName, item.worksType].filter(Boolean).join(" · ");
-  const detail = [item.platform, item.genre].filter(Boolean).join(" · ");
 
   return (
     <Pressable
@@ -74,10 +90,8 @@ function WorkResultItem({
             {summary}
           </Text>
         ) : null}
-        {detail ? (
-          <Text style={styles.itemDetail} numberOfLines={1}>
-            {detail}
-          </Text>
+        {selected && hasExistingRoom ? (
+          <Text style={styles.itemExisting}>이미 토픽룸이 있습니다</Text>
         ) : null}
       </View>
 
@@ -90,13 +104,23 @@ function WorkResultItem({
   );
 }
 
-export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
+export function TopicRoomWorksPickerBottomSheet({
+  visible,
+  onClose,
+  onPickWork,
+}: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [selectedWorkId, setSelectedWorkId] = useState<number>();
+  const [selectedId, setSelectedId] = useState<number | undefined>();
+  const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const checkSeqRef = useRef(0);
+
+  const joinMutation = useJoinTopicRoom();
 
   useEffect(() => {
     if (!visible) {
@@ -106,7 +130,10 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
 
     setKeyword("");
     setDebouncedKeyword("");
-    setSelectedWorkId(undefined);
+    setSelectedId(undefined);
+    setExistingRoomId(null);
+    setCheckingExisting(false);
+    checkSeqRef.current += 1;
 
     Animated.timing(progress, {
       toValue: 1,
@@ -125,42 +152,96 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
     return () => clearTimeout(timeout);
   }, [keyword, visible]);
 
-  const searchQuery = usePlusWorksSearch({
-    keyword: debouncedKeyword,
-    size: 20,
-  });
+  const searchQuery = useWorksSearch({ keyword: debouncedKeyword, page: 0 });
 
-  const works = useMemo(
-    () => searchQuery.data?.pages.flatMap((page) => page.result.content) ?? [],
-    [searchQuery.data?.pages],
+  const works = useMemo<WorksSearchItem[]>(
+    () => searchQuery.data?.result.content ?? [],
+    [searchQuery.data?.result.content],
   );
 
   const selectedWork = useMemo(
-    () => works.find((item) => item.worksId === selectedWorkId),
-    [selectedWorkId, works],
+    () => works.find((item) => item.worksId === selectedId) ?? null,
+    [selectedId, works],
   );
 
-  const duplicateQuery = usePlusReviewDuplicateCheck(selectedWorkId);
+  const recommendedHashtagsQuery = useRecommendedHashtags();
+  const recommendationKeyword =
+    recommendedHashtagsQuery.data?.find(
+      (item) => item.name.trim().length > 0,
+    )?.name ?? null;
 
-  const handleClose = (afterClose?: () => void) => {
+  const runExistingCheck = (item: WorksSearchItem) => {
+    const seq = ++checkSeqRef.current;
+    setCheckingExisting(true);
+    setExistingRoomId(null);
+    void (async () => {
+      try {
+        const found = await findTopicRoomIdByWorksName(item.worksName);
+        if (seq !== checkSeqRef.current) return;
+        setExistingRoomId(found ?? null);
+      } finally {
+        if (seq === checkSeqRef.current) setCheckingExisting(false);
+      }
+    })();
+  };
+
+  const handleSelectWork = (item: WorksSearchItem) => {
+    if (joinMutation.isPending) return;
+    if (selectedId === item.worksId) {
+      checkSeqRef.current += 1;
+      setSelectedId(undefined);
+      setExistingRoomId(null);
+      setCheckingExisting(false);
+      return;
+    }
+    setSelectedId(item.worksId);
+    runExistingCheck(item);
+  };
+
+  const animateOut = (afterClose?: () => void) => {
     Animated.timing(progress, {
       toValue: 0,
       duration: 180,
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (finished) {
-        onClose();
-        afterClose?.();
-      }
+      if (finished) afterClose?.();
     });
   };
 
-  const reviewBlocked = duplicateQuery.data?.result.isDuplicated ?? false;
-  const isCheckingReviewStatus =
-    selectedWork != null &&
-    (duplicateQuery.isLoading || duplicateQuery.isFetching);
-  const canWriteSelectedReview =
-    selectedWork != null && !isCheckingReviewStatus && !reviewBlocked;
+  const handleConfirm = () => {
+    if (!selectedWork || checkingExisting || joinMutation.isPending) return;
+
+    if (existingRoomId != null) {
+      const roomId = existingRoomId;
+      joinMutation.mutate(roomId, {
+        onSuccess: () => {
+          animateOut(() => {
+            router.replace(`/topicroom/${roomId}` as const);
+          });
+        },
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+          }
+        },
+      });
+      return;
+    }
+
+    const picked: PickedWorks = {
+      worksId: Number(selectedWork.worksId),
+      worksName: selectedWork.worksName,
+      thumbnailUrl: selectedWork.thumbnailUrl ?? null,
+      artistName: selectedWork.artistName ?? null,
+      worksType: selectedWork.worksType ?? null,
+    };
+    animateOut(() => onPickWork(picked));
+  };
+
+  const canConfirm =
+    selectedWork != null && !checkingExisting && !joinMutation.isPending;
+  const isBusy = checkingExisting || joinMutation.isPending;
+  const goToExistingRoom = existingRoomId != null;
 
   if (!visible) {
     return null;
@@ -171,7 +252,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
       transparent
       animationType="none"
       visible
-      onRequestClose={() => handleClose()}
+      onRequestClose={() => animateOut(onClose)}
     >
       <Animated.View
         style={[
@@ -186,7 +267,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
       >
         <Pressable
           style={StyleSheet.absoluteFillObject}
-          onPress={() => handleClose()}
+          onPress={() => animateOut(onClose)}
         />
 
         <Animated.View
@@ -212,7 +293,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
             <View style={styles.header}>
               <Text style={styles.title}>작품선택</Text>
               <Pressable
-                onPress={() => handleClose()}
+                onPress={() => animateOut(onClose)}
                 style={styles.closeButton}
               >
                 <Image
@@ -227,7 +308,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
               <TextInput
                 value={keyword}
                 onChangeText={setKeyword}
-                placeholder="함께 이야기하고 싶은 작품을 검색하세요"
+                placeholder="토픽룸을 생성하고 싶은 작품을 선택하세요"
                 placeholderTextColor={C.textMuted}
                 style={styles.searchInput}
                 returnKeyType="search"
@@ -240,7 +321,10 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                   style={styles.clearButton}
                   onPress={() => {
                     setKeyword("");
-                    setSelectedWorkId(undefined);
+                    setSelectedId(undefined);
+                    setExistingRoomId(null);
+                    setCheckingExisting(false);
+                    checkSeqRef.current += 1;
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="검색어 지우기"
@@ -262,29 +346,16 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
 
             <View style={styles.listWrap}>
               {!debouncedKeyword ? (
-                <View style={styles.stateWrap}>
-                  <Text style={styles.stateTitle}></Text>
-                </View>
+                <View style={styles.stateWrap} />
               ) : searchQuery.isLoading ? (
                 <View style={styles.stateWrap}>
                   <ActivityIndicator size="small" color={C.primary} />
                 </View>
-              ) : searchQuery.isError ? (
-                <View style={styles.stateWrap}>
-                  <Text style={styles.stateTitle}>
-                    작품을 불러오지 못했어요.
-                  </Text>
-                  <Text style={styles.stateBody}>
-                    검색어를 다시 확인해 주세요.
-                  </Text>
-                </View>
-              ) : works.length === 0 ? (
-                <View style={styles.stateWrap}>
-                  <Text style={styles.stateTitle}>검색 결과가 없어요.</Text>
-                  <Text style={styles.stateBody}>
-                    다른 키워드로 다시 찾아보세요.
-                  </Text>
-                </View>
+              ) : searchQuery.isError || works.length === 0 ? (
+                <SearchEmptyState
+                  recommendationKeyword={recommendationKeyword}
+                  onPressRecommendation={setKeyword}
+                />
               ) : (
                 <FlatList
                   data={works}
@@ -292,70 +363,55 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                   renderItem={({ item }) => (
                     <WorkResultItem
                       item={item}
-                      selected={item.worksId === selectedWorkId}
-                      onPress={() =>
-                        setSelectedWorkId((current) =>
-                          current === item.worksId ? undefined : item.worksId,
-                        )
-                      }
+                      selected={item.worksId === selectedId}
+                      hasExistingRoom={goToExistingRoom}
+                      onPress={() => handleSelectWork(item)}
                     />
                   )}
                   contentContainerStyle={styles.listContent}
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
-                  onEndReachedThreshold={0.5}
-                  onEndReached={() => {
-                    if (
-                      searchQuery.hasNextPage &&
-                      !searchQuery.isFetchingNextPage
-                    ) {
-                      void searchQuery.fetchNextPage();
-                    }
-                  }}
-                  ListFooterComponent={
-                    searchQuery.isFetchingNextPage ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={C.primary}
-                        style={styles.nextPageLoader}
-                      />
-                    ) : null
-                  }
                 />
               )}
             </View>
 
-            {selectedWork && !isCheckingReviewStatus ? (
-              <View style={styles.footer}>
-                {canWriteSelectedReview ? (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.primaryButton,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => {
-                      handleClose(() => {
-                        router.push(
-                          `/review/write?worksId=${selectedWork.worksId}` as never,
-                        );
-                      });
-                    }}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.primaryButtonText}>
-                      선택 작품 리뷰 쓰기
-                    </Text>
-                  </Pressable>
+            <View style={styles.footer}>
+              <Pressable
+                onPress={handleConfirm}
+                disabled={!canConfirm}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  goToExistingRoom
+                    ? styles.primaryButtonMagenta
+                    : canConfirm
+                      ? styles.primaryButtonActive
+                      : styles.primaryButtonDisabled,
+                  pressed && canConfirm && styles.pressed,
+                ]}
+                accessibilityRole="button"
+              >
+                {isBusy ? (
+                  <ActivityIndicator size="small" color={C.card} />
                 ) : (
-                  <Text style={styles.footerCaption}>
-                    이미 리뷰를 작성한 작품이에요
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      !canConfirm && styles.primaryButtonTextDisabled,
+                    ]}
+                  >
+                    {goToExistingRoom ? "토픽룸으로 이동하기" : "다음으로"}
                   </Text>
                 )}
-              </View>
-            ) : null}
+              </Pressable>
+            </View>
           </KeyboardAvoidingView>
         </Animated.View>
       </Animated.View>
+
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
     </Modal>
   );
 }
@@ -475,9 +531,9 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: C.textSecondary,
   },
-  itemDetail: {
+  itemExisting: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: C.liked,
   },
   selectIcon: {
     width: 24,
@@ -490,37 +546,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 8,
   },
-  stateTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    textAlign: "center",
-  },
-  stateBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: "center",
-  },
-  nextPageLoader: {
-    marginVertical: 16,
-  },
   footer: {
-    gap: 10,
     paddingTop: 14,
   },
-  footerCaption: {
-    ...Typography.caption1Medium,
-    color: C.textSecondary,
-  },
   primaryButton: {
+    height: 50,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: Radius.sm,
+  },
+  primaryButtonActive: {
     backgroundColor: Gray[900],
-    paddingVertical: 15,
+  },
+  primaryButtonMagenta: {
+    backgroundColor: C.primary,
+  },
+  primaryButtonDisabled: {
+    backgroundColor: Gray[200],
   },
   primaryButtonText: {
     ...Typography.body1Semibold,
     color: C.card,
+  },
+  primaryButtonTextDisabled: {
+    color: Gray[500],
   },
   pressed: {
     opacity: 0.75,

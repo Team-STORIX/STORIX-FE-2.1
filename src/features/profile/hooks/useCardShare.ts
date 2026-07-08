@@ -190,10 +190,9 @@ function getOsShareOptions(uri: string, message: string) {
   const shareMessage = getShareMessage(message)
 
   if (Platform.OS === 'ios') {
+    // NOTE: activityItemSources가 텍스트/이미지 항목을 모두 제공하므로,
+    // 최상위 url/type을 함께 넘기면 이미지가 공유 시트에 두 번 첨부된다.
     return {
-      message: shareMessage,
-      url: fileUri,
-      type: 'image/png',
       subject: message,
       activityItemSources: [
         {
@@ -219,10 +218,10 @@ function getOsShareOptions(uri: string, message: string) {
   }
 
   // Android: 메시지(텍스트 + URL)와 이미지를 함께 공유
+  // NOTE: url과 urls를 함께 넘기면 일부 공유 대상(카카오톡 등)에서 이미지가 중복 첨부된다.
   return {
     message: shareMessage,
     url: fileUri,
-    urls: [fileUri],
     type: '*/*',
     subject: message,
     useInternalStorage: true,

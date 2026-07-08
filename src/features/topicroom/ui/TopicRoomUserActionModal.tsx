@@ -84,7 +84,7 @@ export function TopicRoomUserActionModal({
             >
               <Image
                 source={closeIcon}
-                style={styles.actionIcon}
+                style={[styles.actionIcon, styles.closeIcon]}
                 contentFit="contain"
               />
             </Pressable>
@@ -110,7 +110,7 @@ export function TopicRoomUserActionModal({
   );
 }
 
-const AVATAR_SIZE = 72;
+const AVATAR_SIZE = 64;
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -121,21 +121,22 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 306,
+    minHeight: 190,
     backgroundColor: C.card,
     borderRadius: Radius.sm,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   actionRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    gap: 4,
+    gap: 8,
   },
   actionHit: {
-    width: 40,
-    height: 40,
+    width: 24,
+    height: 24,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -143,11 +144,13 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
+  closeIcon: {
+    tintColor: Gray[400],
+  },
   profileBlock: {
     alignItems: "center",
     gap: 12,
-    paddingTop: 4,
-    paddingBottom: 8,
+    marginTop: 5,
   },
   avatar: {
     width: AVATAR_SIZE,

@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
 import { Image } from 'expo-image'
 import { useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -27,6 +27,7 @@ const storixLogo = require('../../../assets/logos/logo-white.svg')
 const CARD_WIDTH = 322
 const CARD_HEIGHT = 429
 const CARD_SCREEN_SIDE_MARGIN = 36
+const ACTION_ROW_BOTTOM_OFFSET = 24
 const REVIEW_CARD_OUTLINE =
   'M16 0H145C153.837 0 161 7.163 161 16C161 7.163 168.163 0 177 0H306C314.837 0 322 7.163 322 16V145C322 153.837 314.837 161 306 161C314.837 161 322 168.163 322 177V413C322 421.837 314.837 429 306 429H16C7.163 429 0 421.837 0 413V177C0 168.163 7.163 161 16 161C7.163 161 0 153.837 0 145V16C0 7.163 7.163 0 16 0Z'
 
@@ -124,6 +125,7 @@ export function RecordCardModal({
   const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
   const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
+  const isIOS = Platform.OS === 'ios'
   const cardDisplayWidth = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
   const cardDisplayScale = cardDisplayWidth / CARD_WIDTH
   const cardDisplayHeight = CARD_HEIGHT * cardDisplayScale
@@ -224,7 +226,7 @@ export function RecordCardModal({
             </Pressable>
           </View>
 
-            <View style={[styles.actionButtons, { bottom: insets.bottom + 60 }]}>
+            <View style={[styles.actionButtons, isIOS && styles.actionButtonsIOS, { bottom: insets.bottom + ACTION_ROW_BOTTOM_OFFSET }]}>
               <Pressable
                 onPress={() => {
                   saveToGallery(captureCard, () => {
@@ -260,15 +262,17 @@ export function RecordCardModal({
                 <Text style={styles.actionButtonText}>공유</Text>
               </Pressable>
 
-              <Pressable
-                onPress={() => shareToTwitter(captureCard, 'STORIX 기록카드')}
-                style={styles.actionButton}
-              >
-                <View style={styles.actionButtonCircle}>
-                  <XLogo size={20} color={Gray[900]} />
-                </View>
-                <Text style={styles.actionButtonText}>X에 공유</Text>
-              </Pressable>
+              {!isIOS ? (
+                <Pressable
+                  onPress={() => shareToTwitter(captureCard, 'STORIX 기록카드')}
+                  style={styles.actionButton}
+                >
+                  <View style={styles.actionButtonCircle}>
+                    <XLogo size={20} color={Gray[900]} />
+                  </View>
+                  <Text style={styles.actionButtonText}>X에 공유</Text>
+                </Pressable>
+              ) : null}
           </View>
         </Pressable>
       </View>
@@ -389,6 +393,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 60,
+  },
+  actionButtonsIOS: {
+    paddingHorizontal: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 88,
   },
   actionButton: {
     width: 60,

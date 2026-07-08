@@ -12,7 +12,8 @@
       "Bash(pod --version)",
       "Bash(npx pod-install *)",
       "Bash(ls /Users/JULGISELL/)",
-      "Read(//Users/JULGISELL/**)"
+      "Read(//Users/JULGISELL/**)",
+      "mcp__claude_ai_Figma__get_screenshot"
     ],
     "additionalDirectories": [
       "/Users/JULGISELL/STORIX-FE-2.1/src/features/search/api"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSegments } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { useProfileStore } from '../../profile/store/profile.store'
@@ -43,10 +44,15 @@ export type NotificationConsentModalState = {
  * existing permission and syncs when it is already granted.
  */
 export const useNotificationConsentModal = (): NotificationConsentModalState => {
+  const segments = useSegments()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
   const userId = useProfileStore((s) => s.me?.userId ?? null)
+  const segmentList = segments as readonly string[]
+  const isHomeRoute =
+    segmentList[0] === '(tabs)' &&
+    (segmentList.length === 1 || segmentList[1] === 'index')
 
   const queryClient = useQueryClient()
   const { mutateAsync: updateConsent } = useUpdateMarketingConsent()
@@ -61,9 +67,11 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
   const evaluatedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // Not eligible (logged out / mid-onboarding): hide and allow a future
-    // login to re-evaluate.
-    if (!isAuthenticated || onboardingToken) {
+    // Not eligible (logged out / mid-onboarding / not visibly on Home): hide
+    // and allow a future Home entry to re-evaluate. Android can keep the tabs
+    // stack mounted behind the post-signup manual tutorial, so route visibility
+    // is part of the gate instead of relying on Home's mounted state alone.
+    if (!isAuthenticated || onboardingToken || !isHomeRoute) {
       evaluatedKeyRef.current = null
       if (step !== 'hidden') setStep('hidden')
       return
@@ -90,7 +98,7 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, onboardingToken, userId, step])
+  }, [isAuthenticated, onboardingToken, userId, step, isHomeRoute])
 
   const submit = async (enabled: boolean): Promise<void> => {
     if (submitting) return

@@ -17,7 +17,7 @@ const DROPDOWN_WIDTH = 96;
 const SCREEN_PADDING = 8;
 
 /**
- * Figma node 9107:42968 — dim overlay + a small white card anchored under the
+ * Figma node 9107:42706 — dim overlay + a small white card anchored under the
  * message kebab. Outside press closes. 신고하기 opens the report confirmation,
  * 차단하기 opens the block confirmation, both using the message sender as target.
  */
@@ -41,7 +41,7 @@ export function TopicRoomUserActionDropdown({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
         {anchor ? (
           <View style={[styles.menu, { left, top }]} pointerEvents="box-none">
             <Pressable
@@ -69,6 +69,10 @@ export function TopicRoomUserActionDropdown({
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(19, 17, 18, 0.6)",
+  },
   menu: {
     position: "absolute",
     width: DROPDOWN_WIDTH,
@@ -83,7 +87,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   row: {
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingVertical: 2,
   },
   rowPressed: {
