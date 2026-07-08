@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   ActivityIndicator,
@@ -66,36 +66,8 @@ export function NotificationSettingsScreen() {
   const [permissionModalOpen, setPermissionModalOpen] = useState(false)
 
   const isPending = updateSettings.isPending || updateEventBenefit.isPending
-  const appNotificationEnabled =
-    !!settings &&
-    (settings.myActivityEnabled ||
-      settings.contentCommunityEnabled ||
-      settings.eventBenefitEnabled ||
-      settings.operationPolicyEnabled)
-  const pushReceiptEnabled = pushGranted === true && appNotificationEnabled
-
-  useEffect(() => {
-    if (!settings || pushGranted !== false || isPending) return
-
-    const disabledSettings = {
-      myActivityEnabled: false,
-      contentCommunityEnabled: false,
-      operationPolicyEnabled: false,
-    }
-
-    const hasSettingsEnabled =
-      settings.myActivityEnabled ||
-      settings.contentCommunityEnabled ||
-      settings.operationPolicyEnabled
-
-    if (hasSettingsEnabled) {
-      updateSettings.mutate(disabledSettings)
-    }
-
-    if (settings.eventBenefitEnabled) {
-      updateEventBenefit.mutate(false)
-    }
-  }, [settings, pushGranted, isPending, updateSettings, updateEventBenefit])
+  const pushReceiptEnabled = pushGranted === true
+  const detailTogglesDisabled = pushGranted !== true || isPending
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back()
@@ -132,7 +104,7 @@ export function NotificationSettingsScreen() {
 
   const handleToggle = useCallback(
     (key: ToggleKey) => {
-      if (!settings || isPending) return
+      if (!settings || detailTogglesDisabled) return
       const next = !settings[key]
 
       if (isMarketingConsent(key)) {
@@ -146,7 +118,7 @@ export function NotificationSettingsScreen() {
       // Send ONLY the changed field, e.g. { myActivityEnabled: next }.
       updateSettings.mutate({ [key]: next })
     },
-    [settings, isPending, updateSettings, updateEventBenefit],
+    [settings, detailTogglesDisabled, updateSettings, updateEventBenefit],
   )
 
   return (
@@ -193,21 +165,44 @@ export function NotificationSettingsScreen() {
 
           {/* Toggle rows bound to notification-settings fields. */}
           {TOGGLE_ROWS.map((row) => {
-            const enabled = settings[row.key]
+            const enabled = pushGranted === true && settings[row.key]
             return (
-              <View key={row.key} style={styles.row}>
+              <View
+                key={row.key}
+                style={[
+                  styles.row,
+                  detailTogglesDisabled && styles.disabledRow,
+                ]}
+              >
                 <View style={styles.rowText}>
-                  <Text style={styles.rowLabel}>{row.label}</Text>
-                  <Text style={styles.rowDesc}>{row.description}</Text>
+                  <Text
+                    style={[
+                      styles.rowLabel,
+                      detailTogglesDisabled && styles.disabledLabel,
+                    ]}
+                  >
+                    {row.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.rowDesc,
+                      detailTogglesDisabled && styles.disabledDesc,
+                    ]}
+                  >
+                    {row.description}
+                  </Text>
                 </View>
                 <Pressable
                   onPress={() => handleToggle(row.key)}
-                  disabled={isPending}
+                  disabled={detailTogglesDisabled}
                   accessibilityRole="switch"
-                  accessibilityState={{ checked: enabled, disabled: isPending }}
+                  accessibilityState={{
+                    checked: enabled,
+                    disabled: detailTogglesDisabled,
+                  }}
                   accessibilityLabel={`${row.label} 토글`}
                   hitSlop={6}
-                  style={isPending && styles.pendingToggle}
+                  style={detailTogglesDisabled && styles.disabledToggle}
                 >
                   <Image
                     source={enabled ? activeIcon : deactiveIcon}
@@ -297,6 +292,9 @@ const styles = StyleSheet.create({
   rowPressed: {
     opacity: 0.7,
   },
+  disabledRow: {
+    backgroundColor: C.bg,
+  },
   rowText: {
     flex: 1,
     gap: 6,
@@ -308,11 +306,17 @@ const styles = StyleSheet.create({
     lineHeight: 22.4,
     color: C.text,
   },
+  disabledLabel: {
+    color: Gray[400],
+  },
   rowDesc: {
     fontFamily: 'SUIT',
     fontSize: 10.898,
     fontWeight: '500',
     color: Gray[500],
+  },
+  disabledDesc: {
+    color: Gray[400],
   },
   rowRight: {
     flexDirection: 'row',
@@ -335,7 +339,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 18,
   },
-  pendingToggle: {
+  disabledToggle: {
     opacity: 0.5,
   },
   // ----- permission modal -----
