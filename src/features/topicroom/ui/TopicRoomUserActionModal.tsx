@@ -46,8 +46,14 @@ export function TopicRoomUserActionModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.card} onPress={() => {}}>
+      <View style={styles.backdrop}>
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="프로필 액션 닫기"
+        />
+        <View style={styles.card}>
           <View style={styles.actionRow}>
             <Pressable
               style={styles.actionHit}
@@ -104,8 +110,8 @@ export function TopicRoomUserActionModal({
               {target?.nickname || "익명"}
             </Text>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

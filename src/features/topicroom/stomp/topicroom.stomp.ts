@@ -40,7 +40,7 @@ const safeId = (v: unknown) => {
 
 const safeNumericId = (v: unknown) => {
   const n = Number(v)
-  return Number.isFinite(n) && n >= 0 ? n : undefined
+  return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
 const formatKoTime = (iso?: string) => {

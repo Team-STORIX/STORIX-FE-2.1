@@ -44,14 +44,6 @@ export async function getChatRoomMessages(params: {
       ? result.activeUserNumber
       : null
 
-  if (__DEV__) {
-    console.log('[TOPICROOM_DATE] history', {
-      roomId: params.roomId,
-      joinedDays,
-      activeUserNumber,
-    })
-  }
-
   return {
     joinedDays,
     activeUserNumber,

@@ -15,13 +15,6 @@ export function TopicRoomListItem({ item, onPress }: Props) {
   const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
   const memberCount = item.activeUserNumber ?? 0;
 
-  if (__DEV__) {
-    console.log("[TOPICROOM_DATE] joined-list-item", {
-      roomId: item.topicRoomId,
-      lastChatTime: item.lastChatTime ?? null,
-      memberCount,
-    });
-  }
   const initial = (item.worksName || item.topicRoomName || "?")
     .slice(0, 1)
     .toUpperCase();

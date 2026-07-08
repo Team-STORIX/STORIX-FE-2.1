@@ -68,8 +68,12 @@ export function TopicRoomUserConfirmModal({
       animationType="fade"
       onRequestClose={handleBackdrop}
     >
-      <Pressable style={styles.backdrop} onPress={handleBackdrop}>
-        <Pressable style={styles.card} onPress={() => {}}>
+      <View style={styles.backdrop}>
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={handleBackdrop}
+        />
+        <View style={styles.card}>
           <Text style={styles.title}>{copy.title}</Text>
 
           <View style={styles.profileRow}>
@@ -115,8 +119,8 @@ export function TopicRoomUserConfirmModal({
               )}
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
