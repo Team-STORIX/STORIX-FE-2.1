@@ -12,16 +12,22 @@ const defaultProfileImage = require('../../../assets/placeholders/profile-defaul
 type HotFeedCardProps = {
   item?: TodayFeedItem
   loading?: boolean
+  width?: number
   onPress?: () => void
 }
 
 const CARD_W = 353
 const CARD_H = 140
 
-export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps) {
+export function HotFeedCard({
+  item,
+  loading = false,
+  width = CARD_W,
+  onPress,
+}: HotFeedCardProps) {
   if (loading || !item) {
     return (
-      <View style={[styles.card, styles.placeholderCard]}>
+      <View style={[styles.card, { width }, styles.placeholderCard]}>
         <View style={styles.authorRow}>
           <View style={[styles.avatarWrap, styles.placeholderBlock]} />
           <View style={[styles.placeholderText, { width: 88 }]} />
@@ -40,16 +46,17 @@ export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps
   const content = board.content ?? ''
 
   const Wrapper: any = onPress ? Pressable : View
+  const cardStyle = [styles.card, { width }]
   const wrapperProps = onPress
     ? {
         onPress,
         accessibilityRole: 'button' as const,
         style: ({ pressed }: { pressed: boolean }) => [
-          styles.card,
+          ...cardStyle,
           pressed && styles.cardPressed,
         ],
       }
-    : { style: styles.card }
+    : { style: [styles.card, { width }] }
 
   return (
     <Wrapper {...wrapperProps}>

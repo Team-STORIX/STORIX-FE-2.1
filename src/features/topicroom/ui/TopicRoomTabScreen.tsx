@@ -31,7 +31,7 @@ import { TopicRoomSearchList } from './TopicRoomSearchList'
 import { TopicRoomSearchBar } from './TopicRoomSearchBar'
 import { TopicRoomLimitModal } from './TopicRoomLimitModal'
 
-const warningIcon = require('../../../../assets/icons/search/warning.png')
+const warningIcon = require('../../../../assets/icons/profile/warning.svg')
 
 export function TopicRoomTabScreen() {
   const insets = useSafeAreaInsets()
@@ -318,6 +318,21 @@ const styles = StyleSheet.create({
   },
   sectionLoader: {
     marginVertical: 12,
+  },
+  emptyStateWrap: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+  },
+  emptyStateText: {
+    ...Typography.heading2,
+    color: C.text,
+    textAlign: 'center',
   },
   emptyText: {
     ...Typography.body2Medium,

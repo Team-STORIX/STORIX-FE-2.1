@@ -178,7 +178,10 @@ export default function HomeScreen() {
         style={styles.screen}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top, paddingBottom: 128 },
+          {
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 100,
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -268,6 +271,6 @@ const styles = StyleSheet.create({
     gap: SECTION_GAP,
   },
   hashtagBlock: {
-    marginBottom: 32,
+    marginBottom: 0,
   },
 })
