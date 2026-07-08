@@ -44,6 +44,7 @@ const API_SORT: Record<SortKey, LibraryReviewSort> = {
 };
 
 const TAB_BAR_CLEARANCE = 128;
+const LIST_BOTTOM_PADDING = 100;
 
 export function LibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -183,7 +184,7 @@ export function LibraryScreen() {
         ) : mode === "list" ? (
           <LibraryWorksList
             data={works}
-            bottomInset={bottomClearance}
+            bottomInset={LIST_BOTTOM_PADDING}
             isFetchingNextPage={reviewQuery.isFetchingNextPage}
             onEndReached={() => {
               if (reviewQuery.hasNextPage && !reviewQuery.isFetchingNextPage) {
