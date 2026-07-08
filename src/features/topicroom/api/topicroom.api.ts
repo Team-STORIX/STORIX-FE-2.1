@@ -1,6 +1,8 @@
 // src/features/topicroom/api/topicroom.api.ts
-import { z } from 'zod'
-import { apiClient } from '../../../lib/api/axios-instance'
+import axios from "axios";
+import { z } from "zod";
+import { apiClient } from "../../../lib/api/axios-instance";
+import { getAccessToken } from "../../../lib/storage/secure";
 import {
   ApiEnvelopeSchema,
   MyTopicRoomSliceSchema,
@@ -11,30 +13,42 @@ import {
   TopicRoomReportResponseSchema,
   TopicRoomSearchSliceSchema,
   TopicRoomSearchWrappedSchema,
-} from './topicroom.schema'
+} from "./topicroom.schema";
 
-export type { TopicRoomItem, MyTopicRoomSlice, TopicRoomMember } from './topicroom.schema'
+export type {
+  MyTopicRoomSlice,
+  TopicRoomItem,
+  TopicRoomMember,
+} from "./topicroom.schema";
 
-const AnyEnvelopeSchema = ApiEnvelopeSchema(z.any())
-const TopicRoomListEnvelopeSchema = ApiEnvelopeSchema(z.array(TopicRoomItemSchema))
+const AnyEnvelopeSchema = ApiEnvelopeSchema(z.any());
+const TopicRoomListEnvelopeSchema = ApiEnvelopeSchema(
+  z.array(TopicRoomItemSchema),
+);
+
+const maskBearerToken = (token?: string | null): string => {
+  if (!token) return "missing";
+  if (token.length <= 12) return `Bearer len:${token.length}`;
+  return `Bearer ${token.slice(0, 6)}...${token.slice(-4)}`;
+};
 
 // POST /api/v1/topic-rooms
 export async function createTopicRoom(body: {
-  worksId: number
-  topicRoomName: string
+  worksId: number;
+  topicRoomName: string;
 }) {
-  const res = await apiClient.post('/api/v1/topic-rooms', body, {
-    headers: { accept: '*/*' },
-  })
-  return ApiEnvelopeSchema(TopicRoomIdSchema).parse(res.data).result
+  const res = await apiClient.post("/api/v1/topic-rooms", body, {
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(TopicRoomIdSchema).parse(res.data).result;
 }
 
 // POST /api/v1/topic-rooms/{roomId}/join
 // 409 = already a member (absorbed by callers via useJoinTopicRoom)
 export async function joinTopicRoom(roomId: number) {
   const res = await apiClient.post(`/api/v1/topic-rooms/${roomId}/join`, null, {
-    headers: { accept: '*/*' },
-  })
+    headers: { accept: "*/*" },
+  });
   // Callers only act on the HTTP outcome (2xx = joined, 409 = already a
   // member, handled by useJoinTopicRoom); the success body is never read.
   // Strictly parsing the envelope here threw a ZodError on the genuine
@@ -42,8 +56,15 @@ export async function joinTopicRoom(roomId: number) {
   // surfacing a false "입장 실패" toast even though the join succeeded —
   // while the second tap's 409 bypassed parsing and "worked". Parse
   // leniently so a 2xx is always treated as success.
-  const parsed = AnyEnvelopeSchema.safeParse(res.data)
-  return parsed.success ? parsed.data : res.data
+  const parsed = AnyEnvelopeSchema.safeParse(res.data);
+  const topicRoom = parsed.success
+    ? TopicRoomItemSchema.safeParse(parsed.data.result)
+    : TopicRoomItemSchema.safeParse(res.data);
+  return topicRoom.success
+    ? topicRoom.data
+    : parsed.success
+    ? parsed.data
+    : res.data;
 }
 
 // DELETE /api/v1/topic-rooms/{roomId}/leave
@@ -54,103 +75,103 @@ export async function joinTopicRoom(roomId: number) {
 // leave into a false "나가기 실패" — which also blocked cache invalidation and
 // navigation. A 2xx must always resolve; non-2xx still rejects via axios.
 export async function leaveTopicRoom(roomId: number) {
-  const endpoint = `/api/v1/topic-rooms/${roomId}/leave`
+  const endpoint = `/api/v1/topic-rooms/${roomId}/leave`;
   if (__DEV__) {
-    console.log('[TOPICROOM_LEAVE] request', { method: 'DELETE', endpoint })
+    console.log("[TOPICROOM_LEAVE] request", { method: "DELETE", endpoint });
   }
   const res = await apiClient.delete(endpoint, {
-    headers: { accept: '*/*' },
-  })
-  const parsed = AnyEnvelopeSchema.safeParse(res.data)
+    headers: { accept: "*/*" },
+  });
+  const parsed = AnyEnvelopeSchema.safeParse(res.data);
   if (__DEV__) {
-    console.log('[TOPICROOM_LEAVE] success', {
+    console.log("[TOPICROOM_LEAVE] success", {
       roomId,
       responseStatus: res.status,
       resultType: parsed.success ? typeof parsed.data.result : typeof res.data,
-    })
+    });
   }
-  return parsed.success ? parsed.data : res.data
+  return parsed.success ? parsed.data : res.data;
 }
 
 // GET /api/v1/topic-rooms/today
 export async function getTodayTopicRooms() {
-  const res = await apiClient.get('/api/v1/topic-rooms/today', {
-    headers: { accept: '*/*' },
-  })
-  return TopicRoomListEnvelopeSchema.parse(res.data).result
+  const res = await apiClient.get("/api/v1/topic-rooms/today", {
+    headers: { accept: "*/*" },
+  });
+  return TopicRoomListEnvelopeSchema.parse(res.data).result;
 }
 
 // GET /api/v1/topic-rooms/popular
 export async function getPopularTopicRooms() {
-  const res = await apiClient.get('/api/v1/topic-rooms/popular', {
-    headers: { accept: '*/*' },
-  })
-  return TopicRoomListEnvelopeSchema.parse(res.data).result
+  const res = await apiClient.get("/api/v1/topic-rooms/popular", {
+    headers: { accept: "*/*" },
+  });
+  return TopicRoomListEnvelopeSchema.parse(res.data).result;
 }
 
 // GET /api/v1/topic-rooms/search
 // Server returns result.result.content (double-nested). Returns flat content array.
 export async function searchTopicRooms(params: {
-  keyword: string
-  page?: number
-  size?: number
-  sort?: string[]
+  keyword: string;
+  page?: number;
+  size?: number;
+  sort?: string[];
 }) {
-  const res = await apiClient.get('/api/v1/topic-rooms/search', {
+  const res = await apiClient.get("/api/v1/topic-rooms/search", {
     params: {
       keyword: params.keyword,
       page: params.page ?? 0,
       size: params.size ?? 10,
-      sort: params.sort ?? ['topicRoomName,ASC'],
+      sort: params.sort ?? ["topicRoomName,ASC"],
     },
-    headers: { accept: '*/*' },
-  })
-  return ApiEnvelopeSchema(TopicRoomSearchWrappedSchema)
-    .parse(res.data)
-    .result.result.content
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(TopicRoomSearchWrappedSchema).parse(res.data).result
+    .result.content;
 }
 
 // Wraps searchTopicRooms in a Slice-shaped object for useInfiniteQuery pagination.
 export async function searchTopicRoomsSlice(params: {
-  keyword: string
-  page?: number
-  size?: number
-  sort?: string[]
+  keyword: string;
+  page?: number;
+  size?: number;
+  sort?: string[];
 }) {
-  const page = params.page ?? 0
-  const size = params.size ?? 20
-  const content = await searchTopicRooms({ ...params, page, size })
+  const page = params.page ?? 0;
+  const size = params.size ?? 20;
+  const content = await searchTopicRooms({ ...params, page, size });
   return TopicRoomSearchSliceSchema.parse({
     content,
     number: page,
     empty: content.length === 0,
     last: content.length < size,
-  })
+  });
 }
 
 // GET /api/v1/topic-rooms/{roomId}/members
 export async function getTopicRoomMembers(roomId: number) {
   const res = await apiClient.get(`/api/v1/topic-rooms/${roomId}/members`, {
-    headers: { accept: '*/*' },
-  })
-  return ApiEnvelopeSchema(z.array(TopicRoomMemberSchema)).parse(res.data).result
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(z.array(TopicRoomMemberSchema)).parse(res.data)
+    .result;
 }
 
 // GET /api/v1/topic-rooms/me
 export async function getMyTopicRooms(params?: {
-  page?: number
-  size?: number
-  sort?: string[]
+  page?: number;
+  size?: number;
+  sort?: string[];
 }) {
-  const res = await apiClient.get('/api/v1/topic-rooms/me', {
+  const res = await apiClient.get("/api/v1/topic-rooms/me", {
     params: {
       page: params?.page ?? 0,
       size: params?.size ?? 3,
-      sort: params?.sort ?? ['topicRoom.lastChatTime,DESC'],
+      sort: params?.sort ?? ["topicRoom.lastChatTime,DESC"],
     },
-    headers: { accept: '*/*' },
-  })
-  return ApiEnvelopeSchema(MyTopicRoomSliceSchema).parse(res.data).result
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(MyTopicRoomSliceSchema).parse(res.data).result;
 }
 
 // Searches by worksName and returns the topicRoomId of the matching room, or null.
@@ -161,52 +182,123 @@ export async function getMyTopicRooms(params?: {
 export async function findTopicRoomIdByWorksName(
   worksName: string,
 ): Promise<number | null> {
-  const trimmed = worksName.trim()
-  if (!trimmed) return null
+  const trimmed = worksName.trim();
+  if (!trimmed) return null;
 
-  const list = await searchTopicRooms({ keyword: trimmed, page: 0, size: 20 })
-  if (list.length === 0) return null
+  const list = await searchTopicRooms({ keyword: trimmed, page: 0, size: 20 });
+  if (list.length === 0) return null;
 
-  const exact = list.find((r) => r.worksName === worksName)
-  if (exact) return exact.topicRoomId
+  const exact = list.find((r) => r.worksName === worksName);
+  if (exact) return exact.topicRoomId;
 
-  const target = trimmed.toLowerCase()
+  const target = trimmed.toLowerCase();
   const fuzzy = list.find(
-    (r) => (r.worksName ?? '').trim().toLowerCase() === target,
-  )
-  if (fuzzy) return fuzzy.topicRoomId
+    (r) => (r.worksName ?? "").trim().toLowerCase() === target,
+  );
+  if (fuzzy) return fuzzy.topicRoomId;
 
   // If the keyword search returned a single result, treat it as the match —
   // the backend already ranked it and there is no other candidate.
-  if (list.length === 1) return list[0].topicRoomId
+  if (list.length === 1) return list[0].topicRoomId;
 
-  return null
+  return null;
 }
 
 // Searches by keyword and finds the item with a matching topicRoomId.
-export async function findTopicRoomInfoById(keyword: string, topicRoomId: number) {
-  const list = await searchTopicRooms({ keyword, page: 0, size: 20 })
-  return list.find((r) => r.topicRoomId === topicRoomId) ?? null
+export async function findTopicRoomInfoById(
+  keyword: string,
+  topicRoomId: number,
+) {
+  const list = await searchTopicRooms({ keyword, page: 0, size: 20 });
+  return list.find((r) => r.topicRoomId === topicRoomId) ?? null;
 }
 
 // POST /api/v1/topic-rooms/{roomId}/report
 export async function reportTopicRoomUser(
   roomId: number,
   body: {
-    reportedUserId: number
-    chatMessageId?: number | null
-    reason: 'SPAM' | 'ABUSE' | 'OTHER'
-    otherReason?: string | null
+    reportedUserId: number;
+    chatMessageId?: number | null;
+    reason?: "DEFAULT";
   },
 ): Promise<void> {
-  const parsedBody = TopicRoomReportRequestSchema.parse(body)
-  const res = await apiClient.post(
-    `/api/v1/topic-rooms/${roomId}/report`,
-    parsedBody,
-    { headers: { accept: '*/*' } },
-  )
-  const parsed = TopicRoomReportResponseSchema.parse(res.data)
-  if (!parsed.isSuccess) {
-    throw new Error(parsed.message ?? '토픽룸 신고 처리에 실패했어요.')
+  if (__DEV__) {
+    console.log("[topicroom][report] api-input", {
+      roomId,
+      reportedUserId: body.reportedUserId,
+      chatMessageId: body.chatMessageId ?? null,
+      reason: body.reason ?? null,
+      payloadKeys: Object.keys(body),
+    });
+  }
+
+  const parsedBody = TopicRoomReportRequestSchema.parse(body);
+  const endpoint = `/api/v1/topic-rooms/${roomId}/report`;
+  const reportType = parsedBody.chatMessageId != null ? "chat-message" : "user";
+  const accessToken = __DEV__ ? await getAccessToken() : null;
+
+  if (__DEV__) {
+    console.log("[topicroom][report] request", {
+      endpoint,
+      roomId,
+      reportType,
+      bearerTokenPreview: maskBearerToken(accessToken),
+      reportedUserId: parsedBody.reportedUserId,
+      chatMessageId: parsedBody.chatMessageId ?? null,
+      reason: parsedBody.reason ?? null,
+      payloadKeys: Object.keys(parsedBody),
+    });
+  }
+
+  try {
+    const res = await apiClient.post(endpoint, parsedBody, {
+      headers: { accept: "*/*" },
+    });
+    const parsed = TopicRoomReportResponseSchema.safeParse(res.data);
+
+    if (__DEV__) {
+      console.log("[topicroom][report] response", {
+        roomId,
+        reportType,
+        status: res.status,
+        reportedUserId: parsedBody.reportedUserId,
+        chatMessageId: parsedBody.chatMessageId ?? null,
+        reason: parsedBody.reason ?? null,
+        payloadKeys: Object.keys(parsedBody),
+        parsed: parsed.success,
+        isSuccess: parsed.success ? parsed.data.isSuccess : null,
+        code: parsed.success ? parsed.data.code : null,
+        message: parsed.success ? parsed.data.message : null,
+      });
+    }
+
+    if (parsed.success && !parsed.data.isSuccess) {
+      throw new Error(parsed.data.message ?? "토픽룸 신고 처리에 실패했어요.");
+    }
+  } catch (error) {
+    if (__DEV__) {
+      if (axios.isAxiosError(error)) {
+        console.log("[topicroom][report] error", {
+          roomId,
+          reportType,
+          status: error.response?.status ?? null,
+          code: error.response?.data?.code ?? null,
+          message: error.response?.data?.message ?? error.message,
+          reportedUserId: parsedBody.reportedUserId,
+          chatMessageId: parsedBody.chatMessageId ?? null,
+          reason: parsedBody.reason ?? null,
+        });
+      } else {
+        console.log("[topicroom][report] error", {
+          roomId,
+          reportType,
+          message: error instanceof Error ? error.message : String(error),
+          reportedUserId: parsedBody.reportedUserId,
+          chatMessageId: parsedBody.chatMessageId ?? null,
+          reason: parsedBody.reason ?? null,
+        });
+      }
+    }
+    throw error;
   }
 }

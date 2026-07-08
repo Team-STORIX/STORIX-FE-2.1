@@ -11,16 +11,49 @@ export const ApiEnvelopeSchema = <T extends z.ZodTypeAny>(result: T) =>
     timestamp: z.string().optional(),
   })
 
+const stringFrom = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value === 'string') return value
+    if (typeof value === 'number') return String(value)
+  }
+  return ''
+}
+
+const numberFrom = (...values: unknown[]) => {
+  for (const value of values) {
+    const n = Number(value)
+    if (Number.isFinite(n)) return n
+  }
+  return 0
+}
+
 /** 과거 메시지 item */
-export const ChatRoomMessageSchema = z.object({
-  id: z.preprocess((v) => Number(v), z.number()),
-  roomId: z.preprocess((v) => Number(v), z.number()),
-  senderId: z.preprocess((v) => Number(v), z.number()),
+export const ChatRoomMessageSchema = z.preprocess((input) => {
+  if (!input || typeof input !== 'object') return input
+  const obj = input as Record<string, unknown>
+  return {
+    ...obj,
+    id: numberFrom(obj.id, obj.chatMessageId, obj.messageId),
+    roomId: numberFrom(obj.roomId, obj.topicRoomId, obj.chatRoomId),
+    senderId: numberFrom(obj.senderId, obj.userId, obj.memberId),
+    senderName: stringFrom(
+      obj.senderName,
+      obj.userName,
+      obj.nickname,
+      obj.nickName,
+    ),
+    message: stringFrom(obj.message, obj.content, obj.text),
+    createdAt: stringFrom(obj.createdAt, obj.sentAt, obj.createdDate),
+  }
+}, z.object({
+  id: z.number(),
+  roomId: z.number(),
+  senderId: z.number(),
   senderName: z.string(),
   message: z.string(),
   messageType: z.string().nullish(),
   createdAt: z.string().optional().nullish(),
-})
+}))
 
 export type ChatRoomMessage = z.infer<typeof ChatRoomMessageSchema>
 

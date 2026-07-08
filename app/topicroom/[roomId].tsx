@@ -26,6 +26,7 @@ import {
   useBlockTopicRoomUser,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
+  useMyTopicRoomsAll,
   useReportTopicRoomUser,
   useTopicRoomMembers,
   useTopicRoomStomp,
@@ -49,6 +50,8 @@ function findCachedTopicRoom(
       ? data
       : (data as any)?.pages
         ? (data as any).pages.flatMap((p: any) => p?.content ?? [])
+        : Array.isArray((data as any)?.content)
+        ? (data as any).content
         : [];
     const hit = candidates.find(
       (it) => it && typeof it === "object" && it.topicRoomId === roomId,
@@ -110,6 +113,9 @@ export default function TopicRoomScreen() {
   const [confirmVariant, setConfirmVariant] = useState<ConfirmVariant | null>(
     null,
   );
+  const [reportSource, setReportSource] = useState<"profile" | "message" | null>(
+    null,
+  );
   const blockMutation = useBlockTopicRoomUser();
   const reportMutation = useReportTopicRoomUser();
 
@@ -142,6 +148,10 @@ export default function TopicRoomScreen() {
   } = useChatRoomMessagesInfinite({ roomId });
 
   const membersQuery = useTopicRoomMembers(roomId);
+  const myRoomsQuery = useMyTopicRoomsAll({
+    enabled: Number.isFinite(roomId) && roomId > 0,
+    size: 20,
+  });
   const members = membersQuery.data ?? [];
   const memberCount = members.length;
   const leaveMutation = useLeaveTopicRoom();
@@ -315,14 +325,30 @@ export default function TopicRoomScreen() {
 
   const canSend = status === "open" && !!inputText.trim();
 
-  // Header metadata priority: route params → cached list query → fallback.
+  const joinedRoom = useMemo(
+    () =>
+      (myRoomsQuery.data ?? []).find(
+        (room) => room.topicRoomId === roomId,
+      ) ?? null,
+    [myRoomsQuery.data, roomId],
+  );
+
+  const joinedRoomFromCache = queryClient.getQueryData<TopicRoomItem>([
+    "topicroom",
+    "room",
+    roomId,
+  ]);
+
+  // Header metadata priority: route params → joined-room query → cached list query → fallback.
   const cachedRoom = useMemo(
     () =>
+      joinedRoomFromCache ??
+      joinedRoom ??
       findCachedTopicRoom(
         queryClient.getQueriesData<unknown>({ queryKey: ["topicroom"] }),
         roomId,
       ),
-    [queryClient, roomId, members.length],
+    [queryClient, roomId, members.length, joinedRoom, joinedRoomFromCache],
   );
 
   const worksName = params.worksName || cachedRoom?.worksName || "";
@@ -344,7 +370,7 @@ export default function TopicRoomScreen() {
   const hasWorks = !!worksName;
   const headerTitle = hasWorks
     ? formatTopicRoomSubtitle(worksType, worksName)
-    : topicRoomName;
+    : topicRoomName || "토픽룸";
   const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
 
   // Room-age / D-Day source. The chat-history response now carries a display
@@ -353,17 +379,12 @@ export default function TopicRoomScreen() {
     historyData?.pages?.find((page) => page.joinedDays != null)?.joinedDays ??
     null;
 
-  if (__DEV__) {
-    console.log("[TOPICROOM_DATE] dday-source", {
-      joinedDays,
-    });
-  }
-
   const closeUserActions = useCallback(() => {
     setProfileActionVisible(false);
     setDropdownAnchor(null);
     setConfirmVariant(null);
     setActionTarget(null);
+    setReportSource(null);
   }, []);
 
   // Build a target only for a valid other user — self / unknown senders get no
@@ -373,12 +394,24 @@ export default function TopicRoomScreen() {
       msg: DisplayMsg,
       options?: { includeChatMessage?: boolean },
     ): TopicRoomActionTarget | null => {
-      if (typeof msg.senderId !== "number") return null;
+      if (
+        typeof msg.senderId !== "number" ||
+        !Number.isFinite(msg.senderId) ||
+        msg.senderId <= 0
+      ) {
+        return null;
+      }
       if (msg.senderId === myUserId) return null;
+      const chatMessageId =
+        typeof msg.chatMessageId === "number" &&
+        Number.isFinite(msg.chatMessageId) &&
+        msg.chatMessageId > 0
+          ? msg.chatMessageId
+          : undefined;
       return {
         userId: msg.senderId,
-        ...(options?.includeChatMessage && msg.chatMessageId != null
-          ? { chatMessageId: msg.chatMessageId }
+        ...(options?.includeChatMessage && chatMessageId != null
+          ? { chatMessageId }
           : {}),
         nickname: msg.senderName,
         profileImageUrl: msg.profileImageUrl,
@@ -393,6 +426,7 @@ export default function TopicRoomScreen() {
       if (!target) return;
       setConfirmVariant(null);
       setDropdownAnchor(null);
+      setReportSource("profile");
       setActionTarget(target);
       setProfileActionVisible(true);
     },
@@ -405,6 +439,7 @@ export default function TopicRoomScreen() {
       if (!target) return;
       setConfirmVariant(null);
       setProfileActionVisible(false);
+      setReportSource("message");
       setActionTarget(target);
       setDropdownAnchor(anchor);
     },
@@ -414,10 +449,28 @@ export default function TopicRoomScreen() {
   // Siren / 신고하기 and block / 차단하기 both suspend the originating overlay
   // and open the matching confirmation popup against the same target.
   const handleOpenReportConfirm = useCallback(() => {
+    const isChatMessageReport =
+      reportSource === "message" && actionTarget?.chatMessageId != null;
+    const payloadKeys = isChatMessageReport
+      ? ["reportedUserId", "chatMessageId"]
+      : ["reportedUserId", "reason"];
+
+    if (__DEV__) {
+      console.log("[topicroom][report] open-confirm", {
+        roomId,
+        source: reportSource,
+        hasTarget: actionTarget != null,
+        reportedUserId: actionTarget?.userId ?? null,
+        chatMessageId: actionTarget?.chatMessageId ?? null,
+        reason: isChatMessageReport ? null : "DEFAULT",
+        reportType: isChatMessageReport ? "chat-message" : "user",
+        payloadKeys,
+      });
+    }
     setProfileActionVisible(false);
     setDropdownAnchor(null);
     setConfirmVariant("report");
-  }, []);
+  }, [actionTarget, reportSource, roomId]);
 
   const handleOpenBlockConfirm = useCallback(() => {
     setProfileActionVisible(false);
@@ -442,13 +495,30 @@ export default function TopicRoomScreen() {
         return;
       }
 
-      reportMutation.mutate(
-        {
+      const isChatMessageReport =
+        reportSource === "message" && actionTarget.chatMessageId != null;
+      const reportPayload = {
+        roomId,
+        reportedUserId: actionTarget.userId,
+        ...(isChatMessageReport
+          ? { chatMessageId: actionTarget.chatMessageId }
+          : { reason: "DEFAULT" as const }),
+      };
+
+      if (__DEV__) {
+        console.log("[topicroom][report] confirm-submit", {
           roomId,
+          source: reportSource,
           reportedUserId: actionTarget.userId,
-          chatMessageId: actionTarget.chatMessageId,
-          reason: "SPAM",
-        },
+          chatMessageId: actionTarget.chatMessageId ?? null,
+          reason: isChatMessageReport ? null : "DEFAULT",
+          reportType: isChatMessageReport ? "chat-message" : "user",
+          payloadKeys: Object.keys(reportPayload).filter((key) => key !== "roomId"),
+        });
+      }
+
+      reportMutation.mutate(
+        reportPayload,
         {
           onSuccess: () => {
             closeUserActions();
