@@ -64,14 +64,6 @@ export function SearchTopicRoomResultList({
 
   if (isError) {
     return (
-      <View style={styles.centerWrap}>
-        <Text style={styles.message}>토픽룸 검색 결과를 불러오지 못했어요.</Text>
-      </View>
-    )
-  }
-
-  if (data.length === 0) {
-    return (
       <SearchEmptyState
         recommendationKeyword={recommendationKeyword}
         onPressRecommendation={onPressRecommendation}
@@ -83,7 +75,10 @@ export function SearchTopicRoomResultList({
     <FlatList
       data={data}
       keyExtractor={(item) => `topicroom-search-${item.topicRoomId}`}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        data.length === 0 ? styles.emptyContent : null,
+      ]}
       renderItem={({ item }) => {
         const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
         const timeAgo = formatTimeAgo(item.lastChatTime)
@@ -139,6 +134,12 @@ export function SearchTopicRoomResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      ListEmptyComponent={
+        <SearchEmptyState
+          recommendationKeyword={recommendationKeyword}
+          onPressRecommendation={onPressRecommendation}
+        />
+      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -156,6 +157,11 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  emptyContent: {
+    flexGrow: 1,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   row: {
     flexDirection: 'row',

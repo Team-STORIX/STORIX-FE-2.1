@@ -12,5 +12,6 @@ export { getDeviceMeta, type DeviceMeta } from './deviceMeta'
 export {
   reconcilePushDevice,
   handleFcmTokenRefresh,
+  deleteCurrentPushDevice,
   resetPushDeviceSyncCache,
 } from './pushDeviceSync'

@@ -20,6 +20,15 @@ export const TopicRoomStompMessageSchema = z
 
 export type TopicRoomStompMessage = z.infer<typeof TopicRoomStompMessageSchema>
 
+export const TopicRoomActiveUsersMessageSchema = z.object({
+  topicRoomId: z.preprocess((v) => Number(v), z.number()),
+  activeUserNumber: z.preprocess((v) => Number(v), z.number()),
+})
+
+export type TopicRoomActiveUsersMessage = z.infer<
+  typeof TopicRoomActiveUsersMessageSchema
+>
+
 //   UI에서 쓰는 메시지 형태
 export type TopicRoomUiMsg = {
   id: string

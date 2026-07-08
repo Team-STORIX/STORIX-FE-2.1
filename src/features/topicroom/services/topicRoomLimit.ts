@@ -13,9 +13,17 @@ export class TopicRoomParticipationLimitError extends Error {
 
 export const isTopicRoomParticipationLimitError = (
   error: unknown,
-): error is TopicRoomParticipationLimitError =>
-  error instanceof TopicRoomParticipationLimitError ||
-  (error instanceof Error && error.name === 'TopicRoomParticipationLimitError')
+): error is TopicRoomParticipationLimitError => {
+  if (
+    error instanceof TopicRoomParticipationLimitError ||
+    (error instanceof Error && error.name === 'TopicRoomParticipationLimitError')
+  ) {
+    return true
+  }
+
+  const responseCode = (error as any)?.response?.data?.code
+  return responseCode === 'TOPIC_ROOM_ERROR_002'
+}
 
 const getJoinedTopicRoomsForLimit = async (): Promise<TopicRoomItem[]> => {
   const all: TopicRoomItem[] = []

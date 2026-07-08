@@ -40,24 +40,28 @@ export function FeedScreen() {
   const qc = useQueryClient()
   const listRef = useRef<FlatList<FeedBoardItem> | null>(null)
 
-  // `section=topicroom` lands the user on the TopicRoom (writers) tab when
-  // navigated here from Home's "실시간 작품 이야기" section.
-  const params = useLocalSearchParams<{ section?: string | string[] }>()
+  // Home section arrows pin the landing tab explicitly.
+  const params = useLocalSearchParams<{
+    section?: string | string[]
+    landingKey?: string | string[]
+  }>()
   const sectionParam = Array.isArray(params.section)
     ? params.section[0]
     : params.section
+  const landingKeyParam = Array.isArray(params.landingKey)
+    ? params.landingKey[0]
+    : params.landingKey
 
-  const [tab, setTab] = useState<FeedTab>(
-    sectionParam === 'topicroom' ? 'writers' : 'works',
-  )
+  const sectionTab: FeedTab =
+    sectionParam === 'topicroom' ? 'writers' : 'works'
+
+  const [tab, setTab] = useState<FeedTab>(sectionTab)
   const [pick, setPick] = useState<string>('all')
 
   useEffect(() => {
-    if (sectionParam === 'topicroom') {
-      setTab('writers')
-      setPick('all')
-    }
-  }, [sectionParam])
+    setTab(sectionTab)
+    setPick('all')
+  }, [landingKeyParam, sectionParam, sectionTab])
 
   useEffect(() => {
     return subscribeFeedTabReselected(() => {
