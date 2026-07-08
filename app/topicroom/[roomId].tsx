@@ -448,7 +448,6 @@ export default function TopicRoomScreen() {
           roomId,
           reportedUserId: actionTarget.userId,
           chatMessageId: actionTarget.chatMessageId,
-          reason: "SPAM",
         },
         {
           onSuccess: () => {

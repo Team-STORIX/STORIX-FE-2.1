@@ -195,8 +195,6 @@ export async function reportTopicRoomUser(
   body: {
     reportedUserId: number
     chatMessageId?: number | null
-    reason: 'SPAM' | 'ABUSE' | 'OTHER'
-    otherReason?: string | null
   },
 ): Promise<void> {
   const parsedBody = TopicRoomReportRequestSchema.parse(body)

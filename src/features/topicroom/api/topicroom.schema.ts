@@ -105,22 +105,13 @@ export const TopicRoomMemberSchema = z
     profileImageUrl: m.profileImageUrl ?? m.profileImage ?? null,
   }))
 
-/** 토픽룸 사용자 신고 (POST /api/v1/topic-rooms/{roomId}/report) */
-export const TopicRoomReportReasonSchema = z.enum([
-  'SPAM',
-  'ABUSE',
-  'OTHER',
-])
-export type TopicRoomReportReason = z.infer<typeof TopicRoomReportReasonSchema>
-
+/** 토픽룸 신고 (POST /api/v1/topic-rooms/{roomId}/report) */
 export const TopicRoomReportRequestSchema = z.object({
   reportedUserId: z.preprocess((v) => Number(v), z.number().int().nonnegative()),
   chatMessageId: z.preprocess(
     (v) => (v == null ? undefined : Number(v)),
     z.number().int().nonnegative().optional(),
   ),
-  reason: TopicRoomReportReasonSchema,
-  otherReason: z.string().max(100).nullish(),
 })
 
 export type TopicRoomReportRequest = z.infer<
