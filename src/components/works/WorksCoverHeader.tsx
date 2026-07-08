@@ -8,7 +8,7 @@ import { Typography } from "../../theme/typography";
 
 const littleStar = require("../../../assets/icons/common/littleStar.svg");
 
-const HERO_HEIGHT = 460;
+const HERO_HEIGHT = 364;
 
 function worksTypeLabel(type?: string | null) {
   if (type === "WEBTOON") return "웹툰";
@@ -130,15 +130,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: Radius.sm,
     overflow: "hidden",
-    shadowColor: C.text,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   },
   cover: {
-    width: 210,
-    height: 280,
+    width: 184,
+    height: 245,
     backgroundColor: C.divider,
   },
   coverFallback: {
@@ -155,7 +150,7 @@ const styles = StyleSheet.create({
     ...Typography.heading3,
     color: C.text,
     textAlign: "center",
-    marginTop: 16,
+    marginTop: 12,
   },
   authorRow: {
     flexDirection: "row",

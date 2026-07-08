@@ -1,7 +1,9 @@
 import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useLikesStore } from "../../store/likes.store";
 import type { WorksMyReview } from "../../features/works/api/worksReview.schema";
-import { C } from "../../theme/colors";
+import { C, Gray } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
 import { Typography } from "../../theme/typography";
 import { ReviewMetaBar } from "./ReviewMetaBar";
@@ -15,6 +17,8 @@ type Props = {
   userName?: string;
   onPressWrite: () => void;
   onPressDetail: (reviewId: number) => void;
+  onPressLike?: (reviewId: number) => void;
+  isLiking?: boolean;
 };
 
 export function MyReviewSection({
@@ -22,9 +26,30 @@ export function MyReviewSection({
   userName,
   onPressWrite,
   onPressDetail,
+  onPressLike,
+  isLiking = false,
 }: Props) {
   const hasReview = !!myReview?.content;
   const safeName = userName?.trim() || "유저";
+  const baseLikeCount = Math.max(0, Number(myReview?.likeCount ?? 0));
+  const [displayLikeCount, setDisplayLikeCount] = useState(baseLikeCount);
+  const isLiked = useLikesStore(
+    (state) =>
+      myReview?.reviewId != null &&
+      !!state.likedIds[String(myReview.reviewId)],
+  );
+
+  useEffect(() => {
+    setDisplayLikeCount(baseLikeCount);
+  }, [baseLikeCount, myReview?.reviewId]);
+
+  const handlePressLike = () => {
+    if (myReview?.reviewId == null || !onPressLike) return;
+    setDisplayLikeCount((current) =>
+      Math.max(0, current + (isLiked ? -1 : 1)),
+    );
+    onPressLike(myReview.reviewId);
+  };
 
   return (
     <View style={styles.section}>
@@ -61,7 +86,14 @@ export function MyReviewSection({
           <View style={styles.metaRow}>
             <ReviewMetaBar
               rating={myReview?.rating ?? null}
-              likeCount={myReview?.likeCount ?? 0}
+              likeCount={displayLikeCount}
+              isLiked={isLiked}
+              isLiking={isLiking}
+              onPressLike={
+                myReview?.reviewId != null && onPressLike
+                  ? handlePressLike
+                  : undefined
+              }
             />
           </View>
         </>
@@ -120,7 +152,7 @@ const styles = StyleSheet.create({
   contentText: {
     ...Typography.body2Medium,
     fontFamily: undefined,
-    color: C.textMuted,
+    color: Gray[500],
     paddingRight: 4,
   },
   contentTextWrap: {

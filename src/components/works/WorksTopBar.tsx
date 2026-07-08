@@ -1,19 +1,20 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C } from '../../theme/colors'
-import { Typography } from '../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C } from "../../theme/colors";
+import { Typography } from "../../theme/typography";
 
-const backIcon = require('../../../assets/icons/common/back.svg')
-const favoriteActiveIcon = require('../../../assets/icons/common/icon-add-active.svg')
-const favoriteInactiveIcon = require('../../../assets/icons/common/icon-add-deactive.svg')
+const backIcon = require("../../../assets/icons/common/back.svg");
+const favoriteActiveIcon = require("../../../assets/icons/common/icon-add-active.svg");
+const favoriteInactiveIcon = require("../../../assets/icons/common/icon-add-deactive.svg");
+const FAVORITE_INACTIVE_COLOR = "#b0a5aa";
 
 type WorksTopBarProps = {
-  topInset: number
-  isFavorite: boolean
-  isBusy?: boolean
-  onBack: () => void
-  onToggleFavorite: () => void
-}
+  topInset: number;
+  isFavorite: boolean;
+  isBusy?: boolean;
+  onBack: () => void;
+  onToggleFavorite: () => void;
+};
 
 export function WorksTopBar({
   topInset,
@@ -34,41 +35,38 @@ export function WorksTopBar({
       </Pressable>
 
       <Pressable
-        style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.favoriteButton,
+          pressed && styles.pressed,
+        ]}
         onPress={onToggleFavorite}
         disabled={isBusy}
         accessibilityRole="button"
-        accessibilityLabel={isFavorite ? '관심작 해제' : '관심 등록'}
+        accessibilityLabel={isFavorite ? "관심작 해제" : "관심 등록"}
       >
-        {isBusy ? (
-          <ActivityIndicator size="small" color={C.text} />
-        ) : (
-          <>
-            <Image
-              source={isFavorite ? favoriteActiveIcon : favoriteInactiveIcon}
-              style={styles.favoriteIcon}
-              contentFit="contain"
-            />
-            <Text
-              style={[
-                styles.favoriteLabel,
-                !isFavorite && styles.favoriteLabelInactive,
-              ]}
-            >
-              {isFavorite ? '관심중' : '관심'}
-            </Text>
-          </>
-        )}
+        <Image
+          source={isFavorite ? favoriteActiveIcon : favoriteInactiveIcon}
+          style={styles.favoriteIcon}
+          contentFit="contain"
+        />
+        <Text
+          style={[
+            styles.favoriteLabel,
+            !isFavorite && styles.favoriteLabelInactive,
+          ]}
+        >
+          {isFavorite ? "관심중" : "관심"}
+        </Text>
       </Pressable>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
     backgroundColor: C.card,
@@ -76,16 +74,16 @@ const styles = StyleSheet.create({
   backButton: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   backIcon: {
     width: 24,
     height: 24,
   },
   favoriteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     minHeight: 24,
   },
@@ -98,9 +96,9 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   favoriteLabelInactive: {
-    color: C.textMuted,
+    color: FAVORITE_INACTIVE_COLOR,
   },
   pressed: {
     opacity: 0.7,
   },
-})
+});

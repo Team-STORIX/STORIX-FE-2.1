@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C, Radius, Typography } from "../../../theme";
+import { C, Magenta, Radius, Typography } from "../../../theme";
 
-const warningIcon = require("../../../../assets/icons/search/warning.svg");
+const warningIcon = require("../../../../assets/icons/search/warning.png");
 
 type Props = {
   title: string;
@@ -43,19 +43,19 @@ export function LibraryEmptyState({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
-    paddingTop: 120,
-    gap: 12,
+    gap: 20,
   },
   icon: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
   },
   textWrap: {
     alignItems: "center",
-    gap: 4,
+    gap: 12,
   },
   title: {
     ...Typography.heading2,
@@ -68,17 +68,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    marginTop: 6,
-    borderRadius: Radius.sm,
+    marginTop: -8,
+    height: 36,
+    borderRadius: Radius.xs,
     borderWidth: 1,
-    borderColor: C.primaryMid,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 8,
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
+    paddingHorizontal: 12,
     paddingVertical: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    ...Typography.body2Medium,
-    color: C.primary,
+    ...Typography.caption1Semibold,
+    color: Magenta[300],
   },
   pressed: {
     opacity: 0.75,

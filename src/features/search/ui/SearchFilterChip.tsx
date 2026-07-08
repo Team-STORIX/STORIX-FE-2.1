@@ -28,6 +28,7 @@ export function SearchFilterChip({ label, selected, onPress }: Props) {
         source={arrowDownIcon}
         style={[styles.icon, selected && styles.iconSelected]}
         contentFit="contain"
+        tintColor={Gray[800]}
       />
     </Pressable>
   );

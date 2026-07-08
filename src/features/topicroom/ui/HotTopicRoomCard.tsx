@@ -1,7 +1,5 @@
 import { Image } from "expo-image";
 import {
-  ActivityIndicator,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -99,20 +97,13 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
           </Text>
         </View>
       </View>
-
-      {isJoining ? (
-        <ActivityIndicator
-          size="small"
-          color={C.primary}
-          style={styles.joiningSpinner}
-        />
-      ) : null}
     </Pressable>
   );
 }
 
-const CARD_HEIGHT = 120;
-const THUMB_WIDTH = 92;
+const CARD_HEIGHT = 116;
+const THUMB_WIDTH = 80;
+const CONTENT_HEIGHT = 104;
 
 const styles = StyleSheet.create({
   card: {
@@ -120,33 +111,22 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingRight: 12,
+    gap: 17,
     backgroundColor: C.card,
     borderRadius: Radius.sm,
-    ...Platform.select({
-      ios: {
-        shadowColor: Gray[900],
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      android: { elevation: 4 },
-    }),
   },
   pressed: { opacity: 0.85 },
 
   thumbWrap: {
     width: THUMB_WIDTH,
-    height: CARD_HEIGHT,
-    borderTopLeftRadius: Radius.sm,
-    borderBottomLeftRadius: Radius.sm,
+    height: CONTENT_HEIGHT,
+    borderRadius: Radius.sm,
     overflow: "hidden",
     flexShrink: 0,
   },
   thumb: {
     width: THUMB_WIDTH,
-    height: CARD_HEIGHT,
+    height: CONTENT_HEIGHT,
   },
   thumbFallback: {
     alignItems: "center",
@@ -175,17 +155,22 @@ const styles = StyleSheet.create({
 
   body: {
     flex: 1,
-    height: CARD_HEIGHT,
+    height: CONTENT_HEIGHT,
     justifyContent: "center",
-    gap: 12,
+    gap: 16,
   },
   topGroup: {
-    gap: 4,
+    gap: 3,
   },
   participantRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+    alignSelf: "flex-start",
+    borderRadius: Radius.full,
+    backgroundColor: C.primaryLight,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
   },
   peopleIcon: {
     width: 12,
@@ -208,7 +193,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: Radius.xs,
     backgroundColor: Gray[50],
   },
@@ -222,11 +208,5 @@ const styles = StyleSheet.create({
     ...Typography.caption2Medium,
     color: Gray[500],
     flex: 1,
-  },
-
-  joiningSpinner: {
-    position: "absolute",
-    right: 12,
-    top: 12,
   },
 });

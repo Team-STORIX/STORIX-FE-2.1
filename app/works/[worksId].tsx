@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -211,6 +213,28 @@ export default function WorksDetailScreen() {
     [likeMutation],
   )
 
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (
+        tab !== 'review' ||
+        !reviewsQuery.hasNextPage ||
+        reviewsQuery.isFetchingNextPage ||
+        reviewsQuery.isLoading
+      ) {
+        return
+      }
+
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+      const distanceFromBottom =
+        contentSize.height - (contentOffset.y + layoutMeasurement.height)
+
+      if (distanceFromBottom < 240) {
+        void reviewsQuery.fetchNextPage()
+      }
+    },
+    [reviewsQuery, tab],
+  )
+
   const reviewTabLabel = useMemo(() => {
     const count = works?.reviewCount ?? reviews.length
     return `리뷰(${count})`
@@ -240,6 +264,8 @@ export default function WorksDetailScreen() {
             style={styles.scroll}
             contentContainerStyle={{ paddingBottom: insets.bottom + 116 }}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           >
             <WorksCoverHeader works={works} />
 
@@ -265,15 +291,19 @@ export default function WorksDetailScreen() {
                   userName={myNickname}
                   onPressWrite={goReviewWrite}
                   onPressDetail={goReviewDetail}
+                  onPressLike={handleLikeReview}
+                  isLiking={
+                    likeMutation.isPending &&
+                    myReview?.reviewId != null &&
+                    likeMutation.variables === myReview.reviewId
+                  }
                 />
 
                 <OtherReviewsSection
                   reviews={reviews}
                   isLoading={reviewsQuery.isLoading}
                   isError={reviewsQuery.isError}
-                  hasNextPage={reviewsQuery.hasNextPage}
                   isFetchingNextPage={reviewsQuery.isFetchingNextPage}
-                  onFetchNextPage={() => void reviewsQuery.fetchNextPage()}
                   onPressDetail={goReviewDetail}
                   onPressLike={handleLikeReview}
                   likingReviewId={

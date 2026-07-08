@@ -7,6 +7,7 @@ import { Typography } from '../../theme/typography'
 const likeIcon = require('../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
 const commentIcon = require('../../../assets/icons/common/icon-comment.svg')
+const defaultProfileImage = require('../../../assets/placeholders/profile-default.png')
 
 type HotFeedCardProps = {
   item?: TodayFeedItem
@@ -15,7 +16,7 @@ type HotFeedCardProps = {
 }
 
 const CARD_W = 353
-const CARD_H = 164
+const CARD_H = 140
 
 export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps) {
   if (loading || !item) {
@@ -25,10 +26,8 @@ export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps
           <View style={[styles.avatarWrap, styles.placeholderBlock]} />
           <View style={[styles.placeholderText, { width: 88 }]} />
         </View>
-        <View style={styles.copy}>
-          <View style={[styles.placeholderText, { width: '64%', height: 16 }]} />
-          <View style={[styles.placeholderText, { width: '92%', height: 14, marginTop: 6 }]} />
-        </View>
+        <View style={[styles.placeholderText, styles.placeholderContent]} />
+        <View style={[styles.placeholderText, styles.placeholderContentShort]} />
         <View style={styles.reactionRow}>
           <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
           <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
@@ -38,12 +37,7 @@ export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps
   }
 
   const { board, profile } = item
-  const raw = board.content ?? ''
-  const title = raw.slice(0, 18) + (raw.length > 18 ? '...' : '')
-  const preview =
-    raw.length > 18
-      ? raw.slice(18, 18 + 70) + (raw.length > 18 + 70 ? '...' : '')
-      : ''
+  const content = board.content ?? ''
 
   const Wrapper: any = onPress ? Pressable : View
   const wrapperProps = onPress
@@ -61,27 +55,24 @@ export function HotFeedCard({ item, loading = false, onPress }: HotFeedCardProps
     <Wrapper {...wrapperProps}>
       <View style={styles.authorRow}>
         <View style={styles.avatarWrap}>
-          {profile.profileImageUrl ? (
-            <Image
-              source={{ uri: profile.profileImageUrl }}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          ) : null}
+          <Image
+            source={
+              profile.profileImageUrl
+                ? { uri: profile.profileImageUrl }
+                : defaultProfileImage
+            }
+            style={styles.avatar}
+            contentFit="cover"
+          />
         </View>
         <Text style={styles.authorName} numberOfLines={1}>
           {profile.nickName ?? ''}
         </Text>
       </View>
 
-      <View style={styles.copy}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.preview} numberOfLines={2}>
-          {preview}
-        </Text>
-      </View>
+      <Text style={styles.contentText} numberOfLines={2}>
+        {content}
+      </Text>
 
       <View style={styles.reactionRow}>
         <View style={styles.reactionItem}>
@@ -113,9 +104,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Gray[100],
     backgroundColor: C.card,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 12,
+    gap: 10,
   },
   cardPressed: {
     opacity: 0.85,
@@ -132,37 +123,40 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Gray[200],
   },
+  placeholderContent: {
+    width: '92%',
+    height: 14,
+    marginTop: 2,
+  },
+  placeholderContentShort: {
+    width: '76%',
+    height: 14,
+  },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   avatarWrap: {
-    width: 32,
-    height: 32,
+    width: 20,
+    height: 20,
     borderRadius: 9999,
     overflow: 'hidden',
     backgroundColor: Gray[200],
   },
   avatar: {
-    width: 32,
-    height: 32,
+    width: 20,
+    height: 20,
   },
   authorName: {
     ...Typography.body2Medium,
     color: C.text,
     flexShrink: 1,
   },
-  copy: {},
-  title: {
-    ...Typography.body1Medium,
-    color: C.text,
-  },
-  preview: {
+  contentText: {
     ...Typography.caption1Medium,
     color: Gray[500],
-    minHeight: 32,
-    marginTop: 4,
+    minHeight: 34,
   },
   reactionRow: {
     flexDirection: 'row',
@@ -175,8 +169,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reactionIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   reactionCount: {
     ...Typography.caption1Medium,
@@ -184,4 +178,3 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 })
-

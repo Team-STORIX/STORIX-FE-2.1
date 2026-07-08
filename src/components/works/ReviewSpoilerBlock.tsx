@@ -11,7 +11,7 @@ import {
 import { C } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
-export const DEFAULT_REVIEW_SPOILER_TEXT = '스포일러가 포함된 리뷰입니다.'
+export const DEFAULT_REVIEW_SPOILER_TEXT = '스포일러가 포함된 리뷰 보기'
 
 type Props = {
   isSpoiler: boolean
@@ -22,7 +22,6 @@ type Props = {
   numberOfLines?: number
   backgroundColor?: string
   textStyle?: StyleProp<TextStyle>
-  hiddenTextStyle?: StyleProp<TextStyle>
   spoilerTextStyle?: StyleProp<TextStyle>
   overlayStyle?: StyleProp<ViewStyle>
 }
@@ -36,7 +35,6 @@ export function ReviewSpoilerBlock({
   numberOfLines,
   backgroundColor = C.card,
   textStyle,
-  hiddenTextStyle,
   spoilerTextStyle,
   overlayStyle,
 }: Props) {
@@ -59,73 +57,37 @@ export function ReviewSpoilerBlock({
     )
   }
 
-  return (
-    <View style={styles.wrapper}>
-      <Text
-        style={[textStyle, styles.hiddenContent, hiddenTextStyle]}
-        numberOfLines={numberOfLines}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        {content}
-      </Text>
+  const SpoilerContainer = allowReveal ? Pressable : View
+  const spoilerContainerProps = allowReveal
+    ? {
+        onPress: () => setRevealed(true),
+        accessibilityRole: 'button' as const,
+        accessibilityLabel: '스포일러 리뷰 내용 보기',
+      }
+    : {
+        accessibilityRole: 'text' as const,
+        accessibilityLabel: spoilerText,
+      }
 
-      {allowReveal ? (
-        <Pressable
-          style={[
-            styles.overlay,
-            { backgroundColor },
-            overlayStyle,
-          ]}
-          onPress={() => setRevealed(true)}
-          accessibilityRole="button"
-          accessibilityLabel="스포일러 리뷰 내용 보기"
-        >
-          <Text
-            style={[styles.spoilerText, spoilerTextStyle]}
-            numberOfLines={numberOfLines ?? 2}
-          >
-            {spoilerText}
-          </Text>
-        </Pressable>
-      ) : (
-        <View
-          style={[
-            styles.overlay,
-            { backgroundColor },
-            overlayStyle,
-          ]}
-          accessibilityRole="text"
-          accessibilityLabel={spoilerText}
-        >
-          <Text
-            style={[styles.spoilerText, spoilerTextStyle]}
-            numberOfLines={numberOfLines ?? 2}
-          >
-            {spoilerText}
-          </Text>
-        </View>
-      )}
-    </View>
+  return (
+    <SpoilerContainer
+      {...spoilerContainerProps}
+      style={[styles.spoilerContainer, { backgroundColor }, overlayStyle]}
+    >
+      <Text style={[styles.spoilerText, spoilerTextStyle]}>{spoilerText}</Text>
+    </SpoilerContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: 'relative',
-    minHeight: 24,
-  },
-  hiddenContent: {
-    opacity: 0,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
+  spoilerContainer: {
+    minHeight: 42,
     alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
+    justifyContent: 'flex-start',
+    paddingVertical: 2,
   },
   spoilerText: {
-    ...Typography.caption1Medium,
+    ...Typography.body2Bold,
     color: C.primary,
     textAlign: 'left',
     alignSelf: 'stretch',

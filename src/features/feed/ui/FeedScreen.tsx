@@ -331,7 +331,7 @@ export function FeedScreen() {
   if (tab === 'writers') {
     return (
       <>
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={[styles.topicroomScreen, { paddingTop: insets.top }]}>
           <FeedTopbar
             activeTab={tab}
             onChange={(t) => {
@@ -342,7 +342,7 @@ export function FeedScreen() {
             onPressAddTopicRoom={handlePressAddTopicRoom}
           />
           <ScrollView
-            style={styles.screen}
+            style={styles.topicroomScroll}
             contentContainerStyle={styles.topicroomContent}
             showsVerticalScrollIndicator={false}
           >
@@ -426,6 +426,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.card,
   },
+  topicroomScreen: {
+    flex: 1,
+    backgroundColor: Gray[50],
+  },
+  topicroomScroll: {
+    flex: 1,
+    backgroundColor: Gray[50],
+  },
   content: {
     paddingBottom: 128,
   },
@@ -475,6 +483,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   topicroomContent: {
+    flexGrow: 1,
+    backgroundColor: Gray[50],
     paddingBottom: 128,
   },
 })

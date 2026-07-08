@@ -16,7 +16,7 @@ import { useAuthStore } from "../../../store/auth.store";
 import { C, Typography } from "../../../theme";
 import { developerLogin } from "../api";
 import { useNativeSocialLogin, useXLogin } from "../hooks";
-import { openXAuthorizationPage } from "../lib/xOAuth";
+import { openXAuthorizationPage, X_OAUTH_CONFIG } from "../lib/xOAuth";
 
 // Dev-only login entry. Gated behind BOTH __DEV__ (stripped from release builds)
 // and an explicit opt-in env flag, so it can never surface in a production build.
@@ -108,8 +108,25 @@ export function LoginScreen() {
   const handleXLogin = async () => {
     setXLoginPending(true);
     try {
-      await openXAuthorizationPage();
+      const authorizationResult = await openXAuthorizationPage();
 
+      if (Platform.OS !== "ios") {
+        return;
+      }
+
+      if (!authorizationResult) {
+        Alert.alert(
+          "X 로그인 실패",
+          "X 인증이 완료되지 않았어요. 브라우저에서 로그인 완료 후 STORIX로 돌아와 주세요.",
+        );
+        return;
+      }
+
+      xLoginMutation.mutate({
+        code: authorizationResult.code,
+        redirectUri: X_OAUTH_CONFIG.redirectUri,
+        codeVerifier: authorizationResult.codeVerifier,
+      });
     } catch (error) {
       Alert.alert("오류", "X 로그인에 실패했어요.");
     } finally {

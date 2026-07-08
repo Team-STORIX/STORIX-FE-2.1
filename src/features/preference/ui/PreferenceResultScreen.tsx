@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray, Magenta, Typography } from "../../../theme";
 import { useFavoriteWork } from "../../favorite/hooks/useFavoriteWork";
-import { useWorksMyReview } from "../../works/hooks/useWorksReviews";
 import {
   usePreferenceFlow,
   type PreferenceWork,
@@ -58,15 +57,12 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
     setWasInitiallyFavorite(isFavorite);
   }, [isFavorite, isLoading, wasInitiallyFavorite]);
 
-  const myReviewQuery = useWorksMyReview(work.id);
-  const myRating =
-    myReviewQuery.isSuccess && typeof myReviewQuery.data?.rating === "number"
-      ? myReviewQuery.data.rating
-      : null;
-  const hasMyReview = myReviewQuery.isSuccess && myReviewQuery.data != null;
-
   const isAlreadyFavorite =
     wasInitiallyFavorite === true && isFavorite === true;
+  const averageRating =
+    typeof work.averageRating === "number" && Number.isFinite(work.averageRating)
+      ? work.averageRating
+      : 0;
 
   const illustrator =
     work.originalAuthor && work.illustrator === work.originalAuthor
@@ -102,21 +98,19 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
             이미 추가된 관심 작품입니다
           </Text>
         ) : null}
-        {hasMyReview ? (
-          <View style={styles.reviewedRow}>
-            <Text style={styles.reviewedLabel}>평가함</Text>
-            {myRating !== null ? (
-              <>
-                <Image
-                  source={littleStarIcon}
-                  style={styles.reviewedStar}
-                  contentFit="contain"
-                />
-                <Text style={styles.reviewedRating}>{myRating}</Text>
-              </>
-            ) : null}
+        <View style={styles.averageRatingRow}>
+          <Text style={styles.averageRatingLabel}>평균 별점</Text>
+          <View style={styles.averageRatingValueRow}>
+            <Image
+              source={littleStarIcon}
+              style={styles.averageRatingStar}
+              contentFit="contain"
+            />
+            <Text style={styles.averageRatingValue}>
+              {averageRating.toFixed(1)}
+            </Text>
           </View>
-        ) : null}
+        </View>
       </View>
 
       <Pressable
@@ -511,22 +505,26 @@ const styles = StyleSheet.create({
     ...Typography.caption2Extrabold,
     color: "#EF433E",
   },
-  reviewedRow: {
+  averageRatingRow: {
     marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
-  reviewedLabel: {
+  averageRatingLabel: {
     ...Typography.caption1Medium,
     color: Magenta[300],
-    marginRight: 2,
   },
-  reviewedStar: {
+  averageRatingValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  averageRatingStar: {
     width: 9,
     height: 10,
   },
-  reviewedRating: {
+  averageRatingValue: {
     ...Typography.caption1Medium,
     color: Magenta[300],
   },

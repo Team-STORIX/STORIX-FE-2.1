@@ -1,8 +1,5 @@
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import type { TopicRoomItem } from '../api/topicroom.schema'
-import { C } from '../../../theme/colors'
-import { S } from '../../../theme/spacing'
-import { Typography } from '../../../theme/typography'
 import { TopicRoomListItem } from './TopicRoomListItem'
 
 type Props = {
@@ -24,7 +21,10 @@ export function TopicRoomSearchList({
     <FlatList
       data={data}
       keyExtractor={(item) => `search-${item.topicRoomId}`}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        data.length === 0 ? styles.emptyContent : null,
+      ]}
       renderItem={({ item }) => (
         <View style={styles.item}>
           <TopicRoomListItem item={item} onPress={() => onPressItem(item)} />
@@ -41,39 +41,18 @@ export function TopicRoomSearchList({
   )
 }
 
-export function TopicRoomSearchEmpty({ keyword }: { keyword: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>검색 결과 없음</Text>
-      <Text style={styles.emptyText}>"{keyword}"와 일치하는 토픽룸이 없어요.</Text>
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   content: {
     paddingTop: 16,
     paddingBottom: 32,
+  },
+  emptyContent: {
+    flexGrow: 1,
   },
   item: {
     width: '100%',
   },
   separator: {
     height: 16,
-  },
-  emptyWrap: {
-    paddingHorizontal: 32,
-    paddingTop: 96,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    marginBottom: 6,
-  },
-  emptyText: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
   },
 })

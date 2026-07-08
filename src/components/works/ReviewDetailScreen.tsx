@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
+import { useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
+import { Stack, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState, type Ref } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,137 +11,137 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Stack, useRouter } from 'expo-router'
-import { useQueryClient } from '@tanstack/react-query'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useMe } from "../../features/profile";
+import { FeedDeleteConfirmModal } from "../../features/feed/ui/FeedDeleteConfirmModal";
+import { blockUser } from "../../features/users/api/users.api";
 import {
   useDeleteMyReview,
   useLikeWorksReview,
   useReportWorksReview,
   useWorksReviewDetail,
-} from '../../features/works/hooks/useWorksReviews'
-import { useMe } from '../../features/profile'
-import { blockUser } from '../../features/users/api/users.api'
-import { useLikesStore } from '../../store/likes.store'
-import { C, Gray } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { Typography } from '../../theme/typography'
-import { formatCreatedAtLabel } from '../../lib/utils/formatCreatedAtLabel'
-import { UserActionModal } from '../common/UserActionModal'
-import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
-import { RecordCardModal } from './RecordCardModal'
+} from "../../features/works/hooks/useWorksReviews";
+import { formatCreatedAtLabel } from "../../lib/utils/formatCreatedAtLabel";
+import { useLikesStore } from "../../store/likes.store";
+import { C, Gray } from "../../theme/colors";
+import { Radius } from "../../theme/radius";
+import { FontFamily, Typography } from "../../theme/typography";
+import { UserActionModal } from "../common/UserActionModal";
+import { RecordCardModal } from "./RecordCardModal";
+import { ReviewSpoilerBlock } from "./ReviewSpoilerBlock";
 
-const backIcon = require('../../../assets/icons/common/back.svg')
-const reviewProfileIcon = require('../../../assets/icons/common/reviewProfile.svg')
-const littleStarIcon = require('../../../assets/icons/common/littleStar.svg')
-const likeIcon = require('../../../assets/icons/common/icon-like.svg')
-const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
-const menuDotsIcon = require('../../../assets/icons/common/menu-3dots.svg')
-const savedToast = require('../../../assets/common/cardshare/image-gallery-saved.svg')
-const TAB_BAR_HEIGHT = 80
-const CARD_TOAST_NAV_GAP = 36
+const backIcon = require("../../../assets/icons/common/back.svg");
+const defaultProfileImage = require("../../../assets/placeholders/profile-default.png");
+const littleStarIcon = require("../../../assets/icons/common/littleStar.svg");
+const likeIcon = require("../../../assets/icons/common/icon-like.svg");
+const likePinkIcon = require("../../../assets/icons/common/icon-like-pink.svg");
+const menuDotsIcon = require("../../../assets/icons/common/menu-3dots.svg");
+const savedToast = require("../../../assets/common/cardshare/image-gallery-saved.svg");
+const TAB_BAR_HEIGHT = 80;
+const CARD_TOAST_NAV_GAP = 36;
 
 type Props = {
-  reviewId: number
-  source?: 'library'
-  sourceWorksId?: number
-}
+  reviewId: number;
+  source?: "library";
+  sourceWorksId?: number;
+};
 
 const formatKoreanDate = (iso?: string) => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-  return `${yyyy}.${mm}.${dd} (${day})`
-}
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const day = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${yyyy}.${mm}.${dd} (${day})`;
+};
 
 // Pull a safe, user-facing message out of an API error.
 // Never expose tokens or the whole response object — only the server message,
 // and only log status/code/message in dev.
 function getReportErrorMessage(error: unknown): string {
-  const fallback = '신고 처리에 실패했어요. 다시 시도해 주세요.'
-  const resp = (error as { response?: { status?: number; data?: any } })?.response
-  const data = resp?.data
-  const message = typeof data?.message === 'string' ? data.message : null
+  const fallback = "신고 처리에 실패했어요. 다시 시도해 주세요.";
+  const resp = (error as { response?: { status?: number; data?: any } })
+    ?.response;
+  const data = resp?.data;
+  const message = typeof data?.message === "string" ? data.message : null;
   if (__DEV__) {
-    console.log('[worksReview][report] error', {
+    console.log("[worksReview][report] error", {
       status: resp?.status,
       code: data?.code,
       message: message ?? undefined,
-    })
+    });
   }
-  return message ?? fallback
+  return message ?? fallback;
 }
 
 export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const [showRecordCard, setShowRecordCard] = useState(false)
-  const [showSavedToast, setShowSavedToast] = useState(false)
-  const savedToastBottom = insets.bottom + TAB_BAR_HEIGHT + CARD_TOAST_NAV_GAP
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [showRecordCard, setShowRecordCard] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
+  const savedToastBottom = insets.bottom + TAB_BAR_HEIGHT + CARD_TOAST_NAV_GAP;
 
-  const isValidReviewId = Number.isFinite(reviewId) && reviewId > 0
+  const isValidReviewId = Number.isFinite(reviewId) && reviewId > 0;
   const { data, isLoading, isError } = useWorksReviewDetail(
     isValidReviewId ? reviewId : 0,
-  )
+  );
 
   const ui = useMemo(() => {
-    const worksMetaParts: string[] = []
-    if (data?.artistName) worksMetaParts.push(data.artistName)
-    if (data?.worksType) worksMetaParts.push(data.worksType)
+    const worksMetaParts: string[] = [];
+    if (data?.artistName) worksMetaParts.push(data.artistName);
+    if (data?.worksType) worksMetaParts.push(data.worksType);
 
     return {
       worksId: data?.worksId ?? 0,
-      userId: typeof data?.userId === 'number' ? data.userId : null,
-      userName: data?.userName ?? '',
-      profileImageUrl: data?.profileImageUrl ?? null,
-      worksTitle: data?.worksName ?? '',
-      worksMeta: worksMetaParts.join(' · '),
+      userId: typeof data?.userId === "number" ? data.userId : null,
+      userName: data?.userName ?? "",
+      profileImageUrl: data?.profileImageUrl?.trim() || null,
+      worksTitle: data?.worksName ?? "",
+      worksMeta: worksMetaParts.join(" · "),
       coverSrc: data?.thumbnailUrl ?? null,
-      rating: typeof data?.rating === 'number' ? data.rating : null,
+      rating: typeof data?.rating === "number" ? data.rating : null,
       dateText: formatKoreanDate(data?.lastCreatedTime ?? data?.createdAt),
-      content: data?.content ?? '',
-      likeCount: typeof data?.likeCount === 'number' ? data.likeCount : 0,
+      content: data?.content ?? "",
+      likeCount: typeof data?.likeCount === "number" ? data.likeCount : 0,
       isLiked: !!data?.isLiked,
       isMineFlag: data?.isMine === true,
       isSpoiler: !!data?.isSpoiler,
-      spoilerScript: data?.spoilerScript ?? '',
-    }
-  }, [data])
+      spoilerScript: data?.spoilerScript ?? "",
+    };
+  }, [data]);
 
-  const { data: meData } = useMe()
-  const myUserId = typeof meData?.userId === 'number' ? meData.userId : null
+  const { data: meData } = useMe();
+  const myUserId = typeof meData?.userId === "number" ? meData.userId : null;
   const isMine =
     ui.isMineFlag ||
-    (myUserId != null && ui.userId != null && myUserId === ui.userId)
+    (myUserId != null && ui.userId != null && myUserId === ui.userId);
 
-  const likeMutation = useLikeWorksReview({ worksId: ui.worksId })
-  const deleteMutation = useDeleteMyReview({ worksId: ui.worksId })
-  const reportMutation = useReportWorksReview()
-  const qc = useQueryClient()
+  const likeMutation = useLikeWorksReview({ worksId: ui.worksId });
+  const deleteMutation = useDeleteMyReview({ worksId: ui.worksId });
+  const reportMutation = useReportWorksReview();
+  const qc = useQueryClient();
 
   // Moderation menu is only available on *other* users' reviews.
-  const canModerate = !isMine && ui.userId != null
+  const canModerate = !isMine && ui.userId != null;
 
   // Kebab dropdown + confirm modals
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [menuDropdownTop, setMenuDropdownTop] = useState(0)
-  const menuBtnRef = useRef<any>(null)
-  const [reportModalVisible, setReportModalVisible] = useState(false)
-  const [blockModalVisible, setBlockModalVisible] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuDropdownTop, setMenuDropdownTop] = useState(0);
+  const menuBtnRef = useRef<any>(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [blockModalVisible, setBlockModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const relativeTime = formatCreatedAtLabel(
     data?.lastCreatedTime ?? data?.createdAt,
-  )
+  );
 
   const handleMenuPress = () => {
     if (menuOpen) {
-      setMenuOpen(false)
-      return
+      setMenuOpen(false);
+      return;
     }
     menuBtnRef.current?.measure(
       (
@@ -149,161 +152,160 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         _px: number,
         py: number,
       ) => {
-        setMenuDropdownTop(py + h + 4)
-        setMenuOpen(true)
+        setMenuDropdownTop(py + h + 4);
+        setMenuOpen(true);
       },
-    )
-  }
+    );
+  };
 
   // Close the dropdown first, then open the confirm modal on the next frame so
   // the dropdown Modal is gone before the confirm Modal mounts (avoids flicker
   // and stray touch events).
   const openReport = () => {
-    setMenuOpen(false)
-    requestAnimationFrame(() => setReportModalVisible(true))
-  }
+    setMenuOpen(false);
+    requestAnimationFrame(() => setReportModalVisible(true));
+  };
   const openBlock = () => {
-    setMenuOpen(false)
-    requestAnimationFrame(() => setBlockModalVisible(true))
-  }
+    setMenuOpen(false);
+    requestAnimationFrame(() => setBlockModalVisible(true));
+  };
   const openEdit = () => {
-    setMenuOpen(false)
-    if (!ui.worksId) return
-    router.push(`/review/write?worksId=${ui.worksId}&reviewId=${reviewId}` as never)
-  }
+    setMenuOpen(false);
+    if (!ui.worksId) return;
+    router.push(
+      `/review/write?worksId=${ui.worksId}&reviewId=${reviewId}` as never,
+    );
+  };
   const openDelete = () => {
-    setMenuOpen(false)
-    requestAnimationFrame(onConfirmDelete)
-  }
+    setMenuOpen(false);
+    requestAnimationFrame(() => setDeleteModalVisible(true));
+  };
 
   const onConfirmReport = async () => {
     // Backend requires the actual review writer's id; never report myself.
-    if (ui.userId == null || isMine) return
+    if (ui.userId == null || isMine) return;
     if (__DEV__) {
-      console.log('[worksReview][report] request', {
+      console.log("[worksReview][report] request", {
         reviewId,
         reportedUserId: ui.userId,
-        reason: 'OTHER',
-      })
+        reason: "OTHER",
+      });
     }
     await reportMutation.mutateAsync({
       reviewId,
       payload: {
         reportedUserId: ui.userId,
-        reason: 'OTHER',
+        reason: "OTHER",
         otherReason: null,
       },
-    })
-  }
+    });
+  };
 
   const onConfirmBlock = async () => {
-    if (ui.userId == null || isMine) return
-    await blockUser(ui.userId)
+    if (ui.userId == null || isMine) return;
+    await blockUser(ui.userId);
     await Promise.all([
-      qc.invalidateQueries({ queryKey: ['works', 'review', 'list', ui.worksId] }),
-      qc.invalidateQueries({ queryKey: ['works', 'review', 'detail', reviewId] }),
-      qc.invalidateQueries({ queryKey: ['worksReviews'] }),
-      qc.invalidateQueries({ queryKey: ['allBoards'] }),
-      qc.invalidateQueries({ queryKey: ['boardsByWorksId'] }),
-    ])
-  }
+      qc.invalidateQueries({
+        queryKey: ["works", "review", "list", ui.worksId],
+      }),
+      qc.invalidateQueries({
+        queryKey: ["works", "review", "detail", reviewId],
+      }),
+      qc.invalidateQueries({ queryKey: ["worksReviews"] }),
+      qc.invalidateQueries({ queryKey: ["allBoards"] }),
+      qc.invalidateQueries({ queryKey: ["boardsByWorksId"] }),
+    ]);
+  };
 
   const onReportError = (error: unknown) => {
-    Alert.alert('신고 실패', getReportErrorMessage(error))
-  }
+    Alert.alert("신고 실패", getReportErrorMessage(error));
+  };
 
   const onBlockError = () => {
-    Alert.alert('차단 실패', '차단 처리에 실패했어요. 다시 시도해 주세요.')
-  }
+    Alert.alert("차단 실패", "차단 처리에 실패했어요. 다시 시도해 주세요.");
+  };
 
-  const navigateToWorksWithActionToast = (action: 'report' | 'block') => {
+  const navigateToWorksWithActionToast = (action: "report" | "block") => {
     if (ui.worksId) {
       router.replace(
         `/works/${ui.worksId}?tab=review&actionToast=${action}` as never,
-      )
-      return
+      );
+      return;
     }
-    router.replace('/(tabs)' as const)
-  }
+    router.replace("/(tabs)" as const);
+  };
 
   const storeIsLiked = useLikesStore(
     (state) => !!state.likedIds[String(reviewId)],
-  )
+  );
 
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   useEffect(() => {
-    setLiked(ui.isLiked || storeIsLiked)
-    setLikeCount(ui.likeCount)
-  }, [ui.isLiked, ui.likeCount, storeIsLiked])
+    setLiked(ui.isLiked || storeIsLiked);
+    setLikeCount(ui.likeCount);
+  }, [ui.isLiked, ui.likeCount, storeIsLiked]);
 
   const handleBack = () => {
-    if (source === 'library') {
+    if (source === "library") {
       const targetWorksId =
-        sourceWorksId != null && Number.isFinite(sourceWorksId) && sourceWorksId > 0
+        sourceWorksId != null &&
+        Number.isFinite(sourceWorksId) &&
+        sourceWorksId > 0
           ? sourceWorksId
-          : ui.worksId
+          : ui.worksId;
 
       if (targetWorksId) {
-        router.replace(`/works/${targetWorksId}` as never)
-        return
+        router.replace(`/works/${targetWorksId}` as never);
+        return;
       }
     }
 
     if (router.canGoBack()) {
-      router.back()
-      return
+      router.back();
+      return;
     }
-    router.replace('/(tabs)' as const)
-  }
+    router.replace("/(tabs)" as const);
+  };
 
   const onClickLike = async () => {
-    if (likeMutation.isPending) return
+    if (likeMutation.isPending) return;
 
-    const prevLiked = liked
-    const prevCount = likeCount
+    const prevLiked = liked;
+    const prevCount = likeCount;
 
-    const nextLiked = !prevLiked
-    const nextCount = Math.max(0, prevCount + (nextLiked ? 1 : -1))
+    const nextLiked = !prevLiked;
+    const nextCount = Math.max(0, prevCount + (nextLiked ? 1 : -1));
 
-    setLiked(nextLiked)
-    setLikeCount(nextCount)
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
 
     try {
-      await likeMutation.mutateAsync(reviewId)
+      await likeMutation.mutateAsync(reviewId);
     } catch {
-      setLiked(prevLiked)
-      setLikeCount(prevCount)
+      setLiked(prevLiked);
+      setLikeCount(prevCount);
     }
-  }
+  };
 
-  const onConfirmDelete = () => {
-    if (deleteMutation.isPending) return
-    Alert.alert('리뷰 삭제', '정말 삭제하시겠어요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteMutation.mutateAsync(reviewId)
-            if (ui.worksId) {
-              router.replace(`/works/${ui.worksId}` as never)
-            } else if (router.canGoBack()) {
-              router.back()
-            } else {
-              router.replace('/(tabs)' as const)
-            }
-          } catch (e) {
-            Alert.alert(
-              '삭제 실패',
-              e instanceof Error ? e.message : '리뷰 삭제에 실패했어요.',
-            )
-          }
-        },
-      },
-    ])
-  }
+  const onConfirmDelete = async () => {
+    if (deleteMutation.isPending) return;
+    try {
+      await deleteMutation.mutateAsync(reviewId);
+      if (ui.worksId) {
+        router.replace(`/works/${ui.worksId}` as never);
+      } else if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)" as const);
+      }
+    } catch (e) {
+      Alert.alert(
+        "삭제 실패",
+        e instanceof Error ? e.message : "리뷰 삭제에 실패했어요.",
+      );
+    }
+  };
 
   if (!isValidReviewId) {
     return (
@@ -312,7 +314,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         <TopBar topInset={insets.top} onBack={handleBack} />
         <Text style={styles.statusText}>잘못된 리뷰 접근이에요</Text>
       </View>
-    )
+    );
   }
 
   if (isLoading) {
@@ -325,7 +327,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
           <Text style={styles.statusText}>리뷰를 불러오는 중이에요.</Text>
         </View>
       </View>
-    )
+    );
   }
 
   if (isError || !data) {
@@ -335,7 +337,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         <TopBar topInset={insets.top} onBack={handleBack} />
         <Text style={styles.statusText}>리뷰를 불러오지 못했어요</Text>
       </View>
-    )
+    );
   }
 
   return (
@@ -363,7 +365,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
               source={
                 ui.profileImageUrl
                   ? { uri: ui.profileImageUrl }
-                  : reviewProfileIcon
+                  : defaultProfileImage
               }
               style={styles.avatarImage}
               contentFit="cover"
@@ -413,21 +415,38 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
                   {isMine ? (
                     <>
                       <Pressable style={styles.menuTextItem} onPress={openEdit}>
-                        <Text style={styles.menuTextItemText}>수정하기</Text>
+                        <Text style={styles.menuTextItemText_900}>
+                          리뷰 수정
+                        </Text>
                       </Pressable>
                       <View style={styles.menuDivider} />
-                      <Pressable style={styles.menuTextItem} onPress={openDelete}>
-                        <Text style={styles.menuTextItemText}>삭제하기</Text>
+                      <Pressable
+                        style={styles.menuTextItem}
+                        onPress={openDelete}
+                      >
+                        <Text style={styles.menuTextItemText_500}>
+                          리뷰 삭제
+                        </Text>
                       </Pressable>
                     </>
                   ) : (
                     <>
-                      <Pressable style={styles.menuTextItem} onPress={openReport}>
-                        <Text style={styles.menuTextItemText}>신고하기</Text>
+                      <Pressable
+                        style={styles.menuTextItem}
+                        onPress={openReport}
+                      >
+                        <Text style={styles.menuTextItemText_900}>
+                          신고하기
+                        </Text>
                       </Pressable>
                       <View style={styles.menuDivider} />
-                      <Pressable style={styles.menuTextItem} onPress={openBlock}>
-                        <Text style={styles.menuTextItemText}>차단하기</Text>
+                      <Pressable
+                        style={styles.menuTextItem}
+                        onPress={openBlock}
+                      >
+                        <Text style={styles.menuTextItemText_500}>
+                          차단하기
+                        </Text>
                       </Pressable>
                     </>
                   )}
@@ -496,11 +515,14 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.likeButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.likeButton,
+              pressed && styles.pressed,
+            ]}
             onPress={onClickLike}
             disabled={likeMutation.isPending}
             accessibilityRole="button"
-            accessibilityLabel={liked ? '리뷰 좋아요 취소' : '리뷰 좋아요'}
+            accessibilityLabel={liked ? "리뷰 좋아요 취소" : "리뷰 좋아요"}
           >
             <Image
               source={liked ? likePinkIcon : likeIcon}
@@ -521,7 +543,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         onClose={() => setReportModalVisible(false)}
         onConfirm={onConfirmReport}
         onError={onReportError}
-        onSuccess={() => navigateToWorksWithActionToast('report')}
+        onSuccess={() => navigateToWorksWithActionToast("report")}
         showCompletionPopup={false}
       />
 
@@ -534,8 +556,15 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         onClose={() => setBlockModalVisible(false)}
         onConfirm={onConfirmBlock}
         onError={onBlockError}
-        onSuccess={() => navigateToWorksWithActionToast('block')}
+        onSuccess={() => navigateToWorksWithActionToast("block")}
         showCompletionPopup={false}
+      />
+
+      <FeedDeleteConfirmModal
+        visible={deleteModalVisible}
+        type="review"
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={onConfirmDelete}
       />
 
       {/* 기록카드 모달 */}
@@ -544,26 +573,33 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         onClose={() => setShowRecordCard(false)}
         coverImageUrl={ui.coverSrc}
         nickname={ui.userName}
-        createdAt={data?.lastCreatedTime ?? data?.createdAt ?? ''}
+        createdAt={data?.lastCreatedTime ?? data?.createdAt ?? ""}
         reviewContent={ui.content}
         worksTitle={ui.worksTitle}
         rating={ui.rating ?? 0}
         onSaveSuccess={() => {
-          setShowSavedToast(true)
-          setTimeout(() => setShowSavedToast(false), 1500)
+          setShowSavedToast(true);
+          setTimeout(() => setShowSavedToast(false), 1500);
         }}
       />
 
       {/* 저장 완료 토스트 */}
       {showSavedToast && (
         <Modal visible transparent animationType="none" statusBarTranslucent>
-          <View style={[styles.toastContainer, { bottom: savedToastBottom }]} pointerEvents="none">
-            <Image source={savedToast} style={styles.toastImage} contentFit="contain" />
+          <View
+            style={[styles.toastContainer, { bottom: savedToastBottom }]}
+            pointerEvents="none"
+          >
+            <Image
+              source={savedToast}
+              style={styles.toastImage}
+              contentFit="contain"
+            />
           </View>
         </Modal>
       )}
     </View>
-  )
+  );
 }
 
 function TopBar({
@@ -575,13 +611,13 @@ function TopBar({
   onPressRecordCard,
   showRecordCard = false,
 }: {
-  topInset: number
-  onBack: () => void
-  onPressMenu?: () => void
-  menuButtonRef?: Ref<any>
-  showMenu?: boolean
-  onPressRecordCard?: () => void
-  showRecordCard?: boolean
+  topInset: number;
+  onBack: () => void;
+  onPressMenu?: () => void;
+  menuButtonRef?: Ref<any>;
+  showMenu?: boolean;
+  onPressRecordCard?: () => void;
+  showRecordCard?: boolean;
 }) {
   return (
     <View style={[topBarStyles.container, { paddingTop: topInset + 8 }]}>
@@ -594,7 +630,11 @@ function TopBar({
         accessibilityRole="button"
         accessibilityLabel="뒤로가기"
       >
-        <Image source={backIcon} style={topBarStyles.icon} contentFit="contain" />
+        <Image
+          source={backIcon}
+          style={topBarStyles.icon}
+          contentFit="contain"
+        />
       </Pressable>
 
       <View style={[topBarStyles.titleWrapper, { top: topInset + 8 }]}>
@@ -632,17 +672,19 @@ function TopBar({
               contentFit="contain"
             />
           </Pressable>
-        ) : <View style={{ width: 32, height: 32 }} />}
+        ) : (
+          <View style={{ width: 32, height: 32 }} />
+        )}
       </View>
     </View>
-  )
+  );
 }
 
 const topBarStyles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
     backgroundColor: C.card,
@@ -650,31 +692,31 @@ const topBarStyles = StyleSheet.create({
   iconButton: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   icon: {
     width: 24,
     height: 24,
   },
   titleWrapper: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'none',
+    alignItems: "center",
+    justifyContent: "center",
+    pointerEvents: "none",
   },
   title: {
     ...Typography.body1Medium,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 32,
   },
   rightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   recordCardButton: {
@@ -682,22 +724,22 @@ const topBarStyles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E3DCDF',
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#E3DCDF",
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   recordCardText: {
-    fontFamily: 'SUIT',
+    fontFamily: "SUIT",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     lineHeight: 16.8,
-    color: '#645C5F',
+    color: "#645C5F",
   },
   pressed: {
     opacity: 0.7,
   },
-})
+});
 
 const styles = StyleSheet.create({
   screen: {
@@ -709,19 +751,19 @@ const styles = StyleSheet.create({
   },
   statusBlock: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
   },
   statusText: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
     paddingVertical: 16,
   },
   userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -730,10 +772,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarImage: {
     width: 36,
@@ -748,24 +790,24 @@ const styles = StyleSheet.create({
     color: Gray[900],
   },
   userTime: {
-    fontFamily: 'SUIT',
+    fontFamily: "SUIT",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 16.8,
     color: Gray[400],
   },
   userMenuBtn: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   userMenuIcon: {
     width: 24,
     height: 24,
   },
   menuDropdown: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     width: 96,
     padding: 8,
@@ -778,13 +820,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   menuTextWrapper: {
-    width: '100%',
+    width: "100%",
   },
   menuTextItem: {
-    justifyContent: 'center',
-    alignItems: 'flex-start',
+    justifyContent: "center",
+    alignItems: "flex-start",
   },
-  menuTextItemText: {
+  menuTextItemText_900: {
+    ...Typography.body2Medium,
+    color: Gray[900],
+  },
+  menuTextItemText_500: {
     ...Typography.body2Medium,
     color: Gray[500],
   },
@@ -794,8 +840,8 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   worksCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 20,
@@ -806,7 +852,7 @@ const styles = StyleSheet.create({
     width: 87,
     height: 121,
     borderRadius: Radius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: C.divider,
   },
   cover: {
@@ -831,10 +877,10 @@ const styles = StyleSheet.create({
   },
   ratingChip: {
     marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.full,
@@ -852,8 +898,8 @@ const styles = StyleSheet.create({
   },
   bodyArea: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    gap: 20,
+    paddingVertical: 16,
+    gap: 16,
   },
   dateRow: {
     borderLeftWidth: 2,
@@ -861,44 +907,48 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
   },
   dateText: {
-    ...Typography.dateText,
+    fontFamily: FontFamily.semibold,
+    fontSize: 16,
+    lineHeight: 22.4,
+    color: Gray[500],
   },
   contentWrap: {
-    position: 'relative',
-    minHeight: 64,
+    position: "relative",
   },
   contentText: {
-    ...Typography.body1Medium,
-    fontFamily: undefined,
-    color: C.textSecondary,
-    lineHeight: 28,
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    lineHeight: 19.6,
+    color: Gray[800],
   },
   detailSpoilerText: {
     ...Typography.body2Medium,
   },
   likeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   likeIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   likeCount: {
-    ...Typography.caption1Medium,
-    color: C.textMuted,
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    lineHeight: 19.6,
+    color: Gray[500],
   },
   pressed: {
     opacity: 0.7,
   },
   toastContainer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 100,
     elevation: 100,
   },
@@ -906,4 +956,4 @@ const styles = StyleSheet.create({
     width: 320,
     height: 82,
   },
-})
+});

@@ -64,8 +64,8 @@ export function TopicRoomUserConfirmModal({
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={handleBackdrop}
     >
       <Pressable style={styles.backdrop} onPress={handleBackdrop}>
@@ -124,7 +124,7 @@ export function TopicRoomUserConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(19, 17, 18, 0.6)",
+    backgroundColor: "#302d2f",
     alignItems: "center",
     justifyContent: "center",
   },

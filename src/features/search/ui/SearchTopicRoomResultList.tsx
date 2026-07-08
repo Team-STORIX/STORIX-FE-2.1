@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
+import { C, Gray } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
@@ -201,16 +201,16 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.body2Medium,
-    color: C.text,
+    color: Gray[900],
     flex: 1,
   },
   rightText: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   title: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   separator: {
     height: 16,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   message: {
     ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
     textAlign: 'center',
   },
   footer: {

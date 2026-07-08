@@ -103,17 +103,22 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: 8,
   },
   subtitle: {
     ...Typography.body1Medium,
     color: C.text,
     flex: 1,
+    maxWidth: 240,
     lineHeight: 20,
   },
   rightText: {
     ...Typography.caption1Medium,
     color: C.textMuted,
+    marginLeft: "auto",
+    textAlign: "right",
+    flexShrink: 0,
   },
   bottomRow: {
     flexDirection: "row",

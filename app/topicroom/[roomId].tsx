@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../src/components/common/Toast";
-import { WarningEmptyState } from "../../src/components/common/WarningEmptyState";
 import { useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
@@ -546,15 +545,6 @@ export default function TopicRoomScreen() {
             />
           ) : null
         }
-        ListEmptyComponent={
-          !historyLoading && !historyError ? (
-            <WarningEmptyState
-              description="아직 메시지가 없습니다. 첫 메시지를 보내보세요."
-              iconSize={96}
-              style={styles.chatEmpty}
-            />
-          ) : null
-        }
       />
 
       <ChatInput
@@ -626,8 +616,4 @@ const styles = StyleSheet.create({
 
   paginationLoader: { paddingVertical: 10 },
 
-  chatEmpty: {
-    paddingVertical: 56,
-    transform: [{ scaleY: -1 }],
-  },
 });

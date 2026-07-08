@@ -1,8 +1,7 @@
 import { Image } from "expo-image";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { WorksDetail } from "../../features/works/api/works.api";
-import { C } from "../../theme/colors";
+import { C, Gray } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
 import { Typography } from "../../theme/typography";
 import { HashtagChip } from "../common/HashtagChip";
@@ -32,7 +31,6 @@ function platformIcon(platform: string) {
 }
 
 export function WorksInfoSection({ works }: { works: WorksDetail }) {
-  const [expanded, setExpanded] = useState(false);
   const platforms = (works.platforms ?? []).filter(
     (item) => item.trim().length > 0,
   );
@@ -74,21 +72,7 @@ export function WorksInfoSection({ works }: { works: WorksDetail }) {
 
       <SectionTitle title="작품 소개" />
       {description ? (
-        <View>
-          <Text
-            style={styles.description}
-            numberOfLines={expanded ? undefined : 6}
-          >
-            {description}
-          </Text>
-          {description.length > 140 ? (
-            <Pressable onPress={() => setExpanded((value) => !value)}>
-              <Text style={styles.expandText}>
-                {expanded ? "접기" : "더보기"}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
+        <Text style={styles.description}>{description}</Text>
       ) : (
         <Text style={styles.emptyText}>작품 소개가 아직 없어요.</Text>
       )}
@@ -160,13 +144,8 @@ const styles = StyleSheet.create({
   },
   description: {
     ...Typography.body2Medium,
-    color: C.textSecondary,
+    color: Gray[500],
     marginBottom: 8,
-  },
-  expandText: {
-    ...Typography.body2Bold,
-    color: C.primary,
-    marginBottom: 28,
   },
   hashtagWrap: {
     flexDirection: "row",

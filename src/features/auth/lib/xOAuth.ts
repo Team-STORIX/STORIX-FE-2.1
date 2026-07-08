@@ -11,7 +11,10 @@ import { getItem, removeItem, setItem } from '../../../lib/storage/async'
  * X OAuth 2.0 configuration
  */
 export const X_OAUTH_CONFIG = {
-  authorizationEndpoint: 'https://x.com/i/oauth2/authorize',
+  authorizationEndpoint:
+    Platform.OS === 'ios'
+      ? 'https://twitter.com/i/oauth2/authorize'
+      : 'https://x.com/i/oauth2/authorize',
   clientId:
     process.env.EXPO_PUBLIC_X_CLIENT_ID ??
     'ZzFZMEV3X19ydnBnR09IZ2FNNkg6MTpjaQ',
@@ -81,6 +84,12 @@ export const getPendingXOAuthSession =
 
 export const clearPendingXOAuthSession = async (): Promise<void> => {
   await removeItem(X_OAUTH_SESSION_KEY)
+}
+
+const clearPendingXOAuthSessionOnIOS = async (): Promise<void> => {
+  if (Platform.OS === 'ios') {
+    await clearPendingXOAuthSession()
+  }
 }
 
 /**
@@ -161,7 +170,7 @@ export const openXAuthorizationPage = async (): Promise<{
       url,
       X_OAUTH_CONFIG.redirectUri,
       {
-        preferEphemeralSession: true,
+        preferEphemeralSession: Platform.OS === 'ios' ? false : true,
         showTitle: true,
         ...(browserPackage ? { browserPackage } : null),
       },
@@ -171,6 +180,7 @@ export const openXAuthorizationPage = async (): Promise<{
 
     if (result.type !== 'success') {
       console.log('[X OAuth] User cancelled or error:', result.type)
+      await clearPendingXOAuthSessionOnIOS()
       return null
     }
 
@@ -186,16 +196,19 @@ export const openXAuthorizationPage = async (): Promise<{
         error: oauthError,
         description: oauthErrorDescription,
       })
+      await clearPendingXOAuthSession()
       return null
     }
 
     if (returnedState !== state) {
       console.error('[X OAuth] State mismatch')
+      await clearPendingXOAuthSession()
       return null
     }
 
     if (!code) {
       console.error('[X OAuth] No code in redirect URL')
+      await clearPendingXOAuthSession()
       return null
     }
 
@@ -203,6 +216,7 @@ export const openXAuthorizationPage = async (): Promise<{
     return { code, codeVerifier }
   } catch (error) {
     console.error('[X OAuth error]:', error)
+    await clearPendingXOAuthSessionOnIOS()
     return null
   }
 }

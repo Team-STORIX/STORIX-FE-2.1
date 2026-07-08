@@ -177,18 +177,41 @@ export type PreferenceStatItem = z.infer<typeof PreferenceStatItemSchema>
  * 4) GET /api/v1/preference/results
  *    취향 분석 결과 (liked/disliked 작품 리스트)
  * -------------------------------- */
+const normalizeResultItem = (raw: unknown): unknown => {
+  if (!isRecord(raw)) return raw
+
+  const avgRating =
+    raw.avgRating ??
+    raw.averageRating ??
+    raw.ratingAverage ??
+    raw.averageScore ??
+    raw.rating
+
+  return { ...raw, avgRating }
+}
+
 export const PreferenceResultWorkSchema = z
-  .object({
-    worksId: z.coerce.number(),
-    worksName: z.string().catch(''),
-    author: z.string().catch(''),
-    illustrator: z.string().catch(''),
-    originalAuthor: z.string().catch(''),
-    thumbnailUrl: z.string().nullable().optional(),
-    worksType: z.string().catch(''),
-    genre: GenreKeySchema,
-  })
-  .passthrough()
+  .preprocess(
+    normalizeResultItem,
+    z
+      .object({
+        worksId: z.coerce.number(),
+        worksName: z.string().catch(''),
+        author: z.string().catch(''),
+        illustrator: z.string().catch(''),
+        originalAuthor: z.string().catch(''),
+        thumbnailUrl: z.string().nullable().optional(),
+        worksType: z.string().catch(''),
+        genre: GenreKeySchema,
+        avgRating: z
+          .preprocess((value) => {
+            if (value != null) return value
+            return undefined
+          }, z.coerce.number().nullable().optional())
+          .default(null),
+      })
+      .passthrough(),
+  )
 
 export const PreferenceResultsSchema = z.object({
   likedWorks: z.array(PreferenceResultWorkSchema).default([]),

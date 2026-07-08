@@ -1,11 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { C, Magenta, Radius, Typography } from '../../../theme'
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C, Magenta, Radius, Typography } from "../../../theme";
 
 type PreferenceActionButtonsProps = {
-  onDislike: () => void
-  onLike: () => void
-  disabled?: boolean
-}
+  onDislike: () => void;
+  onLike: () => void;
+  disabled?: boolean;
+};
 
 export function PreferenceActionButtons({
   onDislike,
@@ -44,20 +44,20 @@ export function PreferenceActionButtons({
         <Text style={styles.likeLabel}>좋아요!</Text>
       </Pressable>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   button: {
     flex: 1,
     height: 52,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: Radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
   },
   dislikeButton: {
@@ -80,4 +80,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-})
+});

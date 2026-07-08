@@ -35,8 +35,10 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
   if (msg.isMe) {
     return (
       <View style={styles.rowMe}>
-        <Text style={styles.timeMe}>{msg.time}</Text>
-        <View style={[styles.bubble, styles.bubbleMe]}>
+        <Text style={styles.timeMe} numberOfLines={1}>
+          {msg.time}
+        </Text>
+        <View style={[styles.bubble, styles.bubbleMe, styles.bubbleMeWidth]}>
           <Text style={styles.textMe}>{msg.text}</Text>
         </View>
       </View>
@@ -82,10 +84,14 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
       <View style={styles.otherBody}>
         <Text style={styles.senderName}>{msg.senderName || "익명"}</Text>
         <View style={styles.otherBubbleRow}>
-          <View style={[styles.bubble, styles.bubbleOther]}>
+          <View
+            style={[styles.bubble, styles.bubbleOther, styles.bubbleOtherWidth]}
+          >
             <Text style={styles.textOther}>{msg.text}</Text>
           </View>
-          <Text style={styles.timeOther}>{msg.time}</Text>
+          <Text style={styles.timeOther} numberOfLines={1}>
+            {msg.time}
+          </Text>
           {handleKebab ? (
             <Pressable
               ref={kebabRef}
@@ -112,8 +118,9 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
 }
 
 const AVATAR_SIZE = 36;
-const BUBBLE_MAX_WIDTH = 220;
-const TIME_WIDTH = 47;
+const BUBBLE_ME_MAX_WIDTH = 244;
+const BUBBLE_OTHER_MAX_WIDTH = 220;
+const TIME_WIDTH = 54;
 
 const styles = StyleSheet.create({
   rowMe: {
@@ -156,9 +163,14 @@ const styles = StyleSheet.create({
   },
 
   bubble: {
-    maxWidth: BUBBLE_MAX_WIDTH,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  bubbleMeWidth: {
+    maxWidth: BUBBLE_ME_MAX_WIDTH,
+  },
+  bubbleOtherWidth: {
+    maxWidth: BUBBLE_OTHER_MAX_WIDTH,
   },
   bubbleMe: {
     backgroundColor: C.primary,
@@ -188,14 +200,15 @@ const styles = StyleSheet.create({
     color: Gray[400],
     width: TIME_WIDTH,
     textAlign: "right",
-    marginRight: 6,
+    marginRight: 4,
     marginBottom: 2,
+    flexShrink: 0,
   },
   timeOther: {
     ...Typography.caption1Medium,
     color: Gray[400],
     width: TIME_WIDTH,
-    marginLeft: 6,
+    marginLeft: 4,
     marginBottom: 2,
     flexShrink: 0,
   },

@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
   Pressable,
@@ -6,31 +8,29 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Radius, Typography } from '../../../theme'
-import { ReviewWriteBottomSheet } from '../../plus'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Typography } from "../../../theme";
+import { ReviewWriteBottomSheet } from "../../plus";
 import {
   useDeleteLibraryRecentKeyword,
   useLibraryRecentKeywords,
   useLibrarySearchWorksInfinite,
-} from '../hooks'
-import { LibraryEmptyState } from './LibraryEmptyState'
-import { LibrarySearchHeader } from './LibrarySearchHeader'
-import { LibraryWorksList } from './LibraryWorksList'
-import type { LibraryUiWork } from './types'
+} from "../hooks";
+import { LibraryEmptyState } from "./LibraryEmptyState";
+import { LibrarySearchHeader } from "./LibrarySearchHeader";
+import { LibraryWorksList } from "./LibraryWorksList";
+import type { LibraryUiWork } from "./types";
 
-const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 
 function normalizeKeyword(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  return (value ?? '').replace(/^#/, '').trim()
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (value ?? "").replace(/^#/, "").trim();
 }
 
 function buildSearchHref(keyword: string) {
-  return `/library/search?keyword=${encodeURIComponent(keyword)}`
+  return `/library/search?keyword=${encodeURIComponent(keyword)}`;
 }
 
 function RecentKeywordChip({
@@ -38,9 +38,9 @@ function RecentKeywordChip({
   onPress,
   onRemove,
 }: {
-  label: string
-  onPress: () => void
-  onRemove: () => void
+  label: string;
+  onPress: () => void;
+  onRemove: () => void;
 }) {
   return (
     <Pressable
@@ -50,63 +50,75 @@ function RecentKeywordChip({
     >
       <Text style={styles.recentChipText}>{label}</Text>
       <Pressable
-        style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.removeButton,
+          pressed && styles.pressed,
+        ]}
         onPress={(event) => {
-          event.stopPropagation()
-          onRemove()
+          event.stopPropagation();
+          onRemove();
         }}
         accessibilityRole="button"
         accessibilityLabel={`${label} 삭제`}
       >
-        <Image source={cancelIcon} style={styles.removeIcon} contentFit="contain" />
+        <Image
+          source={cancelIcon}
+          style={styles.removeIcon}
+          contentFit="contain"
+        />
       </Pressable>
     </Pressable>
-  )
+  );
 }
 
 export function LibrarySearchScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const params = useLocalSearchParams<{ keyword?: string }>()
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ keyword?: string }>();
 
-  const submittedKeyword = normalizeKeyword(params.keyword)
-  const [inputValue, setInputValue] = useState(submittedKeyword)
-  const [showReviewSheet, setShowReviewSheet] = useState(false)
+  const submittedKeyword = normalizeKeyword(params.keyword);
+  const [inputValue, setInputValue] = useState(submittedKeyword);
+  const [showReviewSheet, setShowReviewSheet] = useState(false);
 
-  const recentKeywordsQuery = useLibraryRecentKeywords()
-  const deleteRecentKeywordMutation = useDeleteLibraryRecentKeyword()
-  const searchWorksQuery = useLibrarySearchWorksInfinite(submittedKeyword)
+  const recentKeywordsQuery = useLibraryRecentKeywords();
+  const deleteRecentKeywordMutation = useDeleteLibraryRecentKeyword();
+  const searchWorksQuery = useLibrarySearchWorksInfinite(submittedKeyword);
 
   useEffect(() => {
-    setInputValue(submittedKeyword)
-  }, [submittedKeyword])
+    setInputValue(submittedKeyword);
+  }, [submittedKeyword]);
 
   const works = useMemo<LibraryUiWork[]>(() => {
-    const items = searchWorksQuery.data?.pages.flatMap((page) => page.content) ?? []
+    const items =
+      searchWorksQuery.data?.pages.flatMap((page) => page.content) ?? [];
 
     return items.map((item) => ({
       id: item.worksId,
-      title: item.worksName ?? '',
-      meta: [item.artistName, item.worksType, item.genre].filter(Boolean).join(' · '),
-      thumb: item.thumbnailUrl ?? '',
+      title: item.worksName ?? "",
+      meta: [item.artistName, item.worksType, item.genre]
+        .filter(Boolean)
+        .join(" · "),
+      thumb: item.thumbnailUrl ?? "",
       rating: Number(item.rating ?? 0),
       reviewCount: 0,
-    }))
-  }, [searchWorksQuery.data?.pages])
+    }));
+  }, [searchWorksQuery.data?.pages]);
 
-  const recentKeywords = recentKeywordsQuery.data?.recentKeywords ?? []
+  const recentKeywords = recentKeywordsQuery.data?.recentKeywords ?? [];
 
   const submitKeyword = (raw: string) => {
-    const keyword = normalizeKeyword(raw)
-    Keyboard.dismiss()
+    const keyword = normalizeKeyword(raw);
+    Keyboard.dismiss();
 
     if (!keyword) {
-      router.replace('/library/search' as never)
-      return
+      setInputValue("");
+      router.replace("/library/search" as never);
+      return;
     }
 
-    router.replace(buildSearchHref(keyword) as never)
-  }
+    setInputValue(keyword);
+    router.replace(buildSearchHref(keyword) as never);
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 20 }]}>
@@ -115,10 +127,11 @@ export function LibrarySearchScreen() {
         onChangeText={setInputValue}
         onSubmit={() => submitKeyword(inputValue)}
         onBackPress={() => router.back()}
+        autoFocus={!submittedKeyword}
         onClearPress={() => {
-          setInputValue('')
+          setInputValue("");
           if (submittedKeyword) {
-            router.replace('/library/search' as never)
+            router.replace("/library/search" as never);
           }
         }}
       />
@@ -133,8 +146,8 @@ export function LibrarySearchScreen() {
             <LibraryEmptyState title="검색에 실패했어요." />
           ) : works.length === 0 ? (
             <LibraryEmptyState
-              title={`찾으시는 '${submittedKeyword}'는\n아직 서재에 추가되지 않았어요.`}
-              buttonText="서재에 작품 추가하러 가기"
+              title={`찾으시는 '검색어'는\n아직 서재에 추가되지 않았어요`}
+              buttonText="리뷰 작성하러 가기"
               onPressButton={() => setShowReviewSheet(true)}
             />
           ) : (
@@ -142,8 +155,11 @@ export function LibrarySearchScreen() {
               data={works}
               isFetchingNextPage={searchWorksQuery.isFetchingNextPage}
               onEndReached={() => {
-                if (searchWorksQuery.hasNextPage && !searchWorksQuery.isFetchingNextPage) {
-                  void searchWorksQuery.fetchNextPage()
+                if (
+                  searchWorksQuery.hasNextPage &&
+                  !searchWorksQuery.isFetchingNextPage
+                ) {
+                  void searchWorksQuery.fetchNextPage();
                 }
               }}
               onPressItem={(item) => router.push(`/works/${item.id}` as const)}
@@ -181,7 +197,7 @@ export function LibrarySearchScreen() {
         onClose={() => setShowReviewSheet(false)}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -206,13 +222,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   recentChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 4,
     borderWidth: 1,
     borderColor: C.border,
@@ -228,8 +244,8 @@ const styles = StyleSheet.create({
   removeButton: {
     width: 16,
     height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 4,
   },
   removeIcon: {
@@ -242,16 +258,16 @@ const styles = StyleSheet.create({
   },
   messageWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
   },
   messageText: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   pressed: {
     opacity: 0.75,
   },
-})
+});

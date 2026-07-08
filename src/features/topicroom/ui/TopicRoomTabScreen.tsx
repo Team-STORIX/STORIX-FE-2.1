@@ -1,16 +1,19 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useProfileStore } from '../../profile'
+import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
+import { SearchEmptyState } from '../../search'
 import { C } from '../../../theme/colors'
-import { S } from '../../../theme/spacing'
 import { Typography } from '../../../theme/typography'
 import type { TopicRoomItem } from '../api/topicroom.schema'
 import {
@@ -21,18 +24,19 @@ import {
   useTopicRoomSearchInfinite,
 } from '../hooks'
 import { isTopicRoomParticipationLimitError } from '../services/topicRoomLimit'
+import { HotTopicRoomCard } from './HotTopicRoomCard'
 import { TopicRoomCard } from './TopicRoomCard'
 import { TopicRoomParticipationPager } from './TopicRoomParticipationPager'
-import {
-  TopicRoomSearchEmpty,
-  TopicRoomSearchList,
-} from './TopicRoomSearchList'
+import { TopicRoomSearchList } from './TopicRoomSearchList'
 import { TopicRoomSearchBar } from './TopicRoomSearchBar'
 import { TopicRoomLimitModal } from './TopicRoomLimitModal'
+
+const warningIcon = require('../../../../assets/icons/search/warning.png')
 
 export function TopicRoomTabScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const scrollRef = useRef<ScrollView>(null)
   const [keyword, setKeyword] = useState('')
   const [limitModalVisible, setLimitModalVisible] = useState(false)
 
@@ -41,6 +45,12 @@ export function TopicRoomTabScreen() {
   const todayQuery = useTodayTopicRooms()
   const popularQuery = usePopularTopicRooms()
   const myQuery = useMyTopicRoomsAll()
+  const recommendedHashtagsQuery = useRecommendedHashtags()
+
+  const recommendationKeyword =
+    recommendedHashtagsQuery.data?.find(
+      (item) => item.name.trim().length > 0,
+    )?.name ?? null
 
   const trimmedKeyword = keyword.trim()
   const searchQuery = useTopicRoomSearchInfinite(trimmedKeyword)
@@ -86,6 +96,13 @@ export function TopicRoomTabScreen() {
   const isJoiningId = joinMutation.isPending ? joinMutation.variables : null
   const isSearchMode = trimmedKeyword.length > 0
 
+  const handleBackToFeed = useCallback(() => {
+    router.push({
+      pathname: '/(tabs)/feed',
+      params: { section: 'topicroom', landingKey: String(Date.now()) },
+    })
+  }, [router])
+
   if (isSearchMode) {
     return (
       <View style={styles.screen}>
@@ -93,7 +110,7 @@ export function TopicRoomTabScreen() {
           topInset={insets.top}
           value={keyword}
           onChangeText={setKeyword}
-          onBackPress={() => router.push('/(tabs)' as const)}
+          onBackPress={handleBackToFeed}
         />
 
         <TopicRoomSearchList
@@ -111,10 +128,11 @@ export function TopicRoomTabScreen() {
                 color={C.primary}
                 style={styles.searchLoader}
               />
-            ) : searchQuery.isError ? (
-              <Text style={styles.inlineErrorText}>검색 결과를 불러오지 못했어요.</Text>
             ) : (
-              <TopicRoomSearchEmpty keyword={trimmedKeyword} />
+              <SearchEmptyState
+                recommendationKeyword={recommendationKeyword}
+                onPressRecommendation={setKeyword}
+              />
             )
           }
           footer={
@@ -141,10 +159,11 @@ export function TopicRoomTabScreen() {
         topInset={insets.top}
         value={keyword}
         onChangeText={setKeyword}
-        onBackPress={() => router.push('/(tabs)' as const)}
+        onBackPress={handleBackToFeed}
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
@@ -158,7 +177,9 @@ export function TopicRoomTabScreen() {
         ) : myQuery.isError ? (
           <Text style={styles.inlineErrorText}>참여 중인 토픽룸을 불러오지 못했어요.</Text>
         ) : (myQuery.data?.length ?? 0) === 0 ? (
-          <Text style={styles.emptyText}>참여 중인 토픽룸이 없어요.</Text>
+          <JoinedTopicRoomEmpty
+            onPress={() => scrollRef.current?.scrollTo({ y: 240, animated: true })}
+          />
         ) : (
           <TopicRoomParticipationPager
             items={(myQuery.data ?? []).map((item) => ({ ...item, isJoined: true }))}
@@ -185,7 +206,7 @@ export function TopicRoomTabScreen() {
           emptyText="지금 HOT한 토픽룸이 없어요."
           onPressItem={handleEnterRoom}
           joiningId={isJoiningId}
-          hotLabel="HOT"
+          variant="hotList"
         />
       </ScrollView>
       <TopicRoomLimitModal
@@ -205,6 +226,7 @@ function StackedCoverSection({
   onPressItem,
   joiningId,
   hotLabel,
+  variant = 'cover',
 }: {
   title: string
   data: TopicRoomItem[]
@@ -213,7 +235,8 @@ function StackedCoverSection({
   emptyText: string
   onPressItem: (item: TopicRoomItem) => void
   joiningId: number | null
-  hotLabel: string
+  hotLabel?: string
+  variant?: 'cover' | 'hotList'
 }) {
   return (
     <View style={styles.sectionBlock}>
@@ -228,18 +251,47 @@ function StackedCoverSection({
       ) : data.length === 0 ? (
         <Text style={styles.emptyText}>{emptyText}</Text>
       ) : (
-        <View style={styles.coverList}>
-          {data.map((item) => (
-            <TopicRoomCard
-              key={item.topicRoomId}
-              item={item}
-              onPress={() => onPressItem(item)}
-              isJoining={joiningId === item.topicRoomId}
-              hotLabel={hotLabel}
-            />
-          ))}
+        <View style={variant === 'hotList' ? styles.hotList : styles.coverList}>
+          {(variant === 'hotList' ? data.slice(0, 3) : data).map((item, index) =>
+            variant === 'hotList' ? (
+              <HotTopicRoomCard
+                key={item.topicRoomId}
+                item={item}
+                rank={index + 1}
+                onPress={() => onPressItem(item)}
+                isJoining={joiningId === item.topicRoomId}
+              />
+            ) : (
+              <TopicRoomCard
+                key={item.topicRoomId}
+                item={item}
+                onPress={() => onPressItem(item)}
+                isJoining={joiningId === item.topicRoomId}
+                hotLabel={hotLabel}
+              />
+            ),
+          )}
         </View>
       )}
+    </View>
+  )
+}
+
+function JoinedTopicRoomEmpty({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={styles.joinedEmpty}>
+      <Image source={warningIcon} style={styles.joinedEmptyIcon} contentFit="contain" />
+      <Text style={styles.joinedEmptyTitle}>아직 참여 중인 토픽룸이 없어요</Text>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.joinedEmptyButton,
+          pressed && styles.joinedEmptyButtonPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <Text style={styles.joinedEmptyButtonText}>토픽룸 참여하러 가기</Text>
+      </Pressable>
     </View>
   )
 }
@@ -281,6 +333,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 16,
     marginBottom: 16,
+  },
+  hotList: {
+    width: 336,
+    maxWidth: '100%',
+    alignSelf: 'center',
+    padding: 12,
+    gap: 12,
+    marginBottom: 16,
+    backgroundColor: C.card,
+    borderRadius: 8,
+    shadowColor: C.text,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  joinedEmpty: {
+    height: 196,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
+  },
+  joinedEmptyIcon: {
+    width: 80,
+    height: 80,
+  },
+  joinedEmptyTitle: {
+    ...Typography.heading2,
+    color: C.text,
+    textAlign: 'center',
+    marginTop: 14,
+  },
+  joinedEmptyButton: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: C.primaryMid,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    backgroundColor: C.card,
+  },
+  joinedEmptyButtonPressed: {
+    opacity: 0.75,
+  },
+  joinedEmptyButtonText: {
+    ...Typography.caption1Semibold,
+    color: C.primary,
   },
   searchLoader: {
     marginTop: 40,
