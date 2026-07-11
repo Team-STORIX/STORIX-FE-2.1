@@ -32,6 +32,41 @@ export const topicRoomActiveUsersSubPath = (roomId: number) =>
   `/sub/topic-rooms/${roomId}/active-users`
 export const topicRoomPubPath = () => `/pub/chat/message`
 
+// Event types that are transport/keepalive frames, not chat content. If the
+// backend ever delivers these on the subscribed room destination they must be
+// ignored — never rendered as a ChatBubble.
+const IGNORED_EVENT_TYPES = new Set([
+  'HEARTBEAT',
+  'PING',
+  'PONG',
+  'ALIVE',
+  'SESSION_ALIVE',
+  'KEEPALIVE',
+])
+
+export const isIgnoredStompEventType = (type?: string): boolean =>
+  !!type && IGNORED_EVENT_TYPES.has(type.toUpperCase())
+
+// A STOMP MESSAGE frame with an empty / whitespace-only body carries no chat
+// payload (custom heartbeat / session-alive frames). Never feed it to the chat
+// schema.
+export function isIgnorableStompBody(body?: string): boolean {
+  return !body || body.trim().length === 0
+}
+
+// Parses a raw STOMP body exactly once. Returns { ok: false } when the body is
+// present but not JSON (plain-text keepalive frames), so callers can ignore it
+// without a second parse attempt.
+export function parseStompBodyJson(
+  rawBody: string,
+): { ok: true; value: unknown } | { ok: false } {
+  try {
+    return { ok: true, value: JSON.parse(rawBody) }
+  } catch {
+    return { ok: false }
+  }
+}
+
 const safeId = (v: unknown) => {
   if (typeof v === 'string' && v.length > 0) return v
   if (typeof v === 'number') return String(v)
@@ -54,19 +89,25 @@ const formatKoTime = (iso?: string) => {
   }).format(d)
 }
 
-export function normalizeTopicRoomStompMessage(
-  rawBody: string,
-  options?: { myUserId?: number | null },
-): TopicRoomUiMsg | null {
-  let obj: unknown = null
-  try {
-    obj = JSON.parse(rawBody)
-  } catch {
-    return null
-  }
+// Normalizes an already-JSON-parsed STOMP object. Splitting the schema step
+// from JSON parsing lets the subscription callback log a single set of
+// diagnostics (bodyJsonKeys, zodIssues) without parsing the body twice.
+export type NormalizeStompObjectResult =
+  | { ok: true; uiMsg: TopicRoomUiMsg }
+  | { ok: false; zodIssues: unknown; rawType: string }
 
+export function normalizeTopicRoomStompObject(
+  obj: unknown,
+  options?: { myUserId?: number | null },
+): NormalizeStompObjectResult {
   const parsed = TopicRoomStompMessageSchema.safeParse(obj)
-  if (!parsed.success) return null
+  if (!parsed.success) {
+    return {
+      ok: false,
+      zodIssues: parsed.error.issues,
+      rawType: Array.isArray(obj) ? 'array' : typeof obj,
+    }
+  }
 
   const m = parsed.data
   const message = m.message ?? ''
@@ -76,17 +117,32 @@ export function normalizeTopicRoomStompMessage(
     m.senderId === options.myUserId
 
   return {
-    id: safeId(m.messageId ?? m.createdAt ?? Date.now()),
-    chatMessageId: safeNumericId(m.messageId),
-    eventType: m.type,
-    activeUserNumber: m.activeUserNumber,
-    type: isMe ? 'me' : 'other',
-    userName: m.senderName,
-    senderId: m.senderId,
-    text: message,
-    time: formatKoTime(m.createdAt),
-    createdAt: m.createdAt,
+    ok: true,
+    uiMsg: {
+      id: safeId(m.messageId ?? m.createdAt ?? Date.now()),
+      chatMessageId: safeNumericId(m.messageId),
+      eventType: m.type,
+      activeUserNumber: m.activeUserNumber,
+      type: isMe ? 'me' : 'other',
+      userName: m.senderName,
+      senderId: m.senderId,
+      profileImageUrl: m.senderProfileImageUrl,
+      text: message,
+      time: formatKoTime(m.createdAt),
+      createdAt: m.createdAt,
+    },
   }
+}
+
+export function normalizeTopicRoomStompMessage(
+  rawBody: string,
+  options?: { myUserId?: number | null },
+): TopicRoomUiMsg | null {
+  if (isIgnorableStompBody(rawBody)) return null
+  const parsed = parseStompBodyJson(rawBody)
+  if (!parsed.ok) return null
+  const result = normalizeTopicRoomStompObject(parsed.value, options)
+  return result.ok ? result.uiMsg : null
 }
 
 export function normalizeTopicRoomActiveUsersMessage(
