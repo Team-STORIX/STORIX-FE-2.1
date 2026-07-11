@@ -36,6 +36,7 @@ import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 import { UserActionModal } from '../../../components/common/UserActionModal'
+import { updateTodayHomeFeedBoard } from '../../home'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -221,12 +222,27 @@ export function FeedDetailScreen() {
       ),
     }
     setPostLikeOverride(optimistic)
+    updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+      ...targetBoard,
+      isLiked: optimistic.isLiked,
+      likeCount: optimistic.likeCount,
+    }))
     try {
       const result = await toggleBoardLike(boardId)
       setPostLikeOverride(result)
+      updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+        ...targetBoard,
+        isLiked: result.isLiked,
+        likeCount: result.likeCount,
+      }))
       qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
     } catch {
       setPostLikeOverride({ isLiked: board.isLiked, likeCount: board.likeCount })
+      updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+        ...targetBoard,
+        isLiked: board.isLiked,
+        likeCount: board.likeCount,
+      }))
     }
   }, [board, boardId, effectivePostLike, qc])
 
@@ -336,6 +352,11 @@ export function FeedDetailScreen() {
 
       if (deleteTarget.replyId == null) return
       await deleteReply({ boardId, replyId: deleteTarget.replyId })
+      setReplyCountDelta((prev) => Math.max(0, prev - 1))
+      updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+        ...targetBoard,
+        replyCount: Math.max(0, targetBoard.replyCount - 1),
+      }))
       if (deleteTarget.parentReplyId != null) {
         setSubRepliesMap((prev) => ({
           ...prev,
@@ -345,6 +366,7 @@ export function FeedDetailScreen() {
         }))
       }
       await detailQuery.refetch()
+      setReplyCountDelta(0)
       await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
     } catch {
       Alert.alert('오류', '삭제에 실패했어요.')
@@ -421,6 +443,10 @@ export function FeedDetailScreen() {
         [targetId]: [...(prev[targetId] ?? []), newSubReply],
       }))
       setReplyCountDelta((prev) => prev + 1)
+      updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+        ...targetBoard,
+        replyCount: targetBoard.replyCount + 1,
+      }))
       setReplyTargetId(null)
       setCommentText('')
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
@@ -443,6 +469,10 @@ export function FeedDetailScreen() {
           [targetId]: (prev[targetId] ?? []).filter((r) => r.reply.replyId !== tempId),
         }))
         setReplyCountDelta((prev) => Math.max(0, prev - 1))
+        updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+          ...targetBoard,
+          replyCount: Math.max(0, targetBoard.replyCount - 1),
+        }))
         Alert.alert('오류', '대댓글 등록에 실패했어요. 다시 시도해 주세요.')
       }
       return
@@ -450,6 +480,10 @@ export function FeedDetailScreen() {
 
     try {
       await createReply({ boardId, comment: trimmed })
+      updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
+        ...targetBoard,
+        replyCount: targetBoard.replyCount + 1,
+      }))
       await detailQuery.refetch()
       setReplyCountDelta(0)
       await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
@@ -461,7 +495,7 @@ export function FeedDetailScreen() {
     } finally {
       setSubmitting(false)
     }
-  }, [boardId, commentText, detailQuery, me, replyTargetId, submitting])
+  }, [boardId, commentText, detailQuery, me, qc, replyTargetId, submitting])
 
   const onScroll = useCallback(
     (event: any) => {

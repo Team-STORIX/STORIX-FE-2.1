@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +28,10 @@ const clearSearchIcon = require("../../../../assets/icons/plus/icon-search-cancl
 const warningIcon = require("../../../../assets/icons/search/warning.png");
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
+const CTA_FOOTER_GRADIENT = [
+  "rgba(255, 255, 255, 0)",
+  "#FFFFFF",
+] as const;
 
 export type PickedFeedWork = {
   id: number;
@@ -185,6 +190,7 @@ export function FeedWritePickerBottomSheet({
     <Modal
       transparent
       animationType="none"
+      presentationStyle="overFullScreen"
       visible
       onRequestClose={() => handleClose()}
     >
@@ -208,7 +214,7 @@ export function FeedWritePickerBottomSheet({
           style={[
             styles.sheet,
             {
-              paddingBottom: insets.bottom + 18,
+              paddingBottom: 0,
               transform: [
                 {
                   translateY: progress.interpolate({
@@ -332,7 +338,11 @@ export function FeedWritePickerBottomSheet({
             </View>
 
             {selectedWork ? (
-              <View style={styles.footer}>
+              <LinearGradient
+                colors={CTA_FOOTER_GRADIENT}
+                locations={[0, 0.4257]}
+                style={[styles.footer, { paddingBottom: insets.bottom + 18 }]}
+              >
                 <Pressable
                   style={({ pressed }) => [
                     styles.primaryButton,
@@ -345,7 +355,7 @@ export function FeedWritePickerBottomSheet({
                     선택 작품 게시글 쓰기
                   </Text>
                 </Pressable>
-              </View>
+              </LinearGradient>
             ) : null}
           </KeyboardAvoidingView>
 
@@ -405,6 +415,7 @@ const styles = StyleSheet.create({
   },
   keyboardWrap: {
     flex: 1,
+    position: "relative",
   },
   header: {
     flexDirection: "row",
@@ -466,7 +477,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 128,
   },
   itemRow: {
     flexDirection: "row",
@@ -569,7 +580,12 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   footer: {
-    paddingTop: 16,
+    position: "absolute",
+    left: -S.cardPad,
+    right: -S.cardPad,
+    bottom: 0,
+    paddingHorizontal: S.cardPad,
+    paddingTop: 64,
   },
   primaryButton: {
     height: 48,

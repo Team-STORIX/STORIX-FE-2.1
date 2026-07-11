@@ -108,6 +108,7 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
                 source={kebabIcon}
                 style={styles.kebabIcon}
                 contentFit="contain"
+                tintColor={Gray[400]}
               />
             </Pressable>
           ) : null}
@@ -120,8 +121,6 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
 const AVATAR_SIZE = 36;
 const BUBBLE_ME_MAX_WIDTH = 244;
 const BUBBLE_OTHER_MAX_WIDTH = 220;
-const TIME_WIDTH = 54;
-
 const styles = StyleSheet.create({
   rowMe: {
     flexDirection: "row",
@@ -168,9 +167,11 @@ const styles = StyleSheet.create({
   },
   bubbleMeWidth: {
     maxWidth: BUBBLE_ME_MAX_WIDTH,
+    flexShrink: 1,
   },
   bubbleOtherWidth: {
     maxWidth: BUBBLE_OTHER_MAX_WIDTH,
+    flexShrink: 1,
   },
   bubbleMe: {
     backgroundColor: C.primary,
@@ -198,18 +199,16 @@ const styles = StyleSheet.create({
   timeMe: {
     ...Typography.caption1Medium,
     color: Gray[400],
-    width: TIME_WIDTH,
+    minWidth: 0,
     textAlign: "right",
     marginRight: 4,
-    marginBottom: 2,
     flexShrink: 0,
   },
   timeOther: {
     ...Typography.caption1Medium,
     color: Gray[400],
-    width: TIME_WIDTH,
+    minWidth: 0,
     marginLeft: 4,
-    marginBottom: 2,
     flexShrink: 0,
   },
 
@@ -219,7 +218,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 2,
-    marginBottom: 2,
     alignSelf: "flex-end",
     flexShrink: 0,
   },

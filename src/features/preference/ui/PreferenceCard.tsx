@@ -166,7 +166,7 @@ export const PreferenceCard = forwardRef<
           <Defs>
             <LinearGradient id="preferenceShade" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={C.text} stopOpacity={0} />
-              <Stop offset="1" stopColor={C.text} stopOpacity={0.6} />
+              <Stop offset="1" stopColor={C.text} stopOpacity={0.78} />
             </LinearGradient>
           </Defs>
           <Rect
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   overlayBase: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(19, 17, 18, 0.2)",
+    backgroundColor: "rgba(19, 17, 18, 0.28)",
   },
   overlayBottom: {
     ...StyleSheet.absoluteFillObject,

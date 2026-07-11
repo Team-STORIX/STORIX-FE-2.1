@@ -22,7 +22,13 @@ export function TopicRoomMenuSheet({
   const insets = useSafeAreaInsets()
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      visible={visible}
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>

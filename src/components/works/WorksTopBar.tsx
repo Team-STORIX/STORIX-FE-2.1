@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { C } from "../../theme/colors";
+import { C, Gray } from "../../theme/colors";
 import { Typography } from "../../theme/typography";
 
 const backIcon = require("../../../assets/icons/common/back.svg");
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: C.card,
+    backgroundColor: Gray[50],
   },
   backButton: {
     width: 32,

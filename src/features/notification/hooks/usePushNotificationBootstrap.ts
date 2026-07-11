@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
+import { Linking } from "react-native";
 
 import { queryClient } from "../../../lib/query/queryClient";
 import { useAuthStore } from "../../../store/auth.store";
@@ -13,25 +14,18 @@ import {
 } from "../services/firebaseNative";
 import { handleFcmTokenRefresh } from "../services/pushDeviceSync";
 import {
+  displayForegroundPushNotification,
+  ensurePushNotificationChannel,
+  getInitialNotifeeNotificationData,
+  refreshUnreadBadgeCount,
+  subscribeNotifeeForegroundPress,
+  syncAppBadgeCountFromPushData,
+} from "../services/notifeeNative";
+import {
   getNotificationRoute,
-  getPushTitleBody,
   parsePushNotificationData,
 } from "../services/pushPayload";
 import { usePushDeviceSync } from "./usePushDeviceSync";
-
-// Local-notification capability.
-//
-// As of this phase the project has NO local-notification library installed
-// (checked package.json: no @notifee/react-native, expo-notifications, or
-// react-native-push-notification). Per the phase spec we therefore DO NOT fake
-// an OS notification with Alert; foreground receipt is logged in __DEV__ only.
-//
-// RECOMMENDATION: install @notifee/react-native (preferred for RNFirebase
-// projects — richer press handling) or expo-notifications to actually surface
-// a banner while the app is foregrounded. Once present, display the
-// notification here with the parsed title/body and attach the `data` bag so the
-// press handler can call `handleNotificationOpen(data)`.
-const HAS_LOCAL_NOTIFICATION_LIB = false;
 
 /**
  * Shared click handler for opened-from-background, cold-start, and (future)
@@ -64,6 +58,12 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
         queryClient.invalidateQueries({
           queryKey: notificationKeys.unreadCount,
         });
+        return refreshUnreadBadgeCount()
+      })
+      .then((count) => {
+        if (typeof count === 'number') {
+          queryClient.setQueryData(notificationKeys.unreadCount, count)
+        }
       })
       .catch((err) => {
         if (__DEV__) {
@@ -71,6 +71,16 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
           console.warn("[push] markNotificationRead failed", err);
         }
       });
+  }
+
+  if (payload?.targetType === 'EXTERNAL' && payload.targetLink) {
+    void Linking.openURL(payload.targetLink).catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] external link failed", err);
+      }
+    });
+    return;
   }
 
   const route = getNotificationRoute(payload);
@@ -99,6 +109,13 @@ const attachMessageListeners = (): (() => void) => {
     if (!firebase) return () => {};
     const { messagingModule, messaging } = firebase;
 
+    void ensurePushNotificationChannel().catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] ensure channel failed", err);
+      }
+    });
+
     const unsubMessage = messagingModule.onMessage(messaging, async (remoteMessage) => {
       // Foreground messages. iOS does NOT automatically show a banner for a
       // foreground remote message, and Android only shows one in the
@@ -106,21 +123,32 @@ const attachMessageListeners = (): (() => void) => {
       // local notification manually. Read title/body from data.* first (per
       // the backend contract), falling back to the `notification` block.
       const payload = parsePushNotificationData(remoteMessage?.data);
-      const { title, body } = getPushTitleBody(payload, {
-        title: remoteMessage?.notification?.title,
-        body: remoteMessage?.notification?.body,
+
+      await syncAppBadgeCountFromPushData(remoteMessage?.data).catch((err) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] badge sync from foreground push failed", err);
+        }
       });
 
-      if (HAS_LOCAL_NOTIFICATION_LIB) {
-        // TODO(PUSH-LOCAL-NOTIFICATION): once a local-notification library is
-        // installed, display { title, body } here and attach
-        // `remoteMessage?.data` so the press callback can invoke
-        // `handleNotificationOpen(data)`.
-      } else if (__DEV__) {
+      await displayForegroundPushNotification({
+        payload,
+        notification: {
+          title: remoteMessage?.notification?.title,
+          body: remoteMessage?.notification?.body,
+        },
+      }).catch((err) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] foreground notification display failed", err);
+        }
+      });
+
+      if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log("[PUSH_RECEIVE_DEBUG] foreground push received", {
-          title,
-          body,
+          title: payload?.title ?? remoteMessage?.notification?.title ?? '',
+          body: payload?.body ?? remoteMessage?.notification?.body ?? '',
           dataKeys: payload ? Object.keys(payload.raw) : [],
         });
       }
@@ -129,6 +157,10 @@ const attachMessageListeners = (): (() => void) => {
     const unsubOpened = messagingModule.onNotificationOpenedApp(messaging, (remoteMessage) => {
       // Background → tap.
       void handleNotificationOpen(remoteMessage?.data);
+    });
+
+    const unsubNotifeePress = subscribeNotifeeForegroundPress((data) => {
+      void handleNotificationOpen(data);
     });
 
     void messagingModule.getInitialNotification(messaging)
@@ -143,9 +175,21 @@ const attachMessageListeners = (): (() => void) => {
         }
       });
 
+    void getInitialNotifeeNotificationData()
+      .then((data) => {
+        if (data) void handleNotificationOpen(data);
+      })
+      .catch((err) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] getInitialNotifeeNotification failed", err);
+        }
+      });
+
     return () => {
       unsubMessage();
       unsubOpened();
+      unsubNotifeePress();
     };
   } catch {
     return () => {};

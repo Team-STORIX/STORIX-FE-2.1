@@ -96,6 +96,7 @@ export function BirthdayThemePreviewBottomSheet({
     <Modal
       transparent
       animationType="none"
+      presentationStyle="overFullScreen"
       visible
       onRequestClose={() => handleClose()}
     >

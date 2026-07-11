@@ -44,6 +44,7 @@ export function TopicRoomUserActionModal({
       visible={visible}
       transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>

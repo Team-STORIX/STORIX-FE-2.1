@@ -84,8 +84,9 @@ function summarizeSelected(
   return `${first} 외 ${values.length - 1}`
 }
 
-function buildSearchHref(keyword: string) {
-  return `/search?keyword=${encodeURIComponent(keyword)}`
+function buildSearchHref(keyword: string, tab: SearchTab = 'works') {
+  const query = `keyword=${encodeURIComponent(keyword)}`
+  return tab === 'topicroom' ? `/search?${query}&tab=topicroom` : `/search?${query}`
 }
 
 export function SearchScreen() {
@@ -127,6 +128,10 @@ export function SearchScreen() {
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
+
+  useEffect(() => {
+    setActiveTab(params.tab === 'topicroom' ? 'topicroom' : 'works')
+  }, [params.tab])
 
   useEffect(() => {
     setSelectedTypes([])
@@ -197,19 +202,19 @@ export function SearchScreen() {
 
   const submitKeyword = (raw: string) => {
     const keyword = normalizeKeyword(raw)
+    const nextTab = activeTab
     Keyboard.dismiss()
 
     if (!keyword) {
-      setActiveTab('works')
       setInputValue('')
-      router.replace('/search' as never)
+      router.replace((nextTab === 'topicroom' ? '/search?tab=topicroom' : '/search') as never)
       void recentKeywordsQuery.refetch()
       return
     }
 
-    setActiveTab('works')
+    setActiveTab(nextTab)
     setInputValue(keyword)
-    router.replace(buildSearchHref(keyword) as never)
+    router.replace(buildSearchHref(keyword, nextTab) as never)
   }
 
   const handlePressWorks = (item: WorksSearchItem) => {

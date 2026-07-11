@@ -112,6 +112,7 @@ export function SearchOptionSheet({
       visible={mounted}
       transparent
       animationType="none"
+      presentationStyle="overFullScreen"
       onRequestClose={onClose}
     >
       <View style={styles.modalRoot}>

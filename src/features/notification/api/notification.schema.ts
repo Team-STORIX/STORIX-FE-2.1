@@ -65,6 +65,7 @@ export const NotificationItemSchema = z.object({
   targetType: TargetTypeSchema,
   targetId: z.number().nullable().optional(),
   parentTargetId: z.number().nullable().optional(),
+  targetLink: z.string().nullable().optional(),
   title: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
   createdAt: z.string().nullable().optional(),

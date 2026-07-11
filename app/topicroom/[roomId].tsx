@@ -1,5 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -38,6 +43,8 @@ import {
 } from "../../src/features/topicroom";
 import { C } from "../../src/theme/colors";
 
+const checkboxActiveIcon = require("../../assets/topicroom/icon-checkbox-active.svg");
+
 // Scans the React Query caches that hold TopicRoomItem lists (popular / me /
 // today / search) for a room matching roomId, so the header can show real
 // metadata even when the caller did not pass it as a route param.
@@ -51,8 +58,8 @@ function findCachedTopicRoom(
       : (data as any)?.pages
         ? (data as any).pages.flatMap((p: any) => p?.content ?? [])
         : Array.isArray((data as any)?.content)
-        ? (data as any).content
-        : [];
+          ? (data as any).content
+          : [];
     const hit = candidates.find(
       (it) => it && typeof it === "object" && it.topicRoomId === roomId,
     );
@@ -64,9 +71,11 @@ function findCachedTopicRoom(
 // Success snackbar copy for the user-specific report / block flows
 // (Figma 9095:36505 / 9095:36642).
 const USER_ACTION_SNACK = {
-  report: "신고가 접수되었어요.",
-  block: "차단이 완료되었어요.",
+  report: "신고가 정상적으로 완료됐어요.",
+  block: "차단이 정상적으로 완료됐어요.",
 } as const;
+
+const ANDROID_MODAL_SWITCH_DELAY_MS = 250;
 
 const formatTime = (iso?: string | null): string => {
   if (!iso) return "";
@@ -109,11 +118,16 @@ export default function TopicRoomScreen() {
   const [actionTarget, setActionTarget] =
     useState<TopicRoomActionTarget | null>(null);
   const [profileActionVisible, setProfileActionVisible] = useState(false);
-  const [dropdownAnchor, setDropdownAnchor] = useState<KebabAnchor | null>(null);
+  const [dropdownAnchor, setDropdownAnchor] = useState<KebabAnchor | null>(
+    null,
+  );
   const [confirmVariant, setConfirmVariant] = useState<ConfirmVariant | null>(
     null,
   );
-  const [reportSource, setReportSource] = useState<"profile" | "message" | null>(
+  const [reportSource, setReportSource] = useState<
+    "profile" | "message" | null
+  >(null);
+  const confirmOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const blockMutation = useBlockTopicRoomUser();
@@ -327,9 +341,8 @@ export default function TopicRoomScreen() {
 
   const joinedRoom = useMemo(
     () =>
-      (myRoomsQuery.data ?? []).find(
-        (room) => room.topicRoomId === roomId,
-      ) ?? null,
+      (myRoomsQuery.data ?? []).find((room) => room.topicRoomId === roomId) ??
+      null,
     [myRoomsQuery.data, roomId],
   );
 
@@ -359,10 +372,10 @@ export default function TopicRoomScreen() {
     liveMemberCount != null
       ? liveMemberCount
       : memberCount > 0
-      ? memberCount
-      : Number(params.activeUserNumber) ||
-        cachedRoom?.activeUserNumber ||
-        undefined;
+        ? memberCount
+        : Number(params.activeUserNumber) ||
+          cachedRoom?.activeUserNumber ||
+          undefined;
 
   // First line: "웹툰 <상수리나무 아래>" when a works name exists; otherwise the
   // room name. Second line is the room name when the first line already shows
@@ -380,12 +393,26 @@ export default function TopicRoomScreen() {
     null;
 
   const closeUserActions = useCallback(() => {
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
     setProfileActionVisible(false);
     setDropdownAnchor(null);
     setConfirmVariant(null);
     setActionTarget(null);
     setReportSource(null);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (confirmOpenTimerRef.current) {
+        clearTimeout(confirmOpenTimerRef.current);
+        confirmOpenTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   // Build a target only for a valid other user — self / unknown senders get no
   // report/block entry point (Part C).
@@ -467,15 +494,50 @@ export default function TopicRoomScreen() {
         payloadKeys,
       });
     }
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
     setProfileActionVisible(false);
     setDropdownAnchor(null);
-    setConfirmVariant("report");
+
+    const openConfirm = () => {
+      confirmOpenTimerRef.current = null;
+      setConfirmVariant("report");
+    };
+
+    if (Platform.OS === "android") {
+      confirmOpenTimerRef.current = setTimeout(
+        openConfirm,
+        ANDROID_MODAL_SWITCH_DELAY_MS,
+      );
+      return;
+    }
+
+    openConfirm();
   }, [actionTarget, reportSource, roomId]);
 
   const handleOpenBlockConfirm = useCallback(() => {
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
     setProfileActionVisible(false);
     setDropdownAnchor(null);
-    setConfirmVariant("block");
+    const openConfirm = () => {
+      confirmOpenTimerRef.current = null;
+      setConfirmVariant("block");
+    };
+
+    if (Platform.OS === "android") {
+      confirmOpenTimerRef.current = setTimeout(
+        openConfirm,
+        ANDROID_MODAL_SWITCH_DELAY_MS,
+      );
+      return;
+    }
+
+    openConfirm();
   }, []);
 
   const handleCancelConfirm = useCallback(() => {
@@ -513,23 +575,22 @@ export default function TopicRoomScreen() {
           chatMessageId: actionTarget.chatMessageId ?? null,
           reason: isChatMessageReport ? null : "DEFAULT",
           reportType: isChatMessageReport ? "chat-message" : "user",
-          payloadKeys: Object.keys(reportPayload).filter((key) => key !== "roomId"),
+          payloadKeys: Object.keys(reportPayload).filter(
+            (key) => key !== "roomId",
+          ),
         });
       }
 
-      reportMutation.mutate(
-        reportPayload,
-        {
-          onSuccess: () => {
-            closeUserActions();
-            showToast(USER_ACTION_SNACK.report);
-          },
-          onError: () => {
-            closeUserActions();
-            showToast("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
-          },
+      reportMutation.mutate(reportPayload, {
+        onSuccess: () => {
+          closeUserActions();
+          showToast(USER_ACTION_SNACK.report);
         },
-      );
+        onError: () => {
+          closeUserActions();
+          showToast("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        },
+      });
       return;
     }
 
@@ -557,10 +618,14 @@ export default function TopicRoomScreen() {
     showToast,
   ]);
 
+  const isUserActionSuccessToast =
+    toastMessage === USER_ACTION_SNACK.report ||
+    toastMessage === USER_ACTION_SNACK.block;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={0}
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -665,7 +730,13 @@ export default function TopicRoomScreen() {
         />
       ) : null}
 
-      <Toast message={toastMessage} bottomOffset={insets.bottom + 80} />
+      <Toast
+        message={toastMessage}
+        bottomOffset={36}
+        leadingIconSource={isUserActionSuccessToast ? checkboxActiveIcon : undefined}
+        leadingIconSize={24}
+        onClose={() => setToastMessage(null)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -685,5 +756,4 @@ const styles = StyleSheet.create({
   listContent: { paddingVertical: 12 },
 
   paginationLoader: { paddingVertical: 10 },
-
 });

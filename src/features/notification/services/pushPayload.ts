@@ -57,6 +57,8 @@ export interface ParsedPushPayload {
   targetType: PushTargetType
   targetId: number | null
   parentTargetId: number | null
+  targetLink: string | null
+  unreadCount: number | null
   title: string | null
   body: string | null
   /** The original (raw) data bag, retained for debugging only. */
@@ -86,6 +88,16 @@ function toId(value: unknown): number | null {
   const n = Number(s)
   if (!Number.isFinite(n) || n <= 0) return null
   return n
+}
+
+function toNonNegativeInt(value: unknown): number | null {
+  if (value == null) return null
+  if (typeof value !== 'string' && typeof value !== 'number') return null
+  const s = String(value).trim()
+  if (s.length === 0) return null
+  const n = Number(s)
+  if (!Number.isFinite(n) || n < 0) return null
+  return Math.floor(n)
 }
 
 function toStr(value: unknown): string | null {
@@ -120,6 +132,8 @@ export function parsePushNotificationData(
     targetType: ((toStr(d.targetType) ?? 'NONE').toUpperCase() as PushTargetType),
     targetId: toId(d.targetId),
     parentTargetId: toId(d.parentTargetId),
+    targetLink: toStr(d.targetLink),
+    unreadCount: toNonNegativeInt(d.unreadCount),
     title: toStr(d.title),
     body: toStr(d.body),
     raw,
