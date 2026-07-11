@@ -12,6 +12,21 @@ import type {
   AdminTestPushPayload,
   NotificationSettings,
 } from '../api/notification.schema'
+import { refreshUnreadBadgeCount, setAppBadgeCount } from '../services/notifeeNative'
+
+async function syncUnreadBadgeCache(
+  qc: ReturnType<typeof useQueryClient>,
+): Promise<void> {
+  try {
+    const count = await refreshUnreadBadgeCount()
+    qc.setQueryData(notificationKeys.unreadCount, count)
+  } catch (err) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn('[notifications] unread badge sync failed', err)
+    }
+  }
+}
 
 /** Mark every notification as read. */
 export function useMarkAllNotificationsRead() {
@@ -21,6 +36,8 @@ export function useMarkAllNotificationsRead() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
+      qc.setQueryData(notificationKeys.unreadCount, 0)
+      void setAppBadgeCount(0)
     },
   })
 }
@@ -33,6 +50,7 @@ export function useMarkNotificationRead() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
+      void syncUnreadBadgeCache(qc)
     },
   })
 }
@@ -93,6 +111,7 @@ export function useAdminTestDispatch() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
+      void syncUnreadBadgeCache(qc)
     },
   })
 }

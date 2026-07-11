@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -43,8 +42,8 @@ const COPY: Record<
 
 /**
  * Figma nodes 9085:46663 / 9085:46667 — centered confirmation popup shared by
- * the report and block flows. Confirm actions run the matching mutation and show
- * a pending spinner. Backdrop / cancel dismisses without side effects.
+ * the report and block flows. Confirm actions run the matching mutation.
+ * Backdrop / cancel dismisses without side effects.
  */
 export function TopicRoomUserConfirmModal({
   visible,
@@ -64,7 +63,9 @@ export function TopicRoomUserConfirmModal({
   return (
     <Modal
       visible={visible}
+      transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       statusBarTranslucent
       onRequestClose={handleBackdrop}
     >
@@ -112,11 +113,7 @@ export function TopicRoomUserConfirmModal({
               disabled={isPending}
               accessibilityRole="button"
             >
-              {isPending ? (
-                <ActivityIndicator size="small" color={C.card} />
-              ) : (
-                <Text style={styles.confirmText}>{copy.confirmLabel}</Text>
-              )}
+              <Text style={styles.confirmText}>{copy.confirmLabel}</Text>
             </Pressable>
           </View>
         </View>
@@ -128,7 +125,7 @@ export function TopicRoomUserConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "#302d2f",
+    backgroundColor: "rgba(19, 17, 18, 0.6)",
     alignItems: "center",
     justifyContent: "center",
   },

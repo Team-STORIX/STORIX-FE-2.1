@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   HashtagList,
   HomeHeader,
@@ -10,167 +10,156 @@ import {
   MyTasteCard,
   TopicRoomCoverCarousel,
   useTodayHomeFeeds,
-} from '../../src/features/home'
+} from "../../src/features/home";
+import { useNotificationConsentModal } from "../../src/features/notification/hooks/useNotificationConsentModal";
+import { useUnreadNotificationCount } from "../../src/features/notification/hooks/useNotifications";
+import { NotificationConsentModal } from "../../src/features/notification/ui/NotificationConsentModal";
 import {
-  PreferenceToast,
   isPreferenceDailyLimitError,
+  PreferenceToast,
   usePreferenceExploration,
-} from '../../src/features/preference'
+} from "../../src/features/preference";
 import {
   isTopicRoomParticipationLimitError,
   TopicRoomLimitModal,
-  type TopicRoomItem,
   useJoinTopicRoom,
   usePopularTopicRooms,
   useTodayTopicRooms,
-} from '../../src/features/topicroom'
-import { useNotificationConsentModal } from '../../src/features/notification/hooks/useNotificationConsentModal'
-import { useUnreadNotificationCount } from '../../src/features/notification/hooks/useNotifications'
-import { NotificationConsentModal } from '../../src/features/notification/ui/NotificationConsentModal'
-import { C } from '../../src/theme/colors'
+  type TopicRoomItem,
+} from "../../src/features/topicroom";
+import { C } from "../../src/theme/colors";
 
-const HOME_PAD = 16
-const SECTION_GAP = 24
-// BottomNavBar floats at `80 + insets.bottom`; lift the toast above it so it
-// isn't hidden behind the tab bar.
-const TAB_BAR_HEIGHT = 80
-const TOAST_BOTTOM_GAP = 12
+const HOME_PAD = 16;
+const SECTION_GAP = 24;
+const TAB_BAR_HEIGHT = 80;
+// Plus button top sits 106px above the bottom; toast sits 8px above it.
+const TOAST_ABOVE_PLUS_OFFSET = 114;
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const [limitModalVisible, setLimitModalVisible] = useState(false)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const {
-    data: feeds,
-    isLoading: feedsLoading,
-  } = useTodayHomeFeeds()
-  const {
-    data: todayRooms,
-    isLoading: todayLoading,
-  } = useTodayTopicRooms()
-  const {
-    data: popularRooms,
-    isLoading: popularLoading,
-  } = usePopularTopicRooms()
-  const joinTopicRoomMutation = useJoinTopicRoom()
-  const {
-    refetch: refetchExploration,
-    isFetching: checkingExploration,
-  } = usePreferenceExploration(false)
-  const { data: unreadCount } = useUnreadNotificationCount()
+  const { data: feeds, isLoading: feedsLoading } = useTodayHomeFeeds();
+  const { data: todayRooms, isLoading: todayLoading } = useTodayTopicRooms();
+  const { data: popularRooms, isLoading: popularLoading } =
+    usePopularTopicRooms();
+  const joinTopicRoomMutation = useJoinTopicRoom();
+  const { refetch: refetchExploration, isFetching: checkingExploration } =
+    usePreferenceExploration(false);
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   // One-time event/benefit consent overlay on first Home entry after onboarding.
-  const consent = useNotificationConsentModal()
+  const consent = useNotificationConsentModal();
 
   const topicRooms = useMemo(() => {
-    const today = todayRooms ?? []
-    if (today.length >= 3) return today
+    const today = todayRooms ?? [];
+    if (today.length >= 3) return today;
 
-    const todayIds = new Set(today.map((room) => room.topicRoomId))
+    const todayIds = new Set(today.map((room) => room.topicRoomId));
     const fill = (popularRooms ?? [])
       .filter((room) => !todayIds.has(room.topicRoomId))
-      .slice(0, 3 - today.length)
+      .slice(0, 3 - today.length);
 
-    return [...today, ...fill]
-  }, [popularRooms, todayRooms])
+    return [...today, ...fill];
+  }, [popularRooms, todayRooms]);
 
   const topicRoomsLoading =
-    todayLoading || ((todayRooms?.length ?? 0) < 3 && popularLoading)
+    todayLoading || ((todayRooms?.length ?? 0) < 3 && popularLoading);
 
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    }
-  }, [])
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const showToast = (message: string) => {
-    setToastMessage(message)
+    setToastMessage(message);
 
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null)
-      toastTimerRef.current = null
-    }, 1500)
-  }
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 1500);
+  };
 
   const handleMyTastePress = async () => {
-    if (checkingExploration) return
+    if (checkingExploration) return;
 
     try {
-      const result = await refetchExploration()
+      const result = await refetchExploration();
 
       if (result.isError) {
         showToast(
           isPreferenceDailyLimitError(result.error)
-            ? '하루 한번만 가능합니다.'
-            : '취향 분석 정보를 불러오지 못했어요.',
-        )
-        return
+            ? "하루 한 번만 가능합니다."
+            : "취향 분석 정보를 불러오지 못했어요.",
+        );
+        return;
       }
 
-      const items = result.data ?? []
+      const items = result.data ?? [];
 
       if (items.length === 0) {
-        showToast('하루 한번만 가능합니다.')
-        return
+        showToast("하루 한 번만 가능합니다.");
+        return;
       }
 
-      router.push('/home/preference' as never)
+      router.push("/home/preference" as never);
     } catch (error) {
       showToast(
         isPreferenceDailyLimitError(error)
-          ? '하루 한번만 가능합니다.'
-          : '취향 분석 정보를 불러오지 못했어요.',
-      )
+          ? "하루 한 번만 가능합니다."
+          : "취향 분석 정보를 불러오지 못했어요.",
+      );
     }
-  }
+  };
 
   const goSearchKeyword = (raw: string) => {
-    const keyword = raw.trim()
-    if (!keyword) return
-    router.push(`/search?keyword=${encodeURIComponent(keyword)}` as never)
-  }
+    const keyword = raw.trim();
+    if (!keyword) return;
+    router.push(`/search?keyword=${encodeURIComponent(keyword)}` as never);
+  };
 
-  const goFeedSection = (section: 'topicroom' | 'works') => {
+  const goFeedSection = (section: "topicroom" | "works") => {
     router.push(
       `/(tabs)/feed?section=${section}&landingKey=${Date.now()}` as never,
-    )
-  }
+    );
+  };
 
   const enterTopicRoom = useCallback(
     (room: TopicRoomItem) => {
       const navigate = () => {
         router.push({
-          pathname: '/topicroom/[roomId]',
+          pathname: "/topicroom/[roomId]",
           params: {
             roomId: String(room.topicRoomId),
-            topicRoomName: room.topicRoomName ?? '',
-            worksName: room.worksName ?? '',
-            worksType: room.worksType ?? '',
-            activeUserNumber: String(room.activeUserNumber ?? ''),
+            topicRoomName: room.topicRoomName ?? "",
+            worksName: room.worksName ?? "",
+            worksType: room.worksType ?? "",
+            activeUserNumber: String(room.activeUserNumber ?? ""),
           },
-        })
-      }
+        });
+      };
 
       if (room.isJoined) {
-        navigate()
-        return
+        navigate();
+        return;
       }
 
       joinTopicRoomMutation.mutate(room.topicRoomId, {
         onSuccess: navigate,
         onError: (err) => {
           if (isTopicRoomParticipationLimitError(err)) {
-            setLimitModalVisible(true)
+            setLimitModalVisible(true);
           }
         },
-      })
+      });
     },
     [joinTopicRoomMutation, router],
-  )
+  );
 
   return (
     <View style={styles.root}>
@@ -186,8 +175,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <HomeHeader
-          onSearchPress={() => router.push('/search' as never)}
-          onNotificationPress={() => router.push('/notifications' as never)}
+          onSearchPress={() => router.push("/search" as never)}
+          onNotificationPress={() => router.push("/notifications" as never)}
           unreadCount={unreadCount ?? 0}
         />
 
@@ -196,7 +185,7 @@ export default function HomeScreen() {
             {/* TODO: Upcoming TopicRoom UI redesign — Figma "STORIX 2.0 mid-fi > 소통(토픽룸) > 토픽룸 ver2" (node 8009:38269). */}
             <HomeSection
               title="실시간 작품 이야기!"
-              onArrowPress={() => goFeedSection('topicroom')}
+              onArrowPress={() => goFeedSection("topicroom")}
             >
               <TopicRoomCoverCarousel
                 data={topicRooms}
@@ -211,7 +200,7 @@ export default function HomeScreen() {
           <View>
             <HomeSection
               title="오늘의 피드"
-              onArrowPress={() => goFeedSection('works')}
+              onArrowPress={() => goFeedSection("works")}
             >
               <HotFeedSlider
                 data={feeds}
@@ -219,7 +208,7 @@ export default function HomeScreen() {
                 onPressItem={(item) => {
                   router.push(
                     `/feed/${item.board.boardId}?from=todayFeed` as never,
-                  )
+                  );
                 }}
               />
             </HomeSection>
@@ -243,7 +232,8 @@ export default function HomeScreen() {
       <PreferenceToast
         message={toastMessage}
         position="bottom"
-        bottomOffset={insets.bottom + TAB_BAR_HEIGHT + TOAST_BOTTOM_GAP}
+        bottomOffset={TOAST_ABOVE_PLUS_OFFSET}
+        onClose={() => setToastMessage(null)}
       />
 
       <NotificationConsentModal {...consent} />
@@ -252,7 +242,7 @@ export default function HomeScreen() {
         onClose={() => setLimitModalVisible(false)}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -273,4 +263,4 @@ const styles = StyleSheet.create({
   hashtagBlock: {
     marginBottom: 0,
   },
-})
+});

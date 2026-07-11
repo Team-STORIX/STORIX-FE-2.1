@@ -24,6 +24,10 @@ type FirebaseMessagingModule = {
   onTokenRefresh: (messaging: unknown, listener: (token: string) => void) => () => void
   registerDeviceForRemoteMessages: (messaging: unknown) => Promise<void>
   requestPermission: (messaging: unknown) => Promise<number>
+  setBackgroundMessageHandler: (
+    messaging: unknown,
+    handler: (remoteMessage: { data?: unknown; notification?: { title?: string; body?: string } }) => Promise<void>,
+  ) => void
 }
 
 const loadFirebaseApp = (): FirebaseAppModule | null => {

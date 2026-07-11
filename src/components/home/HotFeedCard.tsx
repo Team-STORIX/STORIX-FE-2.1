@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 10,
   },
   cardPressed: {
     opacity: 0.85,
@@ -143,6 +142,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginBottom: 12,
   },
   avatarWrap: {
     width: 20,
@@ -161,26 +161,26 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   contentText: {
-    ...Typography.caption1Medium,
-    color: Gray[500],
-    minHeight: 34,
+    ...Typography.body2Medium,
+    color: Gray[600],
+    minHeight: 42,
+    marginBottom: 8,
   },
   reactionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 'auto',
   },
   reactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   reactionIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   reactionCount: {
-    ...Typography.caption1Medium,
+    ...Typography.body2Medium,
     color: Gray[500],
     marginLeft: 4,
   },

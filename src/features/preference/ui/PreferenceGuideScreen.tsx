@@ -12,7 +12,7 @@ const preferenceGuide = require("../../../../assets/preference/preferenceGuide.p
 export function PreferenceGuideScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isLoading, isInitializing, isLimitedDay, toastMessage } =
+  const { isLoading, isInitializing, isLimitedDay, toastMessage, hideToast } =
     usePreferenceFlow();
 
   const isBusy = isLoading || isInitializing;
@@ -54,8 +54,9 @@ export function PreferenceGuideScreen() {
 
       <PreferenceToast
         message={toastMessage}
-        position="center"
-        bottomOffset={24}
+        position="bottom"
+        bottomOffset={36}
+        onClose={hideToast}
       />
     </View>
   );

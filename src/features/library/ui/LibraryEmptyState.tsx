@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Magenta, Radius, Typography } from "../../../theme";
 
-const warningIcon = require("../../../../assets/icons/profile/warning.svg");
+const warningIcon = require("../../../../assets/icons/search/warning.png");
 
 type Props = {
   title: string;

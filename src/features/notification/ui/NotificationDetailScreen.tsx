@@ -1,13 +1,31 @@
-import { useCallback, useEffect, useMemo } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { C, Gray } from '../../../theme'
-import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
-import { useMarkNotificationRead, useNotificationsInfinite } from '../hooks'
-import type { NotificationItem } from '../api/notification.schema'
-import { NotificationHeader } from './NotificationHeader'
-import { NotificationIcon } from './NotificationIcon'
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatTimeAgo } from "../../../lib/utils/formatTimeAgo";
+import { C, Gray } from "../../../theme";
+import type { NotificationItem } from "../api/notification.schema";
+import { useMarkNotificationRead, useNotificationsInfinite } from "../hooks";
+import { NotificationHeader } from "./NotificationHeader";
+import { NotificationIcon } from "./NotificationIcon";
+
+const NOTIFICATION_CATEGORY_LABELS: Record<string, string> = {
+  FEED: "피드",
+  REVIEW: "리뷰",
+  TOPIC_ROOM: "토픽룸",
+  MARKETING: "이벤트/광고",
+  REPORT: "신고",
+  POLICY: "안내",
+};
+
+function getNotificationCategoryLabel(
+  category?: string | null,
+  notificationType?: string | null,
+) {
+  const key = category ?? notificationType;
+  if (!key) return "";
+  return NOTIFICATION_CATEGORY_LABELS[key] ?? key;
+}
 
 /**
  * Notification detail (Figma 7156:12533). The list API has no dedicated detail
@@ -15,13 +33,13 @@ import { NotificationIcon } from './NotificationIcon'
  * fall back to a minimal view if it isn't loaded (e.g. cold deep-link).
  */
 export function NotificationDetailScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const { id: idParam } = useLocalSearchParams<{ id: string }>()
-  const id = typeof idParam === 'string' ? Number(idParam) : NaN
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { id: idParam } = useLocalSearchParams<{ id: string }>();
+  const id = typeof idParam === "string" ? Number(idParam) : NaN;
 
-  const query = useNotificationsInfinite(10)
-  const markRead = useMarkNotificationRead()
+  const query = useNotificationsInfinite(10);
+  const markRead = useMarkNotificationRead();
 
   const item = useMemo<NotificationItem | undefined>(
     () =>
@@ -29,19 +47,19 @@ export function NotificationDetailScreen() {
         .flatMap((page) => page.content ?? [])
         .find((n) => n.id === id),
     [query.data, id],
-  )
+  );
 
   // Mark as read once we can see it's unread.
   useEffect(() => {
-    if (item?.read === false) markRead.mutate(item.id)
+    if (item?.read === false) markRead.mutate(item.id);
     // Only react to identity/read changes — markRead is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?.id, item?.read])
+  }, [item?.id, item?.read]);
 
   const goBack = useCallback(() => {
-    if (router.canGoBack()) router.back()
-    else router.replace('/notifications' as never)
-  }, [router])
+    if (router.canGoBack()) router.back();
+    else router.replace("/notifications" as never);
+  }, [router]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -65,7 +83,10 @@ export function NotificationDetailScreen() {
                 size={20}
               />
               <Text style={styles.category}>
-                {item.category ?? item.notificationType}
+                {getNotificationCategoryLabel(
+                  item.category,
+                  item.notificationType,
+                )}
               </Text>
             </View>
 
@@ -81,7 +102,7 @@ export function NotificationDetailScreen() {
         )}
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -95,41 +116,41 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   category: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 17,
     color: Gray[500],
   },
   title: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     lineHeight: 22,
     color: Gray[900],
     marginTop: 4,
   },
   date: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 17,
     color: Gray[400],
   },
   body: {
     marginTop: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
     color: Gray[700],
   },
   fallback: {
     marginTop: 40,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
-})
+});

@@ -65,6 +65,14 @@ type AuthActions = {
   }) => Promise<void>
 
   /**
+   * Syncs only the in-memory accessToken after a silent token refresh
+   * (Axios 401 retry or STOMP connect). SecureStore is written by the refresh
+   * helper itself and remains the source of truth; this keeps the store mirror
+   * from going stale. Does not touch refreshToken or navigate.
+   */
+  syncAccessToken: (accessToken: string) => void
+
+  /**
    * Called after a social login where the user is new (pre-signup).
    * Stores the short-lived onboarding token; access token stays null.
    */
@@ -159,6 +167,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       onboardingToken: null,
       isAuthenticated: true,
     })
+  },
+
+  syncAccessToken: (accessToken) => {
+    set({ accessToken, isAuthenticated: true })
   },
 
   setOnboardingToken: async (token) => {

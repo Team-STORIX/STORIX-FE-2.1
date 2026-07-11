@@ -14,7 +14,9 @@ export function TopicRoomLimitModal({ visible, onClose }: Props) {
   return (
     <Modal
       visible={visible}
+      transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       statusBarTranslucent
       onRequestClose={onClose}
     >
@@ -53,7 +55,7 @@ export function TopicRoomLimitModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: '#302d2f',
+    backgroundColor: 'rgba(19, 17, 18, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },

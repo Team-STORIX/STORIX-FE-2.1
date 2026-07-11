@@ -213,6 +213,7 @@ export function LibraryScreen() {
         visible={sortOpen}
         transparent
         animationType="fade"
+        presentationStyle="overFullScreen"
         onRequestClose={closeSort}
       >
         <Pressable style={styles.sheetOverlay} onPress={closeSort}>

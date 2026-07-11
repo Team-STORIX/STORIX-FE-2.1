@@ -5,6 +5,7 @@ import {
 } from '../api/notification.api'
 import { notificationKeys } from '../api/notification.keys'
 import type { NotificationPage } from '../api/notification.schema'
+import { setAppBadgeCount } from '../services/notifeeNative'
 
 /**
  * Cursor-paginated notification list. The cursor is the id of the last item on
@@ -44,6 +45,7 @@ export function useUnreadNotificationCount(enabled = true) {
     enabled,
     queryFn: async () => {
       const count = await getUnreadNotificationCount()
+      void setAppBadgeCount(count)
       if (__DEV__) {
         // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
         // eslint-disable-next-line no-console

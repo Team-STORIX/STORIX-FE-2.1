@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   RefreshControl,
   StyleSheet,
   Text,
@@ -44,6 +45,10 @@ function resolveTarget(item: NotificationItem): PushRoute {
     if (targetId != null && targetType.includes('FEED')) return `/feed/${targetId}`
   }
 
+  if (targetKey.includes('EXTERNAL') && item.targetLink) {
+    return item.targetLink
+  }
+
   if (targetId != null) {
     if (targetKey.includes('FEED')) return `/feed/${targetId}`
     if (targetKey.includes('REVIEW')) return `/works/review/${targetId}`
@@ -78,7 +83,12 @@ export function NotificationListScreen() {
     (item: NotificationItem) => {
       // Mark read (no-op visually until invalidation refetch lands).
       if (item.read === false) markRead.mutate(item.id)
-      router.push(resolveTarget(item) as never)
+      const target = resolveTarget(item)
+      if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
+        void Linking.openURL(target)
+        return
+      }
+      router.push(target as never)
     },
     [markRead, router],
   )

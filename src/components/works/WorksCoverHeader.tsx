@@ -40,18 +40,18 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
           contentFit="cover"
         />
       ) : null}
-      {/* Figma: white fade at the top, mirrored with the bottom fade. */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={["#FFFFFF", "rgba(255,255,255,0)"]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-      />
       {/* Figma: white fade at the bottom. */}
       <LinearGradient
         pointerEvents="none"
         colors={["rgba(255,255,255,0)", "#FFFFFF"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      {/* Figma: gray-50 fade over the cover image. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#F9F6F7", "rgba(255,255,255,0)"]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFillObject}

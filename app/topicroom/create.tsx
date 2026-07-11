@@ -15,7 +15,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, {
   Defs,
-  Path,
   Rect,
   Stop,
   LinearGradient as SvgLinearGradient,
@@ -30,6 +29,7 @@ import {
 import { C, Gray, Magenta, Typography } from "../../src/theme";
 
 const backIcon = require("../../assets/icons/common/back.svg");
+const warningIcon = require("../../assets/icons/search/warning.png");
 const topicRoomGraphic = require("../../assets/topicroom/topicroom-graphic.png");
 
 const TOPIC_NAME_PATTERN = /^[0-9A-Za-z가-힣 ]{2,10}$/;
@@ -47,23 +47,6 @@ type Params = {
 function pickParam(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
-}
-
-function WarningSmallIcon() {
-  return (
-    <Svg
-      width={28}
-      height={28}
-      viewBox="0 0 100 100"
-      fill="none"
-      style={styles.warningIcon}
-    >
-      <Path
-        d="M10.9357 89.1666C7.85434 89.1666 5.93011 85.8291 7.47397 83.1625L46.3695 15.9793C47.9102 13.3181 51.7523 13.3181 53.2929 15.9793L92.1885 83.1625C93.7323 85.8291 91.8081 89.1666 88.7268 89.1666H10.9357ZM49.8312 76.6666C51.0118 76.6666 52.0014 76.2673 52.8 75.4687C53.5986 74.6701 53.9979 73.6805 53.9979 72.4999C53.9979 71.3194 53.5986 70.3298 52.8 69.5312C52.0014 68.7326 51.0118 68.3333 49.8312 68.3333C48.6507 68.3333 47.6611 68.7326 46.8625 69.5312C46.0639 70.3298 45.6646 71.3194 45.6646 72.4999C45.6646 73.6805 46.0639 74.6701 46.8625 75.4687C47.6611 76.2673 48.6507 76.6666 49.8312 76.6666ZM45.6646 60.1666C45.6646 62.3758 47.4554 64.1666 49.6646 64.1666H49.9979C52.207 64.1666 53.9979 62.3758 53.9979 60.1666V47.3333C53.9979 45.1241 52.207 43.3333 49.9979 43.3333H49.6646C47.4554 43.3333 45.6646 45.1241 45.6646 47.3333V60.1666Z"
-        fill={Magenta[300]}
-      />
-    </Svg>
-  );
 }
 
 export default function TopicRoomCreateScreen() {
@@ -344,7 +327,11 @@ export default function TopicRoomCreateScreen() {
 
             <View style={styles.warningBlock}>
               <View style={styles.warningHeaderRow}>
-                <WarningSmallIcon />
+                <Image
+                  source={warningIcon}
+                  style={styles.warningIcon}
+                  contentFit="contain"
+                />
                 <Text style={styles.warningTitle}>토픽룸 생성 주의 사항</Text>
               </View>
               <Text style={styles.warningBody}>

@@ -1,5 +1,4 @@
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -37,7 +36,9 @@ export function LeaveConfirmModal({
   return (
     <Modal
       visible={visible}
+      transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       statusBarTranslucent
       onRequestClose={handleBackdrop}
     >
@@ -69,11 +70,7 @@ export function LeaveConfirmModal({
                 disabled={isPending}
                 accessibilityRole="button"
               >
-                {isPending ? (
-                  <ActivityIndicator size="small" color={C.card} />
-                ) : (
-                  <Text style={styles.confirmText}>{confirmLabel}</Text>
-                )}
+                <Text style={styles.confirmText}>{confirmLabel}</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -86,7 +83,7 @@ export function LeaveConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "#302d2f",
+    backgroundColor: "rgba(19, 17, 18, 0.6)",
     alignItems: "center",
     justifyContent: "center",
   },

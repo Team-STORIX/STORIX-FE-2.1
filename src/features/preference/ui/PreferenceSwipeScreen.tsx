@@ -273,11 +273,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   headerTitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
+    ...Typography.body1Medium,
     color: C.text,
-    fontFamily: 'SUIT',
   },
   progressWrap: {
     paddingBottom: 12,
