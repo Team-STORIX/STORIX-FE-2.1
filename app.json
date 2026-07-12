@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "11"
+      "buildNumber": "19"
     },
     "android": {
       "versionCode": 11,
