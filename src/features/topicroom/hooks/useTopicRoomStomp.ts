@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 import { Client, type IFrame, type StompSubscription } from '@stomp/stompjs'
 import { getAccessToken } from '../../../lib/storage/secure'
 import { refreshAuthTokens } from '../../../lib/auth/refresh-token'
@@ -103,14 +104,22 @@ export const useTopicRoomStomp = (params: {
   enabled?: boolean
   onMemberChange?: (activeUserNumber?: number) => void
   onActiveUserNumber?: (activeUserNumber: number) => void
+  onReconnect?: () => void
 }) => {
-  const { roomId, enabled = true, onMemberChange, onActiveUserNumber } = params
+  const {
+    roomId,
+    enabled = true,
+    onMemberChange,
+    onActiveUserNumber,
+    onReconnect,
+  } = params
   const { accessToken } = useAuthStore()
   const myUserId = useProfileStore((s) => s.me?.userId ?? null)
   const myUserIdRef = useRef<number | null>(myUserId)
   const onMemberChangeRef = useRef<typeof onMemberChange>(onMemberChange)
   const onActiveUserNumberRef =
     useRef<typeof onActiveUserNumber>(onActiveUserNumber)
+  const onReconnectRef = useRef<typeof onReconnect>(onReconnect)
 
   const clientRef = useRef<Client | null>(null)
   const subRef = useRef<StompSubscription | null>(null)
@@ -118,11 +127,9 @@ export const useTopicRoomStomp = (params: {
   const subIdRef = useRef<string | null>(null)
   const activeUsersSubIdRef = useRef<string | null>(null)
 
-  // Prevents duplicate connect when roomId/token haven't changed (StrictMode / re-render).
-  const sessionKeyRef = useRef<string>('')
-
   // Dev-only: counts connect attempts within one mount to surface reconnect loops.
   const connectAttemptRef = useRef<number>(0)
+  const hasConnectedOnceRef = useRef(false)
 
   // Guards the reactive refresh in onStompError so a persistently-rejected token
   // triggers at most one forced refresh per connection instead of an infinite
@@ -134,6 +141,9 @@ export const useTopicRoomStomp = (params: {
 
   const [status, setStatus] = useState<Status>('idle')
   const [messages, setMessages] = useState<TopicRoomUiMsg[]>([])
+  const [appIsActive, setAppIsActive] = useState(
+    AppState.currentState === 'active',
+  )
 
   // Mirror of `status` readable inside async/event closures without re-subscribing.
   const statusRef = useRef<Status>('idle')
@@ -146,9 +156,22 @@ export const useTopicRoomStomp = (params: {
   // rotating the store token must not tear down and rebuild a healthy socket.
   const hasToken = !!accessToken
   const canConnect = useMemo(
-    () => enabled && !!roomId && hasToken,
-    [enabled, roomId, hasToken],
+    () => enabled && appIsActive && !!roomId && hasToken,
+    [appIsActive, enabled, roomId, hasToken],
   )
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      setAppIsActive(nextState === 'active')
+    })
+    return () => subscription.remove()
+  }, [])
+
+  useEffect(() => {
+    setMessages([])
+    pendingSentRef.current = []
+    hasConnectedOnceRef.current = false
+  }, [roomId])
 
   useEffect(() => {
     myUserIdRef.current = myUserId
@@ -161,6 +184,10 @@ export const useTopicRoomStomp = (params: {
   useEffect(() => {
     onActiveUserNumberRef.current = onActiveUserNumber
   }, [onActiveUserNumber])
+
+  useEffect(() => {
+    onReconnectRef.current = onReconnect
+  }, [onReconnect])
 
   const unsubscribe = useCallback(() => {
     try {
@@ -185,10 +212,12 @@ export const useTopicRoomStomp = (params: {
   }, [])
 
   const disconnect = useCallback(async () => {
+    const client = clientRef.current
     unsubscribe()
+    if (clientRef.current === client) clientRef.current = null
     try {
-      if (clientRef.current) {
-        await clientRef.current.deactivate()
+      if (client) {
+        await client.deactivate()
         if (__DEV__) {
           console.debug('[STOMP_DIAG] deactivated', { roomId })
         }
@@ -196,8 +225,8 @@ export const useTopicRoomStomp = (params: {
     } catch {
       // noop
     } finally {
-      clientRef.current = null
-      setStatus('closed')
+      // An older async deactivate must never close or clear a newer session.
+      if (!clientRef.current) setStatus('closed')
     }
   }, [unsubscribe, roomId])
 
@@ -291,12 +320,6 @@ export const useTopicRoomStomp = (params: {
   useEffect(() => {
     if (!canConnect) return
 
-    const sessionKey = `room:${roomId}|auth:${hasToken ? 1 : 0}`
-    if (sessionKeyRef.current === sessionKey && clientRef.current?.connected) {
-      return // Already connected for this room + auth presence — skip.
-    }
-
-    sessionKeyRef.current = sessionKey
     setStatus('connecting')
 
     let cancelled = false
@@ -344,6 +367,10 @@ export const useTopicRoomStomp = (params: {
       const client = new Client({
         brokerURL: STORIX_STOMP_BROKER_URL,
         reconnectDelay: 3000,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
+        connectionTimeout: 10000,
+        discardWebsocketOnCommFailure: true,
         // React Native's WebSocket can chop the STOMP NULL terminator off the
         // tail of a text frame, so Spring's STOMP decoder never sees a complete
         // CONNECT command (socket closes before CONNECTED). Sending frames as
@@ -400,17 +427,19 @@ export const useTopicRoomStomp = (params: {
         onConnect: (frame: IFrame) => {
           if (cancelled) return
           setStatus('open')
+          const isReconnect = hasConnectedOnceRef.current
+          hasConnectedOnceRef.current = true
           // Handshake succeeded with the current token — allow a future
           // forced refresh if this connection later goes UNAUTHORIZED.
           unauthorizedRefreshAttemptedRef.current = false
+
+          // On reconnect, clean up the previous subscription before re-subscribing.
+          unsubscribe()
 
           const subId = makeSubscriptionId(roomId)
           const activeUsersSubId = `sub_active_users_${roomId}_${subId}`
           subIdRef.current = subId
           activeUsersSubIdRef.current = activeUsersSubId
-
-          // On reconnect, clean up the previous subscription before re-subscribing.
-          unsubscribe()
 
           if (__DEV__) {
             console.debug('[STOMP_DIAG] onConnect', {
@@ -484,10 +513,15 @@ export const useTopicRoomStomp = (params: {
                 if (__DEV__) {
                   // Part A — schema-error. Never crashes the screen; this frame
                   // is dropped and the connection is left untouched.
+                  const raw = parsedJson.value as {
+                    type?: unknown
+                    messageType?: unknown
+                  }
                   console.warn('[STOMP_PARSE] schema-error', {
                     zodIssues: result.zodIssues,
                     bodyJsonKeys: diag.bodyJsonKeys,
-                    messageType: (parsedJson.value as { type?: unknown })?.type,
+                    type: raw?.type,
+                    messageType: raw?.messageType ?? raw?.type,
                     rawType: result.rawType,
                     bodyLength: diag.bodyLength,
                   })
@@ -558,7 +592,10 @@ export const useTopicRoomStomp = (params: {
                 }
               }
 
-              setMessages((prev) => [...prev, uiMsg])
+              setMessages((prev) => {
+                if (prev.some((message) => message.id === uiMsg.id)) return prev
+                return [...prev, uiMsg]
+              })
             },
             { id: subId },
           )
@@ -578,6 +615,7 @@ export const useTopicRoomStomp = (params: {
             console.debug('[STOMP] subscribed', topicRoomActiveUsersSubPath(roomId))
           }
           console.log('[STOMP] connected', roomId)
+          if (isReconnect) onReconnectRef.current?.()
         },
         onWebSocketClose: (event) => {
           if (cancelled) return
@@ -756,14 +794,16 @@ export const useTopicRoomStomp = (params: {
         console.debug('[STOMP_PARSE] publish', {
           destination: topicRoomPubPath(),
           roomId,
-          type: 'TALK',
+          messageType: 'TALK',
           messageLength: t.length,
         })
       }
 
+      // Field names must match the backend ChatMessageRequestDto
+      // ({ roomId, message, messageType }) — a `type` key is dropped by Jackson.
       client.publish({
         destination: topicRoomPubPath(),
-        body: JSON.stringify({ roomId, type: 'TALK', message: t }),
+        body: JSON.stringify({ roomId, message: t, messageType: 'TALK' }),
       })
 
       if (__DEV__) {

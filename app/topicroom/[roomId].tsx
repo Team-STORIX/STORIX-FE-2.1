@@ -191,12 +191,17 @@ export default function TopicRoomScreen() {
     status,
     messages: realtimeMsgs,
     sendMessage,
-    disconnect: disconnectStomp,
   } = useTopicRoomStomp({
     roomId,
     enabled: isScreenFocused,
     onMemberChange: handleMemberChange,
     onActiveUserNumber: handleActiveUserNumber,
+    onReconnect: () => {
+      void queryClient.refetchQueries({
+        queryKey: ["chat", "room", "messages", roomId],
+        type: "active",
+      });
+    },
   });
 
   useFocusEffect(
@@ -210,9 +215,8 @@ export default function TopicRoomScreen() {
 
       return () => {
         setIsScreenFocused(false);
-        void disconnectStomp();
       };
-    }, [disconnectStomp, queryClient, roomId]),
+    }, [queryClient, roomId]),
   );
 
   const memberAvatarById = useMemo(() => {
@@ -321,10 +325,23 @@ export default function TopicRoomScreen() {
     [memberAvatarById, realtimeMsgs],
   );
 
-  const allMessages: DisplayMsg[] = useMemo(
-    () => [...realtimeDisplay.slice().reverse(), ...historyDisplay],
-    [realtimeDisplay, historyDisplay],
-  );
+  const allMessages: DisplayMsg[] = useMemo(() => {
+    const realtimeIds = new Set(
+      realtimeDisplay
+        .map((message) => message.chatMessageId)
+        .filter((id): id is number => typeof id === "number"),
+    );
+    const historyWithoutRealtimeDuplicates = historyDisplay.filter(
+      (message) =>
+        typeof message.chatMessageId !== "number" ||
+        !realtimeIds.has(message.chatMessageId),
+    );
+
+    return [
+      ...realtimeDisplay.slice().reverse(),
+      ...historyWithoutRealtimeDuplicates,
+    ];
+  }, [realtimeDisplay, historyDisplay]);
 
   const handleSend = useCallback(() => {
     const sent = sendMessage(inputText.trim());

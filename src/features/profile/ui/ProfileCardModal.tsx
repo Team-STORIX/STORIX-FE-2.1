@@ -3,7 +3,6 @@ import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useRef } from 'react'
 import ViewShot from 'react-native-view-shot'
-import { XLogo } from '../../../components/common/XLogo'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import { useCardShare } from '../hooks/useCardShare'
 
@@ -37,7 +36,7 @@ export function ProfileCardModal({
   reviewCount = 0,
 }: ProfileCardModalProps) {
   const viewShotRef = useRef<ViewShot>(null)
-  const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
+  const { saveToGallery, shareImage, isSaving, isSharing } = useCardShare()
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -124,7 +123,7 @@ export function ProfileCardModal({
           <View style={styles.actionButtons}>
             {/* 저장 버튼 */}
             <Pressable
-              onPress={() => saveToGallery(captureCard)}
+              onPress={() => saveToGallery(captureCard, undefined, 'STORIX 프로필 카드')}
               disabled={isSaving}
               style={styles.actionButton}
             >
@@ -140,7 +139,7 @@ export function ProfileCardModal({
 
             {/* 공유 버튼 */}
             <Pressable
-              onPress={() => shareImage(captureCard)}
+              onPress={() => shareImage(captureCard, 'STORIX 프로필 카드')}
               disabled={isSharing}
               style={styles.actionButton}
             >
@@ -152,17 +151,6 @@ export function ProfileCardModal({
                 )}
               </View>
               <Text style={styles.actionButtonText}>공유</Text>
-            </Pressable>
-
-            {/* X(트위터) 공유 버튼 */}
-            <Pressable
-              onPress={() => shareToTwitter(captureCard)}
-              style={styles.actionButton}
-            >
-              <View style={styles.actionButtonCircle}>
-                <XLogo size={20} color={Gray[900]} />
-              </View>
-              <Text style={styles.actionButtonText}>X에 공유</Text>
             </Pressable>
           </View>
         </View>
