@@ -51,6 +51,14 @@ export const TopicRoomStompMessageSchema = z.preprocess(
         o.profileImageUrl,
         o.senderProfileImage,
       ),
+      // type / messageType / eventType — the backend ChatMessageResponseDto
+      // names this field `messageType`; canonicalize it to `type` so the
+      // TALK / ENTER / LEAVE routing below sees it.
+      type: firstString(o.type, o.messageType, o.eventType),
+      // The live broker omits this field for ordinary messages. Normalize it
+      // before Zod validation rather than making a missing optional field pass
+      // through a preprocess pipe as an invalid required value.
+      activeUserNumber: firstNumber(o.activeUserNumber),
       // message / content / text
       message: firstString(o.message, o.content, o.text),
       // createdAt / sentAt / createdDate
@@ -62,14 +70,14 @@ export const TopicRoomStompMessageSchema = z.preprocess(
       messageId: z.union([z.string(), z.number()]).optional(),
       roomId: z.number().optional(),
       type: z.string().optional(), // TALK / ENTER / LEAVE / SYSTEM / HEARTBEAT 등
+      // The broker sends `messageType: null` for some messages. `type` above
+      // is the canonical field the UI uses, so preserve this raw alias safely.
+      messageType: z.string().nullish(),
       message: z.string().optional(),
       senderId: z.number().optional(),
       senderName: z.string().optional(),
       senderProfileImageUrl: z.string().optional(),
-      activeUserNumber: z.preprocess(
-        (v) => (v == null ? undefined : Number(v)),
-        z.number().optional(),
-      ),
+      activeUserNumber: z.number().optional(),
       createdAt: z.string().optional(),
     })
     .passthrough(),
