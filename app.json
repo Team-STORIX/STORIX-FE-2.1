@@ -14,8 +14,8 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": true,
-      "buildNumber": "19"
+      "supportsTablet": false,
+      "buildNumber": "21"
     },
     "android": {
       "versionCode": 11,
