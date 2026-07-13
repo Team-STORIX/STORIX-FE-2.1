@@ -8,7 +8,7 @@
     "android:open": "start android",
     "android": "expo prebuild --platform android && node scripts/patch-gradle.js && npx expo run:android",
     "prebuild:ios": "expo prebuild --platform ios",
-    "ios:open": "open ios/STORIXFE21.xcworkspace",
+    "ios:open": "open ios/*.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",
     "web": "expo start --web"
   },

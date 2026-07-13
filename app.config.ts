@@ -54,8 +54,7 @@ const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
 const androidGoogleServicesFile =
   process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json";
 const iosGoogleServicesPlist =
-  process.env.GOOGLE_SERVICE_INFO_PLIST ??
-  "./ios/STORIXFE21/GoogleService-Info.plist";
+  process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist";
 const iosApsEnvironment =
   process.env.EXPO_IOS_APS_ENVIRONMENT === "production"
     ? "production"
@@ -91,13 +90,14 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ios: {
       ...config.ios,
       bundleIdentifier: iosBundleId,
-      supportsTablet: true,
+      supportsTablet: false,
       googleServicesFile: iosGoogleServicesPlist,
       // Push Notifications + Background Modes (remote-notification) are
       // required for APNs delivery. aps-environment is set explicitly in
       // withIosEntitlements above so the generated entitlements cannot miss it.
       infoPlist: {
         ...(config.ios?.infoPlist ?? {}),
+        ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: Array.from(
           new Set([
             ...(((config.ios?.infoPlist as any)?.UIBackgroundModes as
