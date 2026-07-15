@@ -2,17 +2,22 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWork } from '../types'
-import { C, Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta } from '../../../theme'
 
 const favoriteCheckGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 const favoriteCheckPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
-const ratingStarIcon = require('../../../../assets/icons/common/star.svg')
 
 type Props = {
   item: FavoriteWork
   isFavorite: boolean
   showFavoriteButton?: boolean
   onToggleFavorite: (worksId: number) => void
+}
+
+function getWorksTypeLabel(worksType: string) {
+  if (worksType === 'WEBTOON') return '웹툰'
+  if (worksType === 'WEBNOVEL') return '웹소설'
+  return worksType
 }
 
 export function ProfileLikedWorkItem({
@@ -30,6 +35,7 @@ export function ProfileLikedWorkItem({
 
     router.push(`/works/${item.worksId}` as const)
   }
+  const worksTypeLabel = getWorksTypeLabel(item.worksType)
 
   return (
     <Pressable
@@ -52,16 +58,18 @@ export function ProfileLikedWorkItem({
         <Text style={styles.title} numberOfLines={1}>
           {item.worksName}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {item.artistName} {'\u00b7'} {item.worksType}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {item.artistName}
+          </Text>
+          <Text style={styles.metaDot}>{'\u00b7'}</Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {worksTypeLabel}
+          </Text>
+        </View>
 
         {item.isReviewed ? (
-          <View style={styles.reviewRow}>
-            <Text style={styles.reviewLabel}>{'\ud3c9\uac00\ud568'}</Text>
-            <Image source={ratingStarIcon} style={styles.starIcon} contentFit="contain" />
-            <Text style={styles.ratingText}>{item.rating ?? '-'}</Text>
-          </View>
+          <Text style={styles.reviewLabel}>{'\ud3c9\uac00\ud568'}</Text>
         ) : (
           <View style={styles.reviewSpacer} />
         )}
@@ -95,7 +103,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
@@ -117,44 +125,49 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   title: {
-    ...Typography.body1Medium,
-    color: C.text,
+    fontFamily: 'SUITSemiBold',
+    fontSize: 14,
+    fontStyle: 'normal',
+    fontWeight: '600',
+    lineHeight: 19.6,
+    color: '#000',
   },
-  meta: {
+  metaRow: {
     marginTop: 4,
-    ...Typography.body2Medium,
-    color: Gray[500],
-  },
-  reviewRow: {
-    marginTop: 4,
-    height: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 0,
+  },
+  meta: {
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 16.8,
+    color: Gray[500],
+    flexShrink: 1,
+  },
+  metaDot: {
+    marginHorizontal: 6,
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 16.8,
+    color: Gray[500],
   },
   reviewLabel: {
+    marginTop: 4,
     fontFamily: 'SUIT',
     fontWeight: '500',
     fontSize: 12,
-    lineHeight: 14,
-    letterSpacing: 0.2,
-    color: Magenta[300],
-  },
-  starIcon: {
-    width: 9,
-    height: 10,
-    marginLeft: 6,
-  },
-  ratingText: {
-    marginLeft: 2,
-    fontFamily: 'SUIT',
-    fontWeight: '500',
-    fontSize: 10,
-    lineHeight: 14,
+    fontStyle: 'normal',
+    lineHeight: 16.8,
     color: Magenta[300],
   },
   reviewSpacer: {
     marginTop: 4,
-    height: 14,
+    height: 16.8,
   },
   favoriteButton: {
     width: 24,

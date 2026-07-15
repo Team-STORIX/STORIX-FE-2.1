@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
     height: 16,
   },
   toggleIcon: {
-    width: 32,
-    height: 18,
+    width: 42.33,
+    height: 23.089,
   },
   disabledToggle: {
     opacity: 0.5,

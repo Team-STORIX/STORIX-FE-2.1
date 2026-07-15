@@ -39,3 +39,22 @@ export const getUserIdFromJwt = (
     return null
   }
 }
+
+/**
+ * Validates that two JWT tokens belong to the same user by comparing their userId claims.
+ * Returns true if both tokens have valid, matching userIds; false otherwise.
+ *
+ * Use this to prevent token mismatch attacks where accessToken and refreshToken
+ * belong to different accounts.
+ */
+export const areTokensFromSameUser = (
+  token1: string | null | undefined,
+  token2: string | null | undefined,
+): boolean => {
+  const userId1 = getUserIdFromJwt(token1)
+  const userId2 = getUserIdFromJwt(token2)
+
+  if (!userId1 || !userId2) return false
+
+  return userId1 === userId2
+}

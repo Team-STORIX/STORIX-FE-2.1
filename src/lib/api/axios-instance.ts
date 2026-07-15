@@ -12,6 +12,7 @@ import {
 // useAuthStore is imported here (not in component context) to call clearAuth()
 // on token refresh failure. No circular dependency: auth.store never imports axios-instance.
 import { useAuthStore } from "../../store/auth.store";
+import { areTokensFromSameUser } from "../utils/jwt";
 
 // ---------- header helpers ----------
 // AxiosHeaders (Axios v1) exposes .get()/.set(); plain objects do not.
@@ -206,6 +207,22 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // Validate that accessToken and refreshToken belong to the same user.
+      // If they don't match, it means tokens are from different accounts (security issue).
+      // This prevents silent account switching when tokens get mismatched.
+      if (!areTokensFromSameUser(currentAccessToken, storedRefreshToken)) {
+        console.warn(
+          '[TokenRefresh] Token mismatch detected: accessToken and refreshToken have different userIds. Logging out for security.',
+        );
+        isRefreshing = false;
+        clearQueue();
+        useAuthStore
+          .getState()
+          .clearAuth()
+          .catch(() => {});
+        return Promise.reject(new Error('Token mismatch: different user accounts'));
+      }
+
       // POST /api/v1/auth/tokens/refresh
       // Body:     { refreshToken: string }
       // Response: { ..., result: { accessToken: string, refreshToken: string } }
@@ -223,11 +240,21 @@ apiClient.interceptors.response.use(
         throw new Error("Refresh response is missing accessToken");
       }
 
+      if (typeof newRefreshToken !== "string" || newRefreshToken.length === 0) {
+        throw new Error("Refresh response is missing refreshToken");
+      }
+
+      // Validate that the new tokens also belong to the same user
+      if (!areTokensFromSameUser(newAccessToken, newRefreshToken)) {
+        console.error(
+          '[TokenRefresh] Backend returned mismatched tokens (different userIds). Logging out.',
+        );
+        throw new Error('Token refresh returned mismatched tokens');
+      }
+
       // Persist rotated tokens.
       await setAccessToken(newAccessToken);
-      if (typeof newRefreshToken === "string" && newRefreshToken.length > 0) {
-        await setRefreshToken(newRefreshToken);
-      }
+      await setRefreshToken(newRefreshToken);
 
       // Unblock all queued requests with the new token.
       drainQueue(newAccessToken);
