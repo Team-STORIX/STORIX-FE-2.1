@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -109,6 +110,7 @@ export default function TopicRoomScreen() {
   const queryClient = useQueryClient();
   const [inputText, setInputText] = useState("");
   const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
   const [liveMemberCount, setLiveMemberCount] = useState<number | null>(null);
 
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
@@ -143,6 +145,20 @@ export default function TopicRoomScreen() {
       setToastMessage(null);
       toastTimerRef.current = null;
     }, 2400);
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
 
   useEffect(
@@ -642,7 +658,8 @@ export default function TopicRoomScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
+      enabled={keyboardVisible}
       keyboardVerticalOffset={0}
     >
       <Stack.Screen options={{ headerShown: false }} />
