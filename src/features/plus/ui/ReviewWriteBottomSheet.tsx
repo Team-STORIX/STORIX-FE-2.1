@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -24,6 +25,10 @@ const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 const searchCancelIcon = require("../../../../assets/icons/plus/icon-search-cancle.svg");
+const CTA_FOOTER_GRADIENT = [
+  "rgba(255, 255, 255, 0)",
+  "#FFFFFF",
+] as const;
 
 type Props = {
   visible: boolean;
@@ -170,6 +175,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
     <Modal
       transparent
       animationType="none"
+      presentationStyle="overFullScreen"
       visible
       onRequestClose={() => handleClose()}
     >
@@ -193,7 +199,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
           style={[
             styles.sheet,
             {
-              paddingBottom: insets.bottom + 18,
+              paddingBottom: 0,
               transform: [
                 {
                   translateY: progress.interpolate({
@@ -326,7 +332,11 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
             </View>
 
             {selectedWork && !isCheckingReviewStatus ? (
-              <View style={styles.footer}>
+              <LinearGradient
+                colors={CTA_FOOTER_GRADIENT}
+                locations={[0, 0.4257]}
+                style={[styles.footer, { paddingBottom: insets.bottom + 18 }]}
+              >
                 {canWriteSelectedReview ? (
                   <Pressable
                     style={({ pressed }) => [
@@ -351,7 +361,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                     이미 리뷰를 작성한 작품이에요
                   </Text>
                 )}
-              </View>
+              </LinearGradient>
             ) : null}
           </KeyboardAvoidingView>
         </Animated.View>
@@ -375,6 +385,7 @@ const styles = StyleSheet.create({
   },
   keyboardWrap: {
     flex: 1,
+    position: "relative",
   },
   header: {
     flexDirection: "row",
@@ -432,7 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 128,
   },
   itemRow: {
     flexDirection: "row",
@@ -504,8 +515,13 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   footer: {
+    position: "absolute",
+    left: -S.screenH,
+    right: -S.screenH,
+    bottom: 0,
     gap: 10,
-    paddingTop: 14,
+    paddingHorizontal: S.screenH,
+    paddingTop: 64,
   },
   footerCaption: {
     ...Typography.caption1Medium,

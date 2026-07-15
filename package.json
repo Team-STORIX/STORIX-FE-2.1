@@ -8,13 +8,14 @@
     "android:open": "start android",
     "android": "expo prebuild --platform android && node scripts/patch-gradle.js && npx expo run:android",
     "prebuild:ios": "expo prebuild --platform ios",
-    "ios:open": "open ios/STORIXFE21.xcworkspace",
+    "ios:open": "open ios/*.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",
     "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@invertase/react-native-apple-authentication": "^2.5.1",
+    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-firebase/app": "^24.0.0",
     "@react-native-firebase/messaging": "^24.0.0",

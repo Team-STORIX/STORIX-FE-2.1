@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,6 +31,10 @@ const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
 const searchCancelIcon = require("../../../../assets/icons/plus/icon-search-cancle.svg");
+const CTA_FOOTER_GRADIENT = [
+  "rgba(255, 255, 255, 0)",
+  "#FFFFFF",
+] as const;
 
 export type PickedWorks = {
   worksId: number;
@@ -243,176 +248,185 @@ export function TopicRoomWorksPickerBottomSheet({
   const isBusy = checkingExisting || joinMutation.isPending;
   const goToExistingRoom = existingRoomId != null;
 
-  if (!visible) {
+  if (!visible && !limitModalVisible) {
     return null;
   }
 
   return (
-    <Modal
-      transparent
-      animationType="none"
-      visible
-      onRequestClose={() => animateOut(onClose)}
-    >
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: progress.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 1],
-            }),
-          },
-        ]}
-      >
-        <Pressable
-          style={StyleSheet.absoluteFillObject}
-          onPress={() => animateOut(onClose)}
-        />
-
-        <Animated.View
-          style={[
-            styles.sheet,
-            {
-              paddingBottom: insets.bottom + 18,
-              transform: [
-                {
-                  translateY: progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [60, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
+    <>
+      {visible && !limitModalVisible ? (
+        <Modal
+          transparent
+          animationType="none"
+          presentationStyle="overFullScreen"
+          visible
+          onRequestClose={() => animateOut(onClose)}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.keyboardWrap}
+          <Animated.View
+            style={[
+              styles.overlay,
+              {
+                opacity: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+              },
+            ]}
           >
-            <View style={styles.header}>
-              <Text style={styles.title}>작품선택</Text>
-              <Pressable
-                onPress={() => animateOut(onClose)}
-                style={styles.closeButton}
+            <Pressable
+              style={StyleSheet.absoluteFillObject}
+              onPress={() => animateOut(onClose)}
+            />
+
+            <Animated.View
+              style={[
+                styles.sheet,
+                {
+                  paddingBottom: 0,
+                  transform: [
+                    {
+                      translateY: progress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [60, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                style={styles.keyboardWrap}
               >
-                <Image
-                  source={cancelIcon}
-                  style={styles.closeIcon}
-                  contentFit="contain"
-                />
-              </Pressable>
-            </View>
-
-            <View style={styles.searchWrap}>
-              <TextInput
-                value={keyword}
-                onChangeText={setKeyword}
-                placeholder="토픽룸을 생성하고 싶은 작품을 선택하세요"
-                placeholderTextColor={C.textMuted}
-                style={styles.searchInput}
-                returnKeyType="search"
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-
-              {keyword.length > 0 ? (
-                <Pressable
-                  style={styles.clearButton}
-                  onPress={() => {
-                    setKeyword("");
-                    setSelectedId(undefined);
-                    setExistingRoomId(null);
-                    setCheckingExisting(false);
-                    checkSeqRef.current += 1;
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="검색어 지우기"
-                >
-                  <Image
-                    source={searchCancelIcon}
-                    style={styles.clearIcon}
-                    contentFit="contain"
-                  />
-                </Pressable>
-              ) : (
-                <Image
-                  source={searchIcon}
-                  style={styles.searchFieldIcon}
-                  contentFit="contain"
-                />
-              )}
-            </View>
-
-            <View style={styles.listWrap}>
-              {!debouncedKeyword ? (
-                <View style={styles.stateWrap} />
-              ) : searchQuery.isLoading ? (
-                <View style={styles.stateWrap}>
-                  <ActivityIndicator size="small" color={C.primary} />
+                <View style={styles.header}>
+                  <Text style={styles.title}>작품선택</Text>
+                  <Pressable
+                    onPress={() => animateOut(onClose)}
+                    style={styles.closeButton}
+                  >
+                    <Image
+                      source={cancelIcon}
+                      style={styles.closeIcon}
+                      contentFit="contain"
+                    />
+                  </Pressable>
                 </View>
-              ) : searchQuery.isError || works.length === 0 ? (
-                <SearchEmptyState
-                  recommendationKeyword={recommendationKeyword}
-                  onPressRecommendation={setKeyword}
-                />
-              ) : (
-                <FlatList
-                  data={works}
-                  keyExtractor={(item) => String(item.worksId)}
-                  renderItem={({ item }) => (
-                    <WorkResultItem
-                      item={item}
-                      selected={item.worksId === selectedId}
-                      hasExistingRoom={goToExistingRoom}
-                      onPress={() => handleSelectWork(item)}
+
+                <View style={styles.searchWrap}>
+                  <TextInput
+                    value={keyword}
+                    onChangeText={setKeyword}
+                    placeholder="토픽룸을 생성하고 싶은 작품을 선택하세요"
+                    placeholderTextColor={C.textMuted}
+                    style={styles.searchInput}
+                    returnKeyType="search"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+
+                  {keyword.length > 0 ? (
+                    <Pressable
+                      style={styles.clearButton}
+                      onPress={() => {
+                        setKeyword("");
+                        setSelectedId(undefined);
+                        setExistingRoomId(null);
+                        setCheckingExisting(false);
+                        checkSeqRef.current += 1;
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="검색어 지우기"
+                    >
+                      <Image
+                        source={searchCancelIcon}
+                        style={styles.clearIcon}
+                        contentFit="contain"
+                      />
+                    </Pressable>
+                  ) : (
+                    <Image
+                      source={searchIcon}
+                      style={styles.searchFieldIcon}
+                      contentFit="contain"
                     />
                   )}
-                  contentContainerStyle={styles.listContent}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                />
-              )}
-            </View>
+                </View>
 
-            <View style={styles.footer}>
-              <Pressable
-                onPress={handleConfirm}
-                disabled={!canConfirm}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  goToExistingRoom
-                    ? styles.primaryButtonMagenta
-                    : canConfirm
-                      ? styles.primaryButtonActive
-                      : styles.primaryButtonDisabled,
-                  pressed && canConfirm && styles.pressed,
-                ]}
-                accessibilityRole="button"
-              >
-                {isBusy ? (
-                  <ActivityIndicator size="small" color={C.card} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.primaryButtonText,
-                      !canConfirm && styles.primaryButtonTextDisabled,
+                <View style={styles.listWrap}>
+                  {!debouncedKeyword ? (
+                    <View style={styles.stateWrap} />
+                  ) : searchQuery.isLoading ? (
+                    <View style={styles.stateWrap}>
+                      <ActivityIndicator size="small" color={C.primary} />
+                    </View>
+                  ) : searchQuery.isError || works.length === 0 ? (
+                    <SearchEmptyState
+                      recommendationKeyword={recommendationKeyword}
+                      onPressRecommendation={setKeyword}
+                    />
+                  ) : (
+                    <FlatList
+                      data={works}
+                      keyExtractor={(item) => String(item.worksId)}
+                      renderItem={({ item }) => (
+                        <WorkResultItem
+                          item={item}
+                          selected={item.worksId === selectedId}
+                          hasExistingRoom={goToExistingRoom}
+                          onPress={() => handleSelectWork(item)}
+                        />
+                      )}
+                      contentContainerStyle={styles.listContent}
+                      showsVerticalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                    />
+                  )}
+                </View>
+
+                <LinearGradient
+                  colors={CTA_FOOTER_GRADIENT}
+                  locations={[0, 0.4257]}
+                  style={[styles.footer, { paddingBottom: insets.bottom + 18 }]}
+                >
+                  <Pressable
+                    onPress={handleConfirm}
+                    disabled={!canConfirm}
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      goToExistingRoom
+                        ? styles.primaryButtonMagenta
+                        : canConfirm
+                          ? styles.primaryButtonActive
+                          : styles.primaryButtonDisabled,
+                      pressed && canConfirm && styles.pressed,
                     ]}
+                    accessibilityRole="button"
                   >
-                    {goToExistingRoom ? "토픽룸으로 이동하기" : "다음으로"}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          </KeyboardAvoidingView>
-        </Animated.View>
-      </Animated.View>
+                    {isBusy ? (
+                      <ActivityIndicator size="small" color={C.card} />
+                    ) : (
+                      <Text
+                        style={[
+                          styles.primaryButtonText,
+                          !canConfirm && styles.primaryButtonTextDisabled,
+                        ]}
+                      >
+                        {goToExistingRoom ? "토픽룸으로 이동하기" : "다음으로"}
+                      </Text>
+                    )}
+                  </Pressable>
+                </LinearGradient>
+              </KeyboardAvoidingView>
+            </Animated.View>
+          </Animated.View>
+        </Modal>
+      ) : null}
 
       <TopicRoomLimitModal
         visible={limitModalVisible}
         onClose={() => setLimitModalVisible(false)}
       />
-    </Modal>
+    </>
   );
 }
 
@@ -431,6 +445,7 @@ const styles = StyleSheet.create({
   },
   keyboardWrap: {
     flex: 1,
+    position: "relative",
   },
   header: {
     flexDirection: "row",
@@ -488,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 8,
+    paddingBottom: 128,
   },
   itemRow: {
     flexDirection: "row",
@@ -547,7 +562,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footer: {
-    paddingTop: 14,
+    position: "absolute",
+    left: -S.screenH,
+    right: -S.screenH,
+    bottom: 0,
+    paddingHorizontal: S.screenH,
+    paddingTop: 64,
   },
   primaryButton: {
     height: 50,

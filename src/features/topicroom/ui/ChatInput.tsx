@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -7,40 +8,47 @@ import {
   StyleSheet,
   TextInput,
   View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Gray } from '../../../theme'
-import { Typography } from '../../../theme/typography'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Gray } from "../../../theme";
+import { Typography } from "../../../theme/typography";
 
-const sendIcon = require('../../../../assets/topicroom/icon-topicroom-send.svg')
+const sendIcon = require("../../../../assets/topicroom/icon-topicroom-send.svg");
 
 type Props = {
-  value: string
-  onChangeText: (text: string) => void
-  onSend: () => void
-  canSend: boolean
-  isSending?: boolean
-}
+  value: string;
+  onChangeText: (text: string) => void;
+  onSend: () => void;
+  canSend: boolean;
+  isSending?: boolean;
+};
 
-export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: Props) {
-  const insets = useSafeAreaInsets()
-  const [keyboardShown, setKeyboardShown] = useState(false)
+export function ChatInput({
+  value,
+  onChangeText,
+  onSend,
+  canSend,
+  isSending,
+}: Props) {
+  const insets = useSafeAreaInsets();
+  const [keyboardShown, setKeyboardShown] = useState(false);
 
   useEffect(() => {
     // While the keyboard is up it covers the bottom safe-area (home indicator),
     // so the input must sit directly on the keyboard with no extra inset padding.
-    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
-    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
-    const show = Keyboard.addListener(showEvt, () => setKeyboardShown(true))
-    const hide = Keyboard.addListener(hideEvt, () => setKeyboardShown(false))
+    const showEvt =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvt, () => setKeyboardShown(true));
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardShown(false));
     return () => {
-      show.remove()
-      hide.remove()
-    }
-  }, [])
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
-  const paddingBottom = keyboardShown ? 16 : insets.bottom + 16
+  const paddingBottom = keyboardShown ? 16 : insets.bottom + 16;
 
   return (
     <View style={[styles.container, { paddingBottom }]}>
@@ -49,8 +57,8 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
-          placeholder="메시지를 입력하세요"
-          placeholderTextColor={C.textMuted}
+          placeholder="메세지를 입력하세요"
+          placeholderTextColor={Gray[300]}
           multiline
           maxLength={500}
           returnKeyType="send"
@@ -73,18 +81,22 @@ export function ChatInput({ value, onChangeText, onSend, canSend, isSending }: P
         {isSending ? (
           <ActivityIndicator size="small" color={C.card} />
         ) : (
-          <Image source={sendIcon} style={styles.sendIcon} contentFit="contain" />
+          <Image
+            source={sendIcon}
+            style={styles.sendIcon}
+            contentFit="contain"
+          />
         )}
       </Pressable>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 16,
     backgroundColor: C.card,
@@ -94,14 +106,14 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 36,
     backgroundColor: Gray[50],
     borderWidth: 1,
     borderColor: Gray[200],
     borderRadius: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 0,
   },
   input: {
     maxHeight: 96,
@@ -113,8 +125,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
   sendBtnActive: { backgroundColor: Gray[900] },
@@ -124,4 +136,4 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-})
+});

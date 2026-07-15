@@ -1,10 +1,9 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions } from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
 import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useMemo, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ViewShot from 'react-native-view-shot'
-import { XLogo } from '../../../components/common/XLogo'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import { useCardShare } from '../hooks/useCardShare'
 
@@ -18,6 +17,7 @@ const downloadIcon = require('../../../../assets/icons/common/icon-download.svg'
 const shareIcon = require('../../../../assets/icons/common/icon-share.svg')
 const CARD_CAPTURE_SIZE = 322
 const CARD_SCREEN_SIDE_MARGIN = 35
+const ACTION_ROW_BOTTOM_OFFSET = 24
 
 export type ProfileCardModalProps = {
   visible: boolean
@@ -45,7 +45,8 @@ export function ProfileCardModal({
   const insets = useSafeAreaInsets()
   const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
-  const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
+  const { saveToGallery, shareImage, isSaving, isSharing } = useCardShare()
+  const isIOS = Platform.OS === 'ios'
   const tintedTopGenreIconSvg = useMemo(
     () => tintSvg(topGenreIconSvg, Magenta[300]),
     [topGenreIconSvg],
@@ -221,14 +222,14 @@ export function ProfileCardModal({
         </View>
 
           {/* 하단 버튼 영역 */}
-          <View style={[styles.actionButtons, { bottom: insets.bottom + 60 }]}>
+          <View style={[styles.actionButtons, isIOS && styles.actionButtonsIOS, { bottom: insets.bottom + ACTION_ROW_BOTTOM_OFFSET }]}>
             {/* 저장 버튼 */}
             <Pressable
               onPress={() => {
                 saveToGallery(captureCard, () => {
                   onClose()
                   onSaveSuccess?.()
-                })
+                }, 'STORIX 프로필 카드')
               }}
               disabled={isSaving}
               style={styles.actionButton}
@@ -245,7 +246,7 @@ export function ProfileCardModal({
 
             {/* 공유 버튼 */}
             <Pressable
-              onPress={() => shareImage(captureCard)}
+              onPress={() => shareImage(captureCard, 'STORIX 프로필 카드')}
               disabled={isSharing}
               style={styles.actionButton}
             >
@@ -257,17 +258,6 @@ export function ProfileCardModal({
                 )}
               </View>
               <Text style={styles.actionButtonText}>공유</Text>
-            </Pressable>
-
-            {/* X(트위터) 공유 버튼 */}
-            <Pressable
-              onPress={() => shareToTwitter(captureCard)}
-              style={styles.actionButton}
-            >
-              <View style={styles.actionButtonCircle}>
-                <XLogo size={20} color={Gray[900]} />
-              </View>
-              <Text style={styles.actionButtonText}>X에 공유</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -438,6 +428,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 60,
+  },
+  actionButtonsIOS: {
+    paddingHorizontal: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 88,
   },
   actionButton: {
     width: 60,

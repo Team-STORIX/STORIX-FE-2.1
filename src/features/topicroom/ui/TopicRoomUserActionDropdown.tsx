@@ -39,6 +39,7 @@ export function TopicRoomUserActionDropdown({
       visible={visible}
       transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>

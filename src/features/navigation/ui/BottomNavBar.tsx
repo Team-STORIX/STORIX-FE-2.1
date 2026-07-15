@@ -158,7 +158,13 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
         </View>
       </View>
 
-      <Modal transparent animationType="none" visible={isPlusOpen} onRequestClose={() => setIsPlusOpen(false)}>
+      <Modal
+        transparent
+        animationType="none"
+        presentationStyle="overFullScreen"
+        visible={isPlusOpen}
+        onRequestClose={() => setIsPlusOpen(false)}
+      >
         <View style={styles.modalRoot}>
           <Pressable
             style={StyleSheet.absoluteFillObject}

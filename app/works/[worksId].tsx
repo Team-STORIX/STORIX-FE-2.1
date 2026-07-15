@@ -339,7 +339,11 @@ export default function WorksDetailScreen() {
       <Toast
         message={toastMessage}
         variant={toastVariant}
-        bottomOffset={toastVariant === 'success' ? 36 : insets.bottom + 96}
+        bottomOffset={36}
+        onClose={() => {
+          setToastMessage(null)
+          setToastVariant('default')
+        }}
       />
     </View>
   )

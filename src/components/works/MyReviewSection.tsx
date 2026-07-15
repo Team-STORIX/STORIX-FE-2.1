@@ -1,9 +1,9 @@
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useLikesStore } from "../../store/likes.store";
 import type { WorksMyReview } from "../../features/works/api/worksReview.schema";
-import { C, Gray } from "../../theme/colors";
+import { useLikesStore } from "../../store/likes.store";
+import { C, Gray, Magenta } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
 import { Typography } from "../../theme/typography";
 import { ReviewMetaBar } from "./ReviewMetaBar";
@@ -35,8 +35,7 @@ export function MyReviewSection({
   const [displayLikeCount, setDisplayLikeCount] = useState(baseLikeCount);
   const isLiked = useLikesStore(
     (state) =>
-      myReview?.reviewId != null &&
-      !!state.likedIds[String(myReview.reviewId)],
+      myReview?.reviewId != null && !!state.likedIds[String(myReview.reviewId)],
   );
 
   useEffect(() => {
@@ -45,9 +44,7 @@ export function MyReviewSection({
 
   const handlePressLike = () => {
     if (myReview?.reviewId == null || !onPressLike) return;
-    setDisplayLikeCount((current) =>
-      Math.max(0, current + (isLiked ? -1 : 1)),
-    );
+    setDisplayLikeCount((current) => Math.max(0, current + (isLiked ? -1 : 1)));
     onPressLike(myReview.reviewId);
   };
 
@@ -176,11 +173,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderRadius: Radius.md,
     alignItems: "center",
-    shadowColor: C.text,
+    shadowColor: "#131112",
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
+    elevation: 4,
   },
   emptyTitle: {
     ...Typography.body1Semibold,
@@ -199,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: C.primaryMid,
-    backgroundColor: C.primaryLight,
+    backgroundColor: Magenta[50],
   },
   ctaText: {
     ...Typography.body2Bold,

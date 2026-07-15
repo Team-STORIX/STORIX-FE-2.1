@@ -21,7 +21,13 @@ export function TopicRoomMenuDropdown({
   leaveDisabled = false,
 }: Props) {
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      visible={visible}
+      onRequestClose={onClose}
+    >
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose}>
         <View style={[styles.box, { top: topOffset }]} pointerEvents="box-none">
           <View style={styles.menu}>

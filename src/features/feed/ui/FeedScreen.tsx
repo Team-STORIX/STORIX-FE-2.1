@@ -30,6 +30,11 @@ import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 import { UserActionModal } from '../../../components/common/UserActionModal'
 import { blockUser } from '../../users/api/users.api'
 import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollEvents'
+import {
+  TopicRoomWorksPickerBottomSheet,
+  type PickedWorks,
+} from '../../topicroom'
+import { updateTodayHomeFeedBoard } from '../../home'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -81,14 +86,32 @@ export function FeedScreen() {
     onConfirm: () => Promise<void>
   } | null>(null)
   const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
+  const [topicRoomPickerOpen, setTopicRoomPickerOpen] = useState(false)
 
   const handlePressSearchTopicRoom = useCallback(() => {
-    router.push('/(tabs)/two' as never)
+    router.push('/search?tab=topicroom' as never)
   }, [router])
 
   const handlePressAddTopicRoom = useCallback(() => {
-    router.push('/topicroom/create' as never)
-  }, [router])
+    setTopicRoomPickerOpen(true)
+  }, [])
+
+  const handlePickTopicRoomWork = useCallback(
+    (work: PickedWorks) => {
+      setTopicRoomPickerOpen(false)
+      router.push({
+        pathname: '/topicroom/create',
+        params: {
+          worksId: String(work.worksId),
+          worksName: work.worksName,
+          thumbnailUrl: work.thumbnailUrl ?? '',
+          artistName: work.artistName ?? '',
+          worksType: work.worksType ?? '',
+        },
+      })
+    },
+    [router],
+  )
 
   const worksId = pick !== 'all' ? Number(pick) : 0
 
@@ -111,6 +134,11 @@ export function FeedScreen() {
       const nextLiked = !currentIsLiked
       const nextCount = Math.max(0, currentCount + (nextLiked ? 1 : -1))
       likeOverrides.current.set(boardId, { isLiked: nextLiked, likeCount: nextCount })
+      updateTodayHomeFeedBoard(qc, boardId, (board) => ({
+        ...board,
+        isLiked: nextLiked,
+        likeCount: nextCount,
+      }))
       forceUpdate((n) => n + 1)
       try {
         const result = await toggleBoardLike(boardId)
@@ -119,6 +147,11 @@ export function FeedScreen() {
             isLiked: result.isLiked,
             likeCount: result.likeCount,
           })
+          updateTodayHomeFeedBoard(qc, boardId, (board) => ({
+            ...board,
+            isLiked: result.isLiked,
+            likeCount: result.likeCount,
+          }))
           forceUpdate((n) => n + 1)
           qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
         }
@@ -127,6 +160,11 @@ export function FeedScreen() {
           isLiked: currentIsLiked,
           likeCount: currentCount,
         })
+        updateTodayHomeFeedBoard(qc, boardId, (board) => ({
+          ...board,
+          isLiked: currentIsLiked,
+          likeCount: currentCount,
+        }))
         forceUpdate((n) => n + 1)
       }
     },
@@ -352,6 +390,11 @@ export function FeedScreen() {
         {reportModal}
         {blockModal}
         {deleteModal}
+        <TopicRoomWorksPickerBottomSheet
+          visible={topicRoomPickerOpen}
+          onClose={() => setTopicRoomPickerOpen(false)}
+          onPickWork={handlePickTopicRoomWork}
+        />
       </>
     )
   }

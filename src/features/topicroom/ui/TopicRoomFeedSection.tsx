@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -11,7 +12,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { WarningEmptyState } from "../../../components/common/WarningEmptyState";
-import { C, Gray } from "../../../theme/colors";
+import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
 import type { TopicRoomItem } from "../api/topicroom.schema";
@@ -20,8 +21,8 @@ import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
 import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
 import { HotTopicRoomCard } from "./HotTopicRoomCard";
-import { TopicRoomListItem } from "./TopicRoomListItem";
 import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
+import { TopicRoomListItem } from "./TopicRoomListItem";
 
 const PADDING_H = 16; // section title horizontal padding
 const CAROUSEL_PAD = 16; // carousel horizontal padding (card start x)
@@ -44,7 +45,10 @@ export function TopicRoomFeedSection() {
   const { width } = useWindowDimensions();
   // Each page is one white card containing 3 topic-room rows. Keep the Figma
   // width on normal phones while still fitting narrower devices.
-  const itemWidth = Math.max(0, Math.min(HOT_PAGE_WIDTH, width - CAROUSEL_PAD * 2));
+  const itemWidth = Math.max(
+    0,
+    Math.min(HOT_PAGE_WIDTH, width - CAROUSEL_PAD * 2),
+  );
   const snapInterval = itemWidth + PAGE_GAP;
 
   const popularQuery = usePopularTopicRooms();
@@ -52,6 +56,15 @@ export function TopicRoomFeedSection() {
   const joinMutation = useJoinTopicRoom();
   const [limitModalVisible, setLimitModalVisible] = useState(false);
   const joiningId = joinMutation.isPending ? joinMutation.variables : null;
+
+  const handlePressExploreTopicRooms = () => {
+    router.push({
+      pathname: "/search",
+      params: {
+        tab: "topicroom",
+      },
+    });
+  };
 
   const handleEnter = (item: TopicRoomItem) => {
     const navigate = () =>
@@ -132,7 +145,9 @@ export function TopicRoomFeedSection() {
                         isJoining={joiningId === room.topicRoomId}
                         onPress={() => handleEnter(room)}
                       />
-                      {i < pageRooms.length - 1 ? <View style={styles.rowDivider} /> : null}
+                      {i < pageRooms.length - 1 ? (
+                        <View style={styles.rowDivider} />
+                      ) : null}
                     </View>
                   ))}
                 </View>
@@ -169,15 +184,9 @@ export function TopicRoomFeedSection() {
           style={styles.loader}
         />
       ) : myQuery.isError ? (
-        <Text style={styles.errorText}>
-          참여 중인 토픽룸을 불러오지 못했어요.
-        </Text>
+        <JoinedTopicRoomEmpty onPress={handlePressExploreTopicRooms} />
       ) : (myQuery.data?.length ?? 0) === 0 ? (
-        <WarningEmptyState
-          title="아직 참여 중인 토픽룸이 없어요"
-          description="토픽룸 참여하러 가기"
-          iconSize={120}
-        />
+        <JoinedTopicRoomEmpty onPress={handlePressExploreTopicRooms} />
       ) : (
         <View style={styles.myList}>
           {(myQuery.data ?? []).map((room) => {
@@ -196,6 +205,28 @@ export function TopicRoomFeedSection() {
         visible={limitModalVisible}
         onClose={() => setLimitModalVisible(false)}
       />
+    </View>
+  );
+}
+
+function JoinedTopicRoomEmpty({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={styles.joinedEmpty}>
+      <WarningEmptyState
+        title="아직 참여 중인 토픽룸이 없어요"
+        iconSize={120}
+        style={styles.joinedEmptyState}
+      />
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.joinedEmptyButton,
+          pressed && styles.joinedEmptyButtonPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <Text style={styles.joinedEmptyButtonText}>토픽룸 참여하러 가기</Text>
+      </Pressable>
     </View>
   );
 }
@@ -235,10 +266,6 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
     backgroundColor: C.card,
     borderRadius: 8,
-    shadowColor: C.text,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   rowDivider: {
@@ -271,5 +298,30 @@ const styles = StyleSheet.create({
   myList: {
     paddingTop: 4,
     paddingBottom: 8,
+  },
+  joinedEmpty: {
+    alignItems: "center",
+    paddingBottom: 8,
+  },
+  joinedEmptyState: {
+    paddingBottom: 12,
+  },
+  joinedEmptyButton: {
+    height: 36,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  joinedEmptyButtonText: {
+    ...Typography.caption1Semibold,
+    color: Magenta[300],
+  },
+  joinedEmptyButtonPressed: {
+    opacity: 0.75,
   },
 });

@@ -166,6 +166,11 @@ export const Typography = {
     fontSize: 10,
     lineHeight: 14,
   } as TextStyle,
+  caption2Bold: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    lineHeight: 14,
+  } as TextStyle,
   caption2Extrabold: {
     fontFamily: FontFamily.extrabold,
     fontSize: 10,

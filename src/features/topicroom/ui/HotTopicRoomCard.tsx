@@ -1,10 +1,5 @@
 import { Image } from "expo-image";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray, Radius, Typography } from "../../../theme";
 import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
@@ -156,8 +151,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     height: CONTENT_HEIGHT,
-    justifyContent: "center",
-    gap: 16,
+    justifyContent: "space-between",
   },
   topGroup: {
     gap: 3,
@@ -177,7 +171,7 @@ const styles = StyleSheet.create({
     height: 12,
   },
   participantText: {
-    ...Typography.caption2Medium,
+    ...Typography.caption2Bold,
     color: C.primary,
   },
   title: {
