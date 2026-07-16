@@ -48,8 +48,39 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 }
 
-// Keep the splash screen up until fonts AND auth hydration are both done.
-SplashScreen.preventAutoHideAsync()
+const STARTUP_HYDRATION_TIMEOUT_MS = 5000
+
+// Keep the splash screen up until fonts and startup hydration have had a
+// chance to complete. Ignore duplicate/native timing failures so startup keeps
+// moving in release builds.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined)
+
+function waitForStartupHydration(): Promise<void> {
+  return new Promise((resolve) => {
+    let done = false
+
+    const finish = () => {
+      if (done) return
+      done = true
+      clearTimeout(timeout)
+      resolve()
+    }
+
+    const timeout = setTimeout(() => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('[startup] hydration timed out; continuing app launch')
+      }
+      finish()
+    }, STARTUP_HYDRATION_TIMEOUT_MS)
+
+    Promise.allSettled([
+      useAuthStore.getState().hydrateAuth(),
+      useLikesStore.getState().hydrateLikes(),
+      useFavoritesStore.getState().hydrateFavorites(),
+    ]).then(finish, finish)
+  })
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -70,21 +101,27 @@ export default function RootLayout() {
     if (fontError) throw fontError
   }, [fontError])
 
-  // Hydrate all local stores in parallel as early as possible.
-  // Promise.allSettled ensures a single failure never blocks app startup.
+  // Hydrate all local stores in parallel as early as possible. A timeout keeps
+  // a native storage edge case from trapping release builds on the splash.
   useEffect(() => {
-    Promise.allSettled([
-      useAuthStore.getState().hydrateAuth(),
-      useLikesStore.getState().hydrateLikes(),
-      useFavoritesStore.getState().hydrateFavorites(),
-    ]).then(() => setAuthReady(true))
+    let mounted = true
+
+    waitForStartupHydration().then(() => {
+      if (mounted) setAuthReady(true)
+    })
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // Hide the native splash once fonts are ready, with a short delay so
   // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
     if (fontsLoaded) {
-      const t = setTimeout(() => SplashScreen.hideAsync(), 1500)
+      const t = setTimeout(() => {
+        void SplashScreen.hideAsync().catch(() => undefined)
+      }, 1500)
       return () => clearTimeout(t)
     }
   }, [fontsLoaded])

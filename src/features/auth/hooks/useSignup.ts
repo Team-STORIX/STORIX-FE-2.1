@@ -27,8 +27,6 @@ export const useSignup = () => {
 
     onSuccess: async (response) => {
       const { accessToken, refreshToken } = response.result
-      // refreshToken may be absent if the signup endpoint has not yet been
-      // updated server-side. setLoginTokens handles the optional case.
 
       // Retrieve the temporary provider from storage (stored during social login)
       const tempProvider = await getItem<string>('tempSocialProvider')

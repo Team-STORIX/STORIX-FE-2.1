@@ -310,7 +310,13 @@ export function FeedPostCard({
               style={StyleSheet.absoluteFillObject}
               onPress={() => setMenuOpen(false)}
             >
-              <View style={[styles.menuDropdown, { top: menuDropdownTop }]}>
+              <View
+                style={[
+                  styles.menuDropdown,
+                  { top: menuDropdownTop, right: !isMine ? 8 : 16 },
+                  !isMine && styles.commentDropdownContainer,
+                ]}
+              >
                 {isMine ? (
                   <View style={styles.menuTextWrapper}>
                     <Pressable
@@ -324,29 +330,28 @@ export function FeedPostCard({
                     </Pressable>
                   </View>
                 ) : (
-                  <View style={styles.menuTextWrapper}>
-                    {/* 신고하기 */}
+                  <View style={styles.commentDropdownWrapper}>
+                    <View style={styles.commentDropdownImageClip}>
+                      <Image
+                        source={commentDropdown}
+                        style={styles.commentDropdownImage}
+                        contentFit="contain"
+                      />
+                    </View>
                     <Pressable
-                      style={styles.menuTextItem}
+                      style={styles.commentDropdownTopPressable}
                       onPress={() => {
                         setMenuOpen(false);
                         onOpenReport?.();
                       }}
-                    >
-                      <Text style={styles.menuTextItemText}>신고하기</Text>
-                    </Pressable>
-                    {/* 구분선 */}
-                    <View style={styles.menuDivider} />
-                    {/* 차단하기 */}
+                    />
                     <Pressable
-                      style={styles.menuTextItem}
+                      style={styles.commentDropdownBottomPressable}
                       onPress={() => {
                         setMenuOpen(false);
                         onOpenBlock?.();
                       }}
-                    >
-                      <Text style={styles.menuTextItemText}>차단하기</Text>
-                    </Pressable>
+                    />
                   </View>
                 )}
               </View>
@@ -578,6 +583,12 @@ export function FeedPostCard({
       </View>
       {/* end cardContent */}
       </View>
+      {variant === "list" && birthdayTheme ? (
+        <View pointerEvents="none" style={styles.birthdayCardSeparator} />
+      ) : null}
+      {variant === "detail" && birthdayTheme ? (
+        <View pointerEvents="none" style={styles.birthdayDetailSeparator} />
+      ) : null}
     </View>
   );
 
@@ -638,6 +649,24 @@ const styles = StyleSheet.create({
     width: 393,
     height: 70,
   },
+  birthdayCardSeparator: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Gray[100],
+    zIndex: 2,
+  },
+  birthdayDetailSeparator: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: Gray[50],
+    zIndex: 2,
+  },
   cardContent: {
     zIndex: 1,
   },
@@ -666,9 +695,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
+    fontFamily: "SUITMedium",
     fontSize: 14,
+    fontStyle: "normal",
     fontWeight: "500",
-    lineHeight: 20,
+    lineHeight: 19.6,
     color: Gray[900],
   },
   timestamp: {
@@ -693,7 +724,6 @@ const styles = StyleSheet.create({
   // Menu dropdown
   menuDropdown: {
     position: "absolute",
-    right: 16,
     borderRadius: 4,
     backgroundColor: C.card,
     shadowColor: C.text,
@@ -706,6 +736,42 @@ const styles = StyleSheet.create({
   menuDropdownImg: {
     width: 96,
     height: 36,
+  },
+  commentDropdownWrapper: {
+    width: 96,
+    height: 68,
+    position: "relative",
+  },
+  commentDropdownContainer: {
+    width: 96,
+    height: 68,
+  },
+  commentDropdownImageClip: {
+    width: 96,
+    height: 68,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  commentDropdownImage: {
+    position: "absolute",
+    top: -6,
+    left: -8,
+    width: 112,
+    height: 84,
+  },
+  commentDropdownTopPressable: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 96,
+    height: 34,
+  },
+  commentDropdownBottomPressable: {
+    position: "absolute",
+    top: 34,
+    left: 0,
+    width: 96,
+    height: 34,
   },
   menuTextWrapper: {
     width: 96,

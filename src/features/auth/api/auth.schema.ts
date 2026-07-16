@@ -32,16 +32,9 @@ export type GenreKey = z.infer<typeof GenreKeySchema>
 
 // ─── Login response shapes ────────────────────────────────────────────────────
 
-/**
- * Confirmed RN contract (Phase 3B):
- *   native login endpoints return both tokens in the response body.
- *   POST /api/v1/auth/oauth/kakao-native/login
- *   POST /api/v1/auth/oauth/naver-native/login
- *   ↳ result.regularLoginResponse.{ accessToken, refreshToken }
- */
 export const RegularLoginResponseSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string(),
+  refreshToken: z.string().optional(),
 })
 
 /**
@@ -49,7 +42,7 @@ export const RegularLoginResponseSchema = z.object({
  */
 export const ReaderLoginResponseSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string(),
+  refreshToken: z.string().optional(),
 })
 
 /**
@@ -62,16 +55,16 @@ export const ReaderPreLoginResponseSchema = z.object({
 // ─── Social login result ──────────────────────────────────────────────────────
 
 /**
- * Shape returned by all social login endpoints (kakao / naver / apple).
+ * Shape returned by all social login endpoints (kakao / naver / apple / x).
+ * Per API spec, existing users get readerLoginResponse, new users get readerPreLoginResponse.
  * BE uses @JsonInclude(NON_NULL) so absent fields may be undefined, not null.
  */
 export const SocialLoginResultSchema = z.object({
   isRegistered: z.boolean(),
 
-  // Primary key — confirmed RN contract: contains accessToken + refreshToken.
   regularLoginResponse: RegularLoginResponseSchema.nullable().optional(),
 
-  // Legacy alias — may still appear on some endpoints during server-side transition.
+  // Existing user: contains accessToken + refreshToken.
   readerLoginResponse: ReaderLoginResponseSchema.nullable().optional(),
 
   // New user: contains the onboardingToken for the signup flow.
@@ -87,9 +80,9 @@ export const KakaoLoginResponseSchema = SocialLoginResponseSchema
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
- * Extracts { accessToken, refreshToken? } from a social login result,
- * checking regularLoginResponse first (new contract) then readerLoginResponse
- * (legacy fallback). Returns undefined if the user is not yet registered.
+ * Extracts { accessToken, refreshToken } from a social login result.
+ * Per API spec, both tokens are always returned together in readerLoginResponse.
+ * Returns undefined if the user is not yet registered (new user flow).
  */
 export const extractLoginTokens = (
   result: SocialLoginResult,

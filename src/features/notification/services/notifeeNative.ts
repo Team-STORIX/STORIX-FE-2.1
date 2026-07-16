@@ -10,14 +10,26 @@ export const PUSH_ANDROID_CHANNEL_ID = 'storix_default_high'
 
 let channelReady: Promise<string> | null = null
 let badgeOperation: Promise<unknown> = Promise.resolve()
+let notifeeUnavailable = false
 
 type NotifeeNative = typeof import('@notifee/react-native')
 
 function loadNotifee(): NotifeeNative | null {
+  if (notifeeUnavailable) return null
+
   try {
     return require('@notifee/react-native') as NotifeeNative
-  } catch {
+  } catch (err) {
+    markNotifeeUnavailable('[push] Notifee is unavailable', err)
     return null
+  }
+}
+
+function markNotifeeUnavailable(message: string, err: unknown): void {
+  notifeeUnavailable = true
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.warn(message, err)
   }
 }
 
@@ -74,7 +86,14 @@ export async function ensurePushNotificationChannel(): Promise<string> {
 export async function setAppBadgeCount(count: number): Promise<void> {
   const badgeCount = toBadgeCount(count)
   if (badgeCount == null) return
-  await enqueueBadgeOperation(() => setNativeIosBadgeCount(badgeCount))
+
+  await enqueueBadgeOperation(async () => {
+    try {
+      await setNativeIosBadgeCount(badgeCount)
+    } catch (err) {
+      markNotifeeUnavailable('[push] Notifee badge update failed', err)
+    }
+  })
 }
 
 export async function syncAppBadgeCountFromPushData(
@@ -132,32 +151,36 @@ export async function displayForegroundPushNotification(args: {
 
   const channelId = await ensurePushNotificationChannel()
 
-  await notifeeModule.default.displayNotification({
-    ...(args.payload?.notificationId != null
-      ? { id: String(args.payload.notificationId) }
-      : {}),
-    title,
-    body,
-    data: args.payload?.raw,
-    android: {
-      channelId,
-      pressAction: {
-        id: 'default',
-      },
-      smallIcon: 'ic_launcher',
-      importance: notifeeModule.AndroidImportance.HIGH,
-      ...(args.payload?.unreadCount != null
-        ? { badgeCount: args.payload.unreadCount }
+  try {
+    await notifeeModule.default.displayNotification({
+      ...(args.payload?.notificationId != null
+        ? { id: String(args.payload.notificationId) }
         : {}),
-    },
-    ios: {
-      foregroundPresentationOptions: {
-        alert: true,
-        badge: true,
-        sound: true,
+      title,
+      body,
+      data: args.payload?.raw,
+      android: {
+        channelId,
+        pressAction: {
+          id: 'default',
+        },
+        smallIcon: 'ic_launcher',
+        importance: notifeeModule.AndroidImportance.HIGH,
+        ...(args.payload?.unreadCount != null
+          ? { badgeCount: args.payload.unreadCount }
+          : {}),
       },
-    },
-  })
+      ios: {
+        foregroundPresentationOptions: {
+          alert: true,
+          badge: true,
+          sound: true,
+        },
+      },
+    })
+  } catch (err) {
+    markNotifeeUnavailable('[push] foreground notification display failed', err)
+  }
 }
 
 export function subscribeNotifeeForegroundPress(

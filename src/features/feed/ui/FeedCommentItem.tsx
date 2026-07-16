@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
@@ -41,10 +42,30 @@ type Props = ReplyProps | SubReplyProps
 export function FeedCommentItem(props: Props) {
   const { myUserId, writerUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport, onOpenBlock } =
     props
+  const menuButtonRef = useRef<View | null>(null)
+  const { width: screenWidth } = useWindowDimensions()
+  const [menuDropdownPosition, setMenuDropdownPosition] = useState({
+    top: 0,
+    right: 16,
+  })
   const isMine = myUserId != null && item.reply.userId === myUserId
   const isWriter = writerUserId != null && item.reply.userId === writerUserId
   const isReplyTarget = props.variant === 'reply' && props.isReplyTarget
   const displayCreatedAt = formatCreatedAtLabel(item.reply.lastCreatedTime)
+  const handleMenuPress = () => {
+    if (isMenuOpen) {
+      onToggleMenu()
+      return
+    }
+
+    menuButtonRef.current?.measure((_fx, _fy, width, height, pageX, pageY) => {
+      setMenuDropdownPosition({
+        top: pageY + height + 4,
+        right: Math.max(0, screenWidth - pageX - width - 8),
+      })
+      onToggleMenu()
+    })
+  }
 
   const card = (
     <View style={[
@@ -70,53 +91,68 @@ export function FeedCommentItem(props: Props) {
 
         <View style={styles.menuWrap}>
           <Pressable
-            onPress={onToggleMenu}
+            ref={menuButtonRef}
+            onPress={handleMenuPress}
             style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
           >
             <Image source={menuIcon} style={styles.menuIcon} contentFit="contain" />
           </Pressable>
 
           {isMenuOpen ? (
-            <View style={styles.dropdownButton}>
-              {isMine ? (
-                <View style={styles.menuTextWrapper}>
-                  <Pressable
-                    style={styles.menuTextItem}
-                    onPress={() => {
-                      onToggleMenu()
-                      onOpenDelete()
-                    }}
-                  >
-                    <Text style={styles.menuTextItemText}>삭제하기</Text>
-                  </Pressable>
+            <Modal
+              visible
+              transparent
+              animationType="none"
+              onRequestClose={onToggleMenu}
+            >
+              <Pressable style={StyleSheet.absoluteFillObject} onPress={onToggleMenu}>
+                <View
+                  style={[
+                    styles.dropdownButton,
+                    menuDropdownPosition,
+                    !isMine && styles.commentDropdownContainer,
+                  ]}
+                >
+                  {isMine ? (
+                    <View style={styles.menuTextWrapper}>
+                      <Pressable
+                        style={styles.menuTextItem}
+                        onPress={() => {
+                          onToggleMenu()
+                          onOpenDelete()
+                        }}
+                      >
+                        <Text style={styles.menuTextItemText}>삭제하기</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={styles.commentDropdownWrapper}>
+                      <View style={styles.commentDropdownImageClip}>
+                        <Image
+                          source={commentDropdown}
+                          style={styles.commentDropdownImage}
+                          contentFit="contain"
+                        />
+                      </View>
+                      <Pressable
+                        style={styles.commentDropdownTopPressable}
+                        onPress={() => {
+                          onToggleMenu()
+                          onOpenReport()
+                        }}
+                      />
+                      <Pressable
+                        style={styles.commentDropdownBottomPressable}
+                        onPress={() => {
+                          onToggleMenu()
+                          onOpenBlock()
+                        }}
+                      />
+                    </View>
+                  )}
                 </View>
-              ) : (
-                <View style={styles.menuTextWrapper}>
-                  {/* 신고하기 */}
-                  <Pressable
-                    style={styles.menuTextItem}
-                    onPress={() => {
-                      onToggleMenu()
-                      onOpenReport()
-                    }}
-                  >
-                    <Text style={styles.menuTextItemText}>신고하기</Text>
-                  </Pressable>
-                  {/* 구분선 */}
-                  <View style={styles.menuDivider} />
-                  {/* 차단하기 */}
-                  <Pressable
-                    style={styles.menuTextItem}
-                    onPress={() => {
-                      onToggleMenu()
-                      onOpenBlock()
-                    }}
-                  >
-                    <Text style={styles.menuTextItemText}>차단하기</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
+              </Pressable>
+            </Modal>
           ) : null}
         </View>
       </View>
@@ -225,13 +261,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   name: {
-    ...Typography.body2Medium,
+    fontFamily: 'SUITMedium',
+    fontSize: 14,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 19.6,
     color: Gray[900],
+    textAlign: 'justify',
   },
   dot: {
     marginHorizontal: 4,
-    ...Typography.body2Medium,
-    color: Gray[300],
+    fontFamily: 'SUITMedium',
+    fontSize: 14,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 19.6,
+    color: Gray[900],
+    textAlign: 'justify',
   },
   time: {
     ...Typography.body2Medium,
@@ -249,8 +295,6 @@ const styles = StyleSheet.create({
   },
   dropdownButton: {
     position: 'absolute',
-    right: 0,
-    top: 28,
     zIndex: 12,
     borderRadius: 4,
     backgroundColor: C.card,
@@ -263,6 +307,42 @@ const styles = StyleSheet.create({
   dropdownImage: {
     width: 96,
     height: 36,
+  },
+  commentDropdownWrapper: {
+    width: 96,
+    height: 68,
+    position: 'relative',
+  },
+  commentDropdownContainer: {
+    width: 96,
+    height: 68,
+  },
+  commentDropdownImageClip: {
+    width: 96,
+    height: 68,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  commentDropdownImage: {
+    position: 'absolute',
+    top: -6,
+    left: -8,
+    width: 112,
+    height: 84,
+  },
+  commentDropdownTopPressable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 96,
+    height: 34,
+  },
+  commentDropdownBottomPressable: {
+    position: 'absolute',
+    top: 34,
+    left: 0,
+    width: 96,
+    height: 34,
   },
   menuTextWrapper: {
     width: 96,

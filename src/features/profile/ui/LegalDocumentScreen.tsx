@@ -166,12 +166,20 @@ function parseLegalMarkdown(markdown: string): LegalBlock[] {
 
   const flushParagraph = () => {
     if (paragraph.length === 0) return
-    blocks.push({ type: 'paragraph', text: paragraph.join('\n') })
+    // 들여쓰기를 유지하면서 문단 생성
+    const text = paragraph.map(line => {
+      // 4칸 들여쓰기가 있는 줄은 들여쓰기 유지
+      const indent = line.match(/^(\s+)/)?.[1] || ''
+      const indentSpaces = '  '.repeat(Math.floor(indent.length / 4))
+      return indentSpaces + line.trim()
+    }).join('\n')
+    blocks.push({ type: 'paragraph', text })
     paragraph = []
   }
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index].trim()
+    const originalLine = lines[index]
+    const line = originalLine.trim()
 
     if (!line) {
       flushParagraph()
@@ -215,7 +223,8 @@ function parseLegalMarkdown(markdown: string): LegalBlock[] {
       continue
     }
 
-    paragraph.push(line)
+    // 원본 줄의 들여쓰기를 유지
+    paragraph.push(originalLine)
   }
 
   flushParagraph()
@@ -339,6 +348,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     ...Typography.body2Medium,
     color: Gray[600],
+    lineHeight: 20,
   },
   tableWrap: {
     marginHorizontal: 16,

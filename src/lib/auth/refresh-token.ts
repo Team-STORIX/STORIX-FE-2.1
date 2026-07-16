@@ -14,6 +14,7 @@ import {
   setAccessToken,
   setRefreshToken,
 } from '../storage/secure'
+import { areTokensFromSameUser } from '../utils/jwt'
 // auth.store never imports this module, so there is no import cycle.
 import { useAuthStore } from '../../store/auth.store'
 
@@ -55,6 +56,26 @@ async function performRefresh(): Promise<TokenRefreshResult> {
         ok: false,
         reason: 'request-failed',
         errorName: 'MissingAccessToken',
+      }
+    }
+
+    if (!areTokensFromSameUser(newAccessToken, storedRefreshToken)) {
+      return {
+        ok: false,
+        reason: 'request-failed',
+        errorName: 'TokenUserMismatch',
+      }
+    }
+
+    if (
+      typeof newRefreshToken === 'string' &&
+      newRefreshToken.length > 0 &&
+      !areTokensFromSameUser(newAccessToken, newRefreshToken)
+    ) {
+      return {
+        ok: false,
+        reason: 'request-failed',
+        errorName: 'RotatedTokenUserMismatch',
       }
     }
 
