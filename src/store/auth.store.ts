@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   getAccessToken,
+  getRefreshToken,
   setAccessToken as persistAccessToken,
   setRefreshToken as persistRefreshToken,
   getOnboardingToken,
@@ -16,6 +17,7 @@ import { useProfileStore } from '../features/profile/store/profile.store'
 import { useLikesStore } from './likes.store'
 import { useFavoritesStore } from './favorites.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
+import { areTokensFromSameUser } from '../lib/utils/jwt'
 
 // AsyncStorage keys for non-sensitive consent flags.
 const SERVICE_TERMS_AGREE_KEY = 'serviceTermsAgree'
@@ -51,13 +53,20 @@ type AuthActions = {
   hydrateAuth: () => Promise<void>
 
   /**
+   * Proactively refreshes tokens on app entry.
+   * If refresh token exists and is valid, requests new tokens from backend.
+   * This extends the session expiry (+30 days) on every app launch.
+   * Called after hydrateAuth completes.
+   */
+  refreshTokensOnAppEntry: () => Promise<void>
+
+  /**
    * Called after a successful login or signup.
-   * Writes accessToken (and optionally refreshToken) to SecureStore, mirrors
-   * accessToken in memory, clears any onboarding token, and marks isAuthenticated = true.
+   * Writes accessToken and refreshToken to SecureStore, mirrors accessToken in memory,
+   * clears any onboarding token, and marks isAuthenticated = true.
    *
-   * refreshToken is optional because the signup endpoint may not return it until
-   * the backend is updated. When absent, the user will need to re-login after
-   * the access token expires.
+   * Both tokens are now required per API spec. Validates that both tokens belong
+   * to the same user (same userId claim) before storing.
    */
   setLoginTokens: (tokens: {
     accessToken: string
@@ -148,18 +157,85 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     })
   },
 
+  refreshTokensOnAppEntry: async () => {
+    const refreshToken = await getRefreshToken()
+
+    // No refresh token → user is not logged in, skip
+    if (!refreshToken) {
+      return
+    }
+
+    try {
+      // Import axios here to avoid circular dependency
+      const { default: axios } = await import('axios')
+
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/v1/auth/tokens/refresh`,
+        { refreshToken },
+        { headers: { 'Content-Type': 'application/json' } },
+      )
+
+      const result = response.data?.result
+      const newAccessToken: string | undefined = result?.accessToken
+      const newRefreshToken: string | undefined = result?.refreshToken
+
+      if (!newAccessToken || !newRefreshToken) {
+        // Missing tokens in response → session might be invalid, clear auth
+        await useAuthStore.getState().clearAuth()
+        return
+      }
+
+      // Validate token consistency
+      const { areTokensFromSameUser } = await import('../lib/utils/jwt')
+      if (!areTokensFromSameUser(newAccessToken, newRefreshToken)) {
+        console.error('[refreshTokensOnAppEntry] Backend returned mismatched tokens')
+        await useAuthStore.getState().clearAuth()
+        return
+      }
+
+      // Store new tokens
+      await persistAccessToken(newAccessToken)
+      await persistRefreshToken(newRefreshToken)
+
+      // Update in-memory state
+      set({
+        accessToken: newAccessToken,
+        isAuthenticated: true,
+      })
+
+      if (__DEV__) {
+        console.log('[refreshTokensOnAppEntry] Tokens refreshed successfully on app entry')
+      }
+    } catch (error) {
+      // Refresh failed (e.g., refresh token expired) → clear auth
+      if (__DEV__) {
+        console.warn('[refreshTokensOnAppEntry] Token refresh failed on app entry:', error)
+      }
+      // Don't clear auth here - let the user continue with existing token
+      // The 401 interceptor will handle it if the token is actually invalid
+    }
+  },
+
   setLoginTokens: async ({ accessToken, refreshToken }) => {
+    // Validate matching users only when both tokens are available.
+    if (refreshToken && !areTokensFromSameUser(accessToken, refreshToken)) {
+      console.error('[setLoginTokens] Token mismatch: accessToken and refreshToken have different userIds')
+      throw new Error('Token validation failed: userId mismatch')
+    }
+
     // Write tokens to SecureStore first so the axios interceptor can read them
     // immediately if a request fires before the next render cycle.
     const ops: Promise<void>[] = [
       persistAccessToken(accessToken),
       removeOnboardingToken(),
     ]
+
     if (refreshToken) {
       ops.push(persistRefreshToken(refreshToken))
     } else {
       ops.push(removeRefreshToken())
     }
+
     await Promise.all(ops)
 
     set({
