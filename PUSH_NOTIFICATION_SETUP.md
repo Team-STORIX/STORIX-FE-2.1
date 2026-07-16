@@ -155,7 +155,27 @@ The service-account JSON has full project privileges — keep it **outside**
 the repo. `.gitignore` already excludes common filenames; double-check
 before any `git add`.
 
-## 8. Known follow-ups
+## 8. Badge behaviour
+
+- iOS home-screen badge is owned by APNs `aps.badge` while the app is in the
+  background. On foreground, on notification read, and on app resume, the
+  client refreshes `/api/v1/notifications/unread-count` and serializes native
+  badge writes so an older push count cannot overwrite a newer server count.
+- Android does not support an app-owned numeric badge through
+  `notifee.setBadgeCount`; launchers derive the notification dot/count from
+  displayed system notifications. The client assigns foreground local
+  notifications the server `notificationId`, cancels that notification after
+  an individual read, and cancels displayed app notifications after mark-all
+  read.
+- Background FCM messages containing the `notification` block are displayed
+  by Android system UI. Exact per-notification cancellation for those messages
+  requires the backend to send a stable Android notification ID/tag and for
+  the client to receive that same value. Without it, only mark-all can safely
+  clear the displayed app notifications.
+- Validate iOS badge updates in a native development or release build. Expo
+  Go deliberately skips the native push bootstrap.
+
+## 9. Known follow-ups
 
 - **PUSH-1-BG-HANDLER** — register
   `setBackgroundMessageHandler` at module entry (cannot live inside a React

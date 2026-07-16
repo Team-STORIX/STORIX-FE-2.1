@@ -12,7 +12,10 @@ import type {
   AdminTestPushPayload,
   NotificationSettings,
 } from '../api/notification.schema'
-import { refreshUnreadBadgeCount, setAppBadgeCount } from '../services/notifeeNative'
+import {
+  clearAndroidDisplayedNotifications,
+  refreshUnreadBadgeCount,
+} from '../services/notifeeNative'
 
 async function syncUnreadBadgeCache(
   qc: ReturnType<typeof useQueryClient>,
@@ -28,16 +31,30 @@ async function syncUnreadBadgeCache(
   }
 }
 
+async function clearAndroidNotifications(args: {
+  notificationId?: number
+  all?: boolean
+}): Promise<void> {
+  try {
+    await clearAndroidDisplayedNotifications(args)
+  } catch (err) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn('[notifications] Android notification clear failed', err)
+    }
+  }
+}
+
 /** Mark every notification as read. */
 export function useMarkAllNotificationsRead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: markAllNotificationsRead,
-    onSuccess: () => {
+    onSuccess: async () => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
-      qc.setQueryData(notificationKeys.unreadCount, 0)
-      void setAppBadgeCount(0)
+      await clearAndroidNotifications({ all: true })
+      await syncUnreadBadgeCache(qc)
     },
   })
 }
@@ -47,10 +64,11 @@ export function useMarkNotificationRead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => markNotificationRead(id),
-    onSuccess: () => {
+    onSuccess: async (_data, id) => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
-      void syncUnreadBadgeCache(qc)
+      await clearAndroidNotifications({ notificationId: id })
+      await syncUnreadBadgeCache(qc)
     },
   })
 }

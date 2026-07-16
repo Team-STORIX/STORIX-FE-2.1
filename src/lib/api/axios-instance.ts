@@ -10,6 +10,8 @@ import { useAuthStore } from "../../store/auth.store";
 // Shared refresh implementation, reused by the STOMP connect flow so both
 // transports rotate tokens identically. See lib/auth/refresh-token.ts.
 import { refreshAuthTokens } from "../auth/refresh-token";
+// Dev-only request/response logging; no-ops in production builds.
+import { logError, logRequest, logResponse } from "./logger";
 
 // ---------- header helpers ----------
 // AxiosHeaders (Axios v1) exposes .get()/.set(); plain objects do not.
@@ -119,29 +121,34 @@ export const apiClient = axios.create({
 // Reads accessToken from SecureStore and attaches it as a Bearer header.
 // Skips if the caller already set an Authorization header (e.g. signup with onboardingToken).
 
+const attachAuthHeader = async (
+  config: InternalAxiosRequestConfig,
+): Promise<void> => {
+  if (!config.headers) return;
+
+  const existing = getAuthorizationHeader(config.headers);
+  const onboarding = getOnboardingHeader(config.headers);
+  if (existing || onboarding) {
+    return; // Caller-supplied header takes precedence.
+  }
+
+  if (isNoRefreshEndpoint(config.url)) {
+    return;
+  }
+
+  const token = await getAccessToken();
+  if (token) {
+    setAuthorizationHeader(config.headers, `Bearer ${token}`);
+  }
+};
+
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    if (!config.headers) return config;
-
-    const existing = getAuthorizationHeader(config.headers);
-    const onboarding = getOnboardingHeader(config.headers);
-    if (existing || onboarding) {
-      return config; // Caller-supplied header takes precedence.
-    }
-
-    if (isNoRefreshEndpoint(config.url)) {
-      return config;
-    }
-
-    const token = await getAccessToken();
-    if (token) {
-      const authorization = `Bearer ${token}`;
-      setAuthorizationHeader(config.headers, authorization);
-    }
-
-    return config;
+    await attachAuthHeader(config);
+    // Logged after the header is attached so the outgoing request is shown as sent.
+    return logRequest(config);
   },
-  (error: AxiosError) => Promise.reject(error),
+  (error: AxiosError) => Promise.reject(logError(error)),
 );
 
 // ---------- response interceptor ----------
@@ -149,8 +156,9 @@ apiClient.interceptors.request.use(
 type RetryableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => logResponse(response),
   async (error: AxiosError) => {
+    logError(error);
     const original = error.config as RetryableConfig | undefined;
 
     // Pass through immediately for non-auth endpoints and non-401 errors.
