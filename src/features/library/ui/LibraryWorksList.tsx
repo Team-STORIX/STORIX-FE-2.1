@@ -64,6 +64,7 @@ export function LibraryWorksList({
       onEndReachedThreshold={0.3}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.listContent}
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={[styles.footer, { paddingBottom: bottomInset }]}>
@@ -78,6 +79,9 @@ export function LibraryWorksList({
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingBottom: 100,
+  },
   itemRow: {
     flexDirection: 'row',
     gap: 12,

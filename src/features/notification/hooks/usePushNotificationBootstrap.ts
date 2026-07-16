@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Linking } from "react-native";
+import { AppState, Linking } from "react-native";
 
 import { queryClient } from "../../../lib/query/queryClient";
 import { useAuthStore } from "../../../store/auth.store";
@@ -58,12 +58,7 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
         queryClient.invalidateQueries({
           queryKey: notificationKeys.unreadCount,
         });
-        return refreshUnreadBadgeCount()
-      })
-      .then((count) => {
-        if (typeof count === 'number') {
-          queryClient.setQueryData(notificationKeys.unreadCount, count)
-        }
+        return refreshUnreadCountState()
       })
       .catch((err) => {
         if (__DEV__) {
@@ -101,6 +96,11 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
   }
 }
 
+async function refreshUnreadCountState(): Promise<void> {
+  const count = await refreshUnreadBadgeCount()
+  queryClient.setQueryData(notificationKeys.unreadCount, count)
+}
+
 // Attaches the foreground / opened-from-bg / cold-start handlers. Returns a
 // single cleanup that detaches both subscriptions.
 const attachMessageListeners = (): (() => void) => {
@@ -124,12 +124,16 @@ const attachMessageListeners = (): (() => void) => {
       // the backend contract), falling back to the `notification` block.
       const payload = parsePushNotificationData(remoteMessage?.data);
 
-      await syncAppBadgeCountFromPushData(remoteMessage?.data).catch((err) => {
+      const unreadCount = await syncAppBadgeCountFromPushData(remoteMessage?.data).catch((err) => {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.warn("[push] badge sync from foreground push failed", err);
         }
+        return null
       });
+      if (unreadCount != null) {
+        queryClient.setQueryData(notificationKeys.unreadCount, unreadCount)
+      }
 
       await displayForegroundPushNotification({
         payload,
@@ -219,6 +223,29 @@ export const usePushNotificationBootstrap = (): void => {
 
   // Backend reconcile (permission / token / meta) on auth + foreground.
   usePushDeviceSync();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    void refreshUnreadCountState().catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] app-resume badge sync failed", err);
+      }
+    });
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") return;
+      void refreshUnreadCountState().catch((err) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn("[push] app-resume badge sync failed", err);
+        }
+      });
+    });
+
+    return () => subscription.remove();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) {
