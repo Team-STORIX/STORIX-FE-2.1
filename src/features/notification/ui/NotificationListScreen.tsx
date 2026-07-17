@@ -28,13 +28,16 @@ function isValidId(value: number | null | undefined): value is number {
 }
 
 /** Resolves the in-app destination for a tapped notification. */
-function resolveTarget(item: NotificationItem): PushRoute {
+function resolveTarget(item: NotificationItem): PushRoute | null {
   const targetType = (item.targetType ?? '').toUpperCase()
   const notificationType = (item.notificationType ?? '').toUpperCase()
   const category = (item.category ?? '').toUpperCase()
   const targetKey = `${targetType} ${notificationType} ${category}`
   const targetId = isValidId(item.targetId) ? item.targetId : null
   const parentTargetId = isValidId(item.parentTargetId) ? item.parentTargetId : null
+
+  // NONE notifications are informational: tapping them only marks them read.
+  if (targetType === 'NONE') return null
 
   if (targetKey.includes('COMMENT') || targetKey.includes('REPLY')) {
     if (parentTargetId != null) {
@@ -84,6 +87,7 @@ export function NotificationListScreen() {
       // Mark read (no-op visually until invalidation refetch lands).
       if (item.read === false) markRead.mutate(item.id)
       const target = resolveTarget(item)
+      if (target == null) return
       if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
         void Linking.openURL(target)
         return

@@ -163,14 +163,15 @@ export function getPushTitleBody(
  *   REVIEW      -> /works/review/{targetId}      (app/works/review/[reviewId].tsx)
  *   TOPIC_ROOM  -> /topicroom/{targetId}         (app/topicroom/[roomId].tsx)
  *   COMMENT     -> /feed/{parentTargetId}        (parent feed; see TODO below)
- *   NONE/other  -> /notifications/{id} or /notifications
+ *   NONE        -> no navigation (mark-as-read only)
+ *   other       -> /notifications/{id} or /notifications
  *
  * Anything that cannot be resolved falls back to the notification list/detail —
  * we never invent a route that does not exist under app/.
  */
 export function getNotificationRoute(
   payload: ParsedPushPayload | null,
-): PushRoute {
+): PushRoute | null {
   const notificationFallback = (): PushRoute =>
     payload?.notificationId != null
       ? `/notifications/${payload.notificationId}`
@@ -210,6 +211,8 @@ export function getNotificationRoute(
     }
 
     case 'NONE':
+      return null
+
     default:
       return notificationFallback()
   }
