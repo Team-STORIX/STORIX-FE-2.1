@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Image } from 'expo-image'
 import {
   ActivityIndicator,
@@ -18,7 +18,11 @@ import {
   useUpdateEventBenefitConsent,
   useUpdateNotificationSettings,
 } from '../hooks'
-import type { NotificationSettings } from '../api/notification.schema'
+import type {
+  MarketingConsentResult,
+  NotificationSettings,
+} from '../api/notification.schema'
+import { NotificationConsentModal } from './NotificationConsentModal'
 import { NotificationHeader } from './NotificationHeader'
 
 const activeIcon = require('../../../../assets/icons/common/active.svg')
@@ -61,9 +65,15 @@ export function NotificationSettingsScreen() {
   const { data: settings, isLoading, isError } = useNotificationSettings()
   const updateSettings = useUpdateNotificationSettings()
   const updateEventBenefit = useUpdateEventBenefitConsent()
-  const { granted: pushGranted } = usePushPermissionStatus()
+  const { granted: pushGranted, lastChange: pushPermissionChange } =
+    usePushPermissionStatus()
 
   const [permissionModalOpen, setPermissionModalOpen] = useState(false)
+  const [notificationResult, setNotificationResult] = useState<{
+    enabled: boolean
+    result: MarketingConsentResult | null
+  } | null>(null)
+  const awaitingOsPermissionChangeRef = useRef(false)
 
   const isPending = updateSettings.isPending || updateEventBenefit.isPending
   const pushReceiptEnabled = pushGranted === true
@@ -99,8 +109,20 @@ export function NotificationSettingsScreen() {
 
   const handleConfirmPermission = useCallback(() => {
     setPermissionModalOpen(false)
+    awaitingOsPermissionChangeRef.current = true
     openOsSettings()
   }, [openOsSettings])
+
+  useEffect(() => {
+    if (!awaitingOsPermissionChangeRef.current || !pushPermissionChange) return
+
+    awaitingOsPermissionChangeRef.current = false
+    setNotificationResult({
+      enabled: pushPermissionChange.granted,
+      // Use the same fallback copy as the first Home consent result modal.
+      result: null,
+    })
+  }, [pushPermissionChange])
 
   const handleToggle = useCallback(
     (key: ToggleKey) => {
@@ -108,10 +130,11 @@ export function NotificationSettingsScreen() {
       const next = !settings[key]
 
       if (isMarketingConsent(key)) {
-        // PATCH /settings rejects eventBenefitEnabled, so the event/benefit
-        // preference goes through PUT /notifications/marketing-consent. No
-        // first-home result modal and no consent-completed storage is touched.
-        updateEventBenefit.mutate(next)
+        updateEventBenefit.mutate(next, {
+          onSuccess: (result, enabled) => {
+            setNotificationResult({ enabled, result })
+          },
+        })
         return
       }
 
@@ -255,6 +278,21 @@ export function NotificationSettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <NotificationConsentModal
+        step={
+          notificationResult == null
+            ? 'hidden'
+            : notificationResult.enabled
+              ? 'agreeResult'
+              : 'rejectResult'
+        }
+        submitting={false}
+        result={notificationResult?.result ?? null}
+        onAgree={() => {}}
+        onReject={() => {}}
+        onConfirm={() => setNotificationResult(null)}
+      />
     </View>
   )
 }

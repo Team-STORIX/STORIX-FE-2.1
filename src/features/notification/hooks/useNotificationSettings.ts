@@ -61,11 +61,10 @@ export function useUpdateNotificationSettings() {
  * screen. The settings PATCH does not accept eventBenefitEnabled, so this drives
  * the marketing-consent endpoint instead and reconciles the settings cache.
  *
- * Unlike the first-home consent modal (useUpdateMarketingConsent +
- * useNotificationConsentModal), this path deliberately does NOT open the result
- * modal or touch the one-time consent-completed storage — it only flips the
- * receiving preference. It mirrors the choice into the auth marketing flag for
- * app-wide consistency, matching the modal's behaviour.
+ * The settings screen opens the shared receipt-style result modal after a
+ * successful mutation. This mutation does not touch the one-time
+ * consent-completed storage; it only applies the receiving preference and
+ * mirrors it into the auth marketing flag.
  */
 export function useUpdateEventBenefitConsent() {
   const qc = useQueryClient()
