@@ -22,7 +22,12 @@ function resolveIcon(notificationType?: string, category?: string): IconSource {
 
   if (key.includes('REVIEW')) return reviewIcon
   if (key.includes('TOPIC')) return topicRoomIcon
-  if (key.includes('EVENT') || key.includes('BENEFIT') || key.includes('AD'))
+  if (
+    key.includes('EVENT') ||
+    key.includes('BENEFIT') ||
+    key.includes('AD') ||
+    key.includes('MARKETING')
+  )
     return eventIcon
   if (
     key.includes('REPORT') ||

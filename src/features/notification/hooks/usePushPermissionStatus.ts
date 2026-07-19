@@ -16,6 +16,10 @@ import { reconcilePushDevice } from '../services/pushDeviceSync'
  */
 export function usePushPermissionStatus() {
   const [granted, setGranted] = useState<boolean | null>(null)
+  const [lastChange, setLastChange] = useState<{
+    previous: boolean
+    granted: boolean
+  } | null>(null)
   const grantedRef = useRef<boolean | null>(null)
 
   const refresh = useCallback(async () => {
@@ -23,6 +27,10 @@ export function usePushPermissionStatus() {
     const was = grantedRef.current
     grantedRef.current = result.granted
     setGranted(result.granted)
+
+    if (was != null && was !== result.granted) {
+      setLastChange({ previous: was, granted: result.granted })
+    }
 
     // OFF→ON: re-sync the device token with the backend (best-effort).
     if (was === false && result.granted) {
@@ -39,5 +47,5 @@ export function usePushPermissionStatus() {
     return () => sub.remove()
   }, [refresh])
 
-  return { granted, refresh }
+  return { granted, lastChange, refresh }
 }

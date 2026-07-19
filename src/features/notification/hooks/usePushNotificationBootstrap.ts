@@ -83,6 +83,7 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
     // eslint-disable-next-line no-console
     console.log("[PUSH_RECEIVE_DEBUG] route decision", { route });
   }
+  if (route == null) return;
 
   try {
     // expo-router accepts both a string path and a { pathname, params } object.
