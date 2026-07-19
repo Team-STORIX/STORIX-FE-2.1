@@ -54,7 +54,8 @@ const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.android";
 const androidGoogleServicesFile =
   process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json";
 const iosGoogleServicesPlist =
-  process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./GoogleService-Info.plist";
+  process.env.GOOGLE_SERVICE_INFO_PLIST ??
+  "./ios/STORIXFE21/GoogleService-Info.plist";
 const iosApsEnvironment =
   process.env.EXPO_IOS_APS_ENVIRONMENT === "production"
     ? "production"

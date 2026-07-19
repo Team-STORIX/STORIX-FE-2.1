@@ -60,6 +60,7 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
   const [step, setStep] = useState<ConsentStep>('hidden')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<MarketingConsentResult | null>(null)
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Tracks which (user|install) scope we have already evaluated, so a userId
   // arriving after auth re-checks under the correct key without re-prompting
@@ -157,9 +158,26 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
       // once; the choice can still be changed later in notification settings.
       await markNotificationConsentCompleted(userId)
       setSubmitting(false)
-      setStep(enabled ? 'agreeResult' : 'rejectResult')
+
+      // Android keeps the native transparent Modal window alive briefly while
+      // its fade animation is being removed. Mounting the result in the same
+      // render pass can leave the initial and result cards composited together.
+      // Close the initial Modal first, then mount the result after that window
+      // has had time to finish its transition.
+      setStep('hidden')
+      if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
+      resultTimerRef.current = setTimeout(() => {
+        resultTimerRef.current = null
+        setStep(enabled ? 'agreeResult' : 'rejectResult')
+      }, 250)
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
+    }
+  }, [])
 
   return {
     step,
@@ -167,6 +185,12 @@ export const useNotificationConsentModal = (): NotificationConsentModalState => 
     result,
     onAgree: () => void submit(true),
     onReject: () => void submit(false),
-    onConfirm: () => setStep('hidden'),
+    onConfirm: () => {
+      if (resultTimerRef.current) {
+        clearTimeout(resultTimerRef.current)
+        resultTimerRef.current = null
+      }
+      setStep('hidden')
+    },
   }
 }

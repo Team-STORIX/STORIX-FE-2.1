@@ -43,13 +43,13 @@ const API_SORT: Record<SortKey, LibraryReviewSort> = {
   REVIEWS: "LATEST",
 };
 
-const TAB_BAR_CLEARANCE = 128;
 const LIST_BOTTOM_PADDING = 100;
+const GALLERY_BOTTOM_PADDING = 100;
 
 export function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [mode, setMode] = useState<ViewMode>("list");
+  const [mode, setMode] = useState<ViewMode>("gallery");
   const [sort, setSort] = useState<SortKey>("DEFAULT");
   const [pendingSort, setPendingSort] = useState<SortKey>("DEFAULT");
   const [sortOpen, setSortOpen] = useState(false);
@@ -105,8 +105,6 @@ export function LibraryScreen() {
     setSort(pendingSort);
     setSortOpen(false);
   };
-
-  const bottomClearance = Math.max(TAB_BAR_CLEARANCE, insets.bottom + 96);
 
   const openWorkReview = (item: LibraryUiWork) => {
     if (item.reviewId != null) {
@@ -176,11 +174,13 @@ export function LibraryScreen() {
             <Text style={styles.stateText}>서재를 불러오지 못했어요.</Text>
           </View>
         ) : works.length === 0 ? (
-          <LibraryEmptyState
-            title="아직 리뷰한 작품이 없어요."
-            buttonText="서재에 작품 추가하러 가기"
-            onPressButton={() => setShowReviewSheet(true)}
-          />
+          <View pointerEvents="box-none" style={styles.emptyStateLayer}>
+            <LibraryEmptyState
+              title="아직 리뷰한 작품이 없어요."
+              buttonText="서재에 작품 추가하러 가기"
+              onPressButton={() => setShowReviewSheet(true)}
+            />
+          </View>
         ) : mode === "list" ? (
           <LibraryWorksList
             data={works}
@@ -196,7 +196,7 @@ export function LibraryScreen() {
         ) : (
           <LibraryGalleryCarousel
             data={works}
-            bottomInset={bottomClearance}
+            bottomInset={GALLERY_BOTTOM_PADDING}
             hasNextPage={!!reviewQuery.hasNextPage}
             isFetchingNextPage={reviewQuery.isFetchingNextPage}
             onNeedMore={() => {
@@ -351,6 +351,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  emptyStateLayer: {
+    ...StyleSheet.absoluteFillObject,
   },
   stateWrap: {
     flex: 1,

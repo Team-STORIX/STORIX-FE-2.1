@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   sendBtnActive: { backgroundColor: Gray[900] },
-  sendBtnDisabled: { backgroundColor: Gray[200] },
+  sendBtnDisabled: { backgroundColor: Gray[300] },
   sendBtnPressed: { opacity: 0.75 },
   sendIcon: {
     width: 24,

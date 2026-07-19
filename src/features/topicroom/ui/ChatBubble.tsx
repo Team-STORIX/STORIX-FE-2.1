@@ -55,8 +55,8 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
   const handleKebab =
     onPressKebab && hasValidSender
       ? () => {
-          kebabRef.current?.measureInWindow((x, y, w) => {
-            onPressKebab(msg, { x: x + w, y: y + 24 });
+          kebabRef.current?.measureInWindow((x, y, w, h) => {
+            onPressKebab(msg, { x: x + w, y: y + h });
           });
         }
       : undefined;
@@ -121,6 +121,8 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
 const AVATAR_SIZE = 36;
 const BUBBLE_ME_MAX_WIDTH = 244;
 const BUBBLE_OTHER_MAX_WIDTH = 220;
+const TIME_LINE_HEIGHT = Typography.caption1Medium.lineHeight;
+const TIME_META_OFFSET_Y = 2;
 const styles = StyleSheet.create({
   rowMe: {
     flexDirection: "row",
@@ -210,16 +212,18 @@ const styles = StyleSheet.create({
     minWidth: 0,
     marginLeft: 4,
     flexShrink: 0,
+    transform: [{ translateY: TIME_META_OFFSET_Y }],
   },
 
   kebab: {
     width: 24,
-    height: 24,
+    height: TIME_LINE_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 2,
     alignSelf: "flex-end",
     flexShrink: 0,
+    transform: [{ translateY: TIME_META_OFFSET_Y }],
   },
   kebabIcon: {
     width: 16,

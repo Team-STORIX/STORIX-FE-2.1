@@ -75,6 +75,7 @@ export function ReviewWriteEntryScreen() {
     if (rating < 0.5) return false
     if (content.length === 0) return false
     if (content.length > MAX_CONTENT_LENGTH) return false
+    if (spoiler && spoilerMessage.trim().length === 0) return false
     if (submitMutation.isPending || updateMutation.isPending) return false
     if (isDuplicated) return false
     return true
@@ -84,6 +85,8 @@ export function ReviewWriteEntryScreen() {
     isDuplicated,
     isEditMode,
     rating,
+    spoiler,
+    spoilerMessage,
     submitMutation.isPending,
     updateMutation.isPending,
     worksId,

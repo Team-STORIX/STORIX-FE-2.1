@@ -54,6 +54,7 @@ function RecentKeywordChip({
           styles.removeButton,
           pressed && styles.pressed,
         ]}
+        hitSlop={4}
         onPress={(event) => {
           event.stopPropagation();
           onRemove();
@@ -88,11 +89,17 @@ export function LibrarySearchScreen() {
     setInputValue(submittedKeyword);
   }, [submittedKeyword]);
 
-  const works = useMemo<LibraryUiWork[]>(() => {
-    const items =
-      searchWorksQuery.data?.pages.flatMap((page) => page.content) ?? [];
+  useEffect(() => {
+    if (!submittedKeyword || !searchWorksQuery.isSuccess) return;
+    void recentKeywordsQuery.refetch();
+  }, [
+    submittedKeyword,
+    searchWorksQuery.isSuccess,
+    recentKeywordsQuery.refetch,
+  ]);
 
-    return items.map((item) => ({
+  const works = useMemo<LibraryUiWork[]>(() => {
+    return searchWorksQuery.items.map((item) => ({
       id: item.worksId,
       title: item.worksName ?? "",
       meta: [item.artistName, item.worksType, item.genre]
@@ -102,7 +109,7 @@ export function LibrarySearchScreen() {
       rating: Number(item.rating ?? 0),
       reviewCount: 0,
     }));
-  }, [searchWorksQuery.data?.pages]);
+  }, [searchWorksQuery.items]);
 
   const recentKeywords = recentKeywordsQuery.data?.recentKeywords ?? [];
 
@@ -113,6 +120,7 @@ export function LibrarySearchScreen() {
     if (!keyword) {
       setInputValue("");
       router.replace("/library/search" as never);
+      void recentKeywordsQuery.refetch();
       return;
     }
 
@@ -132,6 +140,7 @@ export function LibrarySearchScreen() {
           setInputValue("");
           if (submittedKeyword) {
             router.replace("/library/search" as never);
+            void recentKeywordsQuery.refetch();
           }
         }}
       />
