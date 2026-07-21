@@ -237,10 +237,18 @@ export function FeedWriteEntryScreen() {
   const canSubmit = useMemo(() => {
     if (content.length === 0) return false;
     if (contentLength > MAX_CONTENT_LENGTH) return false;
+    if (spoiler && spoilerMessage.trim().length === 0) return false;
     if (isWorksNotNeeded) return true;
     if (!selectedWork?.id) return false;
     return true;
-  }, [content.length, contentLength, isWorksNotNeeded, selectedWork?.id]);
+  }, [
+    content.length,
+    contentLength,
+    isWorksNotNeeded,
+    selectedWork?.id,
+    spoiler,
+    spoilerMessage,
+  ]);
 
   const handleToggleNotNeeded = () => {
     setIsWorksNotNeeded((prev) => {

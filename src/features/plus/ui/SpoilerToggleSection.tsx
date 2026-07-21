@@ -27,6 +27,12 @@ export function SpoilerToggleSection({
   defaultMessage = "스포일러가 포함된 피드 보기",
 }: Props) {
   const isDefault = message === defaultMessage;
+  const handleToggle = () => {
+    if (!enabled && message.trim().length === 0) {
+      onMessageChange(defaultMessage);
+    }
+    onToggle();
+  };
   const onPressDefault = () => {
     if (isDefault) onMessageChange("");
     else onMessageChange(defaultMessage);
@@ -44,7 +50,7 @@ export function SpoilerToggleSection({
         <View style={styles.toggleArea}>
           <Text style={styles.toggleLabel}>스포일러 방지</Text>
           <Pressable
-            onPress={onToggle}
+            onPress={handleToggle}
             accessibilityRole="switch"
             accessibilityState={{ checked: enabled }}
             accessibilityLabel="스포일러 방지 토글"

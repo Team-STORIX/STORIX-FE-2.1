@@ -1,23 +1,23 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import type { TodayFeedItem } from '../../features/home'
-import { C, Gray } from '../../theme/colors'
-import { Typography } from '../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { TodayFeedItem } from "../../features/home";
+import { C, Gray } from "../../theme/colors";
+import { Typography } from "../../theme/typography";
 
-const likeIcon = require('../../../assets/icons/common/icon-like.svg')
-const likePinkIcon = require('../../../assets/icons/common/icon-like-pink.svg')
-const commentIcon = require('../../../assets/icons/common/icon-comment.svg')
-const defaultProfileImage = require('../../../assets/placeholders/profile-default.png')
+const likeIcon = require("../../../assets/icons/common/icon-like.svg");
+const likePinkIcon = require("../../../assets/icons/common/icon-like-pink.svg");
+const commentIcon = require("../../../assets/icons/common/icon-comment.svg");
+const defaultProfileImage = require("../../../assets/placeholders/profile-default.png");
 
 type HotFeedCardProps = {
-  item?: TodayFeedItem
-  loading?: boolean
-  width?: number
-  onPress?: () => void
-}
+  item?: TodayFeedItem;
+  loading?: boolean;
+  width?: number;
+  onPress?: () => void;
+};
 
-const CARD_W = 353
-const CARD_H = 140
+const CARD_W = 353;
+const CARD_H = 140;
 
 export function HotFeedCard({
   item,
@@ -33,30 +33,32 @@ export function HotFeedCard({
           <View style={[styles.placeholderText, { width: 88 }]} />
         </View>
         <View style={[styles.placeholderText, styles.placeholderContent]} />
-        <View style={[styles.placeholderText, styles.placeholderContentShort]} />
+        <View
+          style={[styles.placeholderText, styles.placeholderContentShort]}
+        />
         <View style={styles.reactionRow}>
           <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
           <View style={[styles.placeholderText, { width: 36, height: 14 }]} />
         </View>
       </View>
-    )
+    );
   }
 
-  const { board, profile } = item
-  const content = board.content ?? ''
+  const { board, profile } = item;
+  const content = board.content ?? "";
 
-  const Wrapper: any = onPress ? Pressable : View
-  const cardStyle = [styles.card, { width }]
+  const Wrapper: any = onPress ? Pressable : View;
+  const cardStyle = [styles.card, { width }];
   const wrapperProps = onPress
     ? {
         onPress,
-        accessibilityRole: 'button' as const,
+        accessibilityRole: "button" as const,
         style: ({ pressed }: { pressed: boolean }) => [
           ...cardStyle,
           pressed && styles.cardPressed,
         ],
       }
-    : { style: [styles.card, { width }] }
+    : { style: [styles.card, { width }] };
 
   return (
     <Wrapper {...wrapperProps}>
@@ -73,7 +75,7 @@ export function HotFeedCard({
           />
         </View>
         <Text style={styles.authorName} numberOfLines={1}>
-          {profile.nickName ?? ''}
+          {profile.nickName ?? ""}
         </Text>
       </View>
 
@@ -100,7 +102,7 @@ export function HotFeedCard({
         </View>
       </View>
     </Wrapper>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     width: CARD_W,
     height: CARD_H,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Gray[100],
     backgroundColor: C.card,
     paddingHorizontal: 16,
@@ -130,17 +132,17 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[200],
   },
   placeholderContent: {
-    width: '92%',
+    width: "92%",
     height: 14,
     marginTop: 2,
   },
   placeholderContentShort: {
-    width: '76%',
+    width: "76%",
     height: 14,
   },
   authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 12,
   },
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 9999,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
   },
   avatar: {
@@ -167,13 +169,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reactionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   reactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   reactionIcon: {
     width: 24,
@@ -184,4 +186,4 @@ const styles = StyleSheet.create({
     color: Gray[500],
     marginLeft: 4,
   },
-})
+});

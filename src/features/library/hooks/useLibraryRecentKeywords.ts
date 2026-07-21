@@ -4,19 +4,54 @@ import {
   getLibraryRecentKeywords,
 } from '../api/library.api'
 
+const libraryRecentKeywordsQueryKey = ['library', 'search', 'recent'] as const
+type LibraryRecentKeywords = Awaited<ReturnType<typeof getLibraryRecentKeywords>>
+
 export const useLibraryRecentKeywords = () =>
   useQuery({
-    queryKey: ['libraryRecentKeywords'],
+    queryKey: libraryRecentKeywordsQueryKey,
     queryFn: getLibraryRecentKeywords,
     staleTime: 60_000,
+    retry: false,
   })
 
 export const useDeleteLibraryRecentKeyword = () => {
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: (keyword: string) => deleteLibraryRecentKeyword({ keyword }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['libraryRecentKeywords'] })
+    onMutate: async (keyword) => {
+      await queryClient.cancelQueries({
+        queryKey: libraryRecentKeywordsQueryKey,
+      })
+
+      const previousKeywords =
+        queryClient.getQueryData<LibraryRecentKeywords>(
+          libraryRecentKeywordsQueryKey,
+        )
+
+      queryClient.setQueryData<LibraryRecentKeywords>(
+        libraryRecentKeywordsQueryKey,
+        (current) => ({
+          recentKeywords:
+            current?.recentKeywords.filter((item) => item !== keyword) ?? [],
+        }),
+      )
+
+      return { previousKeywords }
+    },
+    onError: (_error, _keyword, context) => {
+      if (context?.previousKeywords) {
+        queryClient.setQueryData(
+          libraryRecentKeywordsQueryKey,
+          context.previousKeywords,
+        )
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: libraryRecentKeywordsQueryKey,
+      })
     },
   })
 }

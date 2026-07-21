@@ -25,6 +25,11 @@ export const isTopicRoomParticipationLimitError = (
   return responseCode === 'TOPIC_ROOM_ERROR_002'
 }
 
+export const isTopicRoomForbiddenWordError = (error: unknown): boolean => {
+  const responseCode = (error as any)?.response?.data?.code
+  return responseCode === 'TOPIC_ROOM_ERROR_004'
+}
+
 const getJoinedTopicRoomsForLimit = async (): Promise<TopicRoomItem[]> => {
   const all: TopicRoomItem[] = []
   let page = 0
