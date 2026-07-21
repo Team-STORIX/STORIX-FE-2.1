@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ko",
         "CFBundleLocalizations": ["ko"]
