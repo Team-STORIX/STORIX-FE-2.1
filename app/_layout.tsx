@@ -36,6 +36,13 @@ import { queryClient } from '../src/lib/query/queryClient'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
+import {
+  AppVersionUpdateModal,
+  checkAppVersion,
+  getCurrentAppVersion,
+  getCurrentAppVersionPlatform,
+  type AppVersionCheckResult,
+} from '../src/features/app-version'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -83,6 +90,7 @@ function waitForStartupHydration(): Promise<void> {
 }
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme()
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     SUIT: require('../assets/fonts/SUIT-Regular.ttf'),
@@ -95,6 +103,10 @@ export default function RootLayout() {
   })
 
   const [authReady, setAuthReady] = useState(false)
+  const [appVersionReady, setAppVersionReady] = useState(false)
+  const [appVersionResult, setAppVersionResult] =
+    useState<AppVersionCheckResult | null>(null)
+  const [appVersionDismissed, setAppVersionDismissed] = useState(false)
 
   // Surface font errors immediately so Expo Router's ErrorBoundary can catch them.
   useEffect(() => {
@@ -115,6 +127,39 @@ export default function RootLayout() {
     }
   }, [])
 
+  // Check app version while the branded splash is still visible. If an update
+  // is needed, keep navigation gated so the modal appears before home/auth UI.
+  useEffect(() => {
+    let mounted = true
+    const platform = getCurrentAppVersionPlatform()
+    const version = getCurrentAppVersion()
+
+    if (!platform) {
+      setAppVersionReady(true)
+      return () => {
+        mounted = false
+      }
+    }
+
+    checkAppVersion({ platform, version })
+      .then((result) => {
+        if (mounted) setAppVersionResult(result)
+      })
+      .catch((error) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn('[startup] app version check failed; continuing launch', error)
+        }
+      })
+      .finally(() => {
+        if (mounted) setAppVersionReady(true)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   // Hide the native splash once fonts are ready, with a short delay so
   // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
@@ -126,14 +171,32 @@ export default function RootLayout() {
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded || !authReady) {
+  if (!fontsLoaded || !authReady || !appVersionReady) {
     return <BrandedSplash />
   }
+
+  const appVersionStatus = appVersionResult?.status
+  const shouldGateForUpdate =
+    appVersionStatus === 'UPDATE_REQUIRED' ||
+    (appVersionStatus === 'UPDATE_AVAILABLE' && !appVersionDismissed)
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <RootLayoutNav />
+        {shouldGateForUpdate ? (
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
+            <BrandedSplash />
+            <AppVersionUpdateModal
+              visible
+              result={appVersionResult}
+              onClose={() => setAppVersionDismissed(true)}
+            />
+          </ThemeProvider>
+        ) : (
+          <RootLayoutNav />
+        )}
       </QueryClientProvider>
     </GestureHandlerRootView>
   )
