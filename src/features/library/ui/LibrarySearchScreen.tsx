@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Typography } from "../../../theme";
 import { ReviewWriteBottomSheet } from "../../plus";
 import {
+  libraryRecentKeywordsQueryKey,
   useDeleteLibraryRecentKeyword,
   useLibraryRecentKeywords,
   useLibrarySearchWorksInfinite,
@@ -75,6 +77,7 @@ function RecentKeywordChip({
 export function LibrarySearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ keyword?: string }>();
 
   const submittedKeyword = normalizeKeyword(params.keyword);
@@ -91,11 +94,13 @@ export function LibrarySearchScreen() {
 
   useEffect(() => {
     if (!submittedKeyword || !searchWorksQuery.isSuccess) return;
-    void recentKeywordsQuery.refetch();
+    void queryClient.invalidateQueries({
+      queryKey: libraryRecentKeywordsQueryKey,
+    });
   }, [
+    queryClient,
     submittedKeyword,
     searchWorksQuery.isSuccess,
-    recentKeywordsQuery.refetch,
   ]);
 
   const works = useMemo<LibraryUiWork[]>(() => {
@@ -120,7 +125,9 @@ export function LibrarySearchScreen() {
     if (!keyword) {
       setInputValue("");
       router.replace("/library/search" as never);
-      void recentKeywordsQuery.refetch();
+      void queryClient.invalidateQueries({
+        queryKey: libraryRecentKeywordsQueryKey,
+      });
       return;
     }
 
@@ -140,7 +147,9 @@ export function LibrarySearchScreen() {
           setInputValue("");
           if (submittedKeyword) {
             router.replace("/library/search" as never);
-            void recentKeywordsQuery.refetch();
+            void queryClient.invalidateQueries({
+              queryKey: libraryRecentKeywordsQueryKey,
+            });
           }
         }}
       />

@@ -4,7 +4,11 @@ import {
   getLibraryRecentKeywords,
 } from '../api/library.api'
 
-const libraryRecentKeywordsQueryKey = ['library', 'search', 'recent'] as const
+export const libraryRecentKeywordsQueryKey = [
+  'library',
+  'search',
+  'recent',
+] as const
 type LibraryRecentKeywords = Awaited<ReturnType<typeof getLibraryRecentKeywords>>
 
 export const useLibraryRecentKeywords = () =>
