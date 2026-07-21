@@ -33,9 +33,16 @@ import { C } from '../src/theme'
 import { useMe } from '../src/features/profile'
 import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
+import { refreshAuthTokens } from '../src/lib/auth/refresh-token'
+import { removeRefreshToken } from '../src/lib/storage/secure'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
+import { reconcilePushDevice } from '../src/features/notification/services/pushDeviceSync'
+import {
+  getFirebaseNativeUnavailableReason,
+  isFirebaseNativeAvailable,
+} from '../src/features/notification/services/firebaseNative'
 import {
   AppVersionUpdateModal,
   checkAppVersion,
@@ -56,6 +63,13 @@ export const unstable_settings = {
 }
 
 const STARTUP_HYDRATION_TIMEOUT_MS = 5000
+
+// React StrictMode can mount the root layout twice in development. Share the
+// whole bootstrap promise so startup APIs run once per JS app session.
+let startupBootstrapPromise: Promise<{
+  appVersionResult: AppVersionCheckResult | null
+  canReconcilePushDevice: boolean
+}> | null = null
 
 // Keep the splash screen up until fonts and startup hydration have had a
 // chance to complete. Ignore duplicate/native timing failures so startup keeps
@@ -89,6 +103,82 @@ function waitForStartupHydration(): Promise<void> {
   })
 }
 
+async function checkStartupAppVersion(): Promise<AppVersionCheckResult | null> {
+  const platform = getCurrentAppVersionPlatform()
+  const version = getCurrentAppVersion()
+
+  if (!platform) return null
+
+  try {
+    return await checkAppVersion({ platform, version })
+  } catch (error) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn('[startup] app version check failed; continuing launch', error)
+    }
+    return null
+  }
+}
+
+async function refreshStartupAuthTokens(): Promise<boolean> {
+  const refreshResult = await refreshAuthTokens()
+
+  if (refreshResult.ok || refreshResult.reason === 'no-refresh-token') {
+    return true
+  }
+
+  if (refreshResult.status === 401) {
+    // A stale refresh token must not erase a still-usable access token during
+    // launch. The normal API 401 flow will clear the full session if access
+    // token authentication is also no longer valid.
+    await removeRefreshToken()
+    return true
+  }
+
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.warn('[startup] token refresh failed; continuing launch', {
+      status: refreshResult.status,
+      errorName: refreshResult.errorName,
+    })
+  }
+  return false
+}
+
+function runStartupBootstrap() {
+  if (!startupBootstrapPromise) {
+    startupBootstrapPromise = (async () => {
+      await waitForStartupHydration()
+      const appVersionResult = await checkStartupAppVersion()
+      const canReconcilePushDevice = await refreshStartupAuthTokens()
+      if (canReconcilePushDevice) {
+        await reconcileStartupPushDevice()
+      }
+      return { appVersionResult, canReconcilePushDevice }
+    })()
+  }
+  return startupBootstrapPromise
+}
+
+async function reconcileStartupPushDevice(): Promise<void> {
+  if (!useAuthStore.getState().isAuthenticated) return
+
+  if (Constants.appOwnership === 'expo' || !isFirebaseNativeAvailable()) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[startup] push-device sync skipped:',
+        Constants.appOwnership === 'expo'
+          ? 'Expo Go'
+          : getFirebaseNativeUnavailableReason() ?? 'unknown Firebase state',
+      )
+    }
+    return
+  }
+
+  await reconcilePushDevice()
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme()
   const [fontsLoaded, fontError] = useFonts({
@@ -102,8 +192,7 @@ export default function RootLayout() {
     ...FontAwesome.font,
   })
 
-  const [authReady, setAuthReady] = useState(false)
-  const [appVersionReady, setAppVersionReady] = useState(false)
+  const [startupReady, setStartupReady] = useState(false)
   const [appVersionResult, setAppVersionResult] =
     useState<AppVersionCheckResult | null>(null)
   const [appVersionDismissed, setAppVersionDismissed] = useState(false)
@@ -113,46 +202,22 @@ export default function RootLayout() {
     if (fontError) throw fontError
   }, [fontError])
 
-  // Hydrate all local stores in parallel as early as possible. A timeout keeps
-  // a native storage edge case from trapping release builds on the splash.
+  // Keep the branded splash up while startup work runs in order:
+  // local hydration → app-version check → token refresh → push-device reconcile.
   useEffect(() => {
     let mounted = true
 
-    waitForStartupHydration().then(() => {
-      if (mounted) setAuthReady(true)
-    })
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  // Check app version while the branded splash is still visible. If an update
-  // is needed, keep navigation gated so the modal appears before home/auth UI.
-  useEffect(() => {
-    let mounted = true
-    const platform = getCurrentAppVersionPlatform()
-    const version = getCurrentAppVersion()
-
-    if (!platform) {
-      setAppVersionReady(true)
-      return () => {
-        mounted = false
-      }
-    }
-
-    checkAppVersion({ platform, version })
-      .then((result) => {
-        if (mounted) setAppVersionResult(result)
+    runStartupBootstrap()
+      .then(({ appVersionResult }) => {
+        if (appVersionResult && mounted) setAppVersionResult(appVersionResult)
+        if (mounted) setStartupReady(true)
       })
       .catch((error) => {
         if (__DEV__) {
           // eslint-disable-next-line no-console
-          console.warn('[startup] app version check failed; continuing launch', error)
+          console.warn('[startup] bootstrap failed; continuing launch', error)
         }
-      })
-      .finally(() => {
-        if (mounted) setAppVersionReady(true)
+        if (mounted) setStartupReady(true)
       })
 
     return () => {
@@ -171,7 +236,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded])
 
-  if (!fontsLoaded || !authReady || !appVersionReady) {
+  if (!fontsLoaded || !startupReady) {
     return <BrandedSplash />
   }
 

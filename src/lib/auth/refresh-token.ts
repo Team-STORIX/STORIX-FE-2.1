@@ -31,11 +31,77 @@ export type TokenRefreshResult =
 // connect firing at once) share one in-flight network request and one rotation.
 let inflight: Promise<TokenRefreshResult> | null = null
 
+const REFRESH_PATH = '/api/v1/auth/tokens/refresh'
+
+const logRefreshRequest = (): number => {
+  if (!__DEV__) return Date.now()
+  const startedAt = Date.now()
+  // eslint-disable-next-line no-console
+  console.log(`\n➡️  [API] POST ${REFRESH_PATH}`)
+  // eslint-disable-next-line no-console
+  console.log('   baseURL:', process.env.EXPO_PUBLIC_API_URL)
+  // eslint-disable-next-line no-console
+  console.log('   body:', '{ "refreshToken": "***" }')
+  return startedAt
+}
+
+const logRefreshResponse = (
+  status: number,
+  startedAt: number,
+  data: unknown,
+): void => {
+  if (!__DEV__) return
+  const result = (data as { result?: unknown })?.result as
+    | { accessToken?: string; refreshToken?: string }
+    | undefined
+  const safeData =
+    data && typeof data === 'object'
+      ? {
+          ...(data as Record<string, unknown>),
+          result: result
+            ? {
+                accessToken: result.accessToken ? '***' : undefined,
+                refreshToken: result.refreshToken ? '***' : undefined,
+              }
+            : result,
+        }
+      : data
+
+  // eslint-disable-next-line no-console
+  console.log(
+    `\n✅ [API] ${status} POST ${REFRESH_PATH} (${Date.now() - startedAt}ms)`,
+  )
+  // eslint-disable-next-line no-console
+  console.log('   data:', JSON.stringify(safeData, null, 2))
+}
+
+const logRefreshError = (
+  status: number | undefined,
+  startedAt: number,
+  errorName: string | undefined,
+): void => {
+  if (!__DEV__) return
+  // eslint-disable-next-line no-console
+  console.log(
+    `\n❌ [API] ${status ?? 'NETWORK_ERROR'} POST ${REFRESH_PATH} (${
+      Date.now() - startedAt
+    }ms)`,
+  )
+  // eslint-disable-next-line no-console
+  console.log('   errorName:', errorName ?? 'unknown')
+}
+
 async function performRefresh(): Promise<TokenRefreshResult> {
   const storedRefreshToken = await getRefreshToken()
   if (!storedRefreshToken) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[startup] token refresh skipped: no refreshToken')
+    }
     return { ok: false, reason: 'no-refresh-token' }
   }
+
+  const startedAt = logRefreshRequest()
 
   try {
     // POST /api/v1/auth/tokens/refresh
@@ -46,6 +112,7 @@ async function performRefresh(): Promise<TokenRefreshResult> {
       { refreshToken: storedRefreshToken },
       { headers: { 'Content-Type': 'application/json' } },
     )
+    logRefreshResponse(res.status, startedAt, res.data)
 
     const result = res.data?.result
     const newAccessToken: string | undefined = result?.accessToken
@@ -97,6 +164,7 @@ async function performRefresh(): Promise<TokenRefreshResult> {
   } catch (err) {
     const status = (err as { response?: { status?: number } })?.response?.status
     const errorName = (err as { name?: string })?.name
+    logRefreshError(status, startedAt, errorName)
     return { ok: false, reason: 'request-failed', status, errorName }
   }
 }

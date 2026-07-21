@@ -10,6 +10,15 @@ import type {
 // Set to false to silence API logs without removing the interceptors.
 const ENABLED = __DEV__;
 
+// Temporary startup-debug filter: only show API logs for the app-entry flow.
+const LOG_ONLY_PATHS = [
+  "/api/v1/app-version/check",
+  "/api/v1/auth/tokens/refresh",
+  "/api/v1/push-devices/sync",
+  "/api/v1/push-devices/fcm-token",
+  "/api/v1/push-devices/",
+] as const;
+
 // Bodies larger than this are truncated so the Metro console stays usable.
 const MAX_BODY_CHARS = 2_000;
 
@@ -102,9 +111,15 @@ const elapsedMs = (config?: TimedConfig): string => {
 const target = (config?: InternalAxiosRequestConfig): string =>
   `${config?.method?.toUpperCase() ?? "?"} ${config?.url ?? "?"}`;
 
+const shouldLog = (config?: InternalAxiosRequestConfig): boolean => {
+  if (!ENABLED) return false;
+  const url = config?.url ?? "";
+  return LOG_ONLY_PATHS.some((path) => url.includes(path));
+};
+
 export const logRequest = (config: TimedConfig): TimedConfig => {
-  if (!ENABLED) return config;
   config._startedAt = Date.now();
+  if (!shouldLog(config)) return config;
 
   console.log(`\n➡️  [API] ${target(config)}`);
   console.log("   baseURL:", config.baseURL);
@@ -116,8 +131,8 @@ export const logRequest = (config: TimedConfig): TimedConfig => {
 };
 
 export const logResponse = (response: AxiosResponse): AxiosResponse => {
-  if (!ENABLED) return response;
   const config = response.config as TimedConfig;
+  if (!shouldLog(config)) return response;
 
   console.log(
     `\n✅ [API] ${response.status} ${target(config)} (${elapsedMs(config)})`,
@@ -128,8 +143,8 @@ export const logResponse = (response: AxiosResponse): AxiosResponse => {
 };
 
 export const logError = (error: AxiosError): AxiosError => {
-  if (!ENABLED) return error;
   const config = error.config as TimedConfig | undefined;
+  if (!shouldLog(config)) return error;
 
   if (error.response) {
     console.log(
