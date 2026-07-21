@@ -15,6 +15,9 @@ Write-Host "Building Android release APK..."
 Push-Location $AndroidDir
 try {
   .\gradlew.bat assembleRelease
+  if ($LASTEXITCODE -ne 0) {
+    throw "Gradle release build failed with exit code $LASTEXITCODE"
+  }
 }
 finally {
   Pop-Location
@@ -30,5 +33,8 @@ npx firebase-tools appdistribution:distribute $ApkPath `
   --groups $Groups `
   --release-notes $ReleaseNotes `
   --project $ProjectId
+if ($LASTEXITCODE -ne 0) {
+  throw "Firebase App Distribution upload failed with exit code $LASTEXITCODE"
+}
 
 Write-Host "Done."

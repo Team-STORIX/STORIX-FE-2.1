@@ -1,8 +1,9 @@
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { useAuthStore } from '../../../store/auth.store'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
@@ -14,6 +15,7 @@ export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const setMandatoryConsents = useAuthStore((s) => s.setMandatoryConsents)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const [serviceTermsAgree, setServiceTermsAgree] = useState(false)
   const [privacyPolicyAgree, setPrivacyPolicyAgree] = useState(false)
@@ -35,6 +37,21 @@ export function AgreementScreen() {
     router.replace('/(auth)/onboarding')
   }
 
+  const handleBack = useCallback(() => {
+    void clearAuth()
+    router.replace('/(auth)/login')
+    return true
+  }, [clearAuth, router])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return undefined
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', handleBack)
+      return () => subscription.remove()
+    }, [handleBack]),
+  )
+
   if (!onboardingToken) {
     return (
       <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
@@ -51,7 +68,7 @@ export function AgreementScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.iconWrap}>
+        <Pressable onPress={handleBack} style={styles.iconWrap}>
           <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
         </Pressable>
         <Text style={styles.topBarTitle}>약관동의</Text>

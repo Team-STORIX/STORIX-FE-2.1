@@ -146,13 +146,24 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       getItem<boolean>(MARKETING_AGREE_KEY),
     ])
 
+    // A pre-signup onboarding token should only live for the current app session.
+    // If the app is relaunched before signup completes, start over from login.
+    if (onboardingToken) {
+      await Promise.all([
+        removeOnboardingToken(),
+        removeItem(SERVICE_TERMS_AGREE_KEY),
+        removeItem(PRIVACY_POLICY_AGREE_KEY),
+        removeItem(AGE_OVER_14_KEY),
+      ])
+    }
+
     set({
       accessToken,
-      onboardingToken,
+      onboardingToken: null,
       isAuthenticated: !!accessToken,
-      serviceTermsAgree: serviceTermsAgree ?? false,
-      privacyPolicyAgree: privacyPolicyAgree ?? false,
-      ageOver14: ageOver14 ?? false,
+      serviceTermsAgree: onboardingToken ? false : serviceTermsAgree ?? false,
+      privacyPolicyAgree: onboardingToken ? false : privacyPolicyAgree ?? false,
+      ageOver14: onboardingToken ? false : ageOver14 ?? false,
       marketingAgree: marketingAgree ?? false,
     })
   },

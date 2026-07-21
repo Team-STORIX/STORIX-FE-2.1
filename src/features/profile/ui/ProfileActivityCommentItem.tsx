@@ -144,7 +144,7 @@ export function ProfileActivityCommentItem({
 
           <View style={styles.metaRow}>
             <Text style={styles.name}>{nickName}</Text>
-            <Text style={styles.dot}> </Text>
+            <Text style={styles.dot}>·</Text>
             <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
         </View>

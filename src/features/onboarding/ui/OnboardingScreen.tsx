@@ -1,8 +1,9 @@
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { useQuery } from '@tanstack/react-query'
 import { useSignup } from '../../auth/hooks/useSignup'
 import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
@@ -49,10 +50,23 @@ export function OnboardingScreen() {
   const [error, setError] = useState('')
   const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
-  const handleBack = () => {
-    if (step > 1) setStep((current) => current - 1)
-    else router.push('/(auth)/agreement')
-  }
+  const handleBack = useCallback(() => {
+    if (step > 1) {
+      setStep((current) => current - 1)
+    } else {
+      router.replace('/(auth)/agreement')
+    }
+    return true
+  }, [router, step])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return undefined
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', handleBack)
+      return () => subscription.remove()
+    }, [handleBack]),
+  )
 
   const handleSkip = () => {
     if (step < 5) setStep((current) => current + 1)
