@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { XLogo } from "../../../components/common/XLogo";
 import { useAuthStore } from "../../../store/auth.store";
 import { C, Typography } from "../../../theme";
 import { developerLogin } from "../api";
@@ -37,6 +36,7 @@ const DEV_LOGIN_REFRESH_TOKEN = process.env.EXPO_PUBLIC_DEV_REFRESH_TOKEN;
 const logoWord = require("../../../../assets/logos/logo-word.svg");
 const kakaoButton = require("../../../../assets/icons/login/login-kakao.svg");
 const naverButton = require("../../../../assets/icons/login/login-naver.svg");
+const twitterButton = require("../../../../assets/icons/login/login-twitter.svg");
 const appleButton = require("../../../../assets/icons/login/login-apple.svg");
 
 export function LoginScreen() {
@@ -166,7 +166,8 @@ export function LoginScreen() {
           loading={pending && pendingProvider === "naver"}
           disabled={pending}
         />
-        <LoginXButton
+        <LoginAssetButton
+          source={twitterButton}
           onPress={handleXLogin}
           loading={xLoginPending}
           disabled={pending}
@@ -242,39 +243,6 @@ function LoginAssetButton({
   );
 }
 
-function LoginXButton({
-  onPress,
-  loading = false,
-  disabled = false,
-}: {
-  onPress: () => void;
-  loading?: boolean;
-  disabled?: boolean;
-}) {
-  const dimmed = disabled && !loading;
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.xButton,
-        dimmed && styles.dimmed,
-        pressed && !disabled && styles.pressed,
-      ]}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      <View style={styles.xButtonContent}>
-        <XLogo size={17} color={C.text} />
-        <Text style={styles.xButtonText}>X로 로그인</Text>
-      </View>
-      {loading ? (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color={C.text} />
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -302,26 +270,6 @@ const styles = StyleSheet.create({
   assetButtonImage: {
     width: "100%",
     height: 48,
-  },
-  xButton: {
-    width: "100%",
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F9F6F7",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#CDC4C8",
-    borderRadius: 8,
-  },
-  xButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  xButtonText: {
-    ...Typography.body2Bold,
-    color: C.text,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
