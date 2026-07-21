@@ -20,6 +20,7 @@ import Svg, {
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
 import {
+  isTopicRoomForbiddenWordError,
   isTopicRoomParticipationLimitError,
   TopicRoomLimitModal,
   TopicRoomWorksPickerBottomSheet,
@@ -34,7 +35,7 @@ const topicRoomGraphic = require("../../assets/topicroom/topicroom-graphic.png")
 
 const TOPIC_NAME_PATTERN = /^[0-9A-Za-z가-힣 ]{2,10}$/;
 const MAX_NAME_LENGTH = 10;
-const COUNTER_MAX = 30;
+const COUNTER_MAX = 10;
 
 type Params = {
   worksId?: string;
@@ -59,7 +60,11 @@ export default function TopicRoomCreateScreen() {
   const paramWorksName = pickParam(params.worksName) ?? "";
   const paramThumbnailUrl = pickParam(params.thumbnailUrl) ?? "";
   const paramWorks = useMemo<PickedWorks | null>(() => {
-    if (!Number.isFinite(paramWorksId) || paramWorksId <= 0 || !paramWorksName) {
+    if (
+      !Number.isFinite(paramWorksId) ||
+      paramWorksId <= 0 ||
+      !paramWorksName
+    ) {
       return null;
     }
     return {
@@ -80,7 +85,10 @@ export default function TopicRoomCreateScreen() {
   const [name, setName] = useState("");
   const [createdId, setCreatedId] = useState<number | null>(null);
   const [limitModalVisible, setLimitModalVisible] = useState(false);
-  const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(paramWorks);
+  const [hasForbiddenWordError, setHasForbiddenWordError] = useState(false);
+  const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(
+    paramWorks,
+  );
 
   const createMutation = useCreateTopicRoom();
 
@@ -92,7 +100,10 @@ export default function TopicRoomCreateScreen() {
   const helperOk = TOPIC_NAME_PATTERN.test(trimmed);
   const canCreate = !!pickedWorks && helperOk && !createMutation.isPending;
 
-  const showHelperWarning = !helperOk;
+  const showHelperWarning = !helperOk || hasForbiddenWordError;
+  const helperMessage = hasForbiddenWordError
+    ? "토픽룸에 금칙어가 포함되어 있습니다."
+    : "한글,영문,숫자 2~10자까지 입력 가능해요";
 
   const goToFeedTopicRoom = () =>
     router.replace("/(tabs)/feed?section=topicroom" as never);
@@ -121,6 +132,7 @@ export default function TopicRoomCreateScreen() {
 
   const handleCreate = () => {
     if (!canCreate) return;
+    setHasForbiddenWordError(false);
     createMutation.mutate(
       { worksId: pickedWorks.worksId, topicRoomName: trimmed },
       {
@@ -130,6 +142,10 @@ export default function TopicRoomCreateScreen() {
         onError: (err) => {
           if (isTopicRoomParticipationLimitError(err)) {
             setLimitModalVisible(true);
+            return;
+          }
+          if (isTopicRoomForbiddenWordError(err)) {
+            setHasForbiddenWordError(true);
           }
         },
       },
@@ -215,7 +231,13 @@ export default function TopicRoomCreateScreen() {
               <Stop offset="1" stopColor="#FFFFFF" stopOpacity={1} />
             </SvgLinearGradient>
           </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#bottomFade)" />
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#bottomFade)"
+          />
         </Svg>
 
         <View
@@ -276,106 +298,97 @@ export default function TopicRoomCreateScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.intro}>
-              <Text style={styles.introTitle}>
-                토픽룸의 이름을 설정해주세요
-              </Text>
-              <Text style={styles.introSubtitle}>
-                아래 주의사항을 참고해주세요
-              </Text>
-            </View>
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.intro}>
+          <Text style={styles.introTitle}>토픽룸의 이름을 설정해주세요</Text>
+          <Text style={styles.introSubtitle}>아래 주의사항을 참고해주세요</Text>
+        </View>
 
-            <View style={styles.thumbWrap}>
-              {pickedWorks.thumbnailUrl ? (
-                <Image
-                  source={{ uri: pickedWorks.thumbnailUrl }}
-                  style={styles.thumb}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[styles.thumb, styles.thumbFallback]}>
-                  <Text style={styles.thumbFallbackText}>{initial}</Text>
-                </View>
-              )}
+        <View style={styles.thumbWrap}>
+          {pickedWorks.thumbnailUrl ? (
+            <Image
+              source={{ uri: pickedWorks.thumbnailUrl }}
+              style={styles.thumb}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.thumb, styles.thumbFallback]}>
+              <Text style={styles.thumbFallbackText}>{initial}</Text>
             </View>
+          )}
+        </View>
 
-            <View style={styles.inputBlock}>
-              <TextInput
-                value={name}
-                onChangeText={(v) => setName(v.slice(0, MAX_NAME_LENGTH))}
-                placeholder="토픽룸 제목을 입력하세요"
-                placeholderTextColor={Gray[300]}
-                style={[
-                  styles.input,
-                  !name.trim() && styles.inputEmpty,
-                ]}
-                maxLength={MAX_NAME_LENGTH}
-              />
-              <View style={styles.inputMetaRow}>
-                {showHelperWarning && (
-                  <Text style={styles.helperText}>
-                    한글,영문,숫자 2~10자까지 입력 가능해요
-                  </Text>
-                )}
-                <Text style={styles.counterText}>
-                  {trimmed.length}/{COUNTER_MAX}자
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.warningBlock}>
-              <View style={styles.warningHeaderRow}>
-                <Image
-                  source={warningIcon}
-                  style={styles.warningIcon}
-                  contentFit="contain"
-                />
-                <Text style={styles.warningTitle}>토픽룸 생성 주의 사항</Text>
-              </View>
-              <Text style={styles.warningBody}>
-                모두가 함께 사용하는 커뮤니티로, 아래와 같은 제목은
-                삼가해주세요.
-              </Text>
-              <View style={styles.warningBullets}>
-                <Text style={styles.warningBullet}>
-                  {"•"} 특정 인물이나 집단을 비방하는 내용
-                </Text>
-                <Text style={styles.warningBullet}>
-                  {"•"} 비속어, 혐오 표현이 포함된 내용
-                </Text>
-              </View>
-            </View>
-          </ScrollView>
-
-          <View
-            style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}
-          >
-            <Pressable
-              onPress={handleCreate}
-              disabled={!canCreate}
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                canCreate ? styles.primaryBtnActive : styles.primaryBtnDisabled,
-                pressed && canCreate && styles.pressed,
-              ]}
-              accessibilityRole="button"
-            >
-              {createMutation.isPending ? (
-                <ActivityIndicator size="small" color={C.card} />
-              ) : (
-                <Text
-                  style={[
-                    styles.primaryBtnText,
-                    !canCreate && styles.primaryBtnTextDisabled,
-                  ]}
-                >
-                  토픽룸 생성하기
-                </Text>
-              )}
-            </Pressable>
+        <View style={styles.inputBlock}>
+          <TextInput
+            value={name}
+            onChangeText={(v) => {
+              setName(v.slice(0, MAX_NAME_LENGTH));
+              setHasForbiddenWordError(false);
+            }}
+            placeholder="토픽룸 제목을 입력하세요"
+            placeholderTextColor={Gray[300]}
+            style={[styles.input, !name.trim() && styles.inputEmpty]}
+            maxLength={MAX_NAME_LENGTH}
+          />
+          <View style={styles.inputMetaRow}>
+            {showHelperWarning && (
+              <Text style={styles.helperText}>{helperMessage}</Text>
+            )}
+            <Text style={styles.counterText}>
+              {trimmed.length}/{COUNTER_MAX}자
+            </Text>
           </View>
+        </View>
+
+        <View style={styles.warningBlock}>
+          <View style={styles.warningHeaderRow}>
+            <Image
+              source={warningIcon}
+              style={styles.warningIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.warningTitle}>토픽룸 생성 주의 사항</Text>
+          </View>
+          <Text style={styles.warningBody}>
+            모두가 함께 사용하는 커뮤니티로, 아래와 같은 제목은 삼가해주세요.
+          </Text>
+          <View style={styles.warningBullets}>
+            <Text style={styles.warningBullet}>
+              {"•"} 특정 인물이나 집단을 비방하는 내용
+            </Text>
+            <Text style={styles.warningBullet}>
+              {"•"} 비속어, 혐오 표현이 포함된 내용
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <Pressable
+          onPress={handleCreate}
+          disabled={!canCreate}
+          style={({ pressed }) => [
+            styles.primaryBtn,
+            canCreate ? styles.primaryBtnActive : styles.primaryBtnDisabled,
+            pressed && canCreate && styles.pressed,
+          ]}
+          accessibilityRole="button"
+        >
+          {createMutation.isPending ? (
+            <ActivityIndicator size="small" color={C.card} />
+          ) : (
+            <Text
+              style={[
+                styles.primaryBtnText,
+                !canCreate && styles.primaryBtnTextDisabled,
+              ]}
+            >
+              토픽룸 생성하기
+            </Text>
+          )}
+        </Pressable>
+      </View>
       <TopicRoomLimitModal
         visible={limitModalVisible}
         onClose={() => setLimitModalVisible(false)}
