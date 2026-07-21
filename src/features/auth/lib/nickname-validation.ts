@@ -2,7 +2,7 @@ export const NICKNAME_MESSAGES = {
   available: '사용 가능한 닉네임이에요.',
   duplicated: '이미 사용 중인 닉네임이에요.',
   invalidFormat: '한글, 영문, 숫자만 사용해 2~10자로 입력해 주세요.\n(자음·모음 단독 불가)',
-  forbidden: '사용할 수 없는 닉네임이에요',
+  forbidden: '사용할 수 없는 표현이 포함되어 있습니다.',
   unknownError: '잠시 후 다시 시도해 주세요',
 } as const
 

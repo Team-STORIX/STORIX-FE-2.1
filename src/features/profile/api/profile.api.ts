@@ -49,7 +49,9 @@ export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {
 export const updateProfileNickname = async (
   nickName: string,
 ): Promise<ApiResponse<string>> => {
-  const res = await apiClient.post('/api/v1/profile/reader/nickname', { nickName })
+  const res = await apiClient.post('/api/v1/profile/reader/nickname', { nickName }, {
+    validateStatus: (status) => status >= 200 && status < 500,
+  })
   return res.data as ApiResponse<string>
 }
 

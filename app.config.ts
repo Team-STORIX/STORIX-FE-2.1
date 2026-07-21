@@ -113,6 +113,12 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       ...config.android,
       package: androidPackage,
       googleServicesFile: androidGoogleServicesFile,
+      blockedPermissions: Array.from(
+        new Set([
+          ...(config.android?.blockedPermissions ?? []),
+          "android.permission.READ_MEDIA_VIDEO",
+        ]),
+      ),
       // Android 13+ runtime permission for showing notifications.
       // FCM SDK declares the rest of the messaging-related permissions.
       permissions: Array.from(
