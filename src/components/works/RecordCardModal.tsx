@@ -389,10 +389,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    height: 136,
+    paddingHorizontal: 67,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 60,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   actionButtonsIOS: {
     paddingHorizontal: 80,
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     gap: 88,
   },
   actionButton: {
-    width: 60,
+    width: 48,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

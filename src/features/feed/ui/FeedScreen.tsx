@@ -77,7 +77,7 @@ export function FeedScreen() {
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
-    onConfirm: () => Promise<void>
+    onConfirm: () => Promise<void | 'duplicate'>
   } | null>(null)
 
   const [blockTarget, setBlockTarget] = useState<{
@@ -180,7 +180,7 @@ export function FeedScreen() {
         onConfirm: async () => {
           const result = await reportBoard({ boardId, reportedUserId: writerUserId })
           if (result.status === 'duplicated') {
-            throw new Error('이미 신고한 유저예요.')
+            return 'duplicate'
           }
         },
       })
@@ -366,6 +366,18 @@ export function FeedScreen() {
     />
   )
 
+  const listFooter = (
+    <View style={[styles.listFooterSpacer, { height: insets.bottom + 120 }]}>
+      {activeQuery.isFetchingNextPage ? (
+        <ActivityIndicator
+          size="small"
+          color={Magenta[300]}
+          style={styles.footerLoader}
+        />
+      ) : null}
+    </View>
+  )
+
   if (tab === 'writers') {
     return (
       <>
@@ -430,15 +442,7 @@ export function FeedScreen() {
           </View>
         )
       }
-      ListFooterComponent={
-        activeQuery.isFetchingNextPage ? (
-          <ActivityIndicator
-            size="small"
-            color={Magenta[300]}
-            style={styles.footerLoader}
-          />
-        ) : null
-      }
+      ListFooterComponent={listFooter}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.4}
       showsVerticalScrollIndicator={false}
@@ -478,7 +482,7 @@ const styles = StyleSheet.create({
     backgroundColor: Gray[50],
   },
   content: {
-    paddingBottom: 128,
+    paddingBottom: 0,
   },
   emptyContent: {
     flexGrow: 1,
@@ -524,6 +528,10 @@ const styles = StyleSheet.create({
   },
   footerLoader: {
     paddingVertical: 16,
+  },
+  listFooterSpacer: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   topicroomContent: {
     flexGrow: 1,

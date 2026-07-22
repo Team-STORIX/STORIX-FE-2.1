@@ -20,7 +20,7 @@ import { C, Gray, Magenta } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { useMe } from '../../profile'
-import { reportReply } from '../api/feed/readerReply.api'
+import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
 import {
   createReply,
   createSubReply,
@@ -97,7 +97,7 @@ export function FeedDetailScreen() {
   const [reportTarget, setReportTarget] = useState<{
     profileImageUrl?: string | null
     nickname: string
-    onConfirm: () => Promise<void>
+    onConfirm: () => Promise<void | 'duplicate'>
   } | null>(null)
 
   const [blockTarget, setBlockTarget] = useState<{
@@ -306,7 +306,7 @@ export function FeedDetailScreen() {
       onConfirm: async () => {
         const result = await reportBoard({ boardId, reportedUserId: profile.userId })
         if (result.status === 'duplicated') {
-          throw new Error('이미 신고한 유저예요.')
+          return 'duplicate'
         }
       },
     })
@@ -384,7 +384,12 @@ export function FeedDetailScreen() {
         profileImageUrl: authorProfile.profileImageUrl,
         nickname: authorProfile.nickName,
         onConfirm: async () => {
-          await reportReply({ boardId, replyId, reportedUserId })
+          try {
+            await reportReply({ boardId, replyId, reportedUserId })
+          } catch (error) {
+            if (isAlreadyReportedError(error)) return 'duplicate'
+            throw error
+          }
         },
       })
     },

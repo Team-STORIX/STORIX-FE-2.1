@@ -5,14 +5,16 @@ import { C, Gray, Typography } from '../../theme'
 
 const defaultProfileImage = require('../../../assets/placeholders/profile-default.png')
 const reportDoneIcon = require('../../../assets/icons/feed/report-done.svg')
+const reportAlreadyIcon = require('../../../assets/icons/feed/report-already.svg')
 const blockDoneIcon = require('../../../assets/icons/feed/block-done.svg')
 
 type ActionType = 'report' | 'block'
+type CompletionKind = 'success' | 'duplicate'
 
 type UserActionModalProps = {
   visible: boolean
   onClose: () => void
-  onConfirm: () => Promise<void>
+  onConfirm: () => Promise<void | CompletionKind>
   profileImageUrl?: string | null
   nickname: string
   type: ActionType
@@ -35,15 +37,18 @@ export function UserActionModal({
   const isReport = type === 'report'
   const [confirming, setConfirming] = useState(false)
   const [doneVisible, setDoneVisible] = useState(false)
+  const [completionKind, setCompletionKind] = useState<CompletionKind>('success')
   const doneOpacity = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     if (!visible) {
       setDoneVisible(false)
+      setCompletionKind('success')
     }
   }, [visible])
 
-  const showDone = () => {
+  const showDone = (kind: CompletionKind = 'success') => {
+    setCompletionKind(kind)
     setDoneVisible(true)
     Animated.sequence([
       Animated.timing(doneOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -59,13 +64,13 @@ export function UserActionModal({
     if (confirming) return
     setConfirming(true)
     try {
-      await onConfirm()
+      const result = await onConfirm()
       if (!showCompletionPopup) {
         onClose()
         requestAnimationFrame(() => onSuccess?.())
         return
       }
-      showDone()
+      showDone(result === 'duplicate' ? 'duplicate' : 'success')
     } catch (error: unknown) {
       // Surface the failure to the caller; do NOT show the success UI.
       onError?.(error)
@@ -153,7 +158,13 @@ export function UserActionModal({
         {doneVisible && (
           <Animated.View style={[styles.doneWrap, { opacity: doneOpacity }]}>
             <Image
-              source={isReport ? reportDoneIcon : blockDoneIcon}
+              source={
+                isReport
+                  ? completionKind === 'duplicate'
+                    ? reportAlreadyIcon
+                    : reportDoneIcon
+                  : blockDoneIcon
+              }
               style={styles.doneImage}
               contentFit="contain"
             />
