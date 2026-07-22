@@ -61,10 +61,13 @@ export const extractIsForbiddenFromValidResponse = (
   data: NicknameValidResponse,
 ): boolean => {
   if (data.isSuccess !== false) return false
+  const message = data.message.trim()
 
   return (
     data.code === 'NICKNAME_ERROR_003' ||
     data.code === 'PROFILE_ERROR_003' ||
+    message.includes('금칙어') ||
+    message.includes('사용할 수 없는 표현') ||
     data.code.includes('FORBIDDEN') ||
     data.code.includes('PROHIBITED') ||
     data.code.includes('RESERVED') ||

@@ -5,6 +5,7 @@ import { useMemo, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ViewShot from 'react-native-view-shot'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
+import { XLogo } from '../../../components/common/XLogo'
 import { useCardShare } from '../hooks/useCardShare'
 
 const idCardTitle = require('../../../../assets/icons/profile/id-card-title.svg')
@@ -45,7 +46,7 @@ export function ProfileCardModal({
   const insets = useSafeAreaInsets()
   const { width: screenWidth } = useWindowDimensions()
   const viewShotRef = useRef<ViewShot>(null)
-  const { saveToGallery, shareImage, isSaving, isSharing } = useCardShare()
+  const { saveToGallery, shareImage, shareToTwitter, isSaving, isSharing } = useCardShare()
   const isIOS = Platform.OS === 'ios'
   const tintedTopGenreIconSvg = useMemo(
     () => tintSvg(topGenreIconSvg, Magenta[300]),
@@ -259,6 +260,23 @@ export function ProfileCardModal({
               </View>
               <Text style={styles.actionButtonText}>공유</Text>
             </Pressable>
+
+            {!isIOS ? (
+              <Pressable
+                onPress={() => shareToTwitter(captureCard, 'STORIX 프로필 카드')}
+                disabled={isSharing}
+                style={styles.actionButton}
+              >
+                <View style={styles.actionButtonCircle}>
+                  {isSharing ? (
+                    <ActivityIndicator size="small" color={Gray[900]} />
+                  ) : (
+                    <XLogo size={20} color={Gray[900]} />
+                  )}
+                </View>
+                <Text style={styles.actionButtonText}>X에 공유</Text>
+              </Pressable>
+            ) : null}
           </View>
         </Pressable>
       </View>
@@ -424,10 +442,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    height: 136,
+    paddingHorizontal: 67,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 60,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   actionButtonsIOS: {
     paddingHorizontal: 80,
@@ -437,7 +456,7 @@ const styles = StyleSheet.create({
     gap: 88,
   },
   actionButton: {
-    width: 60,
+    width: 48,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
