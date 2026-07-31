@@ -29,6 +29,7 @@ export const FeedBoardSchema = z.object({
   likeCount: z.number(),
   replyCount: z.number(),
   isSpoiler: z.boolean(),
+  spoilerScript: z.string().nullish(),
   isLiked: z.boolean(),
 })
 
