@@ -137,6 +137,7 @@ export function ProfileActivityBoardCard({
           : null
       }
       isSpoiler={item.board.isSpoiler ?? item.isSpoiler ?? false}
+      spoilerScript={item.board.spoilerScript}
       isLiked={item.board.isLiked}
       likeCount={item.board.likeCount}
       replyCount={item.board.replyCount}

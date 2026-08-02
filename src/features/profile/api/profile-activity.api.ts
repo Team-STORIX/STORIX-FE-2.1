@@ -51,6 +51,8 @@ export type ProfileActivityBoard = {
   content: string
   likeCount: number
   isSpoiler?: boolean
+  spoilerScript?: string
+  theme?: 'BIRTHDAY'
   replyCount: number
   isLiked: boolean
 }
