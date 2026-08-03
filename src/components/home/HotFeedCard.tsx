@@ -46,6 +46,9 @@ export function HotFeedCard({
 
   const { board, profile } = item;
   const content = board.content ?? "";
+  const isSpoiler = board.isSpoiler === true;
+  const spoilerText =
+    board.spoilerScript?.trim() || "스포일러가 포함된 피드글 보기";
 
   const Wrapper: any = onPress ? Pressable : View;
   const cardStyle = [styles.card, { width }];
@@ -79,9 +82,17 @@ export function HotFeedCard({
         </Text>
       </View>
 
-      <Text style={styles.contentText} numberOfLines={2}>
-        {content}
-      </Text>
+      {isSpoiler ? (
+        <View style={styles.spoilerContent}>
+          <Text style={styles.spoilerText} numberOfLines={2}>
+            {spoilerText}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.contentText} numberOfLines={2}>
+          {content}
+        </Text>
+      )}
 
       <View style={styles.reactionRow}>
         <View style={styles.reactionItem}>
@@ -167,6 +178,19 @@ const styles = StyleSheet.create({
     color: Gray[600],
     minHeight: 42,
     marginBottom: 8,
+  },
+  spoilerContent: {
+    minHeight: 42,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: C.spoilerBg,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: "center",
+  },
+  spoilerText: {
+    ...Typography.body2Medium,
+    color: C.primary,
   },
   reactionRow: {
     flexDirection: "row",
