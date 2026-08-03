@@ -10,6 +10,12 @@
     "prebuild:ios": "expo prebuild --platform ios",
     "ios:open": "open ios/*.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",
+    "build:ios:test": "eas build --profile preview --platform ios",
+    "build:ios:prod": "eas build --profile production --platform ios",
+    "build:android:test": "eas build --profile preview --platform android",
+    "build:android:prod": "eas build --profile production --platform android",
+    "build:test": "eas build --profile preview --platform all",
+    "build:prod": "eas build --profile production --platform all",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -63,6 +69,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "eas-cli": "^21.4.0",
     "firebase-admin": "^13.9.0",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
