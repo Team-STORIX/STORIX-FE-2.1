@@ -10,7 +10,7 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 }
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
 import Constants from 'expo-constants'
@@ -30,6 +30,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
 import { C } from '../src/theme'
+import { AttendanceEventPopup, useAppEventPopup } from '../src/features/app-event'
 import { useMe } from '../src/features/profile'
 import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
@@ -372,6 +373,7 @@ function RootLayoutNav() {
       <ProfileBootstrap />
       <PushNotificationBootstrap />
       <TitleAchievementDetector />
+      <AppEventPopupBootstrap />
       <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -381,6 +383,45 @@ function RootLayoutNav() {
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
     </ThemeProvider>
+  )
+}
+
+// Fetch the active app popup as soon as the authenticated app shell mounts.
+// The modal itself is gated to Home so auth and secondary screens are not
+// covered while the query is being resolved.
+function AppEventPopupBootstrap() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const segments = useSegments()
+  const router = useRouter()
+  const { data: popup } = useAppEventPopup(isAuthenticated)
+  const [visible, setVisible] = useState(false)
+  const shownPopupIdRef = useRef<number | null>(null)
+
+  const segmentList = segments as readonly string[]
+  const isHomeRoute =
+    segmentList[0] === '(tabs)' &&
+    (segmentList.length === 1 || segmentList[1] === 'index')
+
+  useEffect(() => {
+    if (!isAuthenticated || !isHomeRoute || !popup) return
+    if (shownPopupIdRef.current === popup.id) return
+
+    shownPopupIdRef.current = popup.id
+    setVisible(true)
+  }, [isAuthenticated, isHomeRoute, popup])
+
+  if (!popup) return null
+
+  return (
+    <AttendanceEventPopup
+      visible={visible && isHomeRoute}
+      popupId={popup.id}
+      onClose={() => setVisible(false)}
+      onAttendanceCheck={() => {
+        setVisible(false)
+        router.push('/events/attendance' as never)
+      }}
+    />
   )
 }
 
