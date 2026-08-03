@@ -12,6 +12,7 @@ import { signup } from '../api/signup.api'
 import { type SignupRequest } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
 import { setItem, getItem, removeItem } from '../../../lib/storage/async'
+import { trackSignupCompleted } from '../../../lib/analytics/events'
 import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useSignup = () => {
@@ -37,6 +38,7 @@ export const useSignup = () => {
         tempProvider ? setItem(SOCIAL_PROVIDER_KEY, tempProvider) : Promise.resolve(),
         removeItem('tempSocialProvider'),
       ])
+      await trackSignupCompleted(tempProvider)
       // Navigation is left to the caller.
     },
 
