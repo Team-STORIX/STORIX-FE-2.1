@@ -18,18 +18,33 @@ const attendanceWriting = require("../../../../assets/event/attendance/attendanc
 type AttendanceEventPopupProps = {
   visible: boolean;
   popupId: number;
+  title?: string | null;
+  imageUrl?: string | null;
+  content?: string | null;
+  ctaText?: string | null;
   onClose: () => void;
   onAttendanceCheck: () => void;
 };
 
+const FALLBACK_CTA = "출석 체크하기";
+
 export function AttendanceEventPopup({
   visible,
   popupId,
+  imageUrl,
+  ctaText,
   onClose,
   onAttendanceCheck,
 }: AttendanceEventPopupProps) {
   const neverShowMutation = useNeverShowAppEventPopup();
   const [neverShowError, setNeverShowError] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  // The attendance template keeps its promotional copy fixed. Only the
+  // server-provided CTA and image override their local fallbacks.
+  const ctaLabel = ctaText?.trim() ? ctaText : FALLBACK_CTA;
+  const remoteImage =
+    imageUrl?.trim() && !imageFailed ? { uri: imageUrl } : null;
 
   const handleNeverShow = async () => {
     if (neverShowMutation.isPending) return;
@@ -56,9 +71,10 @@ export function AttendanceEventPopup({
           <View style={styles.card}>
             <View style={styles.stampArea} pointerEvents="none">
               <Image
-                source={attendanceStamp}
+                source={remoteImage ?? attendanceStamp}
                 style={styles.stamp}
                 contentFit="contain"
+                onError={() => setImageFailed(true)}
               />
             </View>
 
@@ -76,7 +92,9 @@ export function AttendanceEventPopup({
                 style={styles.eventLabel}
                 contentFit="contain"
               />
-              <Text style={styles.title}>출석하고 2만원 캐시받자!</Text>
+              <Text style={styles.title} numberOfLines={1}>
+                출석하고 2만원 캐시받자!
+              </Text>
             </View>
 
             <View style={styles.actions}>
@@ -100,7 +118,9 @@ export function AttendanceEventPopup({
                 accessibilityRole="button"
                 accessibilityLabel="출석 체크하기"
               >
-                <Text style={styles.attendanceButtonText}>출석 체크하기</Text>
+                <Text style={styles.attendanceButtonText} numberOfLines={1}>
+                  {ctaLabel}
+                </Text>
               </Pressable>
             </View>
           </View>
