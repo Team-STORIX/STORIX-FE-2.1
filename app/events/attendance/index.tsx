@@ -1,7 +1,8 @@
+import { isAxiosError } from 'axios'
 import { Image } from 'expo-image'
 import { Stack, router } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
   useAttendanceEventStatus,
   useCheckInAttendanceEvent,
 } from '../../../src/features/attendance-event'
+import { Toast } from '../../../src/components/common/Toast'
 import { C, FontFamily, Gray, Magenta, Typography } from '../../../src/theme'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
@@ -27,29 +29,81 @@ function getDateKey(value: string) {
   return value.slice(0, 10)
 }
 
-function getStampDates(startAt: string, endAt: string) {
-  const start = new Date(`${getDateKey(startAt)}T00:00:00`)
-  const end = new Date(`${getDateKey(endAt)}T00:00:00`)
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+// Adds `days` to a yyyy-MM-dd key using UTC arithmetic. The server sends KST
+// date strings; building a local Date and calling toISOString() would shift the
+// day back by one on KST devices, so we keep everything in UTC and never let the
+// device timezone touch the value.
+function addDaysToDateKey(dateKey: string, days: number) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day + days))
+  return date.toISOString().slice(0, 10)
+}
+
+function getStampDates(startAt: string, endAt: string) {
+  const startKey = getDateKey(startAt)
+  const endKey = getDateKey(endAt)
+
+  if (!DATE_KEY_PATTERN.test(startKey) || !DATE_KEY_PATTERN.test(endKey)) {
     return Array.from({ length: MAX_STAMP_COUNT }, () => null)
   }
 
-  const dates: string[] = []
-  const cursor = new Date(start)
+  const dates: Array<string | null> = []
+  let cursor = startKey
 
-  while (cursor <= end && dates.length < MAX_STAMP_COUNT) {
-    dates.push(cursor.toISOString().slice(0, 10))
-    cursor.setDate(cursor.getDate() + 1)
+  // yyyy-MM-dd compares lexicographically in chronological order.
+  while (cursor <= endKey && dates.length < MAX_STAMP_COUNT) {
+    dates.push(cursor)
+    cursor = addDaysToDateKey(cursor, 1)
+  }
+
+  while (dates.length < MAX_STAMP_COUNT) {
+    dates.push(null)
   }
 
   return dates
+}
+
+function getCheckInErrorMessage(status: number | undefined) {
+  switch (status) {
+    case 409:
+      return '이미 오늘 출석했어요.'
+    case 400:
+      return '현재 참여할 수 없는 이벤트예요.'
+    case 404:
+      return '진행 중인 출석 이벤트가 없어요.'
+    default:
+      return '출석 처리에 실패했어요. 잠시 후 다시 시도해주세요.'
+  }
 }
 
 export default function AttendanceEventScreen() {
   const insets = useSafeAreaInsets()
   const { data: status, isLoading: isStatusLoading } = useAttendanceEventStatus()
   const checkInMutation = useCheckInAttendanceEvent()
+
+  const [toast, setToast] = useState<{
+    message: string
+    variant: 'default' | 'success'
+  } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = useCallback(
+    (message: string, variant: 'default' | 'success' = 'default') => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      setToast({ message, variant })
+      toastTimer.current = setTimeout(() => setToast(null), 2000)
+    },
+    [],
+  )
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+    },
+    [],
+  )
 
   const stampDates = status
     ? getStampDates(status.eventStartDate, status.eventEndDate)
@@ -61,10 +115,16 @@ export default function AttendanceEventScreen() {
     checkInMutation.isPending ||
     !status?.eventActive ||
     status.attendedToday
+  const shouldDimCheckInButton = isStatusLoading || !status?.eventActive
 
   const handleCheckIn = () => {
     if (isCheckInDisabled) return
-    checkInMutation.mutate()
+    checkInMutation.mutate(undefined, {
+      onError: (error) => {
+        const status = isAxiosError(error) ? error.response?.status : undefined
+        showToast(getCheckInErrorMessage(status))
+      },
+    })
   }
 
   return (
@@ -114,19 +174,17 @@ export default function AttendanceEventScreen() {
               disabled={isCheckInDisabled}
               style={({ pressed }) => [
                 styles.attendanceButton,
-                isCheckInDisabled && styles.attendanceButtonDisabled,
+                shouldDimCheckInButton && styles.attendanceButtonDisabled,
                 pressed && !isCheckInDisabled && styles.pressed,
               ]}
               accessibilityRole="button"
               accessibilityLabel="오늘치 출석 도장 찍기"
             >
-              {checkInMutation.isPending ? (
-                <ActivityIndicator size="small" color={C.card} />
-              ) : (
-                <Text style={styles.attendanceButtonText}>
-                  {status?.attendedToday ? '오늘 출석 완료' : '오늘치 출석 도장 찍기'}
-                </Text>
-              )}
+              <Text style={styles.attendanceButtonText}>
+                {checkInMutation.isPending || status?.attendedToday
+                  ? '오늘 출석 완료'
+                  : '오늘치 출석 도장 찍기'}
+              </Text>
             </Pressable>
           </View>
 
@@ -153,6 +211,12 @@ export default function AttendanceEventScreen() {
             <Text style={styles.noticeText}>• 이벤트 종료 후 당첨자를 발표합니다.</Text>
           </View>
         </ScrollView>
+
+        <Toast
+          message={toast?.message}
+          variant={toast?.variant}
+          onClose={() => setToast(null)}
+        />
       </View>
     </>
   )

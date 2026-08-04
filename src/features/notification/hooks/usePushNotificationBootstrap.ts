@@ -25,6 +25,7 @@ import {
   getNotificationRoute,
   parsePushNotificationData,
 } from "../services/pushPayload";
+import { getValidHttpUrl } from '../../app-event/lib/targetNavigation'
 import { usePushDeviceSync } from "./usePushDeviceSync";
 
 /**
@@ -68,8 +69,12 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
       });
   }
 
-  if (payload?.targetType === 'EXTERNAL' && payload.targetLink) {
-    void Linking.openURL(payload.targetLink).catch((err) => {
+  const externalUrl =
+    payload?.targetType === 'EXTERNAL'
+      ? getValidHttpUrl(payload.targetLink)
+      : null
+  if (externalUrl) {
+    void Linking.openURL(externalUrl).catch((err) => {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.warn("[push] external link failed", err);

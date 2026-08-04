@@ -11,6 +11,8 @@
 // FCM delivers every `data` value as a string, so all IDs arrive as strings and
 // must be coerced defensively (see `toId`).
 
+import { getAppEventWebViewRoute } from '../../app-event/lib/targetNavigation'
+
 // ---------- types ----------
 
 /** targetType drives where a tapped notification lands. */
@@ -19,6 +21,8 @@ export type PushTargetType =
   | 'REVIEW'
   | 'COMMENT'
   | 'TOPIC_ROOM'
+  | 'APP_EVENT'
+  | 'EXTERNAL'
   | 'NONE'
   | (string & {})
 
@@ -209,6 +213,14 @@ export function getNotificationRoute(
         ? { pathname: `/feed/${feedId}`, params: { commentId } }
         : `/feed/${feedId}`
     }
+
+    case 'APP_EVENT':
+      // TODO(APP-EVENT-DOMAIN): Confirm an allowed-domain policy with backend/product.
+      return getAppEventWebViewRoute(payload.targetLink)
+
+    case 'EXTERNAL':
+      // External links are opened by the notification bootstrap, not routed.
+      return null
 
     case 'NONE':
       return null

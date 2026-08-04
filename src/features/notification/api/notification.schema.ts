@@ -37,7 +37,16 @@ const ExtensibleEnum = (known: readonly [string, ...string[]]) =>
 
 export const KNOWN_NOTIFICATION_TYPES = ['LIKE_FEED'] as const
 export const KNOWN_CATEGORIES = ['FEED'] as const
-export const KNOWN_TARGET_TYPES = ['FEED'] as const
+export const KNOWN_TARGET_TYPES = [
+  'FEED',
+  'REVIEW',
+  'COMMENT',
+  'TOPIC_ROOM',
+  'WORKS',
+  'APP_EVENT',
+  'EXTERNAL',
+  'NONE',
+] as const
 
 export const NotificationTypeSchema = ExtensibleEnum(KNOWN_NOTIFICATION_TYPES)
 export const CategorySchema = ExtensibleEnum(KNOWN_CATEGORIES)
@@ -63,6 +72,7 @@ export const NotificationItemSchema = z.object({
   notificationType: NotificationTypeSchema,
   category: CategorySchema,
   targetType: TargetTypeSchema,
+  eventId: z.number().nullable().optional(),
   targetId: z.number().nullable().optional(),
   parentTargetId: z.number().nullable().optional(),
   targetLink: z.string().nullable().optional(),
