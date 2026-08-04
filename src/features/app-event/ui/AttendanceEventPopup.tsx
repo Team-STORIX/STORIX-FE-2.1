@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { C, FontFamily, Magenta } from "../../../theme";
-import { useNeverShowAppEventPopup } from "../hooks";
+import { useDismissAppEventPopup } from "../hooks";
 
 const attendanceStamp = require("../../../../assets/event/attendance/attendance-stamp-image.png");
 const attendanceWriting = require("../../../../assets/event/attendance/attendance-writing.png");
@@ -26,36 +26,29 @@ type AttendanceEventPopupProps = {
   onAttendanceCheck: () => void;
 };
 
-const FALLBACK_CTA = "출석 체크하기";
-
 export function AttendanceEventPopup({
   visible,
   popupId,
   imageUrl,
-  ctaText,
   onClose,
   onAttendanceCheck,
 }: AttendanceEventPopupProps) {
-  const neverShowMutation = useNeverShowAppEventPopup();
-  const [neverShowError, setNeverShowError] = useState(false);
+  const dismissMutation = useDismissAppEventPopup();
   const [imageFailed, setImageFailed] = useState(false);
 
-  // The attendance template keeps its promotional copy fixed. Only the
-  // server-provided CTA and image override their local fallbacks.
-  const ctaLabel = ctaText?.trim() ? ctaText : FALLBACK_CTA;
+  // The attendance template keeps its promotional copy and CTA fixed. Only
+  // the server-provided image overrides the local fallback.
   const remoteImage =
     imageUrl?.trim() && !imageFailed ? { uri: imageUrl } : null;
 
-  const handleNeverShow = async () => {
-    if (neverShowMutation.isPending) return;
-
-    setNeverShowError(false);
+  const handleDismissForToday = async () => {
+    if (dismissMutation.isPending) return;
 
     try {
-      await neverShowMutation.mutateAsync(popupId);
+      await dismissMutation.mutateAsync(popupId);
       onClose();
     } catch {
-      setNeverShowError(true);
+      // Keep the action label stable; the user can tap again if the request fails.
     }
   };
 
@@ -72,7 +65,7 @@ export function AttendanceEventPopup({
             <View style={styles.stampArea} pointerEvents="none">
               <Image
                 source={remoteImage ?? attendanceStamp}
-                style={styles.stamp}
+                style={[styles.stamp, remoteImage && styles.remoteStamp]}
                 contentFit="contain"
                 onError={() => setImageFailed(true)}
               />
@@ -119,25 +112,23 @@ export function AttendanceEventPopup({
                 accessibilityLabel="출석 체크하기"
               >
                 <Text style={styles.attendanceButtonText} numberOfLines={1}>
-                  {ctaLabel}
+                  출석 체크하기
                 </Text>
               </Pressable>
             </View>
           </View>
 
           <Pressable
-            onPress={handleNeverShow}
-            disabled={neverShowMutation.isPending}
+            onPress={handleDismissForToday}
+            disabled={dismissMutation.isPending}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="다시 보지 않기"
+            accessibilityLabel="오늘 다시 보지 않기"
           >
-            {neverShowMutation.isPending ? (
+            {dismissMutation.isPending ? (
               <ActivityIndicator size="small" color={C.card} />
             ) : (
-              <Text style={styles.neverShowText}>
-                {neverShowError ? "다시 시도하기" : "다시보지않기"}
-              </Text>
+              <Text style={styles.neverShowText}>오늘 다시 보지 않기</Text>
             )}
           </Pressable>
         </View>
@@ -176,6 +167,9 @@ const styles = StyleSheet.create({
   stamp: {
     width: "100%",
     height: "100%",
+  },
+  remoteStamp: {
+    transform: [{ translateY: 12 }, { scale: 0.92 }],
   },
   bottomGradient: {
     position: "absolute",

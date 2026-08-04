@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,6 +16,7 @@ import {
   useCheckInAttendanceEvent,
 } from '../../../src/features/attendance-event'
 import { Toast } from '../../../src/components/common/Toast'
+import { WarningModal } from '../../../src/components/common/WarningModal'
 import { C, FontFamily, Gray, Magenta, Typography } from '../../../src/theme'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
@@ -24,9 +26,19 @@ const attendanceTitle = require('../../../assets/event/attendance/attendance-tit
 const giftCard = require('../../../assets/event/attendance/giftCard.png')
 
 const MAX_STAMP_COUNT = 12
+const ATTENDANCE_HORIZONTAL_PADDING = 20
+const STAMP_BOARD_MAX_WIDTH = 352
+const STAMP_BOARD_PADDING = 20
+const STAMP_GAP = 8
+const STAMP_COLUMN_COUNT = 4
 
 function getDateKey(value: string) {
   return value.slice(0, 10)
+}
+
+function getKstTodayDateKey() {
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+  return new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 10)
 }
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -80,6 +92,7 @@ function getCheckInErrorMessage(status: number | undefined) {
 
 export default function AttendanceEventScreen() {
   const insets = useSafeAreaInsets()
+  const { width: windowWidth } = useWindowDimensions()
   const { data: status, isLoading: isStatusLoading } = useAttendanceEventStatus()
   const checkInMutation = useCheckInAttendanceEvent()
 
@@ -87,6 +100,7 @@ export default function AttendanceEventScreen() {
     message: string
     variant: 'default' | 'success'
   } | null>(null)
+  const [dismissedExpiredEventId, setDismissedExpiredEventId] = useState<number | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = useCallback(
@@ -110,12 +124,23 @@ export default function AttendanceEventScreen() {
     : Array.from({ length: MAX_STAMP_COUNT }, () => null)
   const attendedDateKeys = new Set(status?.attendedDates.map(getDateKey))
   const stampStatus = stampDates.map((date) => date != null && attendedDateKeys.has(date))
+  const isEventExpired = status
+    ? getKstTodayDateKey() > getDateKey(status.eventEndDate)
+    : false
+  const stampBoardWidth = Math.min(
+    STAMP_BOARD_MAX_WIDTH,
+    windowWidth - ATTENDANCE_HORIZONTAL_PADDING * 2,
+  )
+  const stampSize =
+    (stampBoardWidth - STAMP_BOARD_PADDING * 2 - STAMP_GAP * (STAMP_COLUMN_COUNT - 1)) /
+    STAMP_COLUMN_COUNT
   const isCheckInDisabled =
     isStatusLoading ||
     checkInMutation.isPending ||
     !status?.eventActive ||
     status.attendedToday
   const shouldDimCheckInButton = isStatusLoading || !status?.eventActive
+  const isCheckInCompleted = checkInMutation.isPending || status?.attendedToday
 
   const handleCheckIn = () => {
     if (isCheckInDisabled) return
@@ -125,6 +150,11 @@ export default function AttendanceEventScreen() {
         showToast(getCheckInErrorMessage(status))
       },
     })
+  }
+
+  const handleExpiredEventConfirm = () => {
+    if (status) setDismissedExpiredEventId(status.appEventId)
+    router.back()
   }
 
   return (
@@ -159,12 +189,12 @@ export default function AttendanceEventScreen() {
               contentFit="contain"
               accessibilityLabel="출석 이벤트"
             />
-            <View style={styles.stampBoard}>
+            <View style={[styles.stampBoard, { width: stampBoardWidth }]}>
               {stampStatus.map((isStamped, index) => (
                 <Image
                   key={index}
                   source={isStamped ? stampOn : stampOff}
-                  style={styles.stamp}
+                  style={{ width: stampSize, height: stampSize }}
                   contentFit="contain"
                 />
               ))}
@@ -174,15 +204,20 @@ export default function AttendanceEventScreen() {
               disabled={isCheckInDisabled}
               style={({ pressed }) => [
                 styles.attendanceButton,
+                isCheckInCompleted && styles.attendanceButtonCompleted,
                 shouldDimCheckInButton && styles.attendanceButtonDisabled,
                 pressed && !isCheckInDisabled && styles.pressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="오늘치 출석 도장 찍기"
+              accessibilityLabel={
+                isCheckInCompleted
+                  ? '이미 출석체크를 완료했어요'
+                  : '오늘치 출석 도장 찍기'
+              }
             >
               <Text style={styles.attendanceButtonText}>
-                {checkInMutation.isPending || status?.attendedToday
-                  ? '오늘 출석 완료'
+                {isCheckInCompleted
+                  ? '이미 출석체크를 완료했어요'
                   : '오늘치 출석 도장 찍기'}
               </Text>
             </Pressable>
@@ -203,12 +238,26 @@ export default function AttendanceEventScreen() {
             </View>
           </View>
 
-          <View style={styles.noticeSection}>
+          <View
+            style={[
+              styles.noticeSection,
+              { paddingBottom: 44 + insets.bottom },
+            ]}
+          >
             <Text style={styles.noticeTitle}>*유의사항</Text>
             <Text style={styles.noticeText}>• 출석은 1일 1회만 가능합니다.</Text>
             <Text style={styles.noticeText}>• 응모권은 조건 달성 시 자동 지급됩니다.</Text>
             <Text style={styles.noticeText}>• 부정 참여가 확인될 경우 당첨이 취소될 수 있습니다.</Text>
             <Text style={styles.noticeText}>• 이벤트 종료 후 당첨자를 발표합니다.</Text>
+            <Text style={styles.noticeText}>
+              • 이벤트 기간은 2026년 8월 10일(월) ~ 8월 21일(금) 입니다.
+            </Text>
+            <Text style={styles.noticeText}>
+              • 당첨 안내는 마케팅 알림 수신 동의자에 한하여 앱 푸시로 발송됩니다.
+            </Text>
+            <Text style={styles.noticeText}>
+              • 마케팅 알림 수신에 동의하지 않았거나 이벤트 종료 전 수신을 해제한 경우, 당첨 안내를 받지 못할 수 있습니다.
+            </Text>
           </View>
         </ScrollView>
 
@@ -216,6 +265,14 @@ export default function AttendanceEventScreen() {
           message={toast?.message}
           variant={toast?.variant}
           onClose={() => setToast(null)}
+        />
+        <WarningModal
+          visible={
+            isEventExpired && dismissedExpiredEventId !== status?.appEventId
+          }
+          title="마감된 이벤트입니다"
+          description="다음 이벤트를 기대해주세요!"
+          onConfirm={handleExpiredEventConfirm}
         />
       </View>
     </>
@@ -257,7 +314,7 @@ const styles = StyleSheet.create({
   attendanceSection: {
     alignItems: 'center',
     gap: 28,
-    paddingHorizontal: 20,
+    paddingHorizontal: ATTENDANCE_HORIZONTAL_PADDING,
     paddingVertical: 32,
     backgroundColor: Magenta[300],
   },
@@ -266,17 +323,12 @@ const styles = StyleSheet.create({
     height: 24,
   },
   stampBoard: {
-    width: 352,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    padding: 20,
+    gap: STAMP_GAP,
+    padding: STAMP_BOARD_PADDING,
     borderRadius: 10,
     backgroundColor: '#ff62a1',
-  },
-  stamp: {
-    width: 72,
-    height: 72,
   },
   attendanceButton: {
     minHeight: 44,
@@ -289,6 +341,10 @@ const styles = StyleSheet.create({
   },
   attendanceButtonDisabled: {
     opacity: 0.55,
+  },
+  attendanceButtonCompleted: {
+    borderRadius: 12,
+    backgroundColor: Magenta[200],
   },
   attendanceButtonText: {
     ...Typography.body2Bold,
