@@ -223,7 +223,12 @@ export default function AttendanceEventScreen() {
             </View>
           </View>
 
-          <View style={styles.noticeSection}>
+          <View
+            style={[
+              styles.noticeSection,
+              { paddingBottom: 44 + insets.bottom },
+            ]}
+          >
             <Text style={styles.noticeTitle}>*유의사항</Text>
             <Text style={styles.noticeText}>• 출석은 1일 1회만 가능합니다.</Text>
             <Text style={styles.noticeText}>• 응모권은 조건 달성 시 자동 지급됩니다.</Text>
