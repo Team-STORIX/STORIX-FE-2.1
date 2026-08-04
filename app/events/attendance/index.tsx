@@ -116,6 +116,7 @@ export default function AttendanceEventScreen() {
     !status?.eventActive ||
     status.attendedToday
   const shouldDimCheckInButton = isStatusLoading || !status?.eventActive
+  const isCheckInCompleted = checkInMutation.isPending || status?.attendedToday
 
   const handleCheckIn = () => {
     if (isCheckInDisabled) return
@@ -174,6 +175,7 @@ export default function AttendanceEventScreen() {
               disabled={isCheckInDisabled}
               style={({ pressed }) => [
                 styles.attendanceButton,
+                isCheckInCompleted && styles.attendanceButtonCompleted,
                 shouldDimCheckInButton && styles.attendanceButtonDisabled,
                 pressed && !isCheckInDisabled && styles.pressed,
               ]}
@@ -181,7 +183,7 @@ export default function AttendanceEventScreen() {
               accessibilityLabel="오늘치 출석 도장 찍기"
             >
               <Text style={styles.attendanceButtonText}>
-                {checkInMutation.isPending || status?.attendedToday
+                {isCheckInCompleted
                   ? '오늘 출석 완료'
                   : '오늘치 출석 도장 찍기'}
               </Text>
@@ -289,6 +291,9 @@ const styles = StyleSheet.create({
   },
   attendanceButtonDisabled: {
     opacity: 0.55,
+  },
+  attendanceButtonCompleted: {
+    backgroundColor: Gray[700],
   },
   attendanceButtonText: {
     ...Typography.body2Bold,
