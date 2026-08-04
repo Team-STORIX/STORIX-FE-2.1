@@ -51,7 +51,9 @@ export const AppEventBannerSchema = z.object({
   updatedAt: z.string(),
 })
 
-export const EmptyResultSchema = z.record(z.string(), z.unknown())
+// CustomResponse<Void> omits `result` entirely because the backend uses
+// @JsonInclude(NON_NULL), so empty-success responses must accept a missing key.
+export const EmptyResultSchema = z.unknown().nullable().optional()
 
 export const AppEventTitleEventsResponseSchema = ApiEnvelopeSchema(
   z.array(AppEventTitleEventSchema),

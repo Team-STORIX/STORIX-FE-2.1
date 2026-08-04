@@ -4,6 +4,11 @@ import { AppState, Linking } from "react-native";
 
 import { queryClient } from "../../../lib/query/queryClient";
 import { useAuthStore } from "../../../store/auth.store";
+import {
+  attendanceEventKeys,
+  getAttendanceEventStatus,
+  type AttendanceEventStatus,
+} from "../../attendance-event";
 import { markNotificationRead } from "../api/notification.api";
 import { notificationKeys } from "../api/notification.keys";
 import { subscribeFcmTokenRefresh } from "../services/fcmToken";
@@ -83,7 +88,28 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
     return;
   }
 
-  const route = getNotificationRoute(payload);
+  let attendanceAppEventId: number | undefined;
+  if (
+    payload?.targetType === "APP_EVENT" &&
+    payload.targetId != null &&
+    !payload.targetLink
+  ) {
+    try {
+      const attendanceStatus = await getAttendanceEventStatus();
+      attendanceAppEventId = attendanceStatus.appEventId;
+      queryClient.setQueryData<AttendanceEventStatus>(
+        attendanceEventKeys.status,
+        attendanceStatus,
+      );
+    } catch (err) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn("[push] attendance event resolution failed", err);
+      }
+    }
+  }
+
+  const route = getNotificationRoute(payload, attendanceAppEventId);
   if (__DEV__) {
     // eslint-disable-next-line no-console
     console.log("[PUSH_RECEIVE_DEBUG] route decision", { route });

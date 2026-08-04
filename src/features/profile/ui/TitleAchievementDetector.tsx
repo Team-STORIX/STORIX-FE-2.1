@@ -18,12 +18,25 @@ const isTitleAchievementModalRoute = (segments: readonly string[]): boolean => {
   return group === '(tabs)' && (screen == null || screen === 'index' || screen === 'profile')
 }
 
-export function TitleAchievementDetector() {
+type TitleAchievementDetectorProps = {
+  blocked?: boolean
+  onVisibilityChange?: (visible: boolean) => void
+}
+
+export function TitleAchievementDetector({
+  blocked = false,
+  onVisibilityChange,
+}: TitleAchievementDetectorProps) {
   const { data: me } = useMe()
   const segments = useSegments()
   const previousTitleRef = useRef<string | null | undefined>(undefined)
   const [achievementModal, setAchievementModal] = useState<TitleAchievementPayload | null>(null)
-  const canShowAchievementModal = isTitleAchievementModalRoute(segments as readonly string[])
+  const canShowAchievementModal =
+    !blocked && isTitleAchievementModalRoute(segments as readonly string[])
+
+  useEffect(() => {
+    onVisibilityChange?.(achievementModal != null)
+  }, [achievementModal, onVisibilityChange])
 
   const showAchievementModal = useCallback(async (payload: TitleAchievementPayload) => {
     await AsyncStorage.setItem(PENDING_TITLE_MODAL_KEY, JSON.stringify(payload))

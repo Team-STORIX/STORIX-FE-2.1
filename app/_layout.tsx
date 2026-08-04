@@ -11,7 +11,7 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react'
-import { Linking, StyleSheet, View } from 'react-native'
+import { InteractionManager, Linking, StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
 import Constants from 'expo-constants'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -199,6 +199,7 @@ export default function RootLayout() {
   })
 
   const [startupReady, setStartupReady] = useState(false)
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false)
   const [appVersionResult, setAppVersionResult] =
     useState<AppVersionCheckResult | null>(null)
   const [appVersionDismissed, setAppVersionDismissed] = useState(false)
@@ -235,10 +236,18 @@ export default function RootLayout() {
   // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
     if (fontsLoaded) {
+      let mounted = true
       const t = setTimeout(() => {
-        void SplashScreen.hideAsync().catch(() => undefined)
+        void SplashScreen.hideAsync()
+          .catch(() => undefined)
+          .finally(() => {
+            if (mounted) setNativeSplashHidden(true)
+          })
       }, 1500)
-      return () => clearTimeout(t)
+      return () => {
+        mounted = false
+        clearTimeout(t)
+      }
     }
   }, [fontsLoaded])
 
@@ -266,7 +275,7 @@ export default function RootLayout() {
             />
           </ThemeProvider>
         ) : (
-          <RootLayoutNav />
+          <RootLayoutNav appReady={nativeSplashHidden} />
         )}
       </QueryClientProvider>
     </GestureHandlerRootView>
@@ -370,15 +379,24 @@ const splashStyles = StyleSheet.create({
 
 // ─── Root navigation ──────────────────────────────────────────────────────────
 
-function RootLayoutNav() {
+function RootLayoutNav({ appReady }: { appReady: boolean }) {
   const colorScheme = useColorScheme()
+  const [appEventModalBlocking, setAppEventModalBlocking] = useState(true)
+  const [titleModalVisible, setTitleModalVisible] = useState(false)
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileBootstrap />
       <PushNotificationBootstrap />
-      <TitleAchievementDetector />
-      <AppEventPopupBootstrap />
+      <AppEventPopupBootstrap
+        appReady={appReady}
+        blocked={titleModalVisible}
+        onBlockingChange={setAppEventModalBlocking}
+      />
+      <TitleAchievementDetector
+        blocked={appEventModalBlocking}
+        onVisibilityChange={setTitleModalVisible}
+      />
       <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -394,27 +412,77 @@ function RootLayoutNav() {
 // Fetch the active app popup as soon as the authenticated app shell mounts.
 // The modal itself is gated to Home so auth and secondary screens are not
 // covered while the query is being resolved.
-function AppEventPopupBootstrap() {
+type AppEventPopupBootstrapProps = {
+  appReady: boolean
+  blocked: boolean
+  onBlockingChange: (blocking: boolean) => void
+}
+
+function AppEventPopupBootstrap({
+  appReady,
+  blocked,
+  onBlockingChange,
+}: AppEventPopupBootstrapProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const segments = useSegments()
   const router = useRouter()
-  const { data: popup } = useAppEventPopup(isAuthenticated)
+  const popupQuery = useAppEventPopup(isAuthenticated)
+  const popup = popupQuery.data
   const { data: attendanceStatus } = useAttendanceEventStatus(isAuthenticated)
   const [visible, setVisible] = useState(false)
-  const shownPopupIdRef = useRef<number | null>(null)
+  const [homeReady, setHomeReady] = useState(false)
+  const settledPopupIdRef = useRef<number | null>(null)
 
   const segmentList = segments as readonly string[]
+  const routeResolved = segmentList.length > 0
   const isHomeRoute =
     segmentList[0] === '(tabs)' &&
     (segmentList.length === 1 || segmentList[1] === 'index')
 
   useEffect(() => {
-    if (!isAuthenticated || !isHomeRoute || !popup) return
-    if (shownPopupIdRef.current === popup.id) return
+    if (!appReady || !isHomeRoute) {
+      setHomeReady(false)
+      return
+    }
 
-    shownPopupIdRef.current = popup.id
+    let cancelled = false
+    let frameId: number | null = null
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      frameId = requestAnimationFrame(() => {
+        if (!cancelled) setHomeReady(true)
+      })
+    })
+
+    return () => {
+      cancelled = true
+      interaction.cancel()
+      if (frameId != null) cancelAnimationFrame(frameId)
+    }
+  }, [appReady, isHomeRoute])
+
+  const hasPendingPopup =
+    popup != null && settledPopupIdRef.current !== popup.id
+  const shouldBlockTitle =
+    !routeResolved ||
+    (isAuthenticated &&
+      isHomeRoute &&
+      (!appReady || popupQuery.isFetching || hasPendingPopup || visible))
+
+  useEffect(() => {
+    onBlockingChange(shouldBlockTitle)
+  }, [onBlockingChange, shouldBlockTitle])
+
+  useEffect(() => {
+    if (!isAuthenticated || !isHomeRoute || !homeReady || blocked || !popup) return
+    if (settledPopupIdRef.current === popup.id) return
+
     setVisible(true)
-  }, [isAuthenticated, isHomeRoute, popup])
+  }, [blocked, homeReady, isAuthenticated, isHomeRoute, popup])
+
+  const settlePopup = () => {
+    if (popup) settledPopupIdRef.current = popup.id
+    setVisible(false)
+  }
 
   if (!popup) return null
 
@@ -429,15 +497,15 @@ function AppEventPopupBootstrap() {
 
   return (
     <AttendanceEventPopup
-      visible={visible && isHomeRoute}
+      visible={visible && appReady && isHomeRoute && !blocked}
       popupId={popup.id}
       title={popup.popupTitle}
       imageUrl={popup.imageUrl}
       content={popup.content}
       ctaText={popup.ctaText}
-      onClose={() => setVisible(false)}
+      onClose={settlePopup}
       onAttendanceCheck={() => {
-        setVisible(false)
+        settlePopup()
         if (popup.contentTargetType === 'APP_EVENT') {
           // TODO(APP-EVENT-CONTRACT): The backend popup response does not yet
           // expose targetLink. Keep the existing attendance fallback below
