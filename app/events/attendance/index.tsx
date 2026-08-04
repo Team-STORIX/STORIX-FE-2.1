@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -24,6 +25,11 @@ const attendanceTitle = require('../../../assets/event/attendance/attendance-tit
 const giftCard = require('../../../assets/event/attendance/giftCard.png')
 
 const MAX_STAMP_COUNT = 12
+const ATTENDANCE_HORIZONTAL_PADDING = 20
+const STAMP_BOARD_MAX_WIDTH = 352
+const STAMP_BOARD_PADDING = 20
+const STAMP_GAP = 8
+const STAMP_COLUMN_COUNT = 4
 
 function getDateKey(value: string) {
   return value.slice(0, 10)
@@ -80,6 +86,7 @@ function getCheckInErrorMessage(status: number | undefined) {
 
 export default function AttendanceEventScreen() {
   const insets = useSafeAreaInsets()
+  const { width: windowWidth } = useWindowDimensions()
   const { data: status, isLoading: isStatusLoading } = useAttendanceEventStatus()
   const checkInMutation = useCheckInAttendanceEvent()
 
@@ -110,6 +117,13 @@ export default function AttendanceEventScreen() {
     : Array.from({ length: MAX_STAMP_COUNT }, () => null)
   const attendedDateKeys = new Set(status?.attendedDates.map(getDateKey))
   const stampStatus = stampDates.map((date) => date != null && attendedDateKeys.has(date))
+  const stampBoardWidth = Math.min(
+    STAMP_BOARD_MAX_WIDTH,
+    windowWidth - ATTENDANCE_HORIZONTAL_PADDING * 2,
+  )
+  const stampSize =
+    (stampBoardWidth - STAMP_BOARD_PADDING * 2 - STAMP_GAP * (STAMP_COLUMN_COUNT - 1)) /
+    STAMP_COLUMN_COUNT
   const isCheckInDisabled =
     isStatusLoading ||
     checkInMutation.isPending ||
@@ -160,12 +174,12 @@ export default function AttendanceEventScreen() {
               contentFit="contain"
               accessibilityLabel="출석 이벤트"
             />
-            <View style={styles.stampBoard}>
+            <View style={[styles.stampBoard, { width: stampBoardWidth }]}>
               {stampStatus.map((isStamped, index) => (
                 <Image
                   key={index}
                   source={isStamped ? stampOn : stampOff}
-                  style={styles.stamp}
+                  style={{ width: stampSize, height: stampSize }}
                   contentFit="contain"
                 />
               ))}
@@ -272,7 +286,7 @@ const styles = StyleSheet.create({
   attendanceSection: {
     alignItems: 'center',
     gap: 28,
-    paddingHorizontal: 20,
+    paddingHorizontal: ATTENDANCE_HORIZONTAL_PADDING,
     paddingVertical: 32,
     backgroundColor: Magenta[300],
   },
@@ -281,17 +295,12 @@ const styles = StyleSheet.create({
     height: 24,
   },
   stampBoard: {
-    width: 352,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    padding: 20,
+    gap: STAMP_GAP,
+    padding: STAMP_BOARD_PADDING,
     borderRadius: 10,
     backgroundColor: '#ff62a1',
-  },
-  stamp: {
-    width: 72,
-    height: 72,
   },
   attendanceButton: {
     minHeight: 44,
