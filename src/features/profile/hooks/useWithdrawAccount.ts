@@ -16,7 +16,7 @@ export function useWithdrawAccount() {
     setIsPending(true)
 
     try {
-      const provider = await getItem<string>(SOCIAL_PROVIDER_KEY)
+      const provider = await getItem<string>(SOCIAL_PROVIDER_KEY).catch(() => null)
       await deleteCurrentPushDevice()
       await withdrawUser(reasons, detail)
       await trackWithdrawAccount({

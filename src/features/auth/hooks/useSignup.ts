@@ -30,11 +30,12 @@ export const useSignup = () => {
       const { accessToken, refreshToken } = response.result
 
       // Retrieve the temporary provider from storage (stored during social login)
-      const tempProvider = await getItem<string>('tempSocialProvider')
+      const tempProvider = await getItem<string>('tempSocialProvider').catch(() => null)
 
-      await Promise.all([
-        setLoginTokens({ accessToken, refreshToken }),
-        // Store the final provider if we have one from the temp storage
+      await setLoginTokens({ accessToken, refreshToken })
+
+      await Promise.allSettled([
+        // Provider metadata must not turn a successful signup into an error.
         tempProvider ? setItem(SOCIAL_PROVIDER_KEY, tempProvider) : Promise.resolve(),
         removeItem('tempSocialProvider'),
       ])
