@@ -16,6 +16,7 @@ import {
   useCheckInAttendanceEvent,
 } from '../../../src/features/attendance-event'
 import { Toast } from '../../../src/components/common/Toast'
+import { WarningModal } from '../../../src/components/common/WarningModal'
 import { C, FontFamily, Gray, Magenta, Typography } from '../../../src/theme'
 
 const backIcon = require('../../../assets/icons/common/back.svg')
@@ -33,6 +34,11 @@ const STAMP_COLUMN_COUNT = 4
 
 function getDateKey(value: string) {
   return value.slice(0, 10)
+}
+
+function getKstTodayDateKey() {
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+  return new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 10)
 }
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -94,6 +100,7 @@ export default function AttendanceEventScreen() {
     message: string
     variant: 'default' | 'success'
   } | null>(null)
+  const [dismissedExpiredEventId, setDismissedExpiredEventId] = useState<number | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = useCallback(
@@ -117,6 +124,9 @@ export default function AttendanceEventScreen() {
     : Array.from({ length: MAX_STAMP_COUNT }, () => null)
   const attendedDateKeys = new Set(status?.attendedDates.map(getDateKey))
   const stampStatus = stampDates.map((date) => date != null && attendedDateKeys.has(date))
+  const isEventExpired = status
+    ? getKstTodayDateKey() > getDateKey(status.eventEndDate)
+    : false
   const stampBoardWidth = Math.min(
     STAMP_BOARD_MAX_WIDTH,
     windowWidth - ATTENDANCE_HORIZONTAL_PADDING * 2,
@@ -140,6 +150,11 @@ export default function AttendanceEventScreen() {
         showToast(getCheckInErrorMessage(status))
       },
     })
+  }
+
+  const handleExpiredEventConfirm = () => {
+    if (status) setDismissedExpiredEventId(status.appEventId)
+    router.back()
   }
 
   return (
@@ -250,6 +265,14 @@ export default function AttendanceEventScreen() {
           message={toast?.message}
           variant={toast?.variant}
           onClose={() => setToast(null)}
+        />
+        <WarningModal
+          visible={
+            isEventExpired && dismissedExpiredEventId !== status?.appEventId
+          }
+          title="마감된 이벤트입니다"
+          description="다음 이벤트를 기대해주세요!"
+          onConfirm={handleExpiredEventConfirm}
         />
       </View>
     </>
