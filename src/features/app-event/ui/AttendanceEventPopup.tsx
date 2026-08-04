@@ -1,6 +1,5 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -19,7 +18,6 @@ type AttendanceEventPopupProps = {
   visible: boolean;
   popupId: number;
   title?: string | null;
-  imageUrl?: string | null;
   content?: string | null;
   ctaText?: string | null;
   onClose: () => void;
@@ -29,17 +27,10 @@ type AttendanceEventPopupProps = {
 export function AttendanceEventPopup({
   visible,
   popupId,
-  imageUrl,
   onClose,
   onAttendanceCheck,
 }: AttendanceEventPopupProps) {
   const dismissMutation = useDismissAppEventPopup();
-  const [imageFailed, setImageFailed] = useState(false);
-
-  // The attendance template keeps its promotional copy and CTA fixed. Only
-  // the server-provided image overrides the local fallback.
-  const remoteImage =
-    imageUrl?.trim() && !imageFailed ? { uri: imageUrl } : null;
 
   const handleDismissForToday = async () => {
     if (dismissMutation.isPending) return;
@@ -64,10 +55,9 @@ export function AttendanceEventPopup({
           <View style={styles.card}>
             <View style={styles.stampArea} pointerEvents="none">
               <Image
-                source={remoteImage ?? attendanceStamp}
-                style={[styles.stamp, remoteImage && styles.remoteStamp]}
+                source={attendanceStamp}
+                style={styles.stamp}
                 contentFit="contain"
-                onError={() => setImageFailed(true)}
               />
             </View>
 
@@ -167,9 +157,6 @@ const styles = StyleSheet.create({
   stamp: {
     width: "100%",
     height: "100%",
-  },
-  remoteStamp: {
-    transform: [{ translateY: 12 }, { scale: 0.92 }],
   },
   bottomGradient: {
     position: "absolute",

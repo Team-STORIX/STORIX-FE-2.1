@@ -500,7 +500,6 @@ function AppEventPopupBootstrap({
       visible={visible && appReady && isHomeRoute && !blocked}
       popupId={popup.id}
       title={popup.popupTitle}
-      imageUrl={popup.imageUrl}
       content={popup.content}
       ctaText={popup.ctaText}
       onClose={settlePopup}
