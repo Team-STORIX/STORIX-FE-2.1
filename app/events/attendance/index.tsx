@@ -180,11 +180,15 @@ export default function AttendanceEventScreen() {
                 pressed && !isCheckInDisabled && styles.pressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="오늘치 출석 도장 찍기"
+              accessibilityLabel={
+                isCheckInCompleted
+                  ? '이미 출석체크를 완료했어요'
+                  : '오늘치 출석 도장 찍기'
+              }
             >
               <Text style={styles.attendanceButtonText}>
                 {isCheckInCompleted
-                  ? '오늘 출석 완료'
+                  ? '이미 출석체크를 완료했어요'
                   : '오늘치 출석 도장 찍기'}
               </Text>
             </Pressable>
@@ -293,7 +297,8 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   attendanceButtonCompleted: {
-    backgroundColor: Gray[700],
+    borderRadius: 12,
+    backgroundColor: Magenta[200],
   },
   attendanceButtonText: {
     ...Typography.body2Bold,
