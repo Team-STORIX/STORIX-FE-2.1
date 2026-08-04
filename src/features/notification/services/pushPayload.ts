@@ -175,6 +175,7 @@ export function getPushTitleBody(
  */
 export function getNotificationRoute(
   payload: ParsedPushPayload | null,
+  attendanceAppEventId?: number,
 ): PushRoute | null {
   const notificationFallback = (): PushRoute =>
     payload?.notificationId != null
@@ -214,9 +215,23 @@ export function getNotificationRoute(
         : `/feed/${feedId}`
     }
 
-    case 'APP_EVENT':
+    case 'APP_EVENT': {
       // TODO(APP-EVENT-DOMAIN): Confirm an allowed-domain policy with backend/product.
-      return getAppEventWebViewRoute(payload.targetLink)
+      const webViewRoute = getAppEventWebViewRoute(payload.targetLink)
+      if (webViewRoute) return webViewRoute
+
+      // The backend sends APP_EVENT pushes as targetId=<appEventId> with no
+      // targetLink. Route only the active attendance event to the native
+      // attendance screen so other app-event types are not misrouted.
+      if (
+        payload.targetId != null &&
+        payload.targetId === attendanceAppEventId
+      ) {
+        return '/events/attendance'
+      }
+
+      return notificationFallback()
+    }
 
     case 'EXTERNAL':
       // External links are opened by the notification bootstrap, not routed.
