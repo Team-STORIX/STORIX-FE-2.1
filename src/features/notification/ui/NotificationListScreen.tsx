@@ -22,22 +22,48 @@ import { NotificationMenu } from './NotificationMenu'
 import { NotificationListItem } from './NotificationListItem'
 import { NotificationEmptyState } from './NotificationEmptyState'
 import type { PushRoute } from '../services/pushPayload'
+import {
+  getAppEventWebViewRoute,
+  getValidHttpUrl,
+} from '../../app-event/lib/targetNavigation'
+import { useAttendanceEventStatus } from '../../attendance-event'
 
 function isValidId(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
 
 /** Resolves the in-app destination for a tapped notification. */
-function resolveTarget(item: NotificationItem): PushRoute | null {
+function resolveTarget(
+  item: NotificationItem,
+  attendanceAppEventId?: number,
+): PushRoute | null {
   const targetType = (item.targetType ?? '').toUpperCase()
   const notificationType = (item.notificationType ?? '').toUpperCase()
   const category = (item.category ?? '').toUpperCase()
   const targetKey = `${targetType} ${notificationType} ${category}`
   const targetId = isValidId(item.targetId) ? item.targetId : null
+  const eventId = isValidId(item.eventId) ? item.eventId : null
   const parentTargetId = isValidId(item.parentTargetId) ? item.parentTargetId : null
 
   // NONE notifications are informational: tapping them only marks them read.
-  if (targetType === 'NONE') return null
+  if (targetType === 'NONE' && eventId == null) return null
+
+  if (targetType === 'APP_EVENT' || eventId != null) {
+    // TODO(APP-EVENT-DOMAIN): Confirm an allowed-domain policy with backend/product.
+    const webViewRoute = getAppEventWebViewRoute(item.targetLink, item.title)
+    if (webViewRoute) return webViewRoute
+
+    const appEventId = eventId ?? targetId
+    if (appEventId != null && appEventId === attendanceAppEventId) {
+      return '/events/attendance'
+    }
+
+    return null
+  }
+
+  if (targetType === 'EXTERNAL') {
+    return getValidHttpUrl(item.targetLink)
+  }
 
   if (targetKey.includes('COMMENT') || targetKey.includes('REPLY')) {
     if (parentTargetId != null) {
@@ -46,10 +72,6 @@ function resolveTarget(item: NotificationItem): PushRoute | null {
         : `/feed/${parentTargetId}`
     }
     if (targetId != null && targetType.includes('FEED')) return `/feed/${targetId}`
-  }
-
-  if (targetKey.includes('EXTERNAL') && item.targetLink) {
-    return item.targetLink
   }
 
   if (targetId != null) {
@@ -71,6 +93,7 @@ export function NotificationListScreen() {
   const query = useNotificationsInfinite(10)
   const markAllRead = useMarkAllNotificationsRead()
   const markRead = useMarkNotificationRead()
+  const { data: attendanceStatus } = useAttendanceEventStatus()
 
   const items = useMemo<NotificationItem[]>(
     () => query.data?.pages.flatMap((page) => page.content ?? []) ?? [],
@@ -86,15 +109,15 @@ export function NotificationListScreen() {
     (item: NotificationItem) => {
       // Mark read (no-op visually until invalidation refetch lands).
       if (item.read === false) markRead.mutate(item.id)
-      const target = resolveTarget(item)
+      const target = resolveTarget(item, attendanceStatus?.appEventId)
       if (target == null) return
       if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
-        void Linking.openURL(target)
+        void Linking.openURL(target).catch(() => undefined)
         return
       }
       router.push(target as never)
     },
-    [markRead, router],
+    [attendanceStatus?.appEventId, markRead, router],
   )
 
   const handleMarkAll = useCallback(() => {
