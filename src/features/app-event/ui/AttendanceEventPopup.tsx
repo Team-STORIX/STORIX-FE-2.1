@@ -26,22 +26,18 @@ type AttendanceEventPopupProps = {
   onAttendanceCheck: () => void;
 };
 
-const FALLBACK_CTA = "출석 체크하기";
-
 export function AttendanceEventPopup({
   visible,
   popupId,
   imageUrl,
-  ctaText,
   onClose,
   onAttendanceCheck,
 }: AttendanceEventPopupProps) {
   const dismissMutation = useDismissAppEventPopup();
   const [imageFailed, setImageFailed] = useState(false);
 
-  // The attendance template keeps its promotional copy fixed. Only the
-  // server-provided CTA and image override their local fallbacks.
-  const ctaLabel = ctaText?.trim() ? ctaText : FALLBACK_CTA;
+  // The attendance template keeps its promotional copy and CTA fixed. Only
+  // the server-provided image overrides the local fallback.
   const remoteImage =
     imageUrl?.trim() && !imageFailed ? { uri: imageUrl } : null;
 
@@ -69,7 +65,7 @@ export function AttendanceEventPopup({
             <View style={styles.stampArea} pointerEvents="none">
               <Image
                 source={remoteImage ?? attendanceStamp}
-                style={styles.stamp}
+                style={[styles.stamp, remoteImage && styles.remoteStamp]}
                 contentFit="contain"
                 onError={() => setImageFailed(true)}
               />
@@ -116,7 +112,7 @@ export function AttendanceEventPopup({
                 accessibilityLabel="출석 체크하기"
               >
                 <Text style={styles.attendanceButtonText} numberOfLines={1}>
-                  {ctaLabel}
+                  출석 체크하기
                 </Text>
               </Pressable>
             </View>
@@ -171,6 +167,9 @@ const styles = StyleSheet.create({
   stamp: {
     width: "100%",
     height: "100%",
+  },
+  remoteStamp: {
+    transform: [{ translateY: 12 }, { scale: 0.92 }],
   },
   bottomGradient: {
     position: "absolute",
