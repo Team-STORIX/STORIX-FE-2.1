@@ -12,6 +12,7 @@ import { signup } from '../api/signup.api'
 import { type SignupRequest } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
 import { setItem, getItem, removeItem } from '../../../lib/storage/async'
+import { trackSignupCompleted } from '../../../lib/analytics/events'
 import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useSignup = () => {
@@ -29,14 +30,16 @@ export const useSignup = () => {
       const { accessToken, refreshToken } = response.result
 
       // Retrieve the temporary provider from storage (stored during social login)
-      const tempProvider = await getItem<string>('tempSocialProvider')
+      const tempProvider = await getItem<string>('tempSocialProvider').catch(() => null)
 
-      await Promise.all([
-        setLoginTokens({ accessToken, refreshToken }),
-        // Store the final provider if we have one from the temp storage
+      await setLoginTokens({ accessToken, refreshToken })
+
+      await Promise.allSettled([
+        // Provider metadata must not turn a successful signup into an error.
         tempProvider ? setItem(SOCIAL_PROVIDER_KEY, tempProvider) : Promise.resolve(),
         removeItem('tempSocialProvider'),
       ])
+      await trackSignupCompleted(tempProvider)
       // Navigation is left to the caller.
     },
 
