@@ -1,7 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -115,11 +114,7 @@ export function AttendanceEventPopup({
             accessibilityRole="button"
             accessibilityLabel="오늘 다시 보지 않기"
           >
-            {dismissMutation.isPending ? (
-              <ActivityIndicator size="small" color={C.card} />
-            ) : (
-              <Text style={styles.neverShowText}>오늘 다시 보지 않기</Text>
-            )}
+            <Text style={styles.neverShowText}>오늘 다시 보지 않기</Text>
           </Pressable>
         </View>
       </View>
