@@ -7,7 +7,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dev.storix.kr"
+        "EXPO_PUBLIC_API_URL": "https://dev.storix.kr",
+        "EXPO_PUBLIC_LANDING_BASE_URL": "https://storix.kr"
       },
       "android": {
         "buildType": "apk"
@@ -16,7 +17,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dev.storix.kr"
+        "EXPO_PUBLIC_API_URL": "https://dev.storix.kr",
+        "EXPO_PUBLIC_LANDING_BASE_URL": "https://storix.kr"
       },
       "android": {
         "buildType": "apk"
@@ -24,7 +26,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.storix.kr"
+        "EXPO_PUBLIC_API_URL": "https://api.storix.kr",
+        "EXPO_PUBLIC_LANDING_BASE_URL": "https://storix.kr"
       },
       "android": {
         "buildType": "app-bundle"

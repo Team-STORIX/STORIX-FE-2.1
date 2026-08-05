@@ -19,12 +19,8 @@ export const AppEventTitleEventSchema = z.object({
 export const AppEventPopupSchema = z.object({
   id: z.number(),
   targetId: z.number().nullable().optional(),
-  contentTargetType: z.string(),
-  // Optional until the backend popup contract exposes a landing URL.
-  targetLink: z.string().nullable().optional(),
-  exposurePolicy: z.string(),
-  // Text/image fields can arrive null or absent depending on how the admin
-  // configured the popup; keep parsing tolerant and let the UI fall back.
+  contentTargetType: z.literal('APP_EVENT'),
+  exposurePolicy: z.enum(['ALWAYS_DURING_PERIOD', 'ONCE_PER_DAY']),
   popupTitle: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
@@ -39,11 +35,11 @@ export const AppEventPopupSchema = z.object({
 export const AppEventBannerSchema = z.object({
   id: z.number(),
   targetId: z.number().nullable().optional(),
-  contentTargetType: z.string(),
-  // Optional until the backend banner contract exposes a landing URL.
-  targetLink: z.string().nullable().optional(),
+  contentTargetType: z.literal('APP_EVENT'),
   bannerTitle: z.string(),
   imageUrl: z.string(),
+  ctaText: z.string().nullable().optional(),
+  exposurePolicy: z.enum(['ALWAYS_DURING_PERIOD', 'ONCE_PER_DAY']),
   displayStartAt: z.string(),
   displayEndAt: z.string(),
   status: z.string(),
