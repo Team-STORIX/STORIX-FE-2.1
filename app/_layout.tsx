@@ -11,7 +11,7 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react'
-import { InteractionManager, Linking, StyleSheet, View } from 'react-native'
+import { InteractionManager, StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
 import Constants from 'expo-constants'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -30,12 +30,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
 import { C } from '../src/theme'
-import { AttendanceEventPopup, useAppEventPopup } from '../src/features/app-event'
-import {
-  getAppEventWebViewRoute,
-  getValidHttpUrl,
-} from '../src/features/app-event/lib/targetNavigation'
-import { useAttendanceEventStatus } from '../src/features/attendance-event'
+import { AppEventPopupModal, useAppEventPopup } from '../src/features/app-event'
+import { getAppEventWebViewRoute } from '../src/features/app-event/lib/targetNavigation'
 import { useMe } from '../src/features/profile'
 import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
@@ -428,7 +424,6 @@ function AppEventPopupBootstrap({
   const router = useRouter()
   const popupQuery = useAppEventPopup(isAuthenticated)
   const popup = popupQuery.data
-  const { data: attendanceStatus } = useAttendanceEventStatus(isAuthenticated)
   const [visible, setVisible] = useState(false)
   const [homeReady, setHomeReady] = useState(false)
   const settledPopupIdRef = useRef<number | null>(null)
@@ -486,47 +481,24 @@ function AppEventPopupBootstrap({
 
   if (!popup) return null
 
-  // APP_EVENT covers multiple future event types, so contentTargetType alone
-  // cannot confirm this popup is the attendance event. We only route to the
-  // attendance screen when the popup's targetId (=appEventId) matches the
-  // active attendance event reported by the server.
-  const isAttendancePopup =
-    popup.contentTargetType === 'APP_EVENT' &&
-    attendanceStatus != null &&
-    popup.targetId === attendanceStatus.appEventId
-
   return (
-    <AttendanceEventPopup
+    <AppEventPopupModal
       visible={visible && appReady && isHomeRoute && !blocked}
       popupId={popup.id}
       title={popup.popupTitle}
+      imageUrl={popup.imageUrl}
       content={popup.content}
       ctaText={popup.ctaText}
+      exposurePolicy={popup.exposurePolicy}
       onClose={settlePopup}
-      onAttendanceCheck={() => {
+      onAction={() => {
         settlePopup()
-        if (popup.contentTargetType === 'APP_EVENT') {
-          // TODO(APP-EVENT-CONTRACT): The backend popup response does not yet
-          // expose targetLink. Keep the existing attendance fallback below
-          // until backend/product confirms the landing and domain contracts.
-          const webViewRoute = getAppEventWebViewRoute(
-            popup.targetLink,
-            popup.popupTitle,
-          )
-          if (webViewRoute) {
-            router.push(webViewRoute as never)
-            return
-          }
-        }
-        if (popup.contentTargetType === 'EXTERNAL') {
-          const externalUrl = getValidHttpUrl(popup.targetLink)
-          if (externalUrl) {
-            void Linking.openURL(externalUrl).catch(() => undefined)
-          }
-          return
-        }
-        if (isAttendancePopup) {
-          router.push('/events/attendance' as never)
+        const webViewRoute = getAppEventWebViewRoute(
+          popup.targetId,
+          popup.popupTitle,
+        )
+        if (webViewRoute) {
+          router.push(webViewRoute as never)
         }
       }}
     />

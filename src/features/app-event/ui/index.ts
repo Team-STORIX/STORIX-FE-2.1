@@ -1,1 +1,1 @@
-export { AttendanceEventPopup } from './AttendanceEventPopup'
+export { AppEventPopupModal } from './AppEventPopup'

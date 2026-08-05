@@ -26,7 +26,6 @@ import {
   getAppEventWebViewRoute,
   getValidHttpUrl,
 } from '../../app-event/lib/targetNavigation'
-import { useAttendanceEventStatus } from '../../attendance-event'
 
 function isValidId(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -35,7 +34,6 @@ function isValidId(value: number | null | undefined): value is number {
 /** Resolves the in-app destination for a tapped notification. */
 function resolveTarget(
   item: NotificationItem,
-  attendanceAppEventId?: number,
 ): PushRoute | null {
   const targetType = (item.targetType ?? '').toUpperCase()
   const notificationType = (item.notificationType ?? '').toUpperCase()
@@ -49,16 +47,8 @@ function resolveTarget(
   if (targetType === 'NONE' && eventId == null) return null
 
   if (targetType === 'APP_EVENT' || eventId != null) {
-    // TODO(APP-EVENT-DOMAIN): Confirm an allowed-domain policy with backend/product.
-    const webViewRoute = getAppEventWebViewRoute(item.targetLink, item.title)
-    if (webViewRoute) return webViewRoute
-
     const appEventId = eventId ?? targetId
-    if (appEventId != null && appEventId === attendanceAppEventId) {
-      return '/events/attendance'
-    }
-
-    return null
+    return getAppEventWebViewRoute(appEventId, item.title)
   }
 
   if (targetType === 'EXTERNAL') {
@@ -93,7 +83,6 @@ export function NotificationListScreen() {
   const query = useNotificationsInfinite(10)
   const markAllRead = useMarkAllNotificationsRead()
   const markRead = useMarkNotificationRead()
-  const { data: attendanceStatus } = useAttendanceEventStatus()
 
   const items = useMemo<NotificationItem[]>(
     () => query.data?.pages.flatMap((page) => page.content ?? []) ?? [],
@@ -109,7 +98,7 @@ export function NotificationListScreen() {
     (item: NotificationItem) => {
       // Mark read (no-op visually until invalidation refetch lands).
       if (item.read === false) markRead.mutate(item.id)
-      const target = resolveTarget(item, attendanceStatus?.appEventId)
+      const target = resolveTarget(item)
       if (target == null) return
       if (typeof target === 'string' && /^https?:\/\//i.test(target)) {
         void Linking.openURL(target).catch(() => undefined)
@@ -117,7 +106,7 @@ export function NotificationListScreen() {
       }
       router.push(target as never)
     },
-    [attendanceStatus?.appEventId, markRead, router],
+    [markRead, router],
   )
 
   const handleMarkAll = useCallback(() => {
