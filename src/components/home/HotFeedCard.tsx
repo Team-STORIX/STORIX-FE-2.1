@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { TodayFeedItem } from "../../features/home";
-import { C, Gray } from "../../theme/colors";
-import { Typography } from "../../theme/typography";
+import { C, Gray, Magenta } from "../../theme/colors";
+import { FontFamily, Typography } from "../../theme/typography";
 
 const likeIcon = require("../../../assets/icons/common/icon-like.svg");
 const likePinkIcon = require("../../../assets/icons/common/icon-like-pink.svg");
@@ -82,17 +82,32 @@ export function HotFeedCard({
         </Text>
       </View>
 
-      {isSpoiler ? (
-        <View style={styles.spoilerContent}>
-          <Text style={styles.spoilerText} numberOfLines={2}>
-            {spoilerText}
-          </Text>
+      <View style={styles.spoilerContainer}>
+        <View style={styles.bodySection}>
+          <View
+            style={
+              isSpoiler
+                ? ({ filter: "blur(17px)", overflow: "hidden" } as any)
+                : undefined
+            }
+          >
+            <Text style={styles.contentText} numberOfLines={2}>
+              {content}
+            </Text>
+          </View>
+
+          {isSpoiler && (
+            <View
+              style={styles.spoilerOverlay}
+              pointerEvents="none"
+            >
+              <Text style={styles.spoilerRevealText} numberOfLines={2}>
+                {spoilerText}
+              </Text>
+            </View>
+          )}
         </View>
-      ) : (
-        <Text style={styles.contentText} numberOfLines={2}>
-          {content}
-        </Text>
-      )}
+      </View>
 
       <View style={styles.reactionRow}>
         <View style={styles.reactionItem}>
@@ -174,23 +189,35 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   contentText: {
-    ...Typography.body2Medium,
-    color: Gray[600],
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+    color: Gray[800],
+    minHeight: 42,
+  },
+  spoilerContainer: {
     minHeight: 42,
     marginBottom: 8,
+    position: "relative",
   },
-  spoilerContent: {
-    minHeight: 42,
-    marginBottom: 8,
-    borderRadius: 8,
-    backgroundColor: C.spoilerBg,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    justifyContent: "center",
+  bodySection: {
+    overflow: "hidden",
   },
-  spoilerText: {
-    ...Typography.body2Medium,
-    color: C.primary,
+  spoilerOverlay: {
+    position: "absolute",
+    top: -4,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    paddingTop: 0,
+  },
+  spoilerRevealText: {
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20,
+    color: Magenta[300],
   },
   reactionRow: {
     flexDirection: "row",

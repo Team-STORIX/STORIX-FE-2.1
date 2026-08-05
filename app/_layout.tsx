@@ -65,6 +65,7 @@ export const unstable_settings = {
 }
 
 const STARTUP_HYDRATION_TIMEOUT_MS = 5000
+const MODAL_HANDOFF_DELAY_MS = 350
 
 // React StrictMode can mount the root layout twice in development. Share the
 // whole bootstrap promise so startup APIs run once per JS app session.
@@ -425,8 +426,10 @@ function AppEventPopupBootstrap({
   const popupQuery = useAppEventPopup(isAuthenticated)
   const popup = popupQuery.data
   const [visible, setVisible] = useState(false)
+  const [isPopupDismissing, setIsPopupDismissing] = useState(false)
   const [homeReady, setHomeReady] = useState(false)
   const settledPopupIdRef = useRef<number | null>(null)
+  const modalHandoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const segmentList = segments as readonly string[]
   const routeResolved = segmentList.length > 0
@@ -461,7 +464,11 @@ function AppEventPopupBootstrap({
     !routeResolved ||
     (isAuthenticated &&
       isHomeRoute &&
-      (!appReady || popupQuery.isFetching || hasPendingPopup || visible))
+      (!appReady ||
+        popupQuery.isFetching ||
+        hasPendingPopup ||
+        visible ||
+        isPopupDismissing))
 
   useEffect(() => {
     onBlockingChange(shouldBlockTitle)
@@ -474,9 +481,26 @@ function AppEventPopupBootstrap({
     setVisible(true)
   }, [blocked, homeReady, isAuthenticated, isHomeRoute, popup])
 
+  useEffect(() => {
+    return () => {
+      if (modalHandoffTimerRef.current) {
+        clearTimeout(modalHandoffTimerRef.current)
+      }
+    }
+  }, [])
+
   const settlePopup = () => {
     if (popup) settledPopupIdRef.current = popup.id
+    setIsPopupDismissing(true)
     setVisible(false)
+
+    if (modalHandoffTimerRef.current) {
+      clearTimeout(modalHandoffTimerRef.current)
+    }
+    modalHandoffTimerRef.current = setTimeout(() => {
+      modalHandoffTimerRef.current = null
+      setIsPopupDismissing(false)
+    }, MODAL_HANDOFF_DELAY_MS)
   }
 
   if (!popup) return null
