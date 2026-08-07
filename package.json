@@ -10,6 +10,7 @@
     "prebuild:ios": "expo prebuild --platform ios",
     "ios:open": "open ios/*.xcworkspace",
     "ios": "npm run prebuild:ios && npm run ios:open",
+    "verify:ios:archive": "node scripts/verify-ios-production-archive.js",
     "build:ios:test": "eas build --profile preview --platform ios",
     "build:ios:prod": "eas build --profile production --platform ios",
     "build:android:test": "eas build --profile preview --platform android",
