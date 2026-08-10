@@ -21,6 +21,7 @@ import { Toast } from "../../src/components/common/Toast";
 import { useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
+  ChatDateSeparator,
   ChatInput,
   LeaveConfirmModal,
   TopicRoomDdayBar,
@@ -38,6 +39,7 @@ import {
   useTopicRoomStomp,
   type ConfirmVariant,
   type DisplayMsg,
+  getChatDateKey,
   type KebabAnchor,
   type TopicRoomActionTarget,
   type TopicRoomItem,
@@ -314,6 +316,7 @@ export default function TopicRoomScreen() {
         key: `h_${m.id}`,
         chatMessageId: m.id,
         text: m.message,
+        createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.senderName,
         profileImageUrl: memberAvatarById.get(m.senderId) ?? null,
@@ -329,6 +332,7 @@ export default function TopicRoomScreen() {
         key: `rt_${m.id}`,
         chatMessageId: m.chatMessageId,
         text: m.text,
+        createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.userName ?? "",
         profileImageUrl:
@@ -694,13 +698,29 @@ export default function TopicRoomScreen() {
         data={allMessages}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <ChatBubble
-            msg={item}
-            onPressAvatar={handlePressAvatar}
-            onPressKebab={handlePressKebab}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          // The inverted list stores messages newest-first. A different next
+          // (older) date means this item starts a calendar-day group onscreen.
+          const itemDate = getChatDateKey(item.createdAt);
+          const olderItemDate = getChatDateKey(
+            allMessages[index + 1]?.createdAt,
+          );
+          const showDateSeparator =
+            itemDate != null && itemDate !== olderItemDate;
+
+          return (
+            <View>
+              {showDateSeparator ? (
+                <ChatDateSeparator createdAt={item.createdAt} />
+              ) : null}
+              <ChatBubble
+                msg={item}
+                onPressAvatar={handlePressAvatar}
+                onPressKebab={handlePressKebab}
+              />
+            </View>
+          );
+        }}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
