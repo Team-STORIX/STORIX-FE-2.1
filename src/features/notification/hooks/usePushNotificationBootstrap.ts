@@ -17,7 +17,8 @@ import {
   displayForegroundPushNotification,
   ensurePushNotificationChannel,
   getInitialNotifeeNotificationData,
-  refreshUnreadBadgeCount,
+  refreshAppBadgeCount,
+  setAppBadgeCount,
   subscribeNotifeeForegroundPress,
   syncAppBadgeCountFromPushData,
 } from "../services/notifeeNative";
@@ -59,7 +60,7 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
         queryClient.invalidateQueries({
           queryKey: notificationKeys.unreadCount,
         });
-        return refreshUnreadCountState()
+        return refreshBadgeCountState()
       })
       .catch((err) => {
         if (__DEV__) {
@@ -102,9 +103,14 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
   }
 }
 
-async function refreshUnreadCountState(): Promise<void> {
-  const count = await refreshUnreadBadgeCount()
-  queryClient.setQueryData(notificationKeys.unreadCount, count)
+async function refreshBadgeCountState(): Promise<void> {
+  const count = await refreshAppBadgeCount()
+  queryClient.setQueryData(notificationKeys.badgeCount, count)
+}
+
+function invalidateTopicRoomUnreadState(): void {
+  void queryClient.invalidateQueries({ queryKey: ['topicroom', 'unread'] })
+  void queryClient.invalidateQueries({ queryKey: ['topicroom', 'me'] })
 }
 
 // Attaches the foreground / opened-from-bg / cold-start handlers. Returns a
@@ -138,7 +144,10 @@ const attachMessageListeners = (): (() => void) => {
         return null
       });
       if (unreadCount != null) {
-        queryClient.setQueryData(notificationKeys.unreadCount, unreadCount)
+        queryClient.setQueryData(notificationKeys.badgeCount, unreadCount)
+      }
+      if (payload?.targetType === 'TOPIC_ROOM') {
+        invalidateTopicRoomUnreadState()
       }
 
       await displayForegroundPushNotification({
@@ -231,18 +240,24 @@ export const usePushNotificationBootstrap = (): void => {
   usePushDeviceSync();
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      queryClient.setQueryData(notificationKeys.badgeCount, 0);
+      void setAppBadgeCount(0);
+      return;
+    }
 
-    void refreshUnreadCountState().catch((err) => {
+    void refreshBadgeCountState().catch((err) => {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.warn("[push] app-resume badge sync failed", err);
       }
     });
+    invalidateTopicRoomUnreadState();
 
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState !== "active") return;
-      void refreshUnreadCountState().catch((err) => {
+      invalidateTopicRoomUnreadState();
+      void refreshBadgeCountState().catch((err) => {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.warn("[push] app-resume badge sync failed", err);

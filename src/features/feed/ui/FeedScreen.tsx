@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAllBoards } from '../hooks/feed/useAllBoards'
 import { useBoardsByWorksId } from '../hooks/feed/useBoardsByWorksId'
@@ -33,6 +33,7 @@ import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollE
 import {
   TopicRoomWorksPickerBottomSheet,
   type PickedWorks,
+  useTopicRoomUnreadStatus,
 } from '../../topicroom'
 import { updateTodayHomeFeedBoard } from '../../home'
 
@@ -62,6 +63,17 @@ export function FeedScreen() {
 
   const [tab, setTab] = useState<FeedTab>(sectionTab)
   const [pick, setPick] = useState<string>('all')
+  const {
+    data: topicRoomUnreadStatus,
+    refetch: refetchTopicRoomUnreadStatus,
+  } = useTopicRoomUnreadStatus()
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetchTopicRoomUnreadStatus()
+      void qc.invalidateQueries({ queryKey: ['topicroom', 'me'] })
+    }, [qc, refetchTopicRoomUnreadStatus]),
+  )
 
   useEffect(() => {
     setTab(sectionTab)
@@ -320,6 +332,7 @@ export function FeedScreen() {
     <View style={styles.listHeader}>
       <FeedTopbar
         activeTab={tab}
+        hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
         onChange={(t) => {
           setTab(t)
           setPick('all')
@@ -384,6 +397,7 @@ export function FeedScreen() {
         <View style={[styles.topicroomScreen, { paddingTop: insets.top }]}>
           <FeedTopbar
             activeTab={tab}
+            hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
             onChange={(t) => {
               setTab(t)
               setPick('all')

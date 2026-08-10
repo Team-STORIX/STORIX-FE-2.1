@@ -7,5 +7,6 @@ export const notificationKeys = {
   list: (size: number) => ['notifications', 'list', { size }] as const,
   listRoot: ['notifications', 'list'] as const,
   unreadCount: ['notifications', 'unread-count'] as const,
+  badgeCount: ['notifications', 'badge-count'] as const,
   settings: ['notifications', 'settings'] as const,
 }

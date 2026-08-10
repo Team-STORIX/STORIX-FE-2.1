@@ -105,6 +105,12 @@ export const NotificationSettingsResponseSchema = CommonApiEnvelope(
 
 export const UnreadCountResponseSchema = CommonApiEnvelope(z.number())
 
+export const BadgeCountSchema = z.object({
+  badgeCount: z.coerce.number().int().nonnegative(),
+})
+export const BadgeCountResponseSchema = CommonApiEnvelope(BadgeCountSchema)
+export type BadgeCount = z.infer<typeof BadgeCountSchema>
+
 // ---------- admin test endpoints ----------
 
 export const AdminTestPushResponseSchema = CommonApiEnvelope(

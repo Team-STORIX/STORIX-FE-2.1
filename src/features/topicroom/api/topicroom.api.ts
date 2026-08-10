@@ -9,16 +9,22 @@ import {
   TopicRoomIdSchema,
   TopicRoomItemSchema,
   TopicRoomMemberSchema,
+  TopicRoomNotificationSettingSchema,
   TopicRoomReportRequestSchema,
   TopicRoomReportResponseSchema,
   TopicRoomSearchSliceSchema,
   TopicRoomSearchWrappedSchema,
+  TopicRoomUnreadStatusSchema,
+  UpdateTopicRoomNotificationRequestSchema,
 } from "./topicroom.schema";
 
 export type {
   MyTopicRoomSlice,
   TopicRoomItem,
   TopicRoomMember,
+  TopicRoomNotificationSetting,
+  TopicRoomUnreadStatus,
+  UpdateTopicRoomNotificationRequest,
 } from "./topicroom.schema";
 
 const AnyEnvelopeSchema = ApiEnvelopeSchema(z.any());
@@ -172,6 +178,38 @@ export async function getMyTopicRooms(params?: {
     headers: { accept: "*/*" },
   });
   return ApiEnvelopeSchema(MyTopicRoomSliceSchema).parse(res.data).result;
+}
+
+// GET /api/v1/topic-rooms/unread
+export async function getTopicRoomUnreadStatus() {
+  const res = await apiClient.get("/api/v1/topic-rooms/unread", {
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(TopicRoomUnreadStatusSchema).parse(res.data).result;
+}
+
+// GET /api/v1/topic-rooms/{roomId}/notification
+export async function getTopicRoomNotificationSetting(roomId: number) {
+  const res = await apiClient.get(
+    `/api/v1/topic-rooms/${roomId}/notification`,
+    { headers: { accept: "*/*" } },
+  );
+  return ApiEnvelopeSchema(TopicRoomNotificationSettingSchema).parse(res.data)
+    .result;
+}
+
+// PATCH /api/v1/topic-rooms/{roomId}/notification
+export async function updateTopicRoomNotificationSetting(
+  roomId: number,
+  body: { enabled: boolean },
+) {
+  const payload = UpdateTopicRoomNotificationRequestSchema.parse(body);
+  const res = await apiClient.patch(
+    `/api/v1/topic-rooms/${roomId}/notification`,
+    payload,
+    { headers: { accept: "*/*" } },
+  );
+  return ApiEnvelopeSchema(z.string()).parse(res.data).result;
 }
 
 // Searches by worksName and returns the topicRoomId of the matching room, or null.

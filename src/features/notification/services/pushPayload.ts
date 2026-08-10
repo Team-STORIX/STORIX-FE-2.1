@@ -137,7 +137,9 @@ export function parsePushNotificationData(
     targetId: toId(d.targetId),
     parentTargetId: toId(d.parentTargetId),
     targetLink: toStr(d.targetLink),
-    unreadCount: toNonNegativeInt(d.unreadCount),
+    // New payloads use the combined app badge count. Keep the legacy alias so
+    // older backend deployments remain compatible during rollout.
+    unreadCount: toNonNegativeInt(d.badgeCount ?? d.unreadCount),
     title: toStr(d.title),
     body: toStr(d.body),
     raw,

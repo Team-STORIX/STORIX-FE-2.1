@@ -1,4 +1,4 @@
-import { getUnreadNotificationCount } from '../api/notification.api'
+import { getNotificationBadgeCount } from '../api/notification.api'
 import { Platform } from 'react-native'
 import {
   getPushTitleBody,
@@ -105,9 +105,9 @@ export async function syncAppBadgeCountFromPushData(
   return unreadCount
 }
 
-export async function refreshUnreadBadgeCount(): Promise<number> {
+export async function refreshAppBadgeCount(): Promise<number> {
   return enqueueBadgeOperation(async () => {
-    const count = await getUnreadNotificationCount()
+    const count = await getNotificationBadgeCount()
     await setNativeIosBadgeCount(count)
     return count
   })

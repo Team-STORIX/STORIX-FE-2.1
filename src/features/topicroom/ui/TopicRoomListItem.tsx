@@ -14,6 +14,8 @@ type Props = {
 export function TopicRoomListItem({ item, onPress }: Props) {
   const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName);
   const memberCount = item.activeUserNumber ?? 0;
+  const unreadCount = item.unreadCount ?? 0;
+  const unreadLabel = unreadCount >= 100 ? "99+" : String(unreadCount);
 
   const initial = (item.worksName || item.topicRoomName || "?")
     .slice(0, 1)
@@ -51,6 +53,14 @@ export function TopicRoomListItem({ item, onPress }: Props) {
           <Text style={styles.title} numberOfLines={1}>
             {item.topicRoomName}
           </Text>
+          {unreadCount > 0 ? (
+            <View
+              style={styles.unreadBadge}
+              accessibilityLabel={`읽지 않은 메시지 ${unreadCount}개`}
+            >
+              <Text style={styles.unreadBadgeText}>{unreadLabel}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -116,12 +126,29 @@ const styles = StyleSheet.create({
   bottomRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
   },
   title: {
     ...Typography.caption1Medium,
     color: C.textMuted,
-    flexShrink: 1,
+    flex: 1,
+  },
+  unreadBadge: {
+    minWidth: 18,
+    minHeight: 18,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.error,
+    flexShrink: 0,
+  },
+  unreadBadgeText: {
+    ...Typography.caption2Extrabold,
+    color: C.card,
+    textAlign: "center",
   },
   joinedChip: {
     borderRadius: Radius.full,

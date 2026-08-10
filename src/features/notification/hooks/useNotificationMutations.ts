@@ -14,15 +14,15 @@ import type {
 } from '../api/notification.schema'
 import {
   clearAndroidDisplayedNotifications,
-  refreshUnreadBadgeCount,
+  refreshAppBadgeCount,
 } from '../services/notifeeNative'
 
-async function syncUnreadBadgeCache(
+async function syncAppBadgeCache(
   qc: ReturnType<typeof useQueryClient>,
 ): Promise<void> {
   try {
-    const count = await refreshUnreadBadgeCount()
-    qc.setQueryData(notificationKeys.unreadCount, count)
+    const count = await refreshAppBadgeCount()
+    qc.setQueryData(notificationKeys.badgeCount, count)
   } catch (err) {
     if (__DEV__) {
       // eslint-disable-next-line no-console
@@ -54,7 +54,7 @@ export function useMarkAllNotificationsRead() {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
       await clearAndroidNotifications({ all: true })
-      await syncUnreadBadgeCache(qc)
+      await syncAppBadgeCache(qc)
     },
   })
 }
@@ -68,7 +68,7 @@ export function useMarkNotificationRead() {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
       await clearAndroidNotifications({ notificationId: id })
-      await syncUnreadBadgeCache(qc)
+      await syncAppBadgeCache(qc)
     },
   })
 }
@@ -129,7 +129,7 @@ export function useAdminTestDispatch() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: notificationKeys.listRoot })
       qc.invalidateQueries({ queryKey: notificationKeys.unreadCount })
-      void syncUnreadBadgeCache(qc)
+      void syncAppBadgeCache(qc)
     },
   })
 }
