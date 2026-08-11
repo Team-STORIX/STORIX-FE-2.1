@@ -139,6 +139,52 @@ export async function clearAndroidDisplayedNotifications(args: {
   }
 }
 
+export function getTopicRoomNotificationThreadId(roomId: number): string {
+  return `topic-room-${roomId}`
+}
+
+/**
+ * Removes only the OS tray notifications that belong to one topic room.
+ * Android chat notifications use the room thread as their stable Notifee ID;
+ * iOS notifications are server-rendered, so their data/thread metadata must be
+ * inspected before cancelling the matching delivered notification IDs.
+ */
+export async function clearTopicRoomDisplayedNotifications(
+  roomId: number,
+): Promise<void> {
+  if (!Number.isFinite(roomId) || roomId <= 0) return
+
+  const notifeeModule = loadNotifee()
+  if (!notifeeModule) return
+
+  const threadId = getTopicRoomNotificationThreadId(roomId)
+
+  if (Platform.OS === 'android') {
+    await notifeeModule.default.cancelNotification(threadId)
+  }
+
+  const displayed = await notifeeModule.default.getDisplayedNotifications()
+  const matchingIds = displayed.flatMap((item) => {
+    const notification = item.notification
+    const dataThreadId = notification.data?.threadId
+    const iosThreadId = notification.ios?.threadId
+    const androidGroupId = notification.android?.groupId
+    const notificationId = notification.id ?? item.id
+
+    const matches =
+      dataThreadId === threadId ||
+      iosThreadId === threadId ||
+      androidGroupId === threadId ||
+      notificationId === threadId
+
+    return matches && notificationId ? [notificationId] : []
+  })
+
+  if (matchingIds.length > 0) {
+    await notifeeModule.default.cancelDisplayedNotifications(matchingIds)
+  }
+}
+
 export async function displayForegroundPushNotification(args: {
   payload: ParsedPushPayload | null
   notification?: { title?: string | null; body?: string | null }

@@ -3,6 +3,10 @@ import {
   ensurePushNotificationChannel,
   syncAppBadgeCountFromPushData,
 } from './notifeeNative'
+import {
+  isTopicRoomChatPayload,
+  parsePushNotificationData,
+} from './pushPayload'
 
 let registered = false
 
@@ -24,6 +28,20 @@ export function registerBackgroundPushHandler(): void {
     void ensurePushNotificationChannel()
 
     messagingModule.setBackgroundMessageHandler(messaging, async (remoteMessage) => {
+      const payload = parsePushNotificationData(remoteMessage?.data)
+
+      // Android TOPIC_ROOM_CHAT pushes are data-only. Their visual notification
+      // must be rendered by the app here; the actual MessagingStyle renderer is
+      // intentionally kept separate so its design can follow the approved UI.
+      if (__DEV__ && isTopicRoomChatPayload(payload)) {
+        // eslint-disable-next-line no-console
+        console.log('[push] background topic-room chat received', {
+          roomId: payload.targetId,
+          threadId: payload.threadId,
+          messageCount: payload.messageCount,
+        })
+      }
+
       await syncAppBadgeCountFromPushData(remoteMessage?.data)
     })
   } catch (err) {

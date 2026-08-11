@@ -188,6 +188,16 @@ export async function getTopicRoomUnreadStatus() {
   return ApiEnvelopeSchema(TopicRoomUnreadStatusSchema).parse(res.data).result;
 }
 
+// POST /api/v1/topic-rooms/{roomId}/read
+// Reading is a best-effort room-entry safeguard in addition to the backend's
+// STOMP subscription tracking. Callers only care whether the HTTP request
+// succeeded, so accept a 200 envelope, a null result, or an empty 204 body.
+export async function markTopicRoomRead(roomId: number): Promise<void> {
+  await apiClient.post(`/api/v1/topic-rooms/${roomId}/read`, null, {
+    headers: { accept: "*/*" },
+  });
+}
+
 // GET /api/v1/topic-rooms/{roomId}/notification
 export async function getTopicRoomNotificationSetting(roomId: number) {
   const res = await apiClient.get(

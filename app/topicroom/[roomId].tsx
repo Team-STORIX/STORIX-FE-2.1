@@ -25,6 +25,7 @@ import {
   ChatInput,
   LeaveConfirmModal,
   TopicRoomDdayBar,
+  TopicRoomMenuDropdown,
   TopicRoomTopBar,
   TopicRoomUserActionDropdown,
   TopicRoomUserActionModal,
@@ -36,7 +37,10 @@ import {
   useMyTopicRoomsAll,
   useReportTopicRoomUser,
   useTopicRoomMembers,
+  useTopicRoomNotificationSetting,
+  useSyncTopicRoomReadState,
   useTopicRoomStomp,
+  useUpdateTopicRoomNotificationSetting,
   type ConfirmVariant,
   type DisplayMsg,
   getChatDateKey,
@@ -78,6 +82,12 @@ const USER_ACTION_SNACK = {
   block: "차단이 정상적으로 완료됐어요.",
 } as const;
 
+const TOPICROOM_NOTIFICATION_SNACK = {
+  enabled: "토픽룸 알림이 켜졌습니다",
+  disabled: "토픽룸 알림이 꺼졌습니다",
+  error: "잠시 후에 다시 시도해주세요",
+} as const;
+
 const ANDROID_MODAL_SWITCH_DELAY_MS = 250;
 
 const formatTime = (iso?: string | null): string => {
@@ -116,6 +126,9 @@ export default function TopicRoomScreen() {
   const [liveMemberCount, setLiveMemberCount] = useState<number | null>(null);
 
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [headerMenuTopOffset, setHeaderMenuTopOffset] = useState<number | null>(
+    null,
+  );
 
   // User-specific report / block flow. A single shared target drives both entry
   // points (avatar modal + message kebab); only one overlay is visible at once.
@@ -184,6 +197,10 @@ export default function TopicRoomScreen() {
     enabled: Number.isFinite(roomId) && roomId > 0,
     size: 20,
   });
+  const notificationSettingQuery = useTopicRoomNotificationSetting(roomId);
+  const notificationSettingMutation =
+    useUpdateTopicRoomNotificationSetting(roomId);
+  const syncTopicRoomReadState = useSyncTopicRoomReadState(roomId);
   const members = membersQuery.data ?? [];
   const memberCount = members.length;
   const leaveMutation = useLeaveTopicRoom();
@@ -226,6 +243,7 @@ export default function TopicRoomScreen() {
     useCallback(() => {
       setIsScreenFocused(true);
       if (Number.isFinite(roomId) && roomId > 0) {
+        void syncTopicRoomReadState();
         void queryClient.invalidateQueries({
           queryKey: ["chat", "room", "messages", roomId],
         });
@@ -233,8 +251,9 @@ export default function TopicRoomScreen() {
 
       return () => {
         setIsScreenFocused(false);
+        setHeaderMenuTopOffset(null);
       };
-    }, [queryClient, roomId]),
+    }, [queryClient, roomId, syncTopicRoomReadState]),
   );
 
   const memberAvatarById = useMemo(() => {
@@ -382,6 +401,28 @@ export default function TopicRoomScreen() {
       null,
     [myRoomsQuery.data, roomId],
   );
+
+  const notificationEnabled =
+    notificationSettingQuery.data?.enabled ??
+    joinedRoom?.notificationEnabled ??
+    true;
+
+  const handleToggleNotification = useCallback(() => {
+    if (notificationSettingMutation.isPending) return;
+    const nextEnabled = !notificationEnabled;
+    notificationSettingMutation.mutate(nextEnabled, {
+      onSuccess: () => {
+        showToast(
+          nextEnabled
+            ? TOPICROOM_NOTIFICATION_SNACK.enabled
+            : TOPICROOM_NOTIFICATION_SNACK.disabled,
+        );
+      },
+      onError: () => {
+        showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      },
+    });
+  }, [notificationEnabled, notificationSettingMutation, showToast]);
 
   const joinedRoomFromCache = queryClient.getQueryData<TopicRoomItem>([
     "topicroom",
@@ -655,9 +696,16 @@ export default function TopicRoomScreen() {
     showToast,
   ]);
 
-  const isUserActionSuccessToast =
+  const isNotificationToast =
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.error;
+
+  const isSuccessToast =
     toastMessage === USER_ACTION_SNACK.report ||
-    toastMessage === USER_ACTION_SNACK.block;
+    toastMessage === USER_ACTION_SNACK.block ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled;
 
   return (
     <KeyboardAvoidingView
@@ -675,9 +723,27 @@ export default function TopicRoomScreen() {
           subtitle={headerSubtitle}
           memberCount={headerMemberCount}
           onBack={handleBack}
-          onPressExit={handleLeave}
+          onPressMenu={(dropdownTop) =>
+            setHeaderMenuTopOffset((current) =>
+              current == null ? dropdownTop : null,
+            )
+          }
         />
       </View>
+
+      <TopicRoomMenuDropdown
+        visible={headerMenuTopOffset != null}
+        topOffset={headerMenuTopOffset ?? insets.top + 60}
+        notificationEnabled={notificationEnabled}
+        notificationPending={
+          notificationSettingQuery.isLoading ||
+          notificationSettingMutation.isPending
+        }
+        onClose={() => setHeaderMenuTopOffset(null)}
+        onPressToggleNotification={handleToggleNotification}
+        onPressLeave={handleLeave}
+        leaveDisabled={leaveMutation.isPending}
+      />
 
       <TopicRoomDdayBar joinedDays={joinedDays} />
 
@@ -786,8 +852,9 @@ export default function TopicRoomScreen() {
 
       <Toast
         message={toastMessage}
+        variant={isNotificationToast ? "notification" : "default"}
         bottomOffset={36}
-        leadingIconSource={isUserActionSuccessToast ? checkboxActiveIcon : undefined}
+        leadingIconSource={isSuccessToast ? checkboxActiveIcon : undefined}
         leadingIconSize={24}
         onClose={() => setToastMessage(null)}
       />

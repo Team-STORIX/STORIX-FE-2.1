@@ -35,6 +35,7 @@ export type PushNotificationType =
   | 'REPLY_ON_COMMENT'
   | 'TODAY_FEED'
   | 'HOT_TOPIC_ROOM'
+  | 'TOPIC_ROOM_CHAT'
   | 'MARKETING'
   | 'REPORT_RECEIVED'
   | 'REPORT_PROCESSED'
@@ -64,7 +65,14 @@ export interface ParsedPushPayload {
   targetLink: string | null
   unreadCount: number | null
   title: string | null
+  subtitle: string | null
   body: string | null
+  roomName: string | null
+  senderNickname: string | null
+  senderProfileImageUrl: string | null
+  messageCount: number | null
+  threadId: string | null
+  mutableContent: boolean | null
   /** The original (raw) data bag, retained for debugging only. */
   raw: Record<string, string>
 }
@@ -110,6 +118,15 @@ function toStr(value: unknown): string | null {
   return s.length === 0 ? null : s
 }
 
+function toBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1') return true
+  if (normalized === 'false' || normalized === '0') return false
+  return null
+}
+
 // ---------- parser ----------
 
 /**
@@ -137,13 +154,26 @@ export function parsePushNotificationData(
     targetId: toId(d.targetId),
     parentTargetId: toId(d.parentTargetId),
     targetLink: toStr(d.targetLink),
-    // New payloads use the combined app badge count. Keep the legacy alias so
-    // older backend deployments remain compatible during rollout.
-    unreadCount: toNonNegativeInt(d.badgeCount ?? d.unreadCount),
+    // The FCM contract uses unreadCount for the combined app badge count.
+    // Keep badgeCount only as a legacy fallback during backend rollout.
+    unreadCount: toNonNegativeInt(d.unreadCount ?? d.badgeCount),
     title: toStr(d.title),
+    subtitle: toStr(d.subtitle),
     body: toStr(d.body),
+    roomName: toStr(d.roomName),
+    senderNickname: toStr(d.senderNickname),
+    senderProfileImageUrl: toStr(d.senderProfileImageUrl),
+    messageCount: toNonNegativeInt(d.messageCount),
+    threadId: toStr(d.threadId),
+    mutableContent: toBoolean(d.mutableContent),
     raw,
   }
+}
+
+export function isTopicRoomChatPayload(
+  payload: ParsedPushPayload | null,
+): payload is ParsedPushPayload {
+  return payload?.type === 'TOPIC_ROOM_CHAT'
 }
 
 /**

@@ -35,7 +35,24 @@ export const SliceSchema = <T extends z.ZodTypeAny>(item: T) =>
 const ExtensibleEnum = (known: readonly [string, ...string[]]) =>
   z.union([z.enum(known), z.string()])
 
-export const KNOWN_NOTIFICATION_TYPES = ['LIKE_FEED'] as const
+export const KNOWN_NOTIFICATION_TYPES = [
+  'LIKE_FEED',
+  'LIKE_REVIEW',
+  'LIKE_COMMENT',
+  'COMMENT_ON_FEED',
+  'REPLY_ON_COMMENT',
+  'TODAY_FEED',
+  'HOT_TOPIC_ROOM',
+  'TOPIC_ROOM_CHAT',
+  'MARKETING',
+  'REPORT_RECEIVED',
+  'REPORT_PROCESSED',
+  'RESTRICTION_7D',
+  'RESTRICTION_30D',
+  'TOS_UPDATE',
+  'PRIVACY_UPDATE',
+  'FEATURE_UPDATE',
+] as const
 export const KNOWN_CATEGORIES = ['FEED'] as const
 export const KNOWN_TARGET_TYPES = [
   'FEED',
