@@ -1,5 +1,8 @@
+import { Platform } from 'react-native'
+
 import { getFirebaseMessagingIfAvailable } from './firebaseNative'
 import {
+  displayTopicRoomChatNotification,
   ensurePushNotificationChannel,
   syncAppBadgeCountFromPushData,
 } from './notifeeNative'
@@ -7,6 +10,7 @@ import {
   isTopicRoomChatPayload,
   parsePushNotificationData,
 } from './pushPayload'
+import { savePendingNotificationOpenData } from './pendingNotificationOpen'
 
 let registered = false
 
@@ -25,6 +29,20 @@ export function registerBackgroundPushHandler(): void {
 
     const { messagingModule, messaging } = firebase
 
+    try {
+      const notifeeModule =
+        require('@notifee/react-native') as typeof import('@notifee/react-native')
+      notifeeModule.default.onBackgroundEvent(async (event) => {
+        if (event.type !== notifeeModule.EventType.PRESS) return
+        await savePendingNotificationOpenData(event.detail.notification?.data)
+      })
+    } catch (err) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('[push] Notifee background press registration failed', err)
+      }
+    }
+
     void ensurePushNotificationChannel()
 
     messagingModule.setBackgroundMessageHandler(messaging, async (remoteMessage) => {
@@ -40,6 +58,10 @@ export function registerBackgroundPushHandler(): void {
           threadId: payload.threadId,
           messageCount: payload.messageCount,
         })
+      }
+
+      if (Platform.OS === 'android' && isTopicRoomChatPayload(payload)) {
+        await displayTopicRoomChatNotification(payload)
       }
 
       await syncAppBadgeCountFromPushData(remoteMessage?.data)

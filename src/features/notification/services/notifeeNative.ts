@@ -1,12 +1,15 @@
 import { getNotificationBadgeCount } from '../api/notification.api'
-import { Platform } from 'react-native'
+import { Image, Platform } from 'react-native'
 import {
   getPushTitleBody,
+  isTopicRoomChatPayload,
   parsePushNotificationData,
   type ParsedPushPayload,
 } from './pushPayload'
 
 export const PUSH_ANDROID_CHANNEL_ID = 'storix_default_high'
+
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 let channelReady: Promise<string> | null = null
 let badgeOperation: Promise<unknown> = Promise.resolve()
@@ -54,9 +57,7 @@ function enqueueBadgeOperation<T>(operation: () => Promise<T>): Promise<T> {
   return queued
 }
 
-async function setNativeIosBadgeCount(count: number): Promise<void> {
-  if (Platform.OS !== 'ios') return
-
+async function setNativeBadgeCount(count: number): Promise<void> {
   const notifeeModule = loadNotifee()
   if (!notifeeModule) return
   await notifeeModule.default.setBadgeCount(count)
@@ -89,7 +90,7 @@ export async function setAppBadgeCount(count: number): Promise<void> {
 
   await enqueueBadgeOperation(async () => {
     try {
-      await setNativeIosBadgeCount(badgeCount)
+      await setNativeBadgeCount(badgeCount)
     } catch (err) {
       markNotifeeUnavailable('[push] Notifee badge update failed', err)
     }
@@ -108,7 +109,7 @@ export async function syncAppBadgeCountFromPushData(
 export async function refreshAppBadgeCount(): Promise<number> {
   return enqueueBadgeOperation(async () => {
     const count = await getNotificationBadgeCount()
-    await setNativeIosBadgeCount(count)
+    await setNativeBadgeCount(count)
     return count
   })
 }
@@ -192,6 +193,11 @@ export async function displayForegroundPushNotification(args: {
   const notifeeModule = loadNotifee()
   if (!notifeeModule) return
 
+  if (Platform.OS === 'android' && isTopicRoomChatPayload(args.payload)) {
+    await displayTopicRoomChatNotification(args.payload)
+    return
+  }
+
   const { title, body } = getPushTitleBody(args.payload, args.notification)
   if (!title && !body) return
 
@@ -227,6 +233,74 @@ export async function displayForegroundPushNotification(args: {
   } catch (err) {
     markNotifeeUnavailable('[push] foreground notification display failed', err)
   }
+}
+
+function getDefaultProfileImageUri(): string | null {
+  return Image.resolveAssetSource(defaultProfileImage)?.uri ?? null
+}
+
+/**
+ * Displays Android's data-only TOPIC_ROOM_CHAT payload. A stable room-scoped
+ * ID replaces the previous notification from the same room, while
+ * MessagingStyle supplies the conversation avatar and app identity badge.
+ */
+export async function displayTopicRoomChatNotification(
+  payload: ParsedPushPayload,
+): Promise<void> {
+  if (Platform.OS !== 'android' || !isTopicRoomChatPayload(payload)) return
+  if (payload.targetId == null) return
+
+  const notifeeModule = loadNotifee()
+  if (!notifeeModule) return
+
+  const channelId = await ensurePushNotificationChannel()
+  const threadId =
+    payload.threadId ?? getTopicRoomNotificationThreadId(payload.targetId)
+  const roomName = payload.roomName ?? payload.subtitle ?? ''
+  const messageCount = Math.max(1, payload.messageCount ?? 1)
+  const senderName = payload.senderNickname ?? payload.title ?? '새 메시지'
+  const displayTitle =
+    messageCount > 1 ? `새 메시지 ${messageCount}건` : senderName
+  const profileIcon =
+    payload.senderProfileImageUrl ?? getDefaultProfileImageUri() ?? undefined
+
+  const sender = {
+    name: displayTitle,
+    id: `${threadId}:sender`,
+    ...(profileIcon ? { icon: profileIcon } : {}),
+  }
+
+  await notifeeModule.default.displayNotification({
+    id: threadId,
+    title: displayTitle,
+    body: roomName ? `${roomName}\n${payload.body ?? ''}` : payload.body ?? '',
+    data: payload.raw,
+    android: {
+      channelId,
+      pressAction: { id: 'default' },
+      smallIcon: 'ic_launcher',
+      importance: notifeeModule.AndroidImportance.HIGH,
+      groupId: threadId,
+      ...(profileIcon ? { largeIcon: profileIcon } : {}),
+      circularLargeIcon: true,
+      style: {
+        type: notifeeModule.AndroidStyle.MESSAGING,
+        person: { name: 'STORIX', id: 'storix-current-user' },
+        messages: [
+          {
+            text: payload.body ?? '',
+            timestamp: Date.now(),
+            person: sender,
+          },
+        ],
+        title: roomName || displayTitle,
+        group: messageCount > 1,
+      },
+      ...(payload.unreadCount != null
+        ? { badgeCount: payload.unreadCount }
+        : {}),
+    },
+  })
 }
 
 export function subscribeNotifeeForegroundPress(
