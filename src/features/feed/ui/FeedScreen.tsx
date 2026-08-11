@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   topicroomScreen: {
     flex: 1,
-    backgroundColor: Gray[50],
+    backgroundColor: C.card,
   },
   topicroomScroll: {
     flex: 1,
