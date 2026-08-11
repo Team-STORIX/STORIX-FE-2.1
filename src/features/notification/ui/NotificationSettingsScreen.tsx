@@ -3,7 +3,6 @@ import { Image } from 'expo-image'
 import {
   ActivityIndicator,
   Linking,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -24,6 +23,7 @@ import type {
 } from '../api/notification.schema'
 import { NotificationConsentModal } from './NotificationConsentModal'
 import { NotificationHeader } from './NotificationHeader'
+import { NotificationPermissionGuideModal } from './NotificationPermissionGuideModal'
 
 const activeIcon = require('../../../../assets/icons/common/active.svg')
 const deactiveIcon = require('../../../../assets/icons/common/deactive.svg')
@@ -239,45 +239,12 @@ export function NotificationSettingsScreen() {
         </View>
       )}
 
-      {/* OS-permission-OFF modal (Figma 8489:29739). */}
-      <Modal
+      <NotificationPermissionGuideModal
         visible={permissionModalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPermissionModalOpen(false)}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>알림 설정</Text>
-            <Text style={styles.modalBody}>
-              기기 설정에서 알림을 켜 주세요{'\n'}
-              설정 화면에서 STORIX 알림을 허용해 주세요.
-            </Text>
-            <View style={styles.modalButtons}>
-              <Pressable
-                onPress={() => setPermissionModalOpen(false)}
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-              >
-                <Text style={styles.cancelLabel}>취소</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirmPermission}
-                style={({ pressed }) => [
-                  styles.confirmButton,
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-              >
-                <Text style={styles.confirmLabel}>확인</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        message={'기기 설정에서 알림을 켜 주세요\n설정 화면에서 STORIX 알림을 허용해 주세요.'}
+        onCancel={() => setPermissionModalOpen(false)}
+        onConfirm={handleConfirmPermission}
+      />
 
       <NotificationConsentModal
         step={
@@ -379,80 +346,5 @@ const styles = StyleSheet.create({
   },
   disabledToggle: {
     opacity: 0.5,
-  },
-  // ----- permission modal -----
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(19, 17, 18, 0.60)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBox: {
-    width: 306,
-    paddingTop: 28,
-    paddingBottom: 16,
-    alignItems: 'flex-start',
-    borderRadius: 8,
-    backgroundColor: C.card,
-  },
-  modalTitle: {
-    paddingHorizontal: 24,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
-    color: C.text,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  modalBody: {
-    marginTop: 10,
-    paddingHorizontal: 24,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19.6,
-    color: Gray[500],
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  modalButtons: {
-    marginTop: 28,
-    alignSelf: 'stretch',
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    height: 49,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
-    color: Gray[700],
-  },
-  confirmButton: {
-    flex: 1,
-    height: 49,
-    borderRadius: 8,
-    backgroundColor: C.text,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  confirmLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22.4,
-    color: C.card,
-  },
-  pressed: {
-    opacity: 0.7,
   },
 })

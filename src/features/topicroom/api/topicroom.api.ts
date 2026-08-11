@@ -212,14 +212,13 @@ export async function getTopicRoomNotificationSetting(roomId: number) {
 export async function updateTopicRoomNotificationSetting(
   roomId: number,
   body: { enabled: boolean },
-) {
+): Promise<void> {
   const payload = UpdateTopicRoomNotificationRequestSchema.parse(body);
-  const res = await apiClient.patch(
+  await apiClient.patch(
     `/api/v1/topic-rooms/${roomId}/notification`,
     payload,
     { headers: { accept: "*/*" } },
   );
-  return ApiEnvelopeSchema(z.string()).parse(res.data).result;
 }
 
 // Searches by worksName and returns the topicRoomId of the matching room, or null.
