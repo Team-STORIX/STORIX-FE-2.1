@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "versionCode": 15,
+      "versionCode": 17,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
