@@ -19,6 +19,7 @@ import {
 import { C, Radius, Typography } from "../../src/theme";
 
 const backIcon = require("../../assets/icons/common/back.svg");
+const warningIcon = require("../../assets/topicroom/icon-warning.svg");
 
 function firstParam(raw?: string | string[]) {
   return Array.isArray(raw) ? raw[0] : raw;
@@ -177,6 +178,18 @@ export default function TopicRoomPreviewScreen() {
             {paramLastChat}
           </Text>
         ) : null}
+
+        <View style={styles.warningBanner} accessibilityRole="alert">
+          <Image
+            source={warningIcon}
+            style={styles.warningIcon}
+            contentFit="contain"
+          />
+          <Text style={styles.warningText}>
+            최신화 내용이 자유롭게 언급되는 채팅입니다.{"\n"}
+            스포일러를 원하지 않으실 경우 입장에 유의해 주세요!
+          </Text>
+        </View>
       </View>
 
       {/* Fixed entry button */}
@@ -293,6 +306,27 @@ const styles = StyleSheet.create({
   lastChat: {
     ...Typography.body2Medium,
     color: C.divider,
+  },
+  warningBanner: {
+    minHeight: 58,
+    marginHorizontal: -4,
+    marginTop: 8,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: Radius.sm,
+    backgroundColor: "rgba(19, 17, 18, 0.8)",
+  },
+  warningIcon: {
+    width: 24,
+    height: 24,
+    flexShrink: 0,
+  },
+  warningText: {
+    ...Typography.caption1Semibold,
+    flex: 1,
+    color: C.primary,
   },
   footer: {
     position: "absolute",
