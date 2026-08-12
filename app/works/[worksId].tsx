@@ -28,7 +28,7 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
-  getTopicRoomPreviewRoute,
+  getTopicRoomDiscoveryRoute,
 } from '../../src/features/topicroom'
 import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
@@ -124,16 +124,15 @@ export default function WorksDetailScreen() {
   }, [actionToast, showToast])
 
   const navigateToRoom = useCallback(
-    (roomId: number) => {
+    async (roomId: number) => {
+      const route = await getTopicRoomDiscoveryRoute(roomId, {
+        keyword: works?.worksName,
+        worksName: works?.worksName,
+        worksType: works?.worksType,
+        thumbnailUrl: works?.thumbnailUrl,
+      })
       setEntryPhase('idle')
-      router.push(
-        getTopicRoomPreviewRoute(roomId, {
-          keyword: works?.worksName,
-          worksName: works?.worksName,
-          worksType: works?.worksType,
-          thumbnailUrl: works?.thumbnailUrl,
-        }),
-      )
+      router.push(route)
     },
     [router, works?.thumbnailUrl, works?.worksName, works?.worksType],
   )
@@ -165,7 +164,7 @@ export default function WorksDetailScreen() {
         return
       }
 
-      navigateToRoom(roomId)
+      await navigateToRoom(roomId)
     } catch {
       setEntryPhase('idle')
       showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')

@@ -22,7 +22,7 @@ import {
   useTrendingKeywords,
   useWorksSearchInfinite,
 } from '../hooks'
-import { getTopicRoomPreviewRoute } from '../../topicroom'
+import { getTopicRoomDiscoveryRoute } from '../../topicroom'
 import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
 import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
@@ -220,11 +220,11 @@ export function SearchScreen() {
     router.push(`/works/${item.worksId}` as const)
   }
 
-  const handlePressTopicRoom = (item: TopicRoomSearchItem) => {
-    // Do not join here — navigate to the preview/detail screen first. The
-    // preview screen handles join + entry into the chat room.
+  const handlePressTopicRoom = async (item: TopicRoomSearchItem) => {
+    // Joined rooms open immediately; only a user's first entry goes through
+    // the preview screen, which handles joining before opening the chat.
     router.push(
-      getTopicRoomPreviewRoute(item.topicRoomId, {
+      await getTopicRoomDiscoveryRoute(item.topicRoomId, {
         ...item,
         keyword: submittedKeyword,
       }),

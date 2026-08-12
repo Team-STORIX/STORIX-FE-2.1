@@ -26,7 +26,7 @@ import {
   getAppEventWebViewRoute,
   getValidHttpUrl,
 } from '../../app-event/lib/targetNavigation'
-import { getTopicRoomPreviewRoute } from '../../topicroom/services/topicRoomNavigation'
+import { getTopicRoomChatRoute } from '../../topicroom/services/topicRoomNavigation'
 
 function isValidId(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -69,7 +69,7 @@ function resolveTarget(
     if (targetKey.includes('FEED')) return `/feed/${targetId}`
     if (targetKey.includes('REVIEW')) return `/works/review/${targetId}`
     if (targetKey.includes('WORKS')) return `/works/${targetId}`
-    if (targetKey.includes('TOPIC')) return getTopicRoomPreviewRoute(targetId)
+    if (targetKey.includes('TOPIC')) return getTopicRoomChatRoute(targetId)
   }
 
   // No obvious target — fall back to the detail page.

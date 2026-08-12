@@ -22,7 +22,7 @@ import { SearchEmptyState } from "../../search";
 import type { WorksSearchItem } from "../../search/api/search.schema";
 import { useWorksSearch } from "../../search/hooks/useSearch";
 import { findTopicRoomIdByWorksName } from "../api/topicroom.api";
-import { getTopicRoomPreviewRoute } from "../services/topicRoomNavigation";
+import { getTopicRoomDiscoveryRoute } from "../services/topicRoomNavigation";
 
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
@@ -207,21 +207,27 @@ export function TopicRoomWorksPickerBottomSheet({
     });
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedWork || checkingExisting) return;
 
     if (existingRoomId != null) {
       const roomId = existingRoomId;
-      animateOut(() => {
-        router.replace(
-          getTopicRoomPreviewRoute(roomId, {
-            keyword: selectedWork.worksName,
-            worksName: selectedWork.worksName,
-            worksType: selectedWork.worksType,
-            thumbnailUrl: selectedWork.thumbnailUrl,
-          }),
-        );
-      });
+      setCheckingExisting(true);
+      try {
+        const route = await getTopicRoomDiscoveryRoute(roomId, {
+          keyword: selectedWork.worksName,
+          worksName: selectedWork.worksName,
+          worksType: selectedWork.worksType,
+          thumbnailUrl: selectedWork.thumbnailUrl,
+        });
+        animateOut(() => {
+          router.replace(route);
+        });
+      } catch {
+        return;
+      } finally {
+        setCheckingExisting(false);
+      }
       return;
     }
 

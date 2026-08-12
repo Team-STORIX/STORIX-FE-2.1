@@ -16,7 +16,7 @@ import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
 import type { TopicRoomItem } from "../api/topicroom.schema";
-import { getTopicRoomPreviewRoute } from "../services/topicRoomNavigation";
+import { getTopicRoomDiscoveryRoute } from "../services/topicRoomNavigation";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
 import { HotTopicRoomCard } from "./HotTopicRoomCard";
@@ -61,8 +61,8 @@ export function TopicRoomFeedSection() {
     });
   };
 
-  const handleEnter = (item: TopicRoomItem) => {
-    router.push(getTopicRoomPreviewRoute(item.topicRoomId, item));
+  const handleEnter = async (item: TopicRoomItem) => {
+    router.push(await getTopicRoomDiscoveryRoute(item.topicRoomId, item));
   };
 
   const popularPages = useMemo(

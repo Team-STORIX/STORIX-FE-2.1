@@ -20,7 +20,7 @@ import {
   usePreferenceExploration,
 } from "../../src/features/preference";
 import {
-  getTopicRoomPreviewRoute,
+  getTopicRoomDiscoveryRoute,
   usePopularTopicRooms,
   useTodayTopicRooms,
   type TopicRoomItem,
@@ -126,8 +126,8 @@ export default function HomeScreen() {
   };
 
   const enterTopicRoom = useCallback(
-    (room: TopicRoomItem) => {
-      router.push(getTopicRoomPreviewRoute(room.topicRoomId, room));
+    async (room: TopicRoomItem) => {
+      router.push(await getTopicRoomDiscoveryRoute(room.topicRoomId, room));
     },
     [router],
   );
