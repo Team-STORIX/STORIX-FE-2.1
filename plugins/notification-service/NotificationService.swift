@@ -40,6 +40,9 @@ final class NotificationService: UNNotificationServiceExtension {
       ?? request.identifier
 
     content.threadIdentifier = threadId
+    if !roomName.isEmpty {
+      content.subtitle = roomName
+    }
 
     loadAvatar(from: stringValue(userInfo["senderProfileImageUrl"])) { [weak self] image in
       guard let self else { return }
@@ -71,7 +74,15 @@ final class NotificationService: UNNotificationServiceExtension {
 
       do {
         let updated = try content.updating(from: intent)
-        self.finish(with: updated)
+        if let mutableUpdated = updated.mutableCopy() as? UNMutableNotificationContent {
+          mutableUpdated.threadIdentifier = threadId
+          if !roomName.isEmpty {
+            mutableUpdated.subtitle = roomName
+          }
+          self.finish(with: mutableUpdated)
+        } else {
+          self.finish(with: updated)
+        }
       } catch {
         self.finish(with: content)
       }
