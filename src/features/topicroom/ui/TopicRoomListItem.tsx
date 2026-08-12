@@ -6,6 +6,8 @@ import { Typography } from "../../../theme/typography";
 import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 
+const notificationOffIcon = require("../../../../assets/topicroom/icon-notification-off.svg");
+
 type Props = {
   item: TopicRoomItem;
   onPress: () => void;
@@ -43,9 +45,19 @@ export function TopicRoomListItem({ item, onPress }: Props) {
 
       <View style={styles.body}>
         <View style={styles.topRow}>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
+          <View style={styles.subtitleRow}>
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+            {item.notificationEnabled === false ? (
+              <Image
+                source={notificationOffIcon}
+                style={styles.notificationOffIcon}
+                contentFit="contain"
+                accessibilityLabel="토픽룸 알림 꺼짐"
+              />
+            ) : null}
+          </View>
           <Text style={styles.rightText}>{memberCount}명</Text>
         </View>
 
@@ -109,12 +121,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
+  subtitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    minWidth: 0,
+  },
   subtitle: {
     ...Typography.body1Medium,
     color: C.text,
-    flex: 1,
+    flexShrink: 1,
     maxWidth: 240,
     lineHeight: 20,
+  },
+  notificationOffIcon: {
+    width: 16,
+    height: 16,
+    flexShrink: 0,
   },
   rightText: {
     ...Typography.caption1Medium,
