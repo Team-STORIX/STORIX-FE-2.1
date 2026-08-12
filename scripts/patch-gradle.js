@@ -36,6 +36,7 @@ const appBuildGradlePath = path.join(__dirname, '../android/app/build.gradle');
 if (fs.existsSync(appBuildGradlePath)) {
   content = fs.readFileSync(appBuildGradlePath, 'utf8');
   const originalContent = content;
+
   const productionAabGuard = `def productionApiUrl = 'https://api.storix.kr'
 `;
   const productionAabGuardBlock = `
@@ -70,18 +71,38 @@ if (isReleaseBundleTask && storixEnvValue('EXPO_PUBLIC_API_URL') != productionAp
 }
 `;
 
+  // Use more stable anchor: keystorePropertiesFile definition
+  const keystoreFileAnchor = /def keystorePropertiesFile = rootProject\.file\([^)]+\)\s*\n/;
+
   if (!content.includes("def productionApiUrl = 'https://api.storix.kr'")) {
-    content = content.replace(
-      "def keystoreProperties = new Properties()\n",
-      `def keystoreProperties = new Properties()\n${productionAabGuard}`,
-    );
+    // Try to insert after keystorePropertiesFile
+    if (keystoreFileAnchor.test(content)) {
+      content = content.replace(
+        keystoreFileAnchor,
+        (match) => `${match}def keystoreProperties = new Properties()\n${productionAabGuard}`,
+      );
+    } else {
+      // Fallback: try original anchor
+      const keystorePropsAnchor = /def keystoreProperties = new Properties\(\)\s*\n/;
+      if (keystorePropsAnchor.test(content)) {
+        content = content.replace(
+          keystorePropsAnchor,
+          (match) => `${match}${productionAabGuard}`,
+        );
+      }
+    }
   }
 
   if (!content.includes("def readRootEnvValue = { String name ->")) {
-    content = content.replace(
-      "if (keystorePropertiesFile.exists()) {\n    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }\n}\n",
-      `if (keystorePropertiesFile.exists()) {\n    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }\n}\n${productionAabGuardBlock}`,
-    );
+    // Use regex for more flexible matching
+    const keystoreLoadAnchor = /if \(keystorePropertiesFile\.exists\(\)\) \{[^}]*keystoreProperties\.load\(it\)[^}]*\}\s*\n/;
+
+    if (keystoreLoadAnchor.test(content)) {
+      content = content.replace(
+        keystoreLoadAnchor,
+        (match) => `${match}${productionAabGuardBlock}`,
+      );
+    }
   }
 
   const entryPointPatch = `
@@ -102,12 +123,49 @@ tasks.named("generateReactNativeEntryPoint").configure {
   patched = content.includes('tasks.named("generateReactNativeEntryPoint").configure')
     ? content
     : content.replace(
-        '}\n\n// Apply static values',
+        /\}\s*\n\s*\/\/ Apply static values/,
         `}\n${entryPointPatch}\n// Apply static values`,
       );
 
   if (patched !== originalContent) {
     fs.writeFileSync(appBuildGradlePath, patched);
-    console.log('Android app Gradle patches applied');
   }
+
+  // CRITICAL: Verify all required guards are present
+  const finalContent = fs.readFileSync(appBuildGradlePath, 'utf8');
+  const criticalGuards = {
+    productionApiUrl: {
+      pattern: /def productionApiUrl = ['"]https:\/\/api\.storix\.kr['"]/,
+      description: 'Production API URL constant',
+    },
+    isReleaseBundleTask: {
+      pattern: /def isReleaseBundleTask = gradle\.startParameter\.taskNames/,
+      description: 'Release bundle task detection',
+    },
+    guardException: {
+      pattern: /throw new GradleException\("Android release AAB requires EXPO_PUBLIC_API_URL=/,
+      description: 'Release AAB guard exception',
+    },
+  };
+
+  const missingGuards = [];
+  for (const [key, guard] of Object.entries(criticalGuards)) {
+    if (!guard.pattern.test(finalContent)) {
+      missingGuards.push(`  - ${guard.description} (${key})`);
+    }
+  }
+
+  if (missingGuards.length > 0) {
+    console.error('\n❌ CRITICAL: Required Gradle guards missing in build.gradle:');
+    console.error(missingGuards.join('\n'));
+    console.error('\nThese guards prevent development API in production builds.');
+    console.error('Without them, you risk releasing an app pointing to dev.storix.kr.');
+    console.error('\nPossible causes:');
+    console.error('  - Expo SDK version changed the build.gradle template');
+    console.error('  - Manual edits to android/app/build.gradle removed anchors');
+    console.error('\nPath: ' + appBuildGradlePath);
+    process.exit(1);
+  }
+
+  console.log('✅ Android app Gradle patches applied and verified');
 }

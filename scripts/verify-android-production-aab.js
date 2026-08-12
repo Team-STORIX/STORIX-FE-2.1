@@ -135,12 +135,35 @@ const scanAab = (aabPath) => {
   return matches;
 };
 
-const aabPath = path.resolve(process.argv[2] ?? findLatestAab() ?? "");
+const providedPath = process.argv[2];
+const foundPath = providedPath ?? findLatestAab();
 
-if (!aabPath || !fs.existsSync(aabPath)) {
+if (!foundPath) {
+  console.error("\n❌ Android AAB not found.");
+  console.error("   Build one with: npm run build:android");
   console.error(
-    "Android AAB not found. Pass a path: npm run verify:android:aab -- path/to/app.aab",
+    "   Or specify path: npm run verify:android:aab -- path/to/app.aab\n",
   );
+  process.exit(1);
+}
+
+const aabPath = path.resolve(foundPath);
+
+if (!fs.existsSync(aabPath)) {
+  console.error(`\n❌ Path does not exist: ${aabPath}\n`);
+  process.exit(1);
+}
+
+const stats = fs.statSync(aabPath);
+if (stats.isDirectory()) {
+  console.error(`\n❌ Path is a directory, not an AAB file: ${aabPath}`);
+  console.error("   Expected a .aab file, not a folder.\n");
+  process.exit(1);
+}
+
+if (path.extname(aabPath).toLowerCase() !== ".aab") {
+  console.error(`\n❌ File is not an AAB: ${aabPath}`);
+  console.error("   Expected .aab extension\n");
   process.exit(1);
 }
 
