@@ -32,6 +32,26 @@ function getTargetBuildSettings(project, target) {
     .filter(Boolean)
 }
 
+function moveBuildPhaseBefore(target, phaseName, beforePhaseName) {
+  const phases = target?.buildPhases
+  if (!Array.isArray(phases)) return
+
+  const phaseIndex = phases.findIndex(
+    (phase) => unquote(phase.comment) === phaseName,
+  )
+  const beforeIndex = phases.findIndex(
+    (phase) => unquote(phase.comment) === beforePhaseName,
+  )
+
+  if (phaseIndex < 0 || beforeIndex < 0 || phaseIndex < beforeIndex) return
+
+  const [phase] = phases.splice(phaseIndex, 1)
+  const nextBeforeIndex = phases.findIndex(
+    (candidate) => unquote(candidate.comment) === beforePhaseName,
+  )
+  phases.splice(nextBeforeIndex, 0, phase)
+}
+
 function addNotificationServiceTarget(config) {
   return withXcodeProject(config, (modConfig) => {
     const project = modConfig.modResults
@@ -96,6 +116,15 @@ function addNotificationServiceTarget(config) {
         extension.uuid,
       )
     }
+
+    // Xcode treats later build phases as depending on earlier phases. Keeping
+    // the extension embed phase after RNFirebase's Info.plist script creates a
+    // dependency cycle between the app Info.plist and the embedded appex.
+    moveBuildPhaseBefore(
+      mainTarget.firstTarget,
+      'Embed App Extensions',
+      '[CP-User] [RNFB] Core Configuration',
+    )
 
     for (const settings of getTargetBuildSettings(
       project,

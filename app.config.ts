@@ -100,6 +100,14 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       infoPlist: {
         ...(config.ios?.infoPlist ?? {}),
         ITSAppUsesNonExemptEncryption: false,
+        NSUserActivityTypes: Array.from(
+          new Set([
+            ...(((config.ios?.infoPlist as any)?.NSUserActivityTypes as
+              | string[]
+              | undefined) ?? []),
+            "INSendMessageIntent",
+          ]),
+        ),
         UIBackgroundModes: Array.from(
           new Set([
             ...(((config.ios?.infoPlist as any)?.UIBackgroundModes as
