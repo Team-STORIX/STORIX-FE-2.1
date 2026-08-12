@@ -22,9 +22,7 @@ import { SearchEmptyState } from "../../search";
 import type { WorksSearchItem } from "../../search/api/search.schema";
 import { useWorksSearch } from "../../search/hooks/useSearch";
 import { findTopicRoomIdByWorksName } from "../api/topicroom.api";
-import { useJoinTopicRoom } from "../hooks";
-import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
-import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
+import { getTopicRoomPreviewRoute } from "../services/topicRoomNavigation";
 
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
@@ -122,10 +120,7 @@ export function TopicRoomWorksPickerBottomSheet({
   const [selectedId, setSelectedId] = useState<number | undefined>();
   const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
-  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const checkSeqRef = useRef(0);
-
-  const joinMutation = useJoinTopicRoom();
 
   useEffect(() => {
     if (!visible) {
@@ -191,7 +186,6 @@ export function TopicRoomWorksPickerBottomSheet({
   };
 
   const handleSelectWork = (item: WorksSearchItem) => {
-    if (joinMutation.isPending) return;
     if (selectedId === item.worksId) {
       checkSeqRef.current += 1;
       setSelectedId(undefined);
@@ -214,21 +208,19 @@ export function TopicRoomWorksPickerBottomSheet({
   };
 
   const handleConfirm = () => {
-    if (!selectedWork || checkingExisting || joinMutation.isPending) return;
+    if (!selectedWork || checkingExisting) return;
 
     if (existingRoomId != null) {
       const roomId = existingRoomId;
-      joinMutation.mutate(roomId, {
-        onSuccess: () => {
-          animateOut(() => {
-            router.replace(`/topicroom/${roomId}` as const);
-          });
-        },
-        onError: (err) => {
-          if (isTopicRoomParticipationLimitError(err)) {
-            setLimitModalVisible(true);
-          }
-        },
+      animateOut(() => {
+        router.replace(
+          getTopicRoomPreviewRoute(roomId, {
+            keyword: selectedWork.worksName,
+            worksName: selectedWork.worksName,
+            worksType: selectedWork.worksType,
+            thumbnailUrl: selectedWork.thumbnailUrl,
+          }),
+        );
       });
       return;
     }
@@ -243,19 +235,16 @@ export function TopicRoomWorksPickerBottomSheet({
     animateOut(() => onPickWork(picked));
   };
 
-  const canConfirm =
-    selectedWork != null && !checkingExisting && !joinMutation.isPending;
-  const isBusy = checkingExisting || joinMutation.isPending;
+  const canConfirm = selectedWork != null && !checkingExisting;
+  const isBusy = checkingExisting;
   const goToExistingRoom = existingRoomId != null;
 
-  if (!visible && !limitModalVisible) {
+  if (!visible) {
     return null;
   }
 
   return (
-    <>
-      {visible && !limitModalVisible ? (
-        <Modal
+    <Modal
           transparent
           animationType="none"
           presentationStyle="overFullScreen"
@@ -419,14 +408,7 @@ export function TopicRoomWorksPickerBottomSheet({
               </KeyboardAvoidingView>
             </Animated.View>
           </Animated.View>
-        </Modal>
-      ) : null}
-
-      <TopicRoomLimitModal
-        visible={limitModalVisible}
-        onClose={() => setLimitModalVisible(false)}
-      />
-    </>
+    </Modal>
   );
 }
 

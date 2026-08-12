@@ -22,7 +22,7 @@ import {
   useTrendingKeywords,
   useWorksSearchInfinite,
 } from '../hooks'
-import { useJoinTopicRoom } from '../../topicroom'
+import { getTopicRoomPreviewRoute } from '../../topicroom'
 import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
 import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
@@ -123,7 +123,6 @@ export function SearchScreen() {
     selectedTypes,
     selectedGenres,
   )
-  const joinTopicRoomMutation = useJoinTopicRoom()
 
   useEffect(() => {
     setInputValue(submittedKeyword)
@@ -224,19 +223,12 @@ export function SearchScreen() {
   const handlePressTopicRoom = (item: TopicRoomSearchItem) => {
     // Do not join here — navigate to the preview/detail screen first. The
     // preview screen handles join + entry into the chat room.
-    router.push({
-      pathname: '/topicroom/preview',
-      params: {
-        roomId: String(item.topicRoomId),
+    router.push(
+      getTopicRoomPreviewRoute(item.topicRoomId, {
+        ...item,
         keyword: submittedKeyword,
-        topicRoomName: item.topicRoomName,
-        worksName: item.worksName,
-        worksType: item.worksType ?? '',
-        activeUserNumber: String(item.activeUserNumber ?? 0),
-        thumbnailUrl: item.thumbnailUrl ?? '',
-        lastChatTime: item.lastChatTime ?? '',
-      },
-    })
+      }),
+    )
   }
 
   return (
@@ -312,7 +304,7 @@ export function SearchScreen() {
                 data={topicRoomQuery.items}
                 isLoading={topicRoomQuery.isLoading}
                 isError={topicRoomQuery.isError}
-                isJoining={joinTopicRoomMutation.isPending}
+                isJoining={false}
                 isFetchingNextPage={topicRoomQuery.isFetchingNextPage}
                 hasNextPage={!!topicRoomQuery.hasNextPage}
                 onEndReached={() => {

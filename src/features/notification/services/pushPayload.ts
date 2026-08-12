@@ -12,6 +12,7 @@
 // must be coerced defensively (see `toId`).
 
 import { getAppEventWebViewRoute } from '../../app-event/lib/targetNavigation'
+import { getTopicRoomPreviewRoute } from '../../topicroom/services/topicRoomNavigation'
 
 // ---------- types ----------
 
@@ -197,7 +198,7 @@ export function getPushTitleBody(
  * Route table (verified against app/ on 2026-05-26):
  *   FEED        -> /feed/{targetId}              (app/feed/[boardId].tsx)
  *   REVIEW      -> /works/review/{targetId}      (app/works/review/[reviewId].tsx)
- *   TOPIC_ROOM  -> /topicroom/{targetId}         (app/topicroom/[roomId].tsx)
+ *   TOPIC_ROOM  -> /topicroom/preview            (join, then app/topicroom/[roomId].tsx)
  *   COMMENT     -> /feed/{parentTargetId}        (parent feed; see TODO below)
  *   NONE        -> no navigation (mark-as-read only)
  *   other       -> /notifications/{id} or /notifications
@@ -228,7 +229,10 @@ export function getNotificationRoute(
 
     case 'TOPIC_ROOM':
       return payload.targetId != null
-        ? `/topicroom/${payload.targetId}`
+        ? getTopicRoomPreviewRoute(payload.targetId, {
+            keyword: payload.roomName,
+            topicRoomName: payload.roomName,
+          })
         : notificationFallback()
 
     case 'COMMENT': {
