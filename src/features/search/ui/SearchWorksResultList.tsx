@@ -14,7 +14,7 @@ type Props = {
   isFetchingNextPage: boolean
   hasNextPage: boolean
   onEndReached: () => void
-  onPressItem: (item: WorksSearchItem) => void
+  onPressItem: (item: WorksSearchItem, index: number) => void
   recommendationKeyword?: string | null
   onPressRecommendation?: (keyword: string) => void
 }
@@ -50,10 +50,10 @@ export function SearchWorksResultList({
     <FlatList
       data={data}
       keyExtractor={(item) => `works-search-${item.worksId}`}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <Pressable
           style={({ pressed }) => [styles.itemRow, pressed && styles.pressed]}
-          onPress={() => onPressItem(item)}
+          onPress={() => onPressItem(item, index)}
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>

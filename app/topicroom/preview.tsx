@@ -45,6 +45,7 @@ export default function TopicRoomPreviewScreen() {
     thumbnailUrl?: string;
     lastChatMessage?: string;
     lastChatTime?: string;
+    entrySource?: string;
   }>();
 
   const roomId = Number(firstParam(params.roomId) ?? 0);
@@ -56,6 +57,7 @@ export default function TopicRoomPreviewScreen() {
   const paramActiveUser = firstParam(params.activeUserNumber);
   const paramThumbnail = firstParam(params.thumbnailUrl) ?? "";
   const paramLastChat = firstParam(params.lastChatMessage) ?? "";
+  const entrySource = firstParam(params.entrySource) ?? "search";
 
   // Fallback: only fetch when core params are missing AND we have a keyword to
   // search with. useTopicRoomInfoById searches by keyword then matches roomId,
@@ -100,6 +102,7 @@ export default function TopicRoomPreviewScreen() {
           worksName,
           worksType,
           activeUserNumber: String(activeUserNumber),
+          entrySource,
         },
       });
     } catch (err) {

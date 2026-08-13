@@ -17,7 +17,7 @@ const SKELETON_COUNT = 5
 type HotFeedSliderProps = {
   data?: TodayFeedItem[]
   isLoading?: boolean
-  onPressItem: (item: TodayFeedItem) => void
+  onPressItem: (item: TodayFeedItem, index: number) => void
 }
 
 export function HotFeedSlider({
@@ -60,7 +60,7 @@ export function HotFeedSlider({
               <HotFeedCard
                 item={item}
                 width={cardWidth}
-                onPress={() => onPressItem(item)}
+                onPress={() => onPressItem(item, i)}
               />
             </View>
           ))}

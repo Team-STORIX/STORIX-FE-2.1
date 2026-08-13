@@ -55,6 +55,11 @@ import {
   type TopicRoomItem,
 } from "../../src/features/topicroom";
 import { C } from "../../src/theme/colors";
+import {
+  trackEnterTopicRoom,
+  trackExitTopicRoom,
+  trackScreenView,
+} from "../../src/lib/analytics/events";
 
 const checkboxActiveIcon = require("../../assets/topicroom/icon-checkbox-active.svg");
 
@@ -117,6 +122,7 @@ export default function TopicRoomScreen() {
     worksType?: string;
     activeUserNumber?: string;
     startDate?: string;
+    entrySource?: string;
   }>();
   // useLocalSearchParams can yield a string or a string[]; normalize either to a
   // single number. Invalid values become NaN, which downstream guards (history
@@ -132,6 +138,9 @@ export default function TopicRoomScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
   const [liveMemberCount, setLiveMemberCount] = useState<number | null>(null);
+  const enteredAtRef = useRef(Date.now());
+  const didTrackEnterRef = useRef(false);
+  const didTrackExitRef = useRef(false);
 
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [headerMenuTopOffset, setHeaderMenuTopOffset] = useState<number | null>(
@@ -257,6 +266,21 @@ export default function TopicRoomScreen() {
   useFocusEffect(
     useCallback(() => {
       setIsScreenFocused(true);
+      void trackScreenView("topic_room");
+      if (!didTrackEnterRef.current && Number.isFinite(roomId) && roomId > 0) {
+        didTrackEnterRef.current = true;
+        const rawEntrySource = Array.isArray(params.entrySource)
+          ? params.entrySource[0]
+          : params.entrySource;
+        const entrySource =
+          rawEntrySource === "home" || rawEntrySource === "search" || rawEntrySource === "feed"
+            ? rawEntrySource
+            : "feed";
+        void trackEnterTopicRoom({
+          topic_room_id: `topic_${roomId}`,
+          entry_source: entrySource,
+        });
+      }
       if (Number.isFinite(roomId) && roomId > 0) {
         void syncTopicRoomReadState();
         void queryClient.invalidateQueries({
@@ -267,8 +291,18 @@ export default function TopicRoomScreen() {
       return () => {
         setIsScreenFocused(false);
         setHeaderMenuTopOffset(null);
+        if (!didTrackExitRef.current && Number.isFinite(roomId) && roomId > 0) {
+          didTrackExitRef.current = true;
+          void trackExitTopicRoom({
+            topic_room_id: `topic_${roomId}`,
+            stay_duration_sec: Math.max(
+              0,
+              Math.round((Date.now() - enteredAtRef.current) / 1000),
+            ),
+          });
+        }
       };
-    }, [queryClient, roomId, syncTopicRoomReadState]),
+    }, [params.entrySource, queryClient, roomId, syncTopicRoomReadState]),
   );
 
   const memberAvatarById = useMemo(() => {

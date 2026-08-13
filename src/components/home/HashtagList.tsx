@@ -16,7 +16,7 @@ const FALLBACK_ITEMS = [
 
 type HashtagListProps = {
   items?: string[]
-  onSelect?: (keyword: string) => void
+  onSelect?: (keyword: string, index: number) => void
 }
 
 export function HashtagList({ items, onSelect }: HashtagListProps) {
@@ -35,13 +35,13 @@ export function HashtagList({ items, onSelect }: HashtagListProps) {
         <Text style={styles.headerText}>이런 키워드, 좋아하실 것 같아요</Text>
       </View>
       <View style={styles.row}>
-        {resolved.map((item) => (
+        {resolved.map((item, index) => (
           <HashtagChip
             key={item}
             label={item}
             onPress={
               onSelect
-                ? () => onSelect(item.startsWith('#') ? item : `#${item}`)
+                ? () => onSelect(item.startsWith('#') ? item : `#${item}`, index)
                 : undefined
             }
           />

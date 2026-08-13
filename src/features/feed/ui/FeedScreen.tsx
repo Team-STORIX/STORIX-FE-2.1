@@ -36,6 +36,7 @@ import {
   useTopicRoomUnreadStatus,
 } from '../../topicroom'
 import { updateTodayHomeFeedBoard } from '../../home'
+import { trackScreenView } from '../../../lib/analytics/events'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -73,6 +74,12 @@ export function FeedScreen() {
       void refetchTopicRoomUnreadStatus()
       void qc.invalidateQueries({ queryKey: ['topicroom', 'me'] })
     }, [qc, refetchTopicRoomUnreadStatus]),
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView('feed')
+    }, []),
   )
 
   useEffect(() => {

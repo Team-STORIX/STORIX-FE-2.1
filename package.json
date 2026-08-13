@@ -15,8 +15,10 @@
     "build:ios:prod": "eas build --profile production --platform ios",
     "build:android:test": "eas build --profile preview --platform android",
     "build:android:prod": "eas build --profile production --platform android",
+    "build:android:aab": "node scripts/build-android-production-aab.js",
     "build:test": "eas build --profile preview --platform all",
     "build:prod": "eas build --profile production --platform all",
+    "verify:android:aab": "node scripts/verify-android-production-aab.js",
     "web": "expo start --web"
   },
   "dependencies": {
