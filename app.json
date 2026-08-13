@@ -2,7 +2,7 @@
   "expo": {
     "name": "STORIX",
     "slug": "STORIX-FE-2.1",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/app-logo.png",
     "scheme": "storixfe21",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "32",
+      "buildNumber": "34",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ko",
         "CFBundleLocalizations": ["ko"]
