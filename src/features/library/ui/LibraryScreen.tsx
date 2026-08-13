@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -19,6 +19,7 @@ import { LibraryGalleryCarousel } from "./LibraryGalleryCarousel";
 import { LibraryHeader } from "./LibraryHeader";
 import { LibraryWorksList } from "./LibraryWorksList";
 import type { LibraryUiWork } from "./types";
+import { trackScreenView } from "../../../lib/analytics/events";
 
 const arrowDownIcon = require("../../../../assets/icons/common/arrow-down.svg");
 const galleryIcon = require("../../../../assets/icons/library/icon-gallery.svg");
@@ -58,6 +59,12 @@ export function LibraryScreen() {
   const apiSort = API_SORT[sort];
 
   const reviewQuery = useLibraryReviewInfinite({ sort: apiSort });
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView("library");
+    }, []),
+  );
 
   const works = useMemo<LibraryUiWork[]>(() => {
     const items =

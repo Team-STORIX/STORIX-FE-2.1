@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C } from '../../../theme/colors'
 import {
@@ -33,6 +33,11 @@ import { SearchResultTabs, type SearchTab } from './SearchResultTabs'
 import { SearchTopicRoomResultList } from './SearchTopicRoomResultList'
 import { SearchTrendingKeywordsSection } from './SearchTrendingKeywordsSection'
 import { SearchWorksResultList } from './SearchWorksResultList'
+import {
+  trackScreenView,
+  trackSearch,
+  trackUseSearchFilter,
+} from '../../../lib/analytics/events'
 
 const WORKS_SORT_LABELS: Record<WorksSort, string> = {
   NAME: '기본순',
@@ -104,6 +109,7 @@ export function SearchScreen() {
   const [selectedTypes, setSelectedTypes] = useState<SearchWorksType[]>([])
   const [selectedGenres, setSelectedGenres] = useState<SearchGenre[]>([])
   const [activeSheet, setActiveSheet] = useState<'sort' | 'type' | 'genre' | null>(null)
+  const loggedSearchKeyRef = useRef<string | null>(null)
 
   const recentKeywordsQuery = useRecentKeywords()
   const trendingKeywordsQuery = useTrendingKeywords()
@@ -125,6 +131,12 @@ export function SearchScreen() {
   )
   const joinTopicRoomMutation = useJoinTopicRoom()
 
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView('search')
+    }, []),
+  )
+
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
@@ -139,9 +151,23 @@ export function SearchScreen() {
   }, [submittedKeyword])
 
   useEffect(() => {
-    if (!submittedKeyword || !worksQuery.isSuccess) return
+    const activeQuerySucceeded =
+      activeTab === 'works' ? worksQuery.isSuccess : topicRoomQuery.isSuccess
+    if (!submittedKeyword || !activeQuerySucceeded) return
+
+    const searchKey = submittedKeyword
+    if (loggedSearchKeyRef.current !== searchKey) {
+      loggedSearchKeyRef.current = searchKey
+      void trackSearch(submittedKeyword)
+    }
     void recentKeywordsQuery.refetch()
-  }, [submittedKeyword, worksQuery.isSuccess, recentKeywordsQuery.refetch])
+  }, [
+    activeTab,
+    submittedKeyword,
+    worksQuery.isSuccess,
+    topicRoomQuery.isSuccess,
+    recentKeywordsQuery.refetch,
+  ])
 
   const recentKeywords = recentKeywordsQuery.data?.result.recentKeywords ?? []
   const trendingKeywords = trendingKeywordsQuery.data?.result.trendingKeywords ?? []
@@ -217,11 +243,11 @@ export function SearchScreen() {
     router.replace(buildSearchHref(keyword, nextTab) as never)
   }
 
-  const handlePressWorks = (item: WorksSearchItem) => {
+  const handlePressWorks = (item: WorksSearchItem, _index: number) => {
     router.push(`/works/${item.worksId}` as const)
   }
 
-  const handlePressTopicRoom = (item: TopicRoomSearchItem) => {
+  const handlePressTopicRoom = (item: TopicRoomSearchItem, _index: number) => {
     // Do not join here — navigate to the preview/detail screen first. The
     // preview screen handles join + entry into the chat room.
     router.push({
@@ -235,6 +261,7 @@ export function SearchScreen() {
         activeUserNumber: String(item.activeUserNumber ?? 0),
         thumbnailUrl: item.thumbnailUrl ?? '',
         lastChatTime: item.lastChatTime ?? '',
+        entrySource: 'search',
       },
     })
   }
@@ -362,11 +389,25 @@ export function SearchScreen() {
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
           if (activeTab === 'works') {
-            setWorksSort((value[0] as WorksSort | undefined) ?? 'NAME')
+            const nextSort = (value[0] as WorksSort | undefined) ?? 'NAME'
+            setWorksSort(nextSort)
+            if (nextSort !== 'NAME') {
+              void trackUseSearchFilter({
+                filter_type: 'sort',
+                filter_value: nextSort.toLowerCase(),
+              })
+            }
             return
           }
 
-          setTopicRoomSort((value[0] as TopicRoomSort | undefined) ?? 'DEFAULT')
+          const nextSort = (value[0] as TopicRoomSort | undefined) ?? 'DEFAULT'
+          setTopicRoomSort(nextSort)
+          if (nextSort !== 'DEFAULT') {
+            void trackUseSearchFilter({
+              filter_type: 'sort',
+              filter_value: nextSort.toLowerCase(),
+            })
+          }
         }}
       />
 
@@ -378,7 +419,14 @@ export function SearchScreen() {
         multiple
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
-          setSelectedTypes(value as SearchWorksType[])
+          const nextTypes = value as SearchWorksType[]
+          setSelectedTypes(nextTypes)
+          nextTypes.forEach((type) => {
+            void trackUseSearchFilter({
+              filter_type: 'content_type',
+              filter_value: type.toLowerCase(),
+            })
+          })
         }}
       />
 
@@ -390,7 +438,14 @@ export function SearchScreen() {
         multiple
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
-          setSelectedGenres(value as SearchGenre[])
+          const nextGenres = value as SearchGenre[]
+          setSelectedGenres(nextGenres)
+          nextGenres.forEach((genre) => {
+            void trackUseSearchFilter({
+              filter_type: 'genre',
+              filter_value: genre.toLowerCase(),
+            })
+          })
         }}
       />
     </View>

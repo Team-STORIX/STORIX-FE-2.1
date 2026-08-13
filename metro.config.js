@@ -9,7 +9,10 @@ const landingBaseUrl = process.env.EXPO_PUBLIC_LANDING_BASE_URL ?? "";
 const easBuildProfile = process.env.EAS_BUILD_PROFILE ?? "";
 const isLocalRelease =
   process.env.CONFIGURATION === "Release" && easBuildProfile.length === 0;
-const isProductionBuild = easBuildProfile === "production" || isLocalRelease;
+const isProductionBuild =
+  easBuildProfile === "production" ||
+  isLocalRelease ||
+  process.env.STORIX_REQUIRE_PRODUCTION_API === "true";
 
 if (isProductionBuild && apiUrl !== PRODUCTION_API_URL) {
   throw new Error(

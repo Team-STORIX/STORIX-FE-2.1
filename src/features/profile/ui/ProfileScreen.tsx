@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C, Gray, Magenta } from '../../../theme'
 import { useMe } from '../hooks'
@@ -23,6 +23,10 @@ import { ProfileUserSummary } from './ProfileUserSummary'
 import { LevelProgress } from './LevelProgress'
 import { ProfileCardModal } from './ProfileCardModalSimple'
 import type { ProfileActivityTab } from './ProfileActivityTabs'
+import {
+  trackScreenView,
+  trackViewProfileSection,
+} from '../../../lib/analytics/events'
 
 const RATING_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const
 const savedToast = require('../../../../assets/common/cardshare/image-gallery-saved.svg')
@@ -75,12 +79,27 @@ export function ProfileScreen() {
   const [showSavedToast, setShowSavedToast] = useState(false)
   const [showProfileEditToast, setShowProfileEditToast] = useState(false)
   const lastProfileEditToastRef = useRef<string | undefined>(undefined)
+  const viewedProfileSectionsRef = useRef(new Set<string>())
   const savedToastBottom =
     insets.bottom + PROFILE_TAB_BAR_HEIGHT + PROFILE_CARD_TOAST_NAV_GAP
   const profileEditToastBottom = insets.bottom + PROFILE_EDIT_TOAST_BOTTOM
 
   const ratingsQuery = useProfileRatings()
   const genreStatsQuery = useProfileGenreStats()
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView('profile')
+    }, []),
+  )
+
+  useEffect(() => {
+    const sectionName = activeTab === 'activity' ? 'activity' : 'taste_analysis'
+    if (viewedProfileSectionsRef.current.has(sectionName)) return
+
+    viewedProfileSectionsRef.current.add(sectionName)
+    void trackViewProfileSection({ section_name: sectionName })
+  }, [activeTab])
 
   useEffect(() => {
     const toastKey = params.profileEditToast

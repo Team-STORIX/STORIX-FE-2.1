@@ -577,6 +577,8 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
         reviewContent={ui.content}
         worksTitle={ui.worksTitle}
         rating={ui.rating ?? 0}
+        reviewId={reviewId}
+        worksId={ui.worksId || sourceWorksId}
         onSaveSuccess={() => {
           setShowSavedToast(true);
           setTimeout(() => setShowSavedToast(false), 1500);

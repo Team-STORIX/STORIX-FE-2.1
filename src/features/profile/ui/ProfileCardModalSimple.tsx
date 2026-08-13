@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
+﻿import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
 import { Image } from 'expo-image'
 import { SvgXml } from 'react-native-svg'
 import { useMemo, useRef } from 'react'
@@ -57,6 +57,11 @@ export function ProfileCardModal({
   const shouldShowTitleBadge = !!trimmedTitle && trimmedTitle !== '-'
   const cardDisplaySize = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
   const cardDisplayScale = cardDisplaySize / CARD_CAPTURE_SIZE
+  const shareAnalytics = {
+    contentType: 'profile_card' as const,
+    itemId: 'profile_my_profile',
+  }
+  const shareMessage = 'STORIX 프로필 카드'
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -120,28 +125,28 @@ export function ProfileCardModal({
 
             {/* 하단 검정 영역 */}
             <View style={styles.blackSectionBottom}>
-              {/* 별점평균 */}
+              {/* 별점 평균 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>별점평균</Text>
+                <Text style={styles.statLabel}>별점 평균</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
               </View>
 
-              {/* 최애장르 */}
+              {/* 최애 장르 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{topGenreLabel}</Text>
-                <Text style={styles.statLabel}>최애장르</Text>
+                <Text style={styles.statLabel}>최애 장르</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
               </View>
 
-              {/* 작품 리뷰 */}
+              {/* 리뷰 작품 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{reviewCount}</Text>
-                <Text style={styles.statLabel}>작품 리뷰</Text>
+                <Text style={styles.statLabel}>리뷰 작품</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
@@ -192,7 +197,7 @@ export function ProfileCardModal({
 
           {/* 하단 검정 영역 */}
           <View style={styles.blackSectionBottom}>
-            {/* 별점평균 */}
+            {/* 별점 평균 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
               <Text style={styles.statLabel}>별점 평균</Text>
@@ -201,7 +206,7 @@ export function ProfileCardModal({
               </View>
             </View>
 
-            {/* 최애장르 */}
+            {/* 최애 장르 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{topGenreLabel}</Text>
               <Text style={styles.statLabel}>최애 장르</Text>
@@ -210,7 +215,7 @@ export function ProfileCardModal({
               </View>
             </View>
 
-            {/* 작품 리뷰 */}
+            {/* 리뷰 작품 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewCount}</Text>
               <Text style={styles.statLabel}>리뷰 작품</Text>
@@ -230,7 +235,7 @@ export function ProfileCardModal({
                 saveToGallery(captureCard, () => {
                   onClose()
                   onSaveSuccess?.()
-                }, 'STORIX 프로필 카드')
+                }, shareMessage, shareAnalytics)
               }}
               disabled={isSaving}
               style={styles.actionButton}
@@ -247,7 +252,7 @@ export function ProfileCardModal({
 
             {/* 공유 버튼 */}
             <Pressable
-              onPress={() => shareImage(captureCard, 'STORIX 프로필 카드')}
+              onPress={() => shareImage(captureCard, shareMessage, shareAnalytics)}
               disabled={isSharing}
               style={styles.actionButton}
             >
@@ -263,7 +268,7 @@ export function ProfileCardModal({
 
             {!isIOS ? (
               <Pressable
-                onPress={() => shareToTwitter(captureCard, 'STORIX 프로필 카드')}
+                onPress={() => shareToTwitter(captureCard, shareMessage, shareAnalytics)}
                 disabled={isSharing}
                 style={styles.actionButton}
               >
@@ -274,7 +279,7 @@ export function ProfileCardModal({
                     <XLogo size={20} color={Gray[900]} />
                   )}
                 </View>
-                <Text style={styles.actionButtonText}>X에 공유</Text>
+                <Text style={styles.actionButtonText}>X로 공유</Text>
               </Pressable>
             ) : null}
           </View>
@@ -324,7 +329,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: CARD_CAPTURE_SIZE,
     height: CARD_CAPTURE_SIZE,
-    // backgroundColor 제거 - 핑크/검정 영역만 보이도록
+    // 배경색 제거 - 핑크/검정 영역만 보이도록
   },
   captureCardWrapper: {
     position: 'absolute',
@@ -354,7 +359,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: Radius.lg,
   },
   idCardTitle: {
-    width: 137, // 161 - 12*2 (좌우 패딩)
+    width: 137, // 161 - 12*2 (醫뚯슦 ?⑤뵫)
     height: 72,
   },
   nicknameBadge: {

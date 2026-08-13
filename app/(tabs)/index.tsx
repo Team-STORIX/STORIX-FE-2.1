@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,6 +27,10 @@ import {
   useTodayTopicRooms,
   type TopicRoomItem,
 } from "../../src/features/topicroom";
+import {
+  trackScreenView,
+  trackSelectContent,
+} from "../../src/lib/analytics/events";
 import { C } from "../../src/theme/colors";
 
 const HOME_PAD = 16;
@@ -68,6 +72,12 @@ export default function HomeScreen() {
 
   const topicRoomsLoading =
     todayLoading || ((todayRooms?.length ?? 0) < 3 && popularLoading);
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView("home");
+    }, []),
+  );
 
   useEffect(() => {
     return () => {
@@ -117,9 +127,15 @@ export default function HomeScreen() {
     }
   };
 
-  const goSearchKeyword = (raw: string) => {
+  const goSearchKeyword = (raw: string, index = 0) => {
     const keyword = raw.trim();
     if (!keyword) return;
+    void trackSelectContent({
+      source_section: "home_recommended_hashtag",
+      content_type: "hashtag",
+      content_id: `hashtag_${keyword.replace(/^#/, "").trim()}`,
+      position: index + 1,
+    });
     router.push(`/search?keyword=${encodeURIComponent(keyword)}` as never);
   };
 
@@ -130,7 +146,14 @@ export default function HomeScreen() {
   };
 
   const enterTopicRoom = useCallback(
-    (room: TopicRoomItem) => {
+    (room: TopicRoomItem, index = 0) => {
+      void trackSelectContent({
+        source_section: "home_today_topic_room",
+        content_type: "topic_room",
+        content_id: `topic_${room.topicRoomId}`,
+        position: index + 1,
+      });
+
       const navigate = () => {
         router.push({
           pathname: "/topicroom/[roomId]",
@@ -140,6 +163,7 @@ export default function HomeScreen() {
             worksName: room.worksName ?? "",
             worksType: room.worksType ?? "",
             activeUserNumber: String(room.activeUserNumber ?? ""),
+            entrySource: "home",
           },
         });
       };
@@ -205,7 +229,13 @@ export default function HomeScreen() {
               <HotFeedSlider
                 data={feeds}
                 isLoading={feedsLoading}
-                onPressItem={(item) => {
+                onPressItem={(item, index) => {
+                  void trackSelectContent({
+                    source_section: "home_today_feed",
+                    content_type: "feed_post",
+                    content_id: `post_${item.board.boardId}`,
+                    position: index + 1,
+                  });
                   router.push(
                     `/feed/${item.board.boardId}?from=todayFeed` as never,
                   );
