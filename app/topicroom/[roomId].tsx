@@ -404,9 +404,10 @@ export default function TopicRoomScreen() {
         senderId: m.senderId,
         senderName: m.userName ?? "",
         profileImageUrl:
-          typeof m.senderId === "number"
+          m.profileImageUrl ??
+          (typeof m.senderId === "number"
             ? (memberAvatarById.get(m.senderId) ?? null)
-            : null,
+            : null),
         time: m.time,
         isMe: m.type === "me",
       })),
