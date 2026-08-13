@@ -85,16 +85,16 @@ export function ProfileCardModal({
       <View style={styles.backdrop}>
         <View style={styles.backdropDim} pointerEvents="none" />
         <Pressable style={styles.backdropPressable} onPress={onClose}>
-          {/* X 踰꾪듉 */}
+          {/* X 버튼 */}
           <Pressable style={[styles.closeButton, { top: insets.top + 16 }]} onPress={onClose}>
             <Image source={closeIcon} style={styles.closeIcon} contentFit="contain" tintColor={C.card} />
           </Pressable>
 
         <ViewShot ref={viewShotRef} style={styles.captureCardWrapper} options={{ format: 'png', quality: 1.0 }}>
           <View style={styles.cardContainer}>
-            {/* ?곷떒 ?곸뿭: ?묓겕 + 寃??*/}
+            {/* 상단 영역: 핑크 + 검정 */}
             <View style={styles.topRow}>
-              {/* ?쇱そ ?묓겕 ?곸뿭 */}
+              {/* 왼쪽 핑크 영역 */}
               <View style={styles.pinkSection}>
                 <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
 
@@ -113,7 +113,7 @@ export function ProfileCardModal({
                 ) : null}
               </View>
 
-              {/* ?ㅻⅨ履?寃???곸뿭 */}
+              {/* 오른쪽 검정 영역 */}
               <View style={styles.blackSectionRight}>
                 {tintedTopGenreIconSvg ? (
                   <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
@@ -123,30 +123,30 @@ export function ProfileCardModal({
               </View>
             </View>
 
-            {/* ?섎떒 寃???곸뿭 */}
+            {/* 하단 검정 영역 */}
             <View style={styles.blackSectionBottom}>
-              {/* 蹂꾩젏?됯퇏 */}
+              {/* 별점 평균 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>蹂꾩젏?됯퇏</Text>
+                <Text style={styles.statLabel}>별점 평균</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
               </View>
 
-              {/* 理쒖븷?λⅤ */}
+              {/* 최애 장르 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{topGenreLabel}</Text>
-                <Text style={styles.statLabel}>理쒖븷?λⅤ</Text>
+                <Text style={styles.statLabel}>최애 장르</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
               </View>
 
-              {/* ?묓뭹 由щ럭 */}
+              {/* 리뷰 작품 */}
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{reviewCount}</Text>
-                <Text style={styles.statLabel}>?묓뭹 由щ럭</Text>
+                <Text style={styles.statLabel}>리뷰 작품</Text>
                 <View style={styles.statIconWrap}>
                   <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
                 </View>
@@ -164,9 +164,9 @@ export function ProfileCardModal({
             ]}
             onPress={(e) => e.stopPropagation()}
           >
-          {/* ?곷떒 ?곸뿭: ?묓겕 + 寃??*/}
+          {/* 상단 영역: 핑크 + 검정 */}
           <View style={styles.topRow}>
-            {/* ?쇱そ ?묓겕 ?곸뿭 */}
+            {/* 왼쪽 핑크 영역 */}
             <View style={styles.pinkSection}>
               <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
 
@@ -185,7 +185,7 @@ export function ProfileCardModal({
               ) : null}
             </View>
 
-            {/* ?ㅻⅨ履?寃???곸뿭 */}
+            {/* 오른쪽 검정 영역 */}
             <View style={styles.blackSectionRight}>
               {tintedTopGenreIconSvg ? (
                 <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
@@ -195,30 +195,30 @@ export function ProfileCardModal({
             </View>
           </View>
 
-          {/* ?섎떒 寃???곸뿭 */}
+          {/* 하단 검정 영역 */}
           <View style={styles.blackSectionBottom}>
-            {/* 蹂꾩젏?됯퇏 */}
+            {/* 별점 평균 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>蹂꾩젏 ?됯퇏</Text>
+              <Text style={styles.statLabel}>별점 평균</Text>
               <View style={styles.statIconWrap}>
                 <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
               </View>
             </View>
 
-            {/* 理쒖븷?λⅤ */}
+            {/* 최애 장르 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{topGenreLabel}</Text>
-              <Text style={styles.statLabel}>理쒖븷 ?λⅤ</Text>
+              <Text style={styles.statLabel}>최애 장르</Text>
               <View style={styles.statIconWrap}>
                 <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
               </View>
             </View>
 
-            {/* ?묓뭹 由щ럭 */}
+            {/* 리뷰 작품 */}
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>由щ럭 ?묓뭹</Text>
+              <Text style={styles.statLabel}>리뷰 작품</Text>
               <View style={styles.statIconWrap}>
                 <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
               </View>
@@ -227,9 +227,9 @@ export function ProfileCardModal({
           </Pressable>
         </View>
 
-          {/* ?섎떒 踰꾪듉 ?곸뿭 */}
+          {/* 하단 버튼 영역 */}
           <View style={[styles.actionButtons, isIOS && styles.actionButtonsIOS, { bottom: insets.bottom + ACTION_ROW_BOTTOM_OFFSET }]}>
-            {/* ???踰꾪듉 */}
+            {/* 저장 버튼 */}
             <Pressable
               onPress={() => {
                 saveToGallery(captureCard, () => {
@@ -250,7 +250,7 @@ export function ProfileCardModal({
               <Text style={styles.actionButtonText}>저장</Text>
             </Pressable>
 
-            {/* 怨듭쑀 踰꾪듉 */}
+            {/* 공유 버튼 */}
             <Pressable
               onPress={() => shareImage(captureCard, shareMessage, shareAnalytics)}
               disabled={isSharing}
@@ -263,7 +263,7 @@ export function ProfileCardModal({
                   <Image source={shareIcon} style={styles.actionIcon} contentFit="contain" tintColor={Gray[900]} />
                 )}
               </View>
-              <Text style={styles.actionButtonText}>怨듭쑀</Text>
+              <Text style={styles.actionButtonText}>공유</Text>
             </Pressable>
 
             {!isIOS ? (
@@ -279,7 +279,7 @@ export function ProfileCardModal({
                     <XLogo size={20} color={Gray[900]} />
                   )}
                 </View>
-                <Text style={styles.actionButtonText}>X??怨듭쑀</Text>
+                <Text style={styles.actionButtonText}>X로 공유</Text>
               </Pressable>
             ) : null}
           </View>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: CARD_CAPTURE_SIZE,
     height: CARD_CAPTURE_SIZE,
-    // backgroundColor ?쒓굅 - ?묓겕/寃???곸뿭留?蹂댁씠?꾨줉
+    // 배경색 제거 - 핑크/검정 영역만 보이도록
   },
   captureCardWrapper: {
     position: 'absolute',

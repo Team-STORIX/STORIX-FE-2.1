@@ -190,7 +190,7 @@ export function RecordCardModal({
                   </Text>
 
                   <Text style={styles.metaText}>
-                    {nickname} 쨌 {formatDate(createdAt)}
+                    {nickname} · {formatDate(createdAt)}
                   </Text>
                 </View>
               </View>
@@ -229,7 +229,7 @@ export function RecordCardModal({
                     </Text>
 
                     <Text style={styles.metaText}>
-                      {nickname} 쨌 {formatDate(createdAt)}
+                      {nickname} · {formatDate(createdAt)}
                     </Text>
                   </View>
                 </View>
@@ -269,7 +269,7 @@ export function RecordCardModal({
                     <Image source={shareIcon} style={styles.actionIcon} contentFit="contain" tintColor={Gray[900]} />
                   )}
                 </View>
-                <Text style={styles.actionButtonText}>怨듭쑀</Text>
+                <Text style={styles.actionButtonText}>공유</Text>
               </Pressable>
 
               {!isIOS ? (
@@ -280,7 +280,7 @@ export function RecordCardModal({
                   <View style={styles.actionButtonCircle}>
                     <XLogo size={20} color={Gray[900]} />
                   </View>
-                  <Text style={styles.actionButtonText}>X??怨듭쑀</Text>
+                  <Text style={styles.actionButtonText}>X로 공유</Text>
                 </Pressable>
               ) : null}
           </View>
