@@ -56,6 +56,12 @@ export type PushCategory =
   | 'POLICY'
   | (string & {})
 
+export interface RecentPushSender {
+  userId: string
+  nickname: string
+  profileImageUrl: string | null
+}
+
 export interface ParsedPushPayload {
   notificationId: number | null
   type: PushNotificationType | null
@@ -71,6 +77,8 @@ export interface ParsedPushPayload {
   roomName: string | null
   senderNickname: string | null
   senderProfileImageUrl: string | null
+  recentSenders: RecentPushSender[]
+  participantCount: number | null
   messageCount: number | null
   threadId: string | null
   mutableContent: boolean | null
@@ -128,6 +136,39 @@ function toBoolean(value: unknown): boolean | null {
   return null
 }
 
+function toRecentSenders(value: unknown): RecentPushSender[] {
+  if (typeof value !== 'string' || value.trim().length === 0) return []
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (!Array.isArray(parsed)) return []
+
+    const seen = new Set<string>()
+    const senders: RecentPushSender[] = []
+    for (const candidate of parsed) {
+      if (candidate == null || typeof candidate !== 'object') continue
+      const sender = candidate as Record<string, unknown>
+      const userId = String(sender.userId ?? sender.senderId ?? '').trim()
+      const nickname = toStr(
+        sender.nickname ?? sender.nickName ?? sender.senderNickname,
+      )
+      if (!userId || !nickname || seen.has(userId)) continue
+      seen.add(userId)
+      senders.push({
+        userId,
+        nickname,
+        profileImageUrl: toStr(
+          sender.profileImageUrl ?? sender.senderProfileImageUrl,
+        ),
+      })
+      if (senders.length === 3) break
+    }
+    return senders
+  } catch {
+    return []
+  }
+}
+
 // ---------- parser ----------
 
 /**
@@ -164,6 +205,10 @@ export function parsePushNotificationData(
     roomName: toStr(d.roomName),
     senderNickname: toStr(d.senderNickname),
     senderProfileImageUrl: toStr(d.senderProfileImageUrl),
+    recentSenders: toRecentSenders(
+      d.recentSenders ?? d.recentSenderProfiles ?? d.senderProfiles,
+    ),
+    participantCount: toNonNegativeInt(d.participantCount),
     messageCount: toNonNegativeInt(d.messageCount),
     threadId: toStr(d.threadId),
     mutableContent: toBoolean(d.mutableContent),
