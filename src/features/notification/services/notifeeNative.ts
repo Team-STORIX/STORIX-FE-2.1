@@ -198,6 +198,11 @@ export async function displayForegroundPushNotification(args: {
     return
   }
 
+  if (Platform.OS === 'ios' && isTopicRoomChatPayload(args.payload)) {
+    await displayIOSTopicRoomChatNotification(args.payload)
+    return
+  }
+
   const { title, body } = getPushTitleBody(args.payload, args.notification)
   if (!title && !body) return
 
@@ -237,6 +242,63 @@ export async function displayForegroundPushNotification(args: {
 
 function getDefaultProfileImageUri(): string | null {
   return Image.resolveAssetSource(defaultProfileImage)?.uri ?? null
+}
+
+/**
+ * Foreground iOS messages do not pass through the Notification Service
+ * Extension. Display them as communication notifications here so their room
+ * name and sender avatar match background/terminated chat pushes.
+ */
+async function displayIOSTopicRoomChatNotification(
+  payload: ParsedPushPayload,
+): Promise<void> {
+  const notifeeModule = loadNotifee()
+  if (!notifeeModule) return
+
+  const threadId =
+    payload.threadId ??
+    (payload.targetId != null
+      ? getTopicRoomNotificationThreadId(payload.targetId)
+      : `topic-room-chat-${payload.notificationId ?? Date.now()}`)
+  const roomName = payload.roomName ?? payload.subtitle ?? ''
+  const messageCount = Math.max(1, payload.messageCount ?? 1)
+  const latestSender = payload.recentSenders[0]
+  const senderName =
+    latestSender?.nickname ?? payload.senderNickname ?? payload.title ?? '새 메시지'
+  const displayTitle =
+    messageCount > 1 ? `새 메시지 ${messageCount}건` : senderName
+  const profileIcon =
+    latestSender?.profileImageUrl ??
+    payload.senderProfileImageUrl ??
+    getDefaultProfileImageUri() ??
+    undefined
+
+  await notifeeModule.default.displayNotification({
+    id: threadId,
+    title: displayTitle,
+    ...(roomName ? { subtitle: roomName } : {}),
+    body: payload.body ?? '',
+    data: payload.raw,
+    ios: {
+      threadId,
+      foregroundPresentationOptions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
+      communicationInfo: {
+        conversationId: threadId,
+        body: payload.body ?? '',
+        ...(roomName ? { groupName: roomName } : {}),
+        ...(profileIcon ? { groupAvatar: profileIcon } : {}),
+        sender: {
+          id: latestSender?.userId ?? `${threadId}:sender`,
+          displayName: senderName,
+          ...(profileIcon ? { avatar: profileIcon } : {}),
+        },
+      },
+    },
+  })
 }
 
 /**
