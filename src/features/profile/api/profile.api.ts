@@ -1,3 +1,6 @@
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
+import { Image } from 'react-native'
+
 import { apiClient } from '../../../lib/api/axios-instance'
 import type { ApiResponse } from '../../../lib/api/types'
 import type { MeProfileResult } from '../../../types/profile'
@@ -78,10 +81,50 @@ export const getProfileImagePresignedUrl = async (
   return res.data.result
 }
 
+const PROFILE_MAX_SIZE = 512
+
+const getImageSize = (uri: string): Promise<{ width: number; height: number }> =>
+  new Promise((resolve, reject) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      reject,
+    )
+  })
+
+const resizeProfileImage = async (localUri: string): Promise<string> => {
+  const { width, height } = await getImageSize(localUri)
+  const cropSize = Math.min(width, height)
+  const context = ImageManipulator.manipulate(localUri)
+  context.crop({
+    originX: (width - cropSize) / 2,
+    originY: (height - cropSize) / 2,
+    width: cropSize,
+    height: cropSize,
+  })
+  context.resize({ width: PROFILE_MAX_SIZE, height: PROFILE_MAX_SIZE })
+  const image = await context.renderAsync()
+  const result = await image.saveAsync({
+    format: SaveFormat.JPEG,
+    compress: 0.8,
+  })
+  return result.uri
+}
+
 export const uploadAndSetProfileImage = async (localUri: string): Promise<void> => {
-  const contentType = /\.png$/i.test(localUri) ? 'image/png' : 'image/jpeg'
+  // Large originals can exceed the iOS notification service extension's
+  // memory limit while decoding profile avatars. Keep profile uploads small,
+  // but fall back to the original so a resize failure does not block updates.
+  let uploadUri = localUri
+  try {
+    uploadUri = await resizeProfileImage(localUri)
+  } catch {
+    // Continue with the original image when local manipulation fails.
+  }
+
+  const contentType = 'image/jpeg'
   const { url, objectKey } = await getProfileImagePresignedUrl(contentType)
-  const blob = await fetch(localUri).then((r) => r.blob())
+  const blob = await fetch(uploadUri).then((r) => r.blob())
   const uploadRes = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': contentType },
