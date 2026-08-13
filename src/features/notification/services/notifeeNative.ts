@@ -293,7 +293,10 @@ async function displayIOSTopicRoomChatNotification(
         ...(profileIcon ? { groupAvatar: profileIcon } : {}),
         sender: {
           id: latestSender?.userId ?? `${threadId}:sender`,
-          displayName: senderName,
+          // Notifee rebuilds iOS communication notification content from this
+          // person and overwrites the top-level title. Preserve the bundled
+          // "새 메시지 n건" title here while keeping the real sender ID/avatar.
+          displayName: displayTitle,
           ...(profileIcon ? { avatar: profileIcon } : {}),
         },
       },
