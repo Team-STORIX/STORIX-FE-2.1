@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
+﻿import { Modal, Pressable, StyleSheet, Text, View, ActivityIndicator, useWindowDimensions, Platform } from 'react-native'
 import { Image } from 'expo-image'
 import { useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -40,6 +40,8 @@ export type RecordCardModalProps = {
   reviewContent: string
   worksTitle: string
   rating: number
+  reviewId?: number | string | null
+  worksId?: number | string | null
   onSaveSuccess?: () => void
 }
 
@@ -119,6 +121,8 @@ export function RecordCardModal({
   reviewContent,
   worksTitle,
   rating,
+  reviewId,
+  worksId,
   onSaveSuccess,
 }: RecordCardModalProps) {
   const insets = useSafeAreaInsets()
@@ -129,6 +133,12 @@ export function RecordCardModal({
   const cardDisplayWidth = Math.max(0, screenWidth - CARD_SCREEN_SIDE_MARGIN * 2)
   const cardDisplayScale = cardDisplayWidth / CARD_WIDTH
   const cardDisplayHeight = CARD_HEIGHT * cardDisplayScale
+  const shareAnalytics = {
+    contentType: 'review_card' as const,
+    itemId: `review_${reviewId ?? 'unknown'}`,
+    workId: `work_${worksId ?? 'unknown'}`,
+  }
+  const shareMessage = 'STORIX 기록카드'
 
   const captureCard = async (): Promise<string | null> => {
     if (!viewShotRef.current) return null
@@ -180,7 +190,7 @@ export function RecordCardModal({
                   </Text>
 
                   <Text style={styles.metaText}>
-                    {nickname} · {formatDate(createdAt)}
+                    {nickname} 쨌 {formatDate(createdAt)}
                   </Text>
                 </View>
               </View>
@@ -219,7 +229,7 @@ export function RecordCardModal({
                     </Text>
 
                     <Text style={styles.metaText}>
-                      {nickname} · {formatDate(createdAt)}
+                      {nickname} 쨌 {formatDate(createdAt)}
                     </Text>
                   </View>
                 </View>
@@ -232,7 +242,7 @@ export function RecordCardModal({
                   saveToGallery(captureCard, () => {
                     onClose()
                     onSaveSuccess?.()
-                  }, 'STORIX 기록카드')
+                  }, shareMessage, shareAnalytics)
                 }}
                 disabled={isSaving}
                 style={styles.actionButton}
@@ -248,7 +258,7 @@ export function RecordCardModal({
               </Pressable>
 
               <Pressable
-                onPress={() => shareImage(captureCard, 'STORIX 기록카드')}
+                onPress={() => shareImage(captureCard, shareMessage, shareAnalytics)}
                 disabled={isSharing}
                 style={styles.actionButton}
               >
@@ -259,18 +269,18 @@ export function RecordCardModal({
                     <Image source={shareIcon} style={styles.actionIcon} contentFit="contain" tintColor={Gray[900]} />
                   )}
                 </View>
-                <Text style={styles.actionButtonText}>공유</Text>
+                <Text style={styles.actionButtonText}>怨듭쑀</Text>
               </Pressable>
 
               {!isIOS ? (
                 <Pressable
-                  onPress={() => shareToTwitter(captureCard, 'STORIX 기록카드')}
+                  onPress={() => shareToTwitter(captureCard, shareMessage, shareAnalytics)}
                   style={styles.actionButton}
                 >
                   <View style={styles.actionButtonCircle}>
                     <XLogo size={20} color={Gray[900]} />
                   </View>
-                  <Text style={styles.actionButtonText}>X에 공유</Text>
+                  <Text style={styles.actionButtonText}>X??怨듭쑀</Text>
                 </Pressable>
               ) : null}
           </View>

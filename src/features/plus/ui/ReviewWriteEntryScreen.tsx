@@ -24,6 +24,7 @@ import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings
 import { RatingInput } from './RatingInput'
 import { SpoilerToggleSection } from './SpoilerToggleSection'
 import { WriteTargetWorkCard } from './WriteTargetWorkCard'
+import { trackCreateReview } from '../../../lib/analytics/events'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
@@ -126,7 +127,15 @@ export function ReviewWriteEntryScreen() {
         if (!reviewId) return
         await updateMutation.mutateAsync({ reviewId, payload })
       } else {
-        await submitMutation.mutateAsync({ worksId, ...payload })
+        const response = await submitMutation.mutateAsync({ worksId, ...payload })
+        const createdReviewId = (response as any)?.result?.reviewId ?? (response as any)?.reviewId
+        void trackCreateReview({
+          review_id:
+            typeof createdReviewId === 'number'
+              ? `review_${createdReviewId}`
+              : 'review_unknown',
+          work_id: `work_${worksId}`,
+        })
       }
 
       await Promise.all([

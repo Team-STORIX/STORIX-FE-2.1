@@ -24,7 +24,7 @@ type TopicRoomCoverCarouselProps = {
   isLoading?: boolean
   badgeLabel?: string
   emptyText: string
-  onPressItem: (room: TopicRoomItem) => void
+  onPressItem: (room: TopicRoomItem, index: number) => void
 }
 
 export function TopicRoomCoverCarousel({
@@ -83,7 +83,7 @@ export function TopicRoomCoverCarousel({
               <TopicRoomCoverCard
                 room={room}
                 badgeLabel={badgeLabel}
-                onPress={() => onPressItem(room)}
+                onPress={() => onPressItem(room, i)}
               />
             </View>
           ))}

@@ -76,6 +76,7 @@ export function TopicRoomFeedSection() {
           worksName: item.worksName ?? "",
           worksType: item.worksType ?? "",
           activeUserNumber: String(item.activeUserNumber ?? ""),
+          entrySource: "feed",
         },
       });
     if (item.isJoined) {

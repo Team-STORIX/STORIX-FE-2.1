@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAllBoards } from '../hooks/feed/useAllBoards'
 import { useBoardsByWorksId } from '../hooks/feed/useBoardsByWorksId'
@@ -35,6 +35,7 @@ import {
   type PickedWorks,
 } from '../../topicroom'
 import { updateTodayHomeFeedBoard } from '../../home'
+import { trackScreenView } from '../../../lib/analytics/events'
 
 type LikeOverride = { isLiked: boolean; likeCount: number }
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -62,6 +63,12 @@ export function FeedScreen() {
 
   const [tab, setTab] = useState<FeedTab>(sectionTab)
   const [pick, setPick] = useState<string>('all')
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView('feed')
+    }, []),
+  )
 
   useEffect(() => {
     setTab(sectionTab)

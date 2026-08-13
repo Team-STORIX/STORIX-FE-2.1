@@ -37,6 +37,7 @@ import { FeedPostCard } from './FeedPostCard'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
 import { UserActionModal } from '../../../components/common/UserActionModal'
 import { updateTodayHomeFeedBoard } from '../../home'
+import { trackCreateFeedComment } from '../../../lib/analytics/events'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
@@ -458,7 +459,16 @@ export function FeedDetailScreen() {
       setSubmitting(false)
 
       try {
-        await createSubReply({ boardId, replyId: targetId, comment: trimmed })
+        const created = await createSubReply({ boardId, replyId: targetId, comment: trimmed })
+        const createdReplyId = (created as any)?.replyId ?? (created as any)?.id
+        void trackCreateFeedComment({
+          post_id: `post_${boardId}`,
+          comment_id:
+            typeof createdReplyId === 'number'
+              ? `comment_${createdReplyId}`
+              : 'comment_unknown',
+          has_spoiler: false,
+        })
         await detailQuery.refetch()
         setSubRepliesMap((prev) => {
           const next = { ...prev }
@@ -484,7 +494,16 @@ export function FeedDetailScreen() {
     }
 
     try {
-      await createReply({ boardId, comment: trimmed })
+      const created = await createReply({ boardId, comment: trimmed })
+      const createdReplyId = (created as any)?.replyId ?? (created as any)?.id
+      void trackCreateFeedComment({
+        post_id: `post_${boardId}`,
+        comment_id:
+          typeof createdReplyId === 'number'
+            ? `comment_${createdReplyId}`
+            : 'comment_unknown',
+        has_spoiler: false,
+      })
       updateTodayHomeFeedBoard(qc, boardId, (targetBoard) => ({
         ...targetBoard,
         replyCount: targetBoard.replyCount + 1,

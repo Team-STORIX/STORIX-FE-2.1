@@ -37,7 +37,7 @@ type Props = {
   isFetchingNextPage: boolean
   hasNextPage: boolean
   onEndReached: () => void
-  onPressItem: (item: TopicRoomSearchItem) => void
+  onPressItem: (item: TopicRoomSearchItem, index: number) => void
   recommendationKeyword?: string | null
   onPressRecommendation?: (keyword: string) => void
 }
@@ -79,7 +79,7 @@ export function SearchTopicRoomResultList({
         styles.content,
         data.length === 0 ? styles.emptyContent : null,
       ]}
-      renderItem={({ item }) => {
+      renderItem={({ item, index }) => {
         const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
         const timeAgo = formatTimeAgo(item.lastChatTime)
         const rightText = timeAgo
@@ -92,7 +92,7 @@ export function SearchTopicRoomResultList({
         return (
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-            onPress={() => onPressItem(item)}
+            onPress={() => onPressItem(item, index)}
             disabled={isJoining}
             accessibilityRole="button"
           >

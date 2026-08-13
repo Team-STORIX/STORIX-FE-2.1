@@ -7,8 +7,17 @@ import {
   postProfileCardImagePresignedUrl,
   uploadProfileCardImage,
 } from '../api/profile-card-share.api'
+import {
+  trackExportProfileCard,
+  trackExportReviewCard,
+  trackOpenShareSheet,
+  trackShare,
+} from '../../../lib/analytics/events'
 
 export type CaptureFunction = () => Promise<string | null>
+export type CardShareAnalytics =
+  | { contentType: 'profile_card'; itemId: string }
+  | { contentType: 'review_card'; itemId: string; workId: string }
 
 const SHARE_MESSAGE = 'STORIX 프로필 카드'
 const STORIX_SHARE_URL = 'https://www.storix.kr/'
@@ -27,7 +36,8 @@ export function useCardShare() {
   const saveToGallery = useCallback(async (
     captureImage: CaptureFunction,
     onSuccess?: () => void,
-    message: string = 'STORIX 프로필 카드',
+    message: string = SHARE_MESSAGE,
+    analytics?: CardShareAnalytics,
   ) => {
     try {
       setIsSaving(true)
@@ -35,25 +45,24 @@ export function useCardShare() {
       const { status } = await MediaLibrary.requestPermissionsAsync(true)
       if (status !== 'granted') {
         Alert.alert(
-          '\uAD8C\uD55C \uD544\uC694',
-          '\uAC24\uB7EC\uB9AC\uC5D0 \uC800\uC7A5\uD558\uB824\uBA74 \uC0AC\uC9C4 \uC800\uC7A5 \uAD8C\uD55C\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.',
+          '권한 필요',
+          '갤러리에 저장하려면 사진 저장 권한이 필요합니다.',
         )
         return
       }
 
       const uri = await captureImage()
       if (!uri) {
-        Alert.alert('\uC624\uB958', '\uC774\uBBF8\uC9C0\uB97C \uC0DD\uC131\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.')
+        Alert.alert('오류', '이미지를 생성할 수 없습니다.')
         return
       }
 
       await MediaLibrary.saveToLibraryAsync(uri)
-
-      // \uC131\uACF5 \uCF5C\uBC31 \uD638\uCD9C (\uBAA8\uB2EC \uB2EB\uAE30 + \uD1A0\uC2A4\uD2B8 \uD45C\uC2DC)
+      await trackCardExport(analytics)
       onSuccess?.()
     } catch (error) {
       console.error('Save to gallery error:', error)
-      Alert.alert('\uC800\uC7A5 \uC2E4\uD328', '\uC774\uBBF8\uC9C0 \uC800\uC7A5 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.')
+      Alert.alert('저장 실패', '이미지 저장 중 오류가 발생했습니다.')
     } finally {
       setIsSaving(false)
     }
@@ -61,22 +70,23 @@ export function useCardShare() {
 
   const shareImage = useCallback(async (
     captureImage: CaptureFunction,
-    message: string = 'STORIX 프로필 카드',
+    message: string = SHARE_MESSAGE,
+    analytics?: CardShareAnalytics,
   ) => {
     try {
       setIsSharing(true)
 
       const uri = await captureImage()
       if (!uri) {
-        Alert.alert('\uC624\uB958', '\uC774\uBBF8\uC9C0\uB97C \uC0DD\uC131\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.')
+        Alert.alert('오류', '이미지를 생성할 수 없습니다.')
         return
       }
 
       const isSharingAvailable = await Sharing.isAvailableAsync()
       if (!isSharingAvailable) {
         Alert.alert(
-          '\uACF5\uC720 \uBD88\uAC00',
-          '\uC774 \uAE30\uAE30\uC5D0\uC11C\uB294 \uACF5\uC720 \uAE30\uB2A5\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.',
+          '공유 불가',
+          '이 기기에서는 공유 기능을 사용할 수 없습니다.',
         )
         return
       }
@@ -95,9 +105,10 @@ export function useCardShare() {
           UTI: 'public.png',
         })
       }
+      await trackCardShareSheet(analytics)
     } catch (error) {
       console.error('Share error:', error)
-      Alert.alert('\uACF5\uC720 \uC2E4\uD328', '\uC774\uBBF8\uC9C0 \uACF5\uC720 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4.')
+      Alert.alert('공유 실패', '이미지 공유 중 오류가 발생했습니다.')
     } finally {
       setIsSharing(false)
     }
@@ -105,20 +116,22 @@ export function useCardShare() {
 
   const shareToTwitter = useCallback(async (
     captureImage: CaptureFunction,
-    message: string = 'STORIX \uD504\uB85C\uD544 \uCE74\uB4DC',
+    message: string = SHARE_MESSAGE,
+    analytics?: CardShareAnalytics,
   ) => {
     try {
       setIsSharing(true)
 
       const uri = await captureImage()
       if (!uri) {
-        Alert.alert('\uC624\uB958', '\uC774\uBBF8\uC9C0\uB97C \uC0DD\uC131\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.')
+        Alert.alert('오류', '이미지를 생성할 수 없습니다.')
         return
       }
 
       if (Platform.OS === 'ios') {
         const shareUrl = await createWebShareUrlSafely(uri)
         await openTwitterIntent(shareUrl, message)
+        await trackTwitterShare(analytics)
         return
       }
 
@@ -126,6 +139,7 @@ export function useCardShare() {
       if (!isTwitterInstalled) {
         const shareUrl = await createWebShareUrlSafely(uri)
         await openTwitterWebIntent(shareUrl, message)
+        await trackTwitterShare(analytics)
         return
       }
 
@@ -133,6 +147,7 @@ export function useCardShare() {
       if (!nativeShare) {
         const shareUrl = await createWebShareUrlSafely(uri)
         await openTwitterWebIntent(shareUrl, message)
+        await trackTwitterShare(analytics)
         return
       }
 
@@ -142,6 +157,7 @@ export function useCardShare() {
         type: 'image/png',
         message: getShareMessage(message),
       })
+      await trackTwitterShare(analytics)
     } catch (error) {
       console.error('Twitter share error:', error)
       if (Platform.OS === 'ios') {
@@ -190,8 +206,6 @@ function getOsShareOptions(uri: string, message: string) {
   const shareMessage = getShareMessage(message)
 
   if (Platform.OS === 'ios') {
-    // NOTE: activityItemSources가 텍스트/이미지 항목을 모두 제공하므로,
-    // 최상위 url/type을 함께 넘기면 이미지가 공유 시트에 두 번 첨부된다.
     return {
       subject: message,
       activityItemSources: [
@@ -217,8 +231,6 @@ function getOsShareOptions(uri: string, message: string) {
     }
   }
 
-  // Android: 메시지(텍스트 + URL)와 이미지를 함께 공유
-  // NOTE: url과 urls를 함께 넘기면 일부 공유 대상(카카오톡 등)에서 이미지가 중복 첨부된다.
   return {
     message: shareMessage,
     url: fileUri,
@@ -272,8 +284,6 @@ async function createWebShareUrlSafely(uri: string) {
         response?: { status?: number; data?: unknown }
         message?: string
       }
-      // Surface the exact endpoint/method that failed so the backend team
-      // can pinpoint which call returned the error (presign vs. share).
       console.log('[cardShare] web share URL creation failed', {
         method: axiosError.config?.method?.toUpperCase(),
         endpoint: axiosError.config?.url,
@@ -317,4 +327,38 @@ async function openTwitterWebIntent(shareUrl?: string, message: string = SHARE_M
   } catch {
     await Linking.openURL(TWITTER_HOME_URL)
   }
+}
+
+async function trackCardExport(analytics?: CardShareAnalytics) {
+  if (!analytics) return
+
+  if (analytics.contentType === 'profile_card') {
+    await trackExportProfileCard({ profile_type: 'my_profile' })
+    return
+  }
+
+  await trackExportReviewCard({
+    review_id: analytics.itemId,
+    work_id: analytics.workId,
+  })
+}
+
+async function trackCardShareSheet(analytics?: CardShareAnalytics) {
+  if (!analytics) return
+
+  await trackOpenShareSheet({
+    content_type: analytics.contentType,
+    item_id: analytics.itemId,
+  })
+}
+
+async function trackTwitterShare(analytics?: CardShareAnalytics) {
+  if (!analytics) return
+
+  await trackCardShareSheet(analytics)
+  await trackShare({
+    method: 'x',
+    content_type: analytics.contentType,
+    item_id: analytics.itemId,
+  })
 }
