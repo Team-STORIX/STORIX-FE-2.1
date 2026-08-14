@@ -33,6 +33,7 @@ import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollE
 import {
   TopicRoomWorksPickerBottomSheet,
   type PickedWorks,
+  useTopicRoomUnreadStatus,
 } from '../../topicroom'
 import { updateTodayHomeFeedBoard } from '../../home'
 import { trackScreenView } from '../../../lib/analytics/events'
@@ -63,6 +64,17 @@ export function FeedScreen() {
 
   const [tab, setTab] = useState<FeedTab>(sectionTab)
   const [pick, setPick] = useState<string>('all')
+  const {
+    data: topicRoomUnreadStatus,
+    refetch: refetchTopicRoomUnreadStatus,
+  } = useTopicRoomUnreadStatus()
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetchTopicRoomUnreadStatus()
+      void qc.invalidateQueries({ queryKey: ['topicroom', 'me'] })
+    }, [qc, refetchTopicRoomUnreadStatus]),
+  )
 
   useFocusEffect(
     useCallback(() => {
@@ -327,6 +339,7 @@ export function FeedScreen() {
     <View style={styles.listHeader}>
       <FeedTopbar
         activeTab={tab}
+        hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
         onChange={(t) => {
           setTab(t)
           setPick('all')
@@ -391,6 +404,7 @@ export function FeedScreen() {
         <View style={[styles.topicroomScreen, { paddingTop: insets.top }]}>
           <FeedTopbar
             activeTab={tab}
+            hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
             onChange={(t) => {
               setTab(t)
               setPick('all')
@@ -482,7 +496,7 @@ const styles = StyleSheet.create({
   },
   topicroomScreen: {
     flex: 1,
-    backgroundColor: Gray[50],
+    backgroundColor: C.card,
   },
   topicroomScroll: {
     flex: 1,

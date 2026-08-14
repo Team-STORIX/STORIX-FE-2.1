@@ -11,6 +11,7 @@ import {
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -18,12 +19,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../src/components/common/Toast";
+import {
+  NotificationPermissionGuideModal,
+  useNotificationSettings,
+  usePushPermissionStatus,
+} from "../../src/features/notification";
 import { useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
+  ChatDateSeparator,
   ChatInput,
   LeaveConfirmModal,
   TopicRoomDdayBar,
+  TopicRoomMenuDropdown,
   TopicRoomTopBar,
   TopicRoomUserActionDropdown,
   TopicRoomUserActionModal,
@@ -35,9 +43,13 @@ import {
   useMyTopicRoomsAll,
   useReportTopicRoomUser,
   useTopicRoomMembers,
+  useTopicRoomNotificationSetting,
+  useSyncTopicRoomReadState,
   useTopicRoomStomp,
+  useUpdateTopicRoomNotificationSetting,
   type ConfirmVariant,
   type DisplayMsg,
+  getChatDateKey,
   type KebabAnchor,
   type TopicRoomActionTarget,
   type TopicRoomItem,
@@ -81,7 +93,15 @@ const USER_ACTION_SNACK = {
   block: "차단이 정상적으로 완료됐어요.",
 } as const;
 
+const TOPICROOM_NOTIFICATION_SNACK = {
+  enabled: "토픽룸 알림이 켜졌습니다",
+  disabled: "토픽룸 알림이 꺼졌습니다",
+  error: "잠시 후에 다시 시도해주세요",
+} as const;
+
 const ANDROID_MODAL_SWITCH_DELAY_MS = 250;
+
+type NotificationGuide = "os" | "content";
 
 const formatTime = (iso?: string | null): string => {
   if (!iso) return "";
@@ -123,6 +143,9 @@ export default function TopicRoomScreen() {
   const didTrackExitRef = useRef(false);
 
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [headerMenuTopOffset, setHeaderMenuTopOffset] = useState<number | null>(
+    null,
+  );
 
   // User-specific report / block flow. A single shared target drives both entry
   // points (avatar modal + message kebab); only one overlay is visible at once.
@@ -146,6 +169,11 @@ export default function TopicRoomScreen() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notificationGuide, setNotificationGuide] =
+    useState<NotificationGuide | null>(null);
+  const awaitingNotificationPrerequisiteRef = useRef<NotificationGuide | null>(
+    null,
+  );
 
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
@@ -191,6 +219,12 @@ export default function TopicRoomScreen() {
     enabled: Number.isFinite(roomId) && roomId > 0,
     size: 20,
   });
+  const notificationSettingQuery = useTopicRoomNotificationSetting(roomId);
+  const notificationSettingMutation =
+    useUpdateTopicRoomNotificationSetting(roomId);
+  const notificationSettingsQuery = useNotificationSettings();
+  const { granted: pushGranted } = usePushPermissionStatus();
+  const syncTopicRoomReadState = useSyncTopicRoomReadState(roomId);
   const members = membersQuery.data ?? [];
   const memberCount = members.length;
   const leaveMutation = useLeaveTopicRoom();
@@ -248,6 +282,7 @@ export default function TopicRoomScreen() {
         });
       }
       if (Number.isFinite(roomId) && roomId > 0) {
+        void syncTopicRoomReadState();
         void queryClient.invalidateQueries({
           queryKey: ["chat", "room", "messages", roomId],
         });
@@ -255,6 +290,7 @@ export default function TopicRoomScreen() {
 
       return () => {
         setIsScreenFocused(false);
+        setHeaderMenuTopOffset(null);
         if (!didTrackExitRef.current && Number.isFinite(roomId) && roomId > 0) {
           didTrackExitRef.current = true;
           void trackExitTopicRoom({
@@ -266,7 +302,7 @@ export default function TopicRoomScreen() {
           });
         }
       };
-    }, [params.entrySource, queryClient, roomId]),
+    }, [params.entrySource, queryClient, roomId, syncTopicRoomReadState]),
   );
 
   const memberAvatarById = useMemo(() => {
@@ -348,6 +384,7 @@ export default function TopicRoomScreen() {
         key: `h_${m.id}`,
         chatMessageId: m.id,
         text: m.message,
+        createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.senderName,
         profileImageUrl: memberAvatarById.get(m.senderId) ?? null,
@@ -363,12 +400,14 @@ export default function TopicRoomScreen() {
         key: `rt_${m.id}`,
         chatMessageId: m.chatMessageId,
         text: m.text,
+        createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.userName ?? "",
         profileImageUrl:
-          typeof m.senderId === "number"
+          m.profileImageUrl ??
+          (typeof m.senderId === "number"
             ? (memberAvatarById.get(m.senderId) ?? null)
-            : null,
+            : null),
         time: m.time,
         isMe: m.type === "me",
       })),
@@ -412,6 +451,133 @@ export default function TopicRoomScreen() {
       null,
     [myRoomsQuery.data, roomId],
   );
+
+  const notificationEnabled =
+    notificationSettingQuery.data?.enabled ??
+    joinedRoom?.notificationEnabled ??
+    true;
+
+  const updateRoomNotification = useCallback(
+    (nextEnabled: boolean) => {
+      if (notificationSettingMutation.isPending) return;
+      notificationSettingMutation.mutate(nextEnabled, {
+        onSuccess: () => {
+          showToast(
+            nextEnabled
+              ? TOPICROOM_NOTIFICATION_SNACK.enabled
+              : TOPICROOM_NOTIFICATION_SNACK.disabled,
+          );
+        },
+        onError: () => {
+          showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+        },
+      });
+    },
+    [notificationSettingMutation, showToast],
+  );
+
+  const handleToggleNotification = useCallback(() => {
+    if (notificationSettingMutation.isPending) return;
+
+    if (notificationEnabled) {
+      updateRoomNotification(false);
+      return;
+    }
+
+    if (pushGranted == null || notificationSettingsQuery.isLoading) return;
+
+    if (!pushGranted) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      setNotificationGuide("os");
+      return;
+    }
+
+    if (notificationSettingsQuery.isError || !notificationSettingsQuery.data) {
+      showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      return;
+    }
+
+    if (!notificationSettingsQuery.data.contentCommunityEnabled) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      setNotificationGuide("content");
+      return;
+    }
+
+    updateRoomNotification(true);
+  }, [
+    notificationEnabled,
+    notificationSettingMutation.isPending,
+    notificationSettingsQuery.data,
+    notificationSettingsQuery.isError,
+    notificationSettingsQuery.isLoading,
+    pushGranted,
+    showToast,
+    updateRoomNotification,
+  ]);
+
+  const handleCancelNotificationGuide = useCallback(() => {
+    awaitingNotificationPrerequisiteRef.current = null;
+    setNotificationGuide(null);
+  }, []);
+
+  const handleConfirmNotificationGuide = useCallback(() => {
+    if (notificationGuide === "os") {
+      awaitingNotificationPrerequisiteRef.current = "os";
+      setNotificationGuide(null);
+      void Linking.openSettings().catch(() => {
+        awaitingNotificationPrerequisiteRef.current = null;
+        showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      });
+      return;
+    }
+
+    if (notificationGuide === "content") {
+      awaitingNotificationPrerequisiteRef.current = "content";
+      setNotificationGuide(null);
+      router.push("/notifications/settings" as never);
+    }
+  }, [notificationGuide, router, showToast]);
+
+  useEffect(() => {
+    const awaiting = awaitingNotificationPrerequisiteRef.current;
+    if (awaiting == null || notificationSettingMutation.isPending) return;
+
+    if (awaiting === "os") {
+      if (pushGranted !== true) return;
+
+      if (notificationSettingsQuery.data?.contentCommunityEnabled === false) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        setNotificationGuide("content");
+        return;
+      }
+      if (notificationSettingsQuery.data?.contentCommunityEnabled === true) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        updateRoomNotification(true);
+        return;
+      }
+      if (notificationSettingsQuery.isError) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      }
+      return;
+    }
+
+    if (
+      awaiting === "content" &&
+      pushGranted === true &&
+      notificationSettingsQuery.data?.contentCommunityEnabled === true
+    ) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      updateRoomNotification(true);
+    }
+  }, [
+    notificationSettingMutation.isPending,
+    notificationSettingsQuery.data?.contentCommunityEnabled,
+    notificationSettingsQuery.isError,
+    pushGranted,
+    showToast,
+    updateRoomNotification,
+  ]);
 
   const joinedRoomFromCache = queryClient.getQueryData<TopicRoomItem>([
     "topicroom",
@@ -685,9 +851,16 @@ export default function TopicRoomScreen() {
     showToast,
   ]);
 
-  const isUserActionSuccessToast =
+  const isNotificationToast =
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.error;
+
+  const isSuccessToast =
     toastMessage === USER_ACTION_SNACK.report ||
-    toastMessage === USER_ACTION_SNACK.block;
+    toastMessage === USER_ACTION_SNACK.block ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled;
 
   return (
     <KeyboardAvoidingView
@@ -705,9 +878,40 @@ export default function TopicRoomScreen() {
           subtitle={headerSubtitle}
           memberCount={headerMemberCount}
           onBack={handleBack}
-          onPressExit={handleLeave}
+          onPressMenu={(dropdownTop) =>
+            setHeaderMenuTopOffset((current) =>
+              current == null ? dropdownTop : null,
+            )
+          }
         />
       </View>
+
+      <TopicRoomMenuDropdown
+        visible={headerMenuTopOffset != null}
+        topOffset={headerMenuTopOffset ?? insets.top + 60}
+        notificationEnabled={notificationEnabled}
+        notificationPending={
+          notificationSettingQuery.isLoading ||
+          notificationSettingMutation.isPending ||
+          pushGranted == null ||
+          notificationSettingsQuery.isLoading
+        }
+        onClose={() => setHeaderMenuTopOffset(null)}
+        onPressToggleNotification={handleToggleNotification}
+        onPressLeave={handleLeave}
+        leaveDisabled={leaveMutation.isPending}
+      />
+
+      <NotificationPermissionGuideModal
+        visible={notificationGuide != null}
+        message={
+          notificationGuide === "content"
+            ? "콘텐츠·커뮤니티 알림을 허용해주세요"
+            : "기기 설정에서 알림을 켜 주세요\n설정 화면에서 STORIX 알림을 허용해 주세요."
+        }
+        onCancel={handleCancelNotificationGuide}
+        onConfirm={handleConfirmNotificationGuide}
+      />
 
       <TopicRoomDdayBar joinedDays={joinedDays} />
 
@@ -728,13 +932,29 @@ export default function TopicRoomScreen() {
         data={allMessages}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <ChatBubble
-            msg={item}
-            onPressAvatar={handlePressAvatar}
-            onPressKebab={handlePressKebab}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          // The inverted list stores messages newest-first. A different next
+          // (older) date means this item starts a calendar-day group onscreen.
+          const itemDate = getChatDateKey(item.createdAt);
+          const olderItemDate = getChatDateKey(
+            allMessages[index + 1]?.createdAt,
+          );
+          const showDateSeparator =
+            itemDate != null && itemDate !== olderItemDate;
+
+          return (
+            <View>
+              {showDateSeparator ? (
+                <ChatDateSeparator createdAt={item.createdAt} />
+              ) : null}
+              <ChatBubble
+                msg={item}
+                onPressAvatar={handlePressAvatar}
+                onPressKebab={handlePressKebab}
+              />
+            </View>
+          );
+        }}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
@@ -800,8 +1020,9 @@ export default function TopicRoomScreen() {
 
       <Toast
         message={toastMessage}
+        variant={isNotificationToast ? "notification" : "default"}
         bottomOffset={36}
-        leadingIconSource={isUserActionSuccessToast ? checkboxActiveIcon : undefined}
+        leadingIconSource={isSuccessToast ? checkboxActiveIcon : undefined}
         leadingIconSize={24}
         onClose={() => setToastMessage(null)}
       />

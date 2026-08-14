@@ -20,9 +20,7 @@ import {
   usePreferenceExploration,
 } from "../../src/features/preference";
 import {
-  isTopicRoomParticipationLimitError,
-  TopicRoomLimitModal,
-  useJoinTopicRoom,
+  getTopicRoomDiscoveryRoute,
   usePopularTopicRooms,
   useTodayTopicRooms,
   type TopicRoomItem,
@@ -43,14 +41,12 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [limitModalVisible, setLimitModalVisible] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: feeds, isLoading: feedsLoading } = useTodayHomeFeeds();
   const { data: todayRooms, isLoading: todayLoading } = useTodayTopicRooms();
   const { data: popularRooms, isLoading: popularLoading } =
     usePopularTopicRooms();
-  const joinTopicRoomMutation = useJoinTopicRoom();
   const { refetch: refetchExploration, isFetching: checkingExploration } =
     usePreferenceExploration(false);
   const { data: unreadCount } = useUnreadNotificationCount();
@@ -146,43 +142,16 @@ export default function HomeScreen() {
   };
 
   const enterTopicRoom = useCallback(
-    (room: TopicRoomItem, index = 0) => {
+    async (room: TopicRoomItem, index = 0) => {
       void trackSelectContent({
         source_section: "home_today_topic_room",
         content_type: "topic_room",
         content_id: `topic_${room.topicRoomId}`,
         position: index + 1,
       });
-
-      const navigate = () => {
-        router.push({
-          pathname: "/topicroom/[roomId]",
-          params: {
-            roomId: String(room.topicRoomId),
-            topicRoomName: room.topicRoomName ?? "",
-            worksName: room.worksName ?? "",
-            worksType: room.worksType ?? "",
-            activeUserNumber: String(room.activeUserNumber ?? ""),
-            entrySource: "home",
-          },
-        });
-      };
-
-      if (room.isJoined) {
-        navigate();
-        return;
-      }
-
-      joinTopicRoomMutation.mutate(room.topicRoomId, {
-        onSuccess: navigate,
-        onError: (err) => {
-          if (isTopicRoomParticipationLimitError(err)) {
-            setLimitModalVisible(true);
-          }
-        },
-      });
+      router.push(await getTopicRoomDiscoveryRoute(room.topicRoomId, room));
     },
-    [joinTopicRoomMutation, router],
+    [router],
   );
 
   return (
@@ -267,10 +236,6 @@ export default function HomeScreen() {
       />
 
       <NotificationConsentModal {...consent} />
-      <TopicRoomLimitModal
-        visible={limitModalVisible}
-        onClose={() => setLimitModalVisible(false)}
-      />
     </View>
   );
 }

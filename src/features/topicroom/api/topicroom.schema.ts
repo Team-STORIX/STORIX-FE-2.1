@@ -43,6 +43,9 @@ export const TopicRoomItemSchema = z.object({
   // lastChatTime (last activity, not join time).
   joinedAt: z.string().nullish(),
   isJoined: z.boolean().nullish(),
+  // GET /topic-rooms/me only. Other topic-room list endpoints may omit them.
+  unreadCount: z.coerce.number().int().nonnegative().nullish(),
+  notificationEnabled: z.boolean().nullish(),
   // Latest-message preview fields. GET /topic-rooms/popular populates these;
   // today/me/search may omit them, so all are optional/nullish and the
   // HotTopicRoomCard keeps an empty reserved preview line when absent (no fake
@@ -89,6 +92,29 @@ export const TopicRoomSearchWrappedSchema = z.preprocess((input) => {
 /** 참여 중인 토픽룸: result가 Page/Slice 형태 */
 export const MyTopicRoomSliceSchema = SliceSchema(TopicRoomItemSchema)
 export type MyTopicRoomSlice = z.infer<typeof MyTopicRoomSliceSchema>
+
+/** 참여 중인 토픽룸 전체의 미읽음 여부 */
+export const TopicRoomUnreadStatusSchema = z.object({
+  hasUnread: z.boolean(),
+})
+export type TopicRoomUnreadStatus = z.infer<
+  typeof TopicRoomUnreadStatusSchema
+>
+
+/** 토픽룸별 알림 설정 */
+export const TopicRoomNotificationSettingSchema = z.object({
+  enabled: z.boolean(),
+})
+export type TopicRoomNotificationSetting = z.infer<
+  typeof TopicRoomNotificationSettingSchema
+>
+
+export const UpdateTopicRoomNotificationRequestSchema = z.object({
+  enabled: z.boolean(),
+})
+export type UpdateTopicRoomNotificationRequest = z.infer<
+  typeof UpdateTopicRoomNotificationRequestSchema
+>
 
 /** 토픽룸 참여자 목록 */
 export const TopicRoomMemberSchema = z

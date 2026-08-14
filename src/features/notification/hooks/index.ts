@@ -9,6 +9,7 @@ export {
 
 export {
   useNotificationsInfinite,
+  useNotificationBadgeCount,
   useUnreadNotificationCount,
 } from './useNotifications'
 export {

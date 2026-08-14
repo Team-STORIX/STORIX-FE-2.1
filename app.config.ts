@@ -71,6 +71,7 @@ const withIosEntitlements = (config: ExpoConfig): ExpoConfig =>
   withEntitlementsPlist(config, (c) => {
     c.modResults["com.apple.developer.applesignin"] = ["Default"];
     c.modResults["aps-environment"] = iosApsEnvironment;
+    c.modResults["com.apple.developer.usernotifications.communication"] = true;
     return c;
   });
 
@@ -99,6 +100,14 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       infoPlist: {
         ...(config.ios?.infoPlist ?? {}),
         ITSAppUsesNonExemptEncryption: false,
+        NSUserActivityTypes: Array.from(
+          new Set([
+            ...(((config.ios?.infoPlist as any)?.NSUserActivityTypes as
+              | string[]
+              | undefined) ?? []),
+            "INSendMessageIntent",
+          ]),
+        ),
         UIBackgroundModes: Array.from(
           new Set([
             ...(((config.ios?.infoPlist as any)?.UIBackgroundModes as
@@ -140,6 +149,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       // notification permission and registers the FCM module.
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withNotificationServiceExtension",
       [
         "expo-image-picker",
         {

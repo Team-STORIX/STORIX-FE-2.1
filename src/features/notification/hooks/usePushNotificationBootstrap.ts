@@ -13,11 +13,13 @@ import {
   isFirebaseNativeAvailable,
 } from "../services/firebaseNative";
 import { handleFcmTokenRefresh } from "../services/pushDeviceSync";
+import { consumePendingNotificationOpenData } from "../services/pendingNotificationOpen";
 import {
   displayForegroundPushNotification,
   ensurePushNotificationChannel,
   getInitialNotifeeNotificationData,
-  refreshUnreadBadgeCount,
+  refreshAppBadgeCount,
+  setAppBadgeCount,
   subscribeNotifeeForegroundPress,
   syncAppBadgeCountFromPushData,
 } from "../services/notifeeNative";
@@ -37,6 +39,20 @@ import { usePushDeviceSync } from "./usePushDeviceSync";
  */
 async function handleNotificationOpen(data: unknown): Promise<void> {
   const payload = parsePushNotificationData(data);
+
+  const openKey = payload
+    ? `${payload.type ?? ''}:${payload.threadId ?? ''}:${payload.targetType}:${payload.targetId ?? ''}`
+    : null;
+  const now = Date.now();
+  if (
+    openKey != null &&
+    openKey === lastNotificationOpenKey &&
+    now - lastNotificationOpenAt < 1_500
+  ) {
+    return;
+  }
+  lastNotificationOpenKey = openKey;
+  lastNotificationOpenAt = now;
 
   if (__DEV__) {
     // eslint-disable-next-line no-console
@@ -59,7 +75,7 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
         queryClient.invalidateQueries({
           queryKey: notificationKeys.unreadCount,
         });
-        return refreshUnreadCountState()
+        return refreshBadgeCountState()
       })
       .catch((err) => {
         if (__DEV__) {
@@ -102,9 +118,30 @@ async function handleNotificationOpen(data: unknown): Promise<void> {
   }
 }
 
-async function refreshUnreadCountState(): Promise<void> {
-  const count = await refreshUnreadBadgeCount()
-  queryClient.setQueryData(notificationKeys.unreadCount, count)
+let lastNotificationOpenKey: string | null = null;
+let lastNotificationOpenAt = 0;
+
+function consumePendingNotificationOpen(): void {
+  void consumePendingNotificationOpenData()
+    .then((data) => {
+      if (data) void handleNotificationOpen(data);
+    })
+    .catch((err) => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('[push] pending notification open failed', err);
+      }
+    });
+}
+
+async function refreshBadgeCountState(): Promise<void> {
+  const count = await refreshAppBadgeCount()
+  queryClient.setQueryData(notificationKeys.badgeCount, count)
+}
+
+function invalidateTopicRoomUnreadState(): void {
+  void queryClient.invalidateQueries({ queryKey: ['topicroom', 'unread'] })
+  void queryClient.invalidateQueries({ queryKey: ['topicroom', 'me'] })
 }
 
 // Attaches the foreground / opened-from-bg / cold-start handlers. Returns a
@@ -138,7 +175,10 @@ const attachMessageListeners = (): (() => void) => {
         return null
       });
       if (unreadCount != null) {
-        queryClient.setQueryData(notificationKeys.unreadCount, unreadCount)
+        queryClient.setQueryData(notificationKeys.badgeCount, unreadCount)
+      }
+      if (payload?.targetType === 'TOPIC_ROOM') {
+        invalidateTopicRoomUnreadState()
       }
 
       await displayForegroundPushNotification({
@@ -231,18 +271,26 @@ export const usePushNotificationBootstrap = (): void => {
   usePushDeviceSync();
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      queryClient.setQueryData(notificationKeys.badgeCount, 0);
+      void setAppBadgeCount(0);
+      return;
+    }
 
-    void refreshUnreadCountState().catch((err) => {
+    void refreshBadgeCountState().catch((err) => {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.warn("[push] app-resume badge sync failed", err);
       }
     });
+    consumePendingNotificationOpen();
+    invalidateTopicRoomUnreadState();
 
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState !== "active") return;
-      void refreshUnreadCountState().catch((err) => {
+      invalidateTopicRoomUnreadState();
+      setTimeout(consumePendingNotificationOpen, 250);
+      void refreshBadgeCountState().catch((err) => {
         if (__DEV__) {
           // eslint-disable-next-line no-console
           console.warn("[push] app-resume badge sync failed", err);
@@ -285,8 +333,3 @@ export const usePushNotificationBootstrap = (): void => {
     };
   }, [isAuthenticated]);
 };
-
-// TODO(PUSH-2-BACKGROUND): wire setBackgroundMessageHandler at module entry
-// (e.g. via expo-router's root entry) once the notification payload contract
-// is defined. Doing it inside a React effect is too late — RNFirebase requires
-// the handler to be registered before the JS engine starts handling pushes.

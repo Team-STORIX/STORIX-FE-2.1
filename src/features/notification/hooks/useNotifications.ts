@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
+  getNotificationBadgeCount,
   getNotifications,
   getUnreadNotificationCount,
 } from '../api/notification.api'
@@ -43,14 +44,18 @@ export function useUnreadNotificationCount(enabled = true) {
   return useQuery({
     queryKey: notificationKeys.unreadCount,
     enabled,
+    queryFn: getUnreadNotificationCount,
+  })
+}
+
+/** Combined notification + topic-room count used only for the app icon. */
+export function useNotificationBadgeCount(enabled = true) {
+  return useQuery({
+    queryKey: notificationKeys.badgeCount,
+    enabled,
     queryFn: async () => {
-      const count = await getUnreadNotificationCount()
-      void setAppBadgeCount(count)
-      if (__DEV__) {
-        // [NOTIFICATION_TEST_DEBUG] temporary — remove after push E2E QA.
-        // eslint-disable-next-line no-console
-        console.log('[NOTIFICATION_TEST_DEBUG] unread count', count)
-      }
+      const count = await getNotificationBadgeCount()
+      await setAppBadgeCount(count)
       return count
     },
   })

@@ -11,6 +11,7 @@ export type FeedTab = "works" | "writers";
 type FeedTopbarProps = {
   activeTab: FeedTab;
   onChange: (tab: FeedTab) => void;
+  hasUnreadTopicRooms?: boolean;
   onPressSearch?: () => void;
   onPressAddTopicRoom?: () => void;
 };
@@ -18,6 +19,7 @@ type FeedTopbarProps = {
 export function FeedTopbar({
   activeTab,
   onChange,
+  hasUnreadTopicRooms = false,
   onPressSearch,
   onPressAddTopicRoom,
 }: FeedTopbarProps) {
@@ -35,14 +37,24 @@ export function FeedTopbar({
           </Text>
         </Pressable>
         <Pressable onPress={() => onChange("writers")} hitSlop={8}>
-          <Text
-            style={[
-              styles.tab,
-              activeTab === "writers" ? styles.tabActive : styles.tabInactive,
-            ]}
-          >
-            토픽룸
-          </Text>
+          <View style={styles.topicRoomTabLabel}>
+            <Text
+              style={[
+                styles.tab,
+                activeTab === "writers"
+                  ? styles.tabActive
+                  : styles.tabInactive,
+              ]}
+            >
+              토픽룸
+            </Text>
+            {hasUnreadTopicRooms ? (
+              <View
+                style={styles.unreadDot}
+                accessibilityLabel="읽지 않은 토픽룸 메시지 있음"
+              />
+            ) : null}
+          </View>
         </Pressable>
       </View>
 
@@ -112,6 +124,17 @@ const styles = StyleSheet.create({
   },
   tabInactive: {
     color: Gray[200],
+  },
+  topicRoomTabLabel: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.error,
   },
   actions: {
     flexDirection: "row",

@@ -9,7 +9,7 @@ const closeIcon = require('../../../assets/topicroom/icon-delete-medium.svg')
 
 type ToastProps = {
   message?: string | null
-  variant?: 'default' | 'success'
+  variant?: 'default' | 'success' | 'notification'
   leadingIconSource?: ComponentProps<typeof Image>['source']
   leadingIconSize?: number
   /** Where to anchor the toast (default: bottom). */
@@ -64,6 +64,7 @@ export function Toast({
           styles.bubble,
           hasLeadingIcon && styles.iconBubble,
           variant === 'success' && styles.successBubble,
+          variant === 'notification' && styles.notificationBubble,
           bubbleStyle,
           { opacity },
         ]}
@@ -83,6 +84,7 @@ export function Toast({
             styles.text,
             hasLeadingIcon && styles.iconText,
             variant === 'success' && styles.successText,
+            variant === 'notification' && styles.notificationText,
           ]}
           numberOfLines={1}
         >
@@ -92,7 +94,10 @@ export function Toast({
           onPress={onClose}
           disabled={!onClose}
           hitSlop={8}
-          style={styles.closeButton}
+          style={[
+            styles.closeButton,
+            variant === 'notification' && styles.notificationCloseButton,
+          ]}
           accessibilityRole="button"
           accessibilityLabel="토스트 닫기"
         >
@@ -147,6 +152,20 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 20,
     height: 20,
+  },
+  notificationBubble: {
+    width: 286,
+    height: 48,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  notificationText: {
+    color: Gray[200],
+  },
+  notificationCloseButton: {
+    width: 20,
+    height: 20,
+    marginLeft: 12,
   },
   closeIcon: {
     width: 20,

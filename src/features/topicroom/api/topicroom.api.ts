@@ -9,16 +9,22 @@ import {
   TopicRoomIdSchema,
   TopicRoomItemSchema,
   TopicRoomMemberSchema,
+  TopicRoomNotificationSettingSchema,
   TopicRoomReportRequestSchema,
   TopicRoomReportResponseSchema,
   TopicRoomSearchSliceSchema,
   TopicRoomSearchWrappedSchema,
+  TopicRoomUnreadStatusSchema,
+  UpdateTopicRoomNotificationRequestSchema,
 } from "./topicroom.schema";
 
 export type {
   MyTopicRoomSlice,
   TopicRoomItem,
   TopicRoomMember,
+  TopicRoomNotificationSetting,
+  TopicRoomUnreadStatus,
+  UpdateTopicRoomNotificationRequest,
 } from "./topicroom.schema";
 
 const AnyEnvelopeSchema = ApiEnvelopeSchema(z.any());
@@ -172,6 +178,47 @@ export async function getMyTopicRooms(params?: {
     headers: { accept: "*/*" },
   });
   return ApiEnvelopeSchema(MyTopicRoomSliceSchema).parse(res.data).result;
+}
+
+// GET /api/v1/topic-rooms/unread
+export async function getTopicRoomUnreadStatus() {
+  const res = await apiClient.get("/api/v1/topic-rooms/unread", {
+    headers: { accept: "*/*" },
+  });
+  return ApiEnvelopeSchema(TopicRoomUnreadStatusSchema).parse(res.data).result;
+}
+
+// POST /api/v1/topic-rooms/{roomId}/read
+// Reading is a best-effort room-entry safeguard in addition to the backend's
+// STOMP subscription tracking. Callers only care whether the HTTP request
+// succeeded, so accept a 200 envelope, a null result, or an empty 204 body.
+export async function markTopicRoomRead(roomId: number): Promise<void> {
+  await apiClient.post(`/api/v1/topic-rooms/${roomId}/read`, null, {
+    headers: { accept: "*/*" },
+  });
+}
+
+// GET /api/v1/topic-rooms/{roomId}/notification
+export async function getTopicRoomNotificationSetting(roomId: number) {
+  const res = await apiClient.get(
+    `/api/v1/topic-rooms/${roomId}/notification`,
+    { headers: { accept: "*/*" } },
+  );
+  return ApiEnvelopeSchema(TopicRoomNotificationSettingSchema).parse(res.data)
+    .result;
+}
+
+// PATCH /api/v1/topic-rooms/{roomId}/notification
+export async function updateTopicRoomNotificationSetting(
+  roomId: number,
+  body: { enabled: boolean },
+): Promise<void> {
+  const payload = UpdateTopicRoomNotificationRequestSchema.parse(body);
+  await apiClient.patch(
+    `/api/v1/topic-rooms/${roomId}/notification`,
+    payload,
+    { headers: { accept: "*/*" } },
+  );
 }
 
 // Searches by worksName and returns the topicRoomId of the matching room, or null.

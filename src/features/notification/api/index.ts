@@ -6,6 +6,7 @@ export {
 export {
   getNotifications,
   getNotificationSettings,
+  getNotificationBadgeCount,
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
@@ -20,6 +21,7 @@ export { notificationKeys } from './notification.keys'
 export type {
   AdminTestDispatchPayload,
   AdminTestPushPayload,
+  BadgeCount,
   MarketingConsentResult,
   NotificationCategory,
   NotificationItem,

@@ -22,7 +22,7 @@ import {
   useTrendingKeywords,
   useWorksSearchInfinite,
 } from '../hooks'
-import { useJoinTopicRoom } from '../../topicroom'
+import { getTopicRoomDiscoveryRoute } from '../../topicroom'
 import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
 import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
@@ -129,7 +129,6 @@ export function SearchScreen() {
     selectedTypes,
     selectedGenres,
   )
-  const joinTopicRoomMutation = useJoinTopicRoom()
 
   useFocusEffect(
     useCallback(() => {
@@ -247,23 +246,15 @@ export function SearchScreen() {
     router.push(`/works/${item.worksId}` as const)
   }
 
-  const handlePressTopicRoom = (item: TopicRoomSearchItem, _index: number) => {
-    // Do not join here — navigate to the preview/detail screen first. The
-    // preview screen handles join + entry into the chat room.
-    router.push({
-      pathname: '/topicroom/preview',
-      params: {
-        roomId: String(item.topicRoomId),
+  const handlePressTopicRoom = async (item: TopicRoomSearchItem) => {
+    // Joined rooms open immediately; only a user's first entry goes through
+    // the preview screen, which handles joining before opening the chat.
+    router.push(
+      await getTopicRoomDiscoveryRoute(item.topicRoomId, {
+        ...item,
         keyword: submittedKeyword,
-        topicRoomName: item.topicRoomName,
-        worksName: item.worksName,
-        worksType: item.worksType ?? '',
-        activeUserNumber: String(item.activeUserNumber ?? 0),
-        thumbnailUrl: item.thumbnailUrl ?? '',
-        lastChatTime: item.lastChatTime ?? '',
-        entrySource: 'search',
-      },
-    })
+      }),
+    )
   }
 
   return (
@@ -339,7 +330,7 @@ export function SearchScreen() {
                 data={topicRoomQuery.items}
                 isLoading={topicRoomQuery.isLoading}
                 isError={topicRoomQuery.isError}
-                isJoining={joinTopicRoomMutation.isPending}
+                isJoining={false}
                 isFetchingNextPage={topicRoomQuery.isFetchingNextPage}
                 hasNextPage={!!topicRoomQuery.hasNextPage}
                 onEndReached={() => {

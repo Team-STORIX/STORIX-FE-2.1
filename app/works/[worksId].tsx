@@ -28,15 +28,13 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
-  isTopicRoomParticipationLimitError,
-  TopicRoomLimitModal,
-  useJoinTopicRoom,
+  getTopicRoomDiscoveryRoute,
 } from '../../src/features/topicroom'
 import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
 import { Typography } from '../../src/theme/typography'
 
-type EntryPhase = 'idle' | 'searching' | 'joining'
+type EntryPhase = 'idle' | 'searching'
 type TabKey = 'info' | 'review'
 type ActionToast = 'report' | 'block'
 
@@ -84,18 +82,13 @@ export default function WorksDetailScreen() {
     reviewsQuery.data?.pages.flatMap((page) => page.content ?? []) ?? []
 
   const likeMutation = useLikeWorksReview({ worksId })
-  const joinMutation = useJoinTopicRoom()
-
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
-  const [limitModalVisible, setLimitModalVisible] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const shownActionToastRef = useRef<string | null>(null)
 
-  const isEntering =
-    entryPhase === 'searching' ||
-    entryPhase === 'joining'
+  const isEntering = entryPhase === 'searching'
 
   const showToast = useCallback(
     (message: string, variant: 'default' | 'success' = 'default') => {
@@ -131,11 +124,17 @@ export default function WorksDetailScreen() {
   }, [actionToast, showToast])
 
   const navigateToRoom = useCallback(
-    (roomId: number) => {
+    async (roomId: number) => {
+      const route = await getTopicRoomDiscoveryRoute(roomId, {
+        keyword: works?.worksName,
+        worksName: works?.worksName,
+        worksType: works?.worksType,
+        thumbnailUrl: works?.thumbnailUrl,
+      })
       setEntryPhase('idle')
-      router.push(`/topicroom/${roomId}` as const)
+      router.push(route)
     },
-    [router],
+    [router, works?.thumbnailUrl, works?.worksName, works?.worksType],
   )
 
   const navigateToCreateTopicRoom = useCallback(() => {
@@ -165,20 +164,13 @@ export default function WorksDetailScreen() {
         return
       }
 
-      setEntryPhase('joining')
-      await joinMutation.mutateAsync(roomId)
-      navigateToRoom(roomId)
-    } catch (err) {
+      await navigateToRoom(roomId)
+    } catch {
       setEntryPhase('idle')
-      if (isTopicRoomParticipationLimitError(err)) {
-        setLimitModalVisible(true)
-        return
-      }
       showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
   }, [
     isEntering,
-    joinMutation,
     navigateToCreateTopicRoom,
     navigateToRoom,
     showToast,
@@ -331,10 +323,6 @@ export default function WorksDetailScreen() {
         </>
       )}
 
-      <TopicRoomLimitModal
-        visible={limitModalVisible}
-        onClose={() => setLimitModalVisible(false)}
-      />
 
       <Toast
         message={toastMessage}

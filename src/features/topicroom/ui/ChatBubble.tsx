@@ -14,6 +14,7 @@ export type DisplayMsg = {
   key: string;
   chatMessageId?: number;
   text: string;
+  createdAt?: string | null;
   senderId?: number;
   senderName: string;
   profileImageUrl?: string | null;

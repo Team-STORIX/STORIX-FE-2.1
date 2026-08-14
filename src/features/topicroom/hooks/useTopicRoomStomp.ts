@@ -581,6 +581,8 @@ export const useTopicRoomStomp = (params: {
                         ? {
                             ...m,
                             id: uiMsg.id,
+                            chatMessageId:
+                              uiMsg.chatMessageId ?? m.chatMessageId,
                             time: uiMsg.time || m.time,
                             createdAt: uiMsg.createdAt ?? m.createdAt,
                             senderId: uiMsg.senderId ?? m.senderId,

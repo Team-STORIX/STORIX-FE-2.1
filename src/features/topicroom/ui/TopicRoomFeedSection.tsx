@@ -16,12 +16,10 @@ import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
 import type { TopicRoomItem } from "../api/topicroom.schema";
-import { useJoinTopicRoom } from "../hooks/useJoinTopicRoom";
+import { getTopicRoomDiscoveryRoute } from "../services/topicRoomNavigation";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
 import { usePopularTopicRooms } from "../hooks/usePopularTopicRooms";
-import { isTopicRoomParticipationLimitError } from "../services/topicRoomLimit";
 import { HotTopicRoomCard } from "./HotTopicRoomCard";
-import { TopicRoomLimitModal } from "./TopicRoomLimitModal";
 import { TopicRoomListItem } from "./TopicRoomListItem";
 
 const PADDING_H = 16; // section title horizontal padding
@@ -53,9 +51,6 @@ export function TopicRoomFeedSection() {
 
   const popularQuery = usePopularTopicRooms();
   const myQuery = useMyTopicRoomsAll();
-  const joinMutation = useJoinTopicRoom();
-  const [limitModalVisible, setLimitModalVisible] = useState(false);
-  const joiningId = joinMutation.isPending ? joinMutation.variables : null;
 
   const handlePressExploreTopicRooms = () => {
     router.push({
@@ -66,31 +61,8 @@ export function TopicRoomFeedSection() {
     });
   };
 
-  const handleEnter = (item: TopicRoomItem) => {
-    const navigate = () =>
-      router.push({
-        pathname: "/topicroom/[roomId]",
-        params: {
-          roomId: String(item.topicRoomId),
-          topicRoomName: item.topicRoomName ?? "",
-          worksName: item.worksName ?? "",
-          worksType: item.worksType ?? "",
-          activeUserNumber: String(item.activeUserNumber ?? ""),
-          entrySource: "feed",
-        },
-      });
-    if (item.isJoined) {
-      navigate();
-      return;
-    }
-    joinMutation.mutate(item.topicRoomId, {
-      onSuccess: navigate,
-      onError: (err) => {
-        if (isTopicRoomParticipationLimitError(err)) {
-          setLimitModalVisible(true);
-        }
-      },
-    });
+  const handleEnter = async (item: TopicRoomItem) => {
+    router.push(await getTopicRoomDiscoveryRoute(item.topicRoomId, item));
   };
 
   const popularPages = useMemo(
@@ -143,7 +115,7 @@ export function TopicRoomFeedSection() {
                       <HotTopicRoomCard
                         item={room}
                         rank={pageIdx * CARDS_PER_PAGE + i + 1}
-                        isJoining={joiningId === room.topicRoomId}
+                        isJoining={false}
                         onPress={() => handleEnter(room)}
                       />
                       {i < pageRooms.length - 1 ? (
@@ -202,10 +174,6 @@ export function TopicRoomFeedSection() {
           })}
         </View>
       )}
-      <TopicRoomLimitModal
-        visible={limitModalVisible}
-        onClose={() => setLimitModalVisible(false)}
-      />
     </View>
   );
 }

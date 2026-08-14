@@ -2,6 +2,7 @@ import { apiClient } from '../../../lib/api/axios-instance'
 import {
   AdminTestDispatchResponseSchema,
   AdminTestPushResponseSchema,
+  BadgeCountResponseSchema,
   MarketingConsentResponseSchema,
   NotificationPageResponseSchema,
   NotificationSettingsResponseSchema,
@@ -78,6 +79,12 @@ export async function updateNotificationSettings(
 export async function getUnreadNotificationCount(): Promise<number> {
   const res = await apiClient.get(`${BASE}/unread-count`)
   return UnreadCountResponseSchema.parse(res.data).result
+}
+
+/** GET /api/v1/notifications/badge-count — notification + topic-room unread. */
+export async function getNotificationBadgeCount(): Promise<number> {
+  const res = await apiClient.get(`${BASE}/badge-count`)
+  return BadgeCountResponseSchema.parse(res.data).result.badgeCount
 }
 
 // ---------- admin / dev test endpoints ----------
