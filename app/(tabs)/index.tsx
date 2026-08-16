@@ -3,6 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  HomeEventBanner,
+  useAppEventBanners,
+  type AppEventBanner,
+} from "../../src/features/app-event";
+import { getAppEventWebViewRoute } from "../../src/features/app-event/lib/targetNavigation";
+import {
   HashtagList,
   HomeHeader,
   HomeSection,
@@ -44,6 +50,8 @@ export default function HomeScreen() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: feeds, isLoading: feedsLoading } = useTodayHomeFeeds();
+  const { data: eventBanners, refetch: refetchEventBanners } =
+    useAppEventBanners();
   const { data: todayRooms, isLoading: todayLoading } = useTodayTopicRooms();
   const { data: popularRooms, isLoading: popularLoading } =
     usePopularTopicRooms();
@@ -72,7 +80,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void trackScreenView("home");
-    }, []),
+      void refetchEventBanners();
+    }, [refetchEventBanners]),
   );
 
   useEffect(() => {
@@ -154,6 +163,17 @@ export default function HomeScreen() {
     [router],
   );
 
+  const openEventBanner = useCallback(
+    (banner: AppEventBanner) => {
+      const route = getAppEventWebViewRoute(
+        banner.targetId,
+        banner.bannerTitle,
+      );
+      if (route) router.push(route as never);
+    },
+    [router],
+  );
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -171,6 +191,11 @@ export default function HomeScreen() {
           onSearchPress={() => router.push("/search" as never)}
           onNotificationPress={() => router.push("/notifications" as never)}
           unreadCount={unreadCount ?? 0}
+        />
+
+        <HomeEventBanner
+          banners={eventBanners}
+          onPressBanner={openEventBanner}
         />
 
         <View style={styles.stack}>
