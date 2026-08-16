@@ -110,14 +110,12 @@ function HashtagRow({ tags }: { tags: string[] }) {
         recalculate(containerWidthRef.current);
       }}
     >
-      {tags.map((tag, i) => (
+      {tags.slice(0, measured ? cutIndex : tags.length).map((tag, i) => (
         <View
           key={`${tag}-${i}`}
-          style={[
-            styles.hashtagChip,
-            i >= cutIndex ? { display: "none" } : undefined,
-          ]}
+          style={styles.hashtagChip}
           onLayout={(e) => {
+            if (measured) return;
             chipRights.current[i] =
               e.nativeEvent.layout.x + e.nativeEvent.layout.width;
             recalculate(containerWidthRef.current);
