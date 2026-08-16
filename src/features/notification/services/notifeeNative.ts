@@ -8,6 +8,7 @@ import {
 } from './pushPayload'
 
 export const PUSH_ANDROID_CHANNEL_ID = 'storix_default_high'
+const PUSH_ANDROID_SMALL_ICON = 'ic_notification'
 
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
@@ -221,7 +222,7 @@ export async function displayForegroundPushNotification(args: {
         pressAction: {
           id: 'default',
         },
-        smallIcon: 'ic_launcher',
+        smallIcon: PUSH_ANDROID_SMALL_ICON,
         importance: notifeeModule.AndroidImportance.HIGH,
         ...(args.payload?.unreadCount != null
           ? { badgeCount: args.payload.unreadCount }
@@ -343,7 +344,7 @@ export async function displayTopicRoomChatNotification(
     android: {
       channelId,
       pressAction: { id: 'default' },
-      smallIcon: 'ic_launcher',
+      smallIcon: PUSH_ANDROID_SMALL_ICON,
       importance: notifeeModule.AndroidImportance.HIGH,
       groupId: threadId,
       ...(profileIcon ? { largeIcon: profileIcon } : {}),

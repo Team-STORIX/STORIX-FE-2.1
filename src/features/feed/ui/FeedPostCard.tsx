@@ -77,9 +77,11 @@ function HashtagRow({ tags }: { tags: string[] }) {
   const containerWidthRef = useRef(0);
   const chipRights = useRef<number[]>([]);
   const [cutIndex, setCutIndex] = useState(tags.length);
+  const [measured, setMeasured] = useState(false);
 
   useEffect(() => {
     setCutIndex(tags.length);
+    setMeasured(false);
     chipRights.current = [];
   }, [tags]);
 
@@ -90,17 +92,19 @@ function HashtagRow({ tags }: { tags: string[] }) {
     let cut = tags.length;
     for (let i = 0; i < tags.length; i++) {
       const right = chipRights.current[i];
+      if (right === undefined) return;
       if (right !== undefined && right > cw) {
         cut = i;
         break;
       }
     }
+    setMeasured(true);
     setCutIndex(cut);
   };
 
   return (
     <View
-      style={styles.hashtagRow}
+      style={[styles.hashtagRow, !measured && styles.hashtagRowMeasuring]}
       onLayout={(e) => {
         containerWidthRef.current = e.nativeEvent.layout.width;
         recalculate(containerWidthRef.current);
@@ -114,7 +118,6 @@ function HashtagRow({ tags }: { tags: string[] }) {
             i >= cutIndex ? { display: "none" } : undefined,
           ]}
           onLayout={(e) => {
-            if (i >= cutIndex) return;
             chipRights.current[i] =
               e.nativeEvent.layout.x + e.nativeEvent.layout.width;
             recalculate(containerWidthRef.current);
@@ -882,6 +885,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "nowrap",
     gap: 4,
+    overflow: "hidden",
+  },
+  hashtagRowMeasuring: {
+    opacity: 0,
   },
   hashtagChip: {
     paddingHorizontal: 8,
