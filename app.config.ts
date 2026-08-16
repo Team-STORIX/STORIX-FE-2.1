@@ -45,7 +45,7 @@ const naverUrlScheme = requireEnv("EXPO_PUBLIC_NAVER_URL_SCHEME");
 
 // Optional with sensible defaults — not validated.
 const iosBundleId = process.env.EXPO_IOS_BUNDLE_ID ?? "kr.storix.app";
-const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.android";
+const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
 
 // Firebase client config files. Both paths are optional at config evaluation
 // time so the JS bundle can build without them — but native builds (prebuild)

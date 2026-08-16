@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "STORIX",
-    "slug": "STORIX-FE-2.1",
+    "slug": "STORIX-FE-21",
     "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/app-logo.png",
@@ -18,7 +18,9 @@
       "buildNumber": "37",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ko",
-        "CFBundleLocalizations": ["ko"]
+        "CFBundleLocalizations": [
+          "ko"
+        ]
       }
     },
     "android": {
@@ -61,7 +63,12 @@
       "typedRoutes": true
     },
     "extra": {
-      "versionDate": "26.05.07"
-    }
+      "versionDate": "26.05.07",
+      "router": {},
+      "eas": {
+        "projectId": "0f0e53f8-987b-48b6-bc8a-a463c57b236e"
+      }
+    },
+    "owner": "storix-dev"
   }
 }
