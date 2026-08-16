@@ -4,12 +4,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSignup } from '../../auth/hooks/useSignup'
 import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
 import { getOnboardingWorks } from '../api/onboarding.api'
-import { uploadAndSetProfileImage } from '../../profile/api/profile.api'
+import { getMyProfile, uploadAndSetProfileImage } from '../../profile/api/profile.api'
+import { ME_QUERY_KEY } from '../../profile/hooks/useMe'
+import { useProfileStore } from '../../profile/store/profile.store'
 import { NicknameStep } from './NicknameStep'
 import { BioStep } from './BioStep'
 import { GenreStep } from './GenreStep'
@@ -24,11 +26,13 @@ const ONBOARDING_PROGRESS_STEPS = 4
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const serviceTermsAgree = useAuthStore((s) => s.serviceTermsAgree)
   const privacyPolicyAgree = useAuthStore((s) => s.privacyPolicyAgree)
   const ageOver14 = useAuthStore((s) => s.ageOver14)
   const signupMutation = useSignup()
+  const setMe = useProfileStore((s) => s.setMe)
   const onboardingWorksQuery = useQuery({
     queryKey: ['onboarding', 'works'],
     queryFn: getOnboardingWorks,
@@ -48,6 +52,7 @@ export function OnboardingScreen() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([])
   const [profileImageUri, setProfileImageUri] = useState<string | undefined>()
   const [error, setError] = useState('')
+  const [isCompleting, setIsCompleting] = useState(false)
   const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
   const handleBack = useCallback(() => {
@@ -90,6 +95,8 @@ export function OnboardingScreen() {
   }
 
   const handleNext = async () => {
+    if (isCompleting) return
+
     setError('')
 
     if (!onboardingToken) {
@@ -112,6 +119,8 @@ export function OnboardingScreen() {
       return
     }
 
+    setIsCompleting(true)
+
     try {
       await signupMutation.mutateAsync({
         serviceTermsAgree,
@@ -122,12 +131,26 @@ export function OnboardingScreen() {
         favoriteGenreList: genres,
         favoriteWorksIdList: favoriteIds,
       })
-      if (profileImageUri) {
-        await uploadAndSetProfileImage(profileImageUri).catch(() => {})
+      try {
+        if (profileImageUri) {
+          await uploadAndSetProfileImage(profileImageUri)
+        }
+
+        const meResponse = await getMyProfile()
+        if (meResponse.result) {
+          setMe(meResponse.result)
+          queryClient.setQueryData(ME_QUERY_KEY, meResponse.result)
+        }
+        await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
+      } catch (syncError) {
+        console.log('[OnboardingScreen] failed to sync profile after signup:', syncError)
       }
+
       router.replace('/(auth)/manual')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
+    } finally {
+      setIsCompleting(false)
     }
   }
 
@@ -225,7 +248,7 @@ export function OnboardingScreen() {
         <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
           <Pressable
             onPress={() => void handleNext()}
-            disabled={!canProceed() || signupMutation.isPending}
+            disabled={!canProceed() || signupMutation.isPending || isCompleting}
             style={[
               styles.nextButton,
               canProceed() ? styles.nextButtonActive : styles.nextButtonInactive,
