@@ -129,7 +129,7 @@ class TopicRoomNotificationModule : Module() {
 
     ensureChannel()
     publishConversationShortcut(options, senderAvatars, shortcutAvatar)
-    postNotification(options, latestAvatar)
+    postNotification(options)
   }
 
   private fun normalizedSenders(
@@ -198,10 +198,7 @@ class TopicRoomNotificationModule : Module() {
     ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
   }
 
-  private fun postNotification(
-    options: TopicRoomNotificationOptionsRecord,
-    senderAvatar: Bitmap
-  ) {
+  private fun postNotification(options: TopicRoomNotificationOptionsRecord) {
     val senderLabel = if (options.messageCount > 1) {
       options.displayTitle
     } else {
@@ -211,13 +208,12 @@ class TopicRoomNotificationModule : Module() {
       .setKey(options.senderId)
       .setName(senderLabel)
       .setUri("storix-user:${options.senderId}")
-      // Samsung creates a colored initial when MessagingStyle's sender has no
-      // icon. Supplying the downloaded profile bitmap keeps the conversation
-      // notification consistent with iOS communication notifications.
-      // One UI does not consistently mask Person icons, so provide a bitmap
-      // whose corners are already transparent instead of the square source.
+      // The shortcut already supplies the conversation avatar at the top of
+      // the notification. Keep an icon object on the message sender so Samsung
+      // does not synthesize a colored initial, but make it transparent to avoid
+      // rendering the duplicate avatar beside the expanded message.
       .setIcon(
-        IconCompat.createWithBitmap(circularBitmap(senderAvatar, AVATAR_SIZE))
+        IconCompat.createWithBitmap(createTransparentAvatar())
       )
       .build()
     val currentUser = Person.Builder()
@@ -353,6 +349,9 @@ class TopicRoomNotificationModule : Module() {
     drawCircleImage(canvas, source, size / 2f, size / 2f, size.toFloat())
     return output
   }
+
+  private fun createTransparentAvatar(): Bitmap =
+    Bitmap.createBitmap(AVATAR_SIZE, AVATAR_SIZE, Bitmap.Config.ARGB_8888)
 
   private fun drawCircleImage(
     canvas: Canvas,
