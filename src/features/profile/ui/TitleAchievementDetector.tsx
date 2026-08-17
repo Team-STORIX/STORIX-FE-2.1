@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSegments } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import {
+  appEventKeys,
   type AppEventTitleEvent,
   useAckAppEventTitleEvent,
   useAppEventTitleEvents,
@@ -88,19 +90,24 @@ export function TitleAchievementDetector({
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const fallbackNickname = useProfileStore((s) => s.me?.nickName?.trim() ?? '')
   const segments = useSegments()
+  const queryClient = useQueryClient()
   const titleEventsQuery = useAppEventTitleEvents(isAuthenticated)
   const ackTitleEventMutation = useAckAppEventTitleEvent()
   const [achievementModal, setAchievementModal] =
     useState<PendingTitleAchievement | null>(null)
+  const [handledEventIds, setHandledEventIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  )
   const canShowAchievementModal =
     !blocked && isTitleAchievementModalRoute(segments as readonly string[])
 
   const nextAchievement = useMemo(
     () =>
       (titleEventsQuery.data ?? [])
+        .filter((event) => !handledEventIds.has(event.id))
         .map((event) => toPendingTitleAchievement(event, fallbackNickname))
         .find((event): event is PendingTitleAchievement => event != null) ?? null,
-    [fallbackNickname, titleEventsQuery.data],
+    [fallbackNickname, handledEventIds, titleEventsQuery.data],
   )
 
   useEffect(() => {
@@ -114,16 +121,27 @@ export function TitleAchievementDetector({
 
   const handleClose = useCallback(async () => {
     const closingEvent = achievementModal
+    if (!closingEvent) return
+
+    setHandledEventIds((prev) => {
+      const next = new Set(prev)
+      next.add(closingEvent.eventId)
+      return next
+    })
+    queryClient.setQueryData<AppEventTitleEvent[]>(
+      appEventKeys.titleEvents,
+      (events) => events?.filter((event) => event.id !== closingEvent.eventId) ?? events,
+    )
     setAchievementModal(null)
 
-    if (!closingEvent?.ackRequired) return
+    if (!closingEvent.ackRequired) return
 
     try {
       await ackTitleEventMutation.mutateAsync(closingEvent.eventId)
     } catch (error) {
       console.error('Failed to ack title achievement event:', error)
     }
-  }, [achievementModal, ackTitleEventMutation])
+  }, [achievementModal, ackTitleEventMutation, queryClient])
 
   return (
     <TitleAchievementModal
