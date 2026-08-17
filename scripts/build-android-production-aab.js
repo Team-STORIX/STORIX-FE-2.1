@@ -1,19 +1,45 @@
 const { spawnSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 const rootDir = path.join(__dirname, "..");
 const androidDir = path.join(rootDir, "android");
+const envLocalPath = path.join(rootDir, ".env.local");
 const gradleCommand = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
+const productionApiUrl = "https://api.storix.kr";
+const productionAabPath = path.join(
+  androidDir,
+  "app",
+  "build",
+  "outputs",
+  "bundle",
+  "release",
+  "app-release.aab",
+);
+const staleReleaseBundlePaths = [
+  path.join(androidDir, "app", "build", "generated", "assets", "createBundleReleaseJsAndAssets"),
+  path.join(androidDir, "app", "build", "generated", "res", "createBundleReleaseJsAndAssets"),
+  path.join(androidDir, "app", "build", "intermediates", "assets", "release"),
+  productionAabPath,
+];
 
 const env = {
   ...process.env,
   NODE_ENV: "production",
   EAS_BUILD_PROFILE: "production",
   STORIX_REQUIRE_PRODUCTION_API: "true",
-  EXPO_PUBLIC_API_URL: "https://api.storix.kr",
+  EXPO_PUBLIC_API_URL: productionApiUrl,
 };
 
-const run = (command, args, options = {}) => {
+const run = (command, args, options = {}) =>
+  spawnSync(command, args, {
+    cwd: options.cwd ?? rootDir,
+    env,
+    shell: process.platform === "win32",
+    stdio: "inherit",
+  });
+
+const runOrExit = (command, args, options = {}) => {
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? rootDir,
     env,
@@ -26,6 +52,50 @@ const run = (command, args, options = {}) => {
   }
 };
 
-run("npm", ["run", "prebuild:android"]);
-run(gradleCommand, ["bundleRelease"], { cwd: androidDir });
-run("npm", ["run", "verify:android:aab"]);
+const removeStaleReleaseBundleArtifacts = () => {
+  for (const artifactPath of staleReleaseBundlePaths) {
+    fs.rmSync(artifactPath, { force: true, recursive: true });
+  }
+};
+
+const withTemporaryProductionEnvLocal = (callback) => {
+  const originalEnvLocal = fs.existsSync(envLocalPath)
+    ? fs.readFileSync(envLocalPath, "utf8")
+    : null;
+  const currentEnvLocal = originalEnvLocal ?? "";
+  const nextEnvLocal = /^EXPO_PUBLIC_API_URL=/m.test(currentEnvLocal)
+    ? currentEnvLocal.replace(
+        /^EXPO_PUBLIC_API_URL=.*$/m,
+        `EXPO_PUBLIC_API_URL=${productionApiUrl}`,
+      )
+    : `${currentEnvLocal}${currentEnvLocal.endsWith("\n") || currentEnvLocal.length === 0 ? "" : "\n"}EXPO_PUBLIC_API_URL=${productionApiUrl}\n`;
+
+  if (nextEnvLocal !== currentEnvLocal) {
+    fs.writeFileSync(envLocalPath, nextEnvLocal);
+  }
+
+  try {
+    callback();
+  } finally {
+    if (originalEnvLocal == null) {
+      fs.rmSync(envLocalPath, { force: true });
+    } else if (fs.readFileSync(envLocalPath, "utf8") !== originalEnvLocal) {
+      fs.writeFileSync(envLocalPath, originalEnvLocal);
+    }
+  }
+};
+
+withTemporaryProductionEnvLocal(() => {
+  runOrExit("npm", ["run", "prebuild:android"]);
+  removeStaleReleaseBundleArtifacts();
+  runOrExit(gradleCommand, [":app:createBundleReleaseJsAndAssets", "--rerun-tasks"], { cwd: androidDir });
+  runOrExit(gradleCommand, ["bundleRelease"], { cwd: androidDir });
+
+  const verification = run("npm", ["run", "verify:android:aab"]);
+  if (verification.status !== 0) {
+    fs.rmSync(productionAabPath, { force: true });
+    console.error("\nProduction AAB verification failed. Deleted invalid AAB:");
+    console.error(productionAabPath);
+    process.exit(verification.status ?? 1);
+  }
+});

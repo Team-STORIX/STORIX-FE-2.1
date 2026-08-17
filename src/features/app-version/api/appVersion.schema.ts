@@ -20,6 +20,7 @@ export const AppVersionCheckResultSchema = z.object({
   status: AppVersionStatusSchema,
   latestVersion: z.string(),
   minSupportedVersion: z.string(),
+  releaseDate: z.string().nullable().optional(),
 })
 
 export const AppVersionCheckResponseSchema = ApiEnvelopeSchema(
