@@ -24,10 +24,10 @@ const IOS_STORE_WEB_URL =
   'https://apps.apple.com/search?term=STORIX'
 const ANDROID_STORE_URL =
   process.env.EXPO_PUBLIC_ANDROID_STORE_URL ??
-  'market://details?id=kr.storix.android'
+  'market://details?id=kr.storix.app'
 const ANDROID_STORE_WEB_URL =
   process.env.EXPO_PUBLIC_ANDROID_STORE_WEB_URL ??
-  'https://play.google.com/store/apps/details?id=kr.storix.android'
+  'https://play.google.com/store/apps/details?id=kr.storix.app'
 
 export function AppVersionUpdateModal({
   visible,
