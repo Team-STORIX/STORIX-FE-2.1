@@ -1,5 +1,6 @@
 import { getNotificationBadgeCount } from '../api/notification.api'
 import { Image, Platform } from 'react-native'
+import topicRoomNotificationNative from '../../../../modules/topic-room-notification'
 import {
   getPushTitleBody,
   isTopicRoomChatPayload,
@@ -147,7 +148,7 @@ export function getTopicRoomNotificationThreadId(roomId: number): string {
 
 /**
  * Removes only the OS tray notifications that belong to one topic room.
- * Android chat notifications use the room thread as their stable Notifee ID;
+ * Android chat notifications use the room thread as their stable native ID;
  * iOS notifications are server-rendered, so their data/thread metadata must be
  * inspected before cancelling the matching delivered notification IDs.
  */
@@ -156,10 +157,13 @@ export async function clearTopicRoomDisplayedNotifications(
 ): Promise<void> {
   if (!Number.isFinite(roomId) || roomId <= 0) return
 
+  const threadId = getTopicRoomNotificationThreadId(roomId)
+  if (Platform.OS === 'android' && topicRoomNotificationNative) {
+    await topicRoomNotificationNative.cancel(threadId)
+  }
+
   const notifeeModule = loadNotifee()
   if (!notifeeModule) return
-
-  const threadId = getTopicRoomNotificationThreadId(roomId)
 
   if (Platform.OS === 'android') {
     await notifeeModule.default.cancelNotification(threadId)
@@ -269,8 +273,8 @@ async function displayIOSTopicRoomChatNotification(
   const displayTitle =
     messageCount > 1 ? `새 메시지 ${messageCount}건` : senderName
   const profileIcon =
-    latestSender?.profileImageUrl ??
     payload.senderProfileImageUrl ??
+    latestSender?.profileImageUrl ??
     getDefaultProfileImageUri() ??
     undefined
 
@@ -307,8 +311,9 @@ async function displayIOSTopicRoomChatNotification(
 
 /**
  * Displays Android's data-only TOPIC_ROOM_CHAT payload. A stable room-scoped
- * ID replaces the previous notification from the same room, while
- * MessagingStyle supplies the conversation avatar and app identity badge.
+ * ID replaces the previous notification from the same room. The native module
+ * publishes a long-lived conversation shortcut so Android can render a
+ * KakaoTalk-style group avatar and three-line conversation notification.
  */
 export async function displayTopicRoomChatNotification(
   payload: ParsedPushPayload,
@@ -316,30 +321,62 @@ export async function displayTopicRoomChatNotification(
   if (Platform.OS !== 'android' || !isTopicRoomChatPayload(payload)) return
   if (payload.targetId == null) return
 
-  const notifeeModule = loadNotifee()
-  if (!notifeeModule) return
-
-  const channelId = await ensurePushNotificationChannel()
   const threadId =
     payload.threadId ?? getTopicRoomNotificationThreadId(payload.targetId)
   const roomName = payload.roomName ?? payload.subtitle ?? ''
   const messageCount = Math.max(1, payload.messageCount ?? 1)
-  const senderName = payload.senderNickname ?? payload.title ?? '새 메시지'
+  const latestSender = payload.recentSenders[0]
+  const senderName =
+    latestSender?.nickname ?? payload.senderNickname ?? payload.title ?? '새 메시지'
   const displayTitle =
     messageCount > 1 ? `새 메시지 ${messageCount}건` : senderName
   const profileIcon =
-    payload.senderProfileImageUrl ?? getDefaultProfileImageUri() ?? undefined
+    payload.senderProfileImageUrl ??
+    latestSender?.profileImageUrl ??
+    getDefaultProfileImageUri() ??
+    undefined
 
-  const sender = {
-    name: displayTitle,
-    id: `${threadId}:sender`,
-    ...(profileIcon ? { icon: profileIcon } : {}),
+  if (topicRoomNotificationNative) {
+    try {
+      await topicRoomNotificationNative.display({
+        roomId: payload.targetId,
+        threadId,
+        roomName,
+        displayTitle,
+        message: payload.body ?? '',
+        messageCount,
+        senderName,
+        senderId: latestSender?.userId ?? `${threadId}:sender`,
+        senderProfileImageUrl: profileIcon,
+        recentSenders: payload.recentSenders.map((sender) => ({
+          id: sender.userId,
+          nickname: sender.nickname,
+          profileImageUrl: sender.profileImageUrl,
+        })),
+        data: payload.raw,
+      })
+      return
+    } catch (err) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('[push] native conversation notification failed', err)
+      }
+    }
   }
+
+  // Expo Go or a stale native build can lack the local Android module. Keep a
+  // BigText fallback so chat notifications still appear until the next build.
+  const notifeeModule = loadNotifee()
+  if (!notifeeModule) return
+  const channelId = await ensurePushNotificationChannel()
+  const notificationBody = roomName
+    ? `${roomName}\n${payload.body ?? ''}`
+    : payload.body ?? ''
 
   await notifeeModule.default.displayNotification({
     id: threadId,
     title: displayTitle,
-    body: roomName ? `${roomName}\n${payload.body ?? ''}` : payload.body ?? '',
+    body: notificationBody,
     data: payload.raw,
     android: {
       channelId,
@@ -347,20 +384,10 @@ export async function displayTopicRoomChatNotification(
       smallIcon: PUSH_ANDROID_SMALL_ICON,
       importance: notifeeModule.AndroidImportance.HIGH,
       groupId: threadId,
-      ...(profileIcon ? { largeIcon: profileIcon } : {}),
-      circularLargeIcon: true,
       style: {
-        type: notifeeModule.AndroidStyle.MESSAGING,
-        person: { name: 'STORIX', id: 'storix-current-user' },
-        messages: [
-          {
-            text: payload.body ?? '',
-            timestamp: Date.now(),
-            person: sender,
-          },
-        ],
-        title: roomName || displayTitle,
-        group: messageCount > 1,
+        type: notifeeModule.AndroidStyle.BIGTEXT,
+        title: displayTitle,
+        text: notificationBody,
       },
       ...(payload.unreadCount != null
         ? { badgeCount: payload.unreadCount }

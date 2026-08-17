@@ -105,27 +105,7 @@ if (isReleaseBundleTask && storixEnvValue('EXPO_PUBLIC_API_URL') != productionAp
     }
   }
 
-  const entryPointPatch = `
-tasks.named("generateReactNativeEntryPoint").configure {
-    doLast {
-        def entryPoint = file("$buildDir/generated/autolinking/src/main/java/com/facebook/react/ReactNativeApplicationEntryPoint.java")
-        if (entryPoint.exists()) {
-            def patched = entryPoint.text
-                .replace("kr.storix.app.BuildConfig", "kr.storix.android.BuildConfig")
-            if (patched != entryPoint.text) {
-                entryPoint.text = patched
-            }
-        }
-    }
-}
-`;
-
-  patched = content.includes('tasks.named("generateReactNativeEntryPoint").configure')
-    ? content
-    : content.replace(
-        /\}\s*\n\s*\/\/ Apply static values/,
-        `}\n${entryPointPatch}\n// Apply static values`,
-      );
+  patched = content;
 
   if (patched !== originalContent) {
     fs.writeFileSync(appBuildGradlePath, patched);

@@ -39,7 +39,10 @@ export const AppEventBannerSchema = z.object({
   bannerTitle: z.string(),
   imageUrl: z.string(),
   ctaText: z.string().nullable().optional(),
-  exposurePolicy: z.enum(['ALWAYS_DURING_PERIOD', 'ONCE_PER_DAY']),
+  exposurePolicy: z
+    .enum(['ALWAYS_DURING_PERIOD', 'ONCE_PER_DAY'])
+    .optional()
+    .default('ALWAYS_DURING_PERIOD'),
   displayStartAt: z.string(),
   displayEndAt: z.string(),
   status: z.string(),
