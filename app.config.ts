@@ -53,7 +53,7 @@ const naverUrlScheme = requireEnv("EXPO_PUBLIC_NAVER_URL_SCHEME");
 
 // Optional with sensible defaults — not validated.
 const iosBundleId = process.env.EXPO_IOS_BUNDLE_ID ?? "kr.storix.app";
-const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
+const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.android";
 
 // Firebase client config files. Both paths are optional at config evaluation
 // time so the JS bundle can build without them — but native builds (prebuild)
@@ -137,19 +137,29 @@ const withAndroidNotificationIcon: ConfigPlugin = (config) => {
   ]);
 
   return withAndroidManifest(config, (c) => {
+    c.modResults.manifest.$ = c.modResults.manifest.$ ?? {};
+    c.modResults.manifest.$["xmlns:tools"] =
+      c.modResults.manifest.$["xmlns:tools"] ??
+      "http://schemas.android.com/tools";
+
     const app = AndroidConfig.Manifest.getMainApplicationOrThrow(c.modResults);
     const metaData = app["meta-data"] ?? [];
     const upsertMetaData = (
       name: string,
       valueKey: "android:resource" | "android:value",
       value: string,
+      replaceValueKey?: "android:resource" | "android:value",
     ) => {
       const existing = metaData.find(
         (item) => item.$?.["android:name"] === name,
       );
 
       if (existing) {
-        existing.$[valueKey] = value;
+        const attrs = existing.$ as Record<string, string>;
+        attrs[valueKey] = value;
+        if (replaceValueKey) {
+          attrs["tools:replace"] = replaceValueKey;
+        }
         return;
       }
 
@@ -157,6 +167,7 @@ const withAndroidNotificationIcon: ConfigPlugin = (config) => {
         $: {
           "android:name": name,
           [valueKey]: value,
+          ...(replaceValueKey ? { "tools:replace": replaceValueKey } : {}),
         },
       });
     };
@@ -170,6 +181,7 @@ const withAndroidNotificationIcon: ConfigPlugin = (config) => {
       "com.google.firebase.messaging.default_notification_channel_id",
       "android:value",
       "@string/default_notification_channel_id",
+      "android:value",
     );
 
     app["meta-data"] = metaData;
