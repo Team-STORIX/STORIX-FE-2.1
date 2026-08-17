@@ -1,15 +1,25 @@
 import { apiClient } from '../../../lib/api/axios-instance'
 import {
   AppEventBannersResponseSchema,
+  AppEventDetailResponseSchema,
   AppEventPopupResponseSchema,
   AppEventTitleEventsResponseSchema,
   EmptyResultResponseSchema,
   type AppEventBanner,
+  type AppEventDetail,
   type AppEventPopup,
   type AppEventTitleEvent,
 } from './appEvent.schema'
 
 const BASE = '/api/v1/app-events'
+
+/** GET /api/v1/app-events/{appEventId} */
+export async function getAppEventDetail(
+  appEventId: number,
+): Promise<AppEventDetail> {
+  const res = await apiClient.get(`${BASE}/${appEventId}`)
+  return AppEventDetailResponseSchema.parse(res.data).result
+}
 
 /** GET /api/v1/app-events/title */
 export async function getAppEventTitleEvents(): Promise<AppEventTitleEvent[]> {

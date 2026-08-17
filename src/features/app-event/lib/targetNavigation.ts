@@ -2,7 +2,6 @@ export type WebViewRoute = {
   pathname: '/webview'
   params: {
     url: string
-    title?: string
   }
 }
 
@@ -45,7 +44,6 @@ export function getValidHttpUrl(value: unknown): string | null {
 
 export function getAppEventWebViewRoute(
   appEventId: unknown,
-  title?: string | null,
 ): WebViewRoute | null {
   if (
     APP_EVENT_WEB_BASE_URL == null ||
@@ -58,12 +56,10 @@ export function getAppEventWebViewRoute(
 
   const url = `${APP_EVENT_WEB_BASE_URL}/event/${appEventId}`
 
-  const normalizedTitle = title?.trim()
   return {
     pathname: '/webview',
     params: {
       url,
-      ...(normalizedTitle ? { title: normalizedTitle } : {}),
     },
   }
 }

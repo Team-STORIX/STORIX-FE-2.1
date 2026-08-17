@@ -49,7 +49,7 @@ function resolveTarget(
 
   if (targetType === 'APP_EVENT' || eventId != null) {
     const appEventId = eventId ?? targetId
-    return getAppEventWebViewRoute(appEventId, item.title)
+    return getAppEventWebViewRoute(appEventId)
   }
 
   if (targetType === 'EXTERNAL') {
