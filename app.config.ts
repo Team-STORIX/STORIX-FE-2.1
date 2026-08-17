@@ -10,7 +10,15 @@
 require("dotenv").config({ path: ".env.local", override: false });
 require("dotenv").config({ override: false });
 
-import { withEntitlementsPlist } from "@expo/config-plugins";
+import fs from "fs";
+import path from "path";
+import {
+  AndroidConfig,
+  type ConfigPlugin,
+  withAndroidManifest,
+  withDangerousMod,
+  withEntitlementsPlist,
+} from "@expo/config-plugins";
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 // ─── Build-time env var helpers ───────────────────────────────────────────────
@@ -45,7 +53,7 @@ const naverUrlScheme = requireEnv("EXPO_PUBLIC_NAVER_URL_SCHEME");
 
 // Optional with sensible defaults — not validated.
 const iosBundleId = process.env.EXPO_IOS_BUNDLE_ID ?? "kr.storix.app";
-const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.app";
+const androidPackage = process.env.EXPO_ANDROID_PACKAGE ?? "kr.storix.android";
 
 // Firebase client config files. Both paths are optional at config evaluation
 // time so the JS bundle can build without them — but native builds (prebuild)
@@ -60,6 +68,14 @@ const iosApsEnvironment =
   process.env.EXPO_IOS_APS_ENVIRONMENT === "production"
     ? "production"
     : "development";
+const androidNotificationIconSource = path.join(
+  __dirname,
+  "assets",
+  "notification",
+  "logo-statusbar.png",
+);
+const androidNotificationIconName = "ic_notification";
+const androidNotificationChannelId = "storix_default_high";
 
 // ─── iOS entitlement plugin ──────────────────────────────────────────────────
 // @invertase/react-native-apple-authentication ships no Expo config plugin.
@@ -75,6 +91,104 @@ const withIosEntitlements = (config: ExpoConfig): ExpoConfig =>
     return c;
   });
 
+const withAndroidNotificationIcon: ConfigPlugin = (config) => {
+  config = withDangerousMod(config, [
+    "android",
+    async (c) => {
+      const drawableDir = path.join(
+        c.modRequest.platformProjectRoot,
+        "app",
+        "src",
+        "main",
+        "res",
+        "drawable",
+      );
+      fs.mkdirSync(drawableDir, { recursive: true });
+      fs.copyFileSync(
+        androidNotificationIconSource,
+        path.join(drawableDir, `${androidNotificationIconName}.png`),
+      );
+
+      const stringsPath = path.join(
+        c.modRequest.platformProjectRoot,
+        "app",
+        "src",
+        "main",
+        "res",
+        "values",
+        "strings.xml",
+      );
+      if (fs.existsSync(stringsPath)) {
+        const stringName = "default_notification_channel_id";
+        const strings = fs.readFileSync(stringsPath, "utf8");
+        if (!strings.includes(`name="${stringName}"`)) {
+          fs.writeFileSync(
+            stringsPath,
+            strings.replace(
+              "</resources>",
+              `  <string name="${stringName}" translatable="false">${androidNotificationChannelId}</string>\n</resources>`,
+            ),
+          );
+        }
+      }
+
+      return c;
+    },
+  ]);
+
+  return withAndroidManifest(config, (c) => {
+    c.modResults.manifest.$ = c.modResults.manifest.$ ?? {};
+    c.modResults.manifest.$["xmlns:tools"] =
+      c.modResults.manifest.$["xmlns:tools"] ??
+      "http://schemas.android.com/tools";
+
+    const app = AndroidConfig.Manifest.getMainApplicationOrThrow(c.modResults);
+    const metaData = app["meta-data"] ?? [];
+    const upsertMetaData = (
+      name: string,
+      valueKey: "android:resource" | "android:value",
+      value: string,
+      replaceValueKey?: "android:resource" | "android:value",
+    ) => {
+      const existing = metaData.find(
+        (item) => item.$?.["android:name"] === name,
+      );
+
+      if (existing) {
+        const attrs = existing.$ as Record<string, string>;
+        attrs[valueKey] = value;
+        if (replaceValueKey) {
+          attrs["tools:replace"] = replaceValueKey;
+        }
+        return;
+      }
+
+      metaData.push({
+        $: {
+          "android:name": name,
+          [valueKey]: value,
+          ...(replaceValueKey ? { "tools:replace": replaceValueKey } : {}),
+        },
+      });
+    };
+
+    upsertMetaData(
+      "com.google.firebase.messaging.default_notification_icon",
+      "android:resource",
+      `@drawable/${androidNotificationIconName}`,
+    );
+    upsertMetaData(
+      "com.google.firebase.messaging.default_notification_channel_id",
+      "android:value",
+      "@string/default_notification_channel_id",
+      "android:value",
+    );
+
+    app["meta-data"] = metaData;
+    return c;
+  });
+};
+
 // ─── Exported config ─────────────────────────────────────────────────────────
 // app.json provides the base; this file extends ios/android and APPENDS to
 // plugins so app.json plugins (expo-router, expo-secure-store) are preserved.
@@ -82,7 +196,7 @@ const withIosEntitlements = (config: ExpoConfig): ExpoConfig =>
 // be present in the generated native project.
 
 export default ({ config }: ConfigContext): ExpoConfig =>
-  withIosEntitlements({
+  withAndroidNotificationIcon(withIosEntitlements({
     ...config,
     // name and slug are required on ExpoConfig but typed as optional on ConfigContext.
     // The values below come from app.json; the fallbacks are only for TypeScript's sake.
@@ -137,6 +251,14 @@ export default ({ config }: ConfigContext): ExpoConfig =>
           "android.permission.POST_NOTIFICATIONS",
         ]),
       ),
+    },
+
+    notification: {
+      ...config.notification,
+      icon: "./assets/notification/logo-statusbar.png",
+      color: "#FF4093",
+      androidMode: "default",
+      androidCollapsedTitle: "STORIX",
     },
 
     plugins: [
@@ -201,4 +323,4 @@ export default ({ config }: ConfigContext): ExpoConfig =>
         },
       ],
     ],
-  });
+  }));

@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSegments } from 'expo-router'
-import { useMe } from '../hooks/useMe'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  appEventKeys,
+  type AppEventTitleEvent,
+  useAckAppEventTitleEvent,
+  useAppEventTitleEvents,
+} from '../../app-event'
+import { useAuthStore } from '../../../store/auth.store'
+import { useProfileStore } from '../store/profile.store'
 import { TitleAchievementModal } from './TitleAchievementModal'
-
-const LAST_TITLE_KEY = '@storix/lastTitle'
-const PENDING_TITLE_MODAL_KEY = '@storix/pendingTitleModal'
 
 type TitleAchievementPayload = {
   title: string
@@ -13,9 +17,65 @@ type TitleAchievementPayload = {
   topGenre: string | null
 }
 
+type PendingTitleAchievement = {
+  eventId: number
+  payload: TitleAchievementPayload
+  ackRequired: boolean
+}
+
+const TITLE_PAYLOAD_KEYS = ['title', 'titleName', 'newTitle', 'name']
+const NICKNAME_PAYLOAD_KEYS = [
+  'nickname',
+  'nickName',
+  'nick_name',
+  'userName',
+  'userNickname',
+  'userNickName',
+  'readerNickname',
+  'readerNickName',
+  'memberNickname',
+  'memberNickName',
+  'profileNickname',
+  'profileNickName',
+]
+const TOP_GENRE_PAYLOAD_KEYS = ['topGenre', 'genre', 'genreKey']
+
 const isTitleAchievementModalRoute = (segments: readonly string[]): boolean => {
   const [group, screen] = segments
   return group === '(tabs)' && (screen == null || screen === 'index' || screen === 'profile')
+}
+
+const getPayloadString = (
+  payload: Record<string, unknown>,
+  keys: readonly string[],
+): string | null => {
+  for (const key of keys) {
+    const value = payload[key]
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim()
+    }
+  }
+  return null
+}
+
+const toPendingTitleAchievement = (
+  event: AppEventTitleEvent,
+  fallbackNickname: string,
+): PendingTitleAchievement | null => {
+  const title = getPayloadString(event.payload, TITLE_PAYLOAD_KEYS)
+  if (!title) return null
+
+  return {
+    eventId: event.id,
+    ackRequired: event.ackRequired,
+    payload: {
+      title,
+      nickname:
+        getPayloadString(event.payload, NICKNAME_PAYLOAD_KEYS) ??
+        fallbackNickname,
+      topGenre: getPayloadString(event.payload, TOP_GENRE_PAYLOAD_KEYS),
+    },
+  }
 }
 
 type TitleAchievementDetectorProps = {
@@ -27,95 +87,69 @@ export function TitleAchievementDetector({
   blocked = false,
   onVisibilityChange,
 }: TitleAchievementDetectorProps) {
-  const { data: me } = useMe()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const fallbackNickname = useProfileStore((s) => s.me?.nickName?.trim() ?? '')
   const segments = useSegments()
-  const previousTitleRef = useRef<string | null | undefined>(undefined)
-  const [achievementModal, setAchievementModal] = useState<TitleAchievementPayload | null>(null)
+  const queryClient = useQueryClient()
+  const titleEventsQuery = useAppEventTitleEvents(isAuthenticated)
+  const ackTitleEventMutation = useAckAppEventTitleEvent()
+  const [achievementModal, setAchievementModal] =
+    useState<PendingTitleAchievement | null>(null)
+  const [handledEventIds, setHandledEventIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  )
   const canShowAchievementModal =
     !blocked && isTitleAchievementModalRoute(segments as readonly string[])
+
+  const nextAchievement = useMemo(
+    () =>
+      (titleEventsQuery.data ?? [])
+        .filter((event) => !handledEventIds.has(event.id))
+        .map((event) => toPendingTitleAchievement(event, fallbackNickname))
+        .find((event): event is PendingTitleAchievement => event != null) ?? null,
+    [fallbackNickname, handledEventIds, titleEventsQuery.data],
+  )
 
   useEffect(() => {
     onVisibilityChange?.(achievementModal != null)
   }, [achievementModal, onVisibilityChange])
 
-  const showAchievementModal = useCallback(async (payload: TitleAchievementPayload) => {
-    await AsyncStorage.setItem(PENDING_TITLE_MODAL_KEY, JSON.stringify(payload))
-    if (canShowAchievementModal) {
-      setAchievementModal(payload)
-    }
-  }, [canShowAchievementModal])
+  useEffect(() => {
+    if (!canShowAchievementModal || achievementModal || !nextAchievement) return
+    setAchievementModal(nextAchievement)
+  }, [achievementModal, canShowAchievementModal, nextAchievement])
 
   const handleClose = useCallback(async () => {
+    const closingEvent = achievementModal
+    if (!closingEvent) return
+
+    setHandledEventIds((prev) => {
+      const next = new Set(prev)
+      next.add(closingEvent.eventId)
+      return next
+    })
+    queryClient.setQueryData<AppEventTitleEvent[]>(
+      appEventKeys.titleEvents,
+      (events) => events?.filter((event) => event.id !== closingEvent.eventId) ?? events,
+    )
     setAchievementModal(null)
+
+    if (!closingEvent.ackRequired) return
+
     try {
-      await AsyncStorage.removeItem(PENDING_TITLE_MODAL_KEY)
+      await ackTitleEventMutation.mutateAsync(closingEvent.eventId)
     } catch (error) {
-      console.error('Failed to clear pending title modal:', error)
+      console.error('Failed to ack title achievement event:', error)
     }
-  }, [])
-
-  useEffect(() => {
-    if (!me) return
-
-    const currentTitle = me.title?.trim() || null
-    const previousTitle = previousTitleRef.current
-    previousTitleRef.current = currentTitle
-
-    const checkTitleChange = async () => {
-      try {
-        const pendingModal = await AsyncStorage.getItem(PENDING_TITLE_MODAL_KEY)
-        if (pendingModal && canShowAchievementModal && achievementModal == null) {
-          try {
-            const parsed = JSON.parse(pendingModal) as TitleAchievementPayload
-            if (parsed.title) {
-              await AsyncStorage.setItem(LAST_TITLE_KEY, parsed.title)
-            }
-            setAchievementModal(parsed)
-            return
-          } catch {
-            await AsyncStorage.removeItem(PENDING_TITLE_MODAL_KEY)
-          }
-        }
-
-        const lastTitle = await AsyncStorage.getItem(LAST_TITLE_KEY)
-        const changedInSession =
-          previousTitle !== undefined &&
-          previousTitle !== currentTitle &&
-          currentTitle != null
-        const changedFromStored =
-          lastTitle != null &&
-          lastTitle !== currentTitle &&
-          currentTitle != null
-
-        if (changedInSession || changedFromStored) {
-          await showAchievementModal({
-            title: currentTitle,
-            nickname: me.nickName,
-            topGenre: me.topGenre || null,
-          })
-        }
-
-        // 현재 칭호 저장
-        if (currentTitle) {
-          await AsyncStorage.setItem(LAST_TITLE_KEY, currentTitle)
-        } else {
-          await AsyncStorage.removeItem(LAST_TITLE_KEY)
-        }
-      } catch (error) {
-        console.error('Failed to check title change:', error)
-      }
-    }
-
-    checkTitleChange()
-  }, [achievementModal, canShowAchievementModal, me, showAchievementModal])
+  }, [achievementModal, ackTitleEventMutation, queryClient])
 
   return (
     <TitleAchievementModal
       visible={achievementModal != null}
       onClose={handleClose}
-      title={achievementModal?.title ?? ''}
-      nickname={achievementModal?.nickname ?? ''}
-      topGenre={achievementModal?.topGenre ?? null}
+      title={achievementModal?.payload.title ?? ''}
+      nickname={achievementModal?.payload.nickname ?? ''}
+      topGenre={achievementModal?.payload.topGenre ?? null}
     />
   )
 }

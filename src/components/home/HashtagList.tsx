@@ -37,7 +37,7 @@ export function HashtagList({ items, onSelect }: HashtagListProps) {
       <View style={styles.row}>
         {resolved.map((item, index) => (
           <HashtagChip
-            key={item}
+            key={`${item}-${index}`}
             label={item}
             onPress={
               onSelect

@@ -107,6 +107,10 @@ function waitForStartupHydration(): Promise<void> {
 }
 
 async function checkStartupAppVersion(): Promise<AppVersionCheckResult | null> {
+  if (__DEV__) {
+    return null
+  }
+
   const platform = getCurrentAppVersionPlatform()
   const version = getCurrentAppVersion()
 
