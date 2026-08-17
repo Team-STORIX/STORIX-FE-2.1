@@ -3,34 +3,34 @@ import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Constants from 'expo-constants'
 import { C, Gray } from '../../../theme'
+import { getCurrentAppVersion, useCurrentAppVersionCheck } from '../../app-version'
 import { useLogoutAction, useSocialProvider } from '../hooks'
 import { SettingsSection } from './SettingsSection'
 
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
-const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0'
-const VERSION_DATE = '26.05.07'
-const VERSION_LABEL = VERSION_DATE ? `버전 ${APP_VERSION} (${VERSION_DATE})` : `버전 ${APP_VERSION}`
-// 최신 버전 배포 시 이 값을 업데이트
-const LATEST_VERSION = APP_VERSION
+const APP_VERSION = getCurrentAppVersion()
 
 export function ProfileSettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { isPending: isLoggingOut, logout } = useLogoutAction()
   const socialProviderName = useSocialProvider()
+  const appVersionQuery = useCurrentAppVersionCheck()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showVersionModal, setShowVersionModal] = useState(false)
   const [isLatestVersion, setIsLatestVersion] = useState(true)
 
+  const releaseDate = appVersionQuery.data?.releaseDate?.trim()
+  const versionLabel = releaseDate ? `버전 ${APP_VERSION} (${releaseDate})` : `버전 ${APP_VERSION}`
 
   const confirmLogout = () => setShowLogoutModal(true)
 
   const handleVersionPress = () => {
-    setIsLatestVersion(APP_VERSION === LATEST_VERSION)
+    const status = appVersionQuery.data?.status
+    setIsLatestVersion(status == null || status === 'LATEST')
     setShowVersionModal(true)
   }
 
@@ -72,7 +72,7 @@ export function ProfileSettingsScreen() {
             {
               label: '버전 관리',
               hasArrow: true,
-              rightLabel: VERSION_LABEL,
+              rightLabel: versionLabel,
               rightLabelVariant: 'version',
               onPress: handleVersionPress,
             },
