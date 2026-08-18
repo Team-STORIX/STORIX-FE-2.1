@@ -296,7 +296,7 @@ export function getNotificationRoute(
 
     case 'APP_EVENT': {
       return (
-        getAppEventWebViewRoute(payload.targetId, payload.title) ??
+        getAppEventWebViewRoute(payload.targetId) ??
         notificationFallback()
       )
     }

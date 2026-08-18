@@ -1,6 +1,7 @@
 export {
   useAckAppEventTitleEvent,
   useAppEventBanners,
+  useAppEventDetail,
   useAppEventPopup,
   useAppEventTitleEvents,
   useDismissAppEventPopup,

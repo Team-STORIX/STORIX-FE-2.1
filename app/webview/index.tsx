@@ -21,6 +21,7 @@ import {
   isAppEventWebOrigin,
   isTrustedAppEventUrl,
 } from '../../src/features/app-event/lib/targetNavigation'
+import { useAppEventDetail } from '../../src/features/app-event'
 import { refreshAuthTokens } from '../../src/lib/auth/refresh-token'
 import { useAuthStore } from '../../src/store/auth.store'
 import { C, Magenta, Radius, Typography } from '../../src/theme'
@@ -111,17 +112,34 @@ function getSingleParam(value: string | string[] | undefined): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function getAppEventIdFromUrl(value: string | null): number | null {
+  if (!value) return null
+
+  try {
+    const match = new URL(value).pathname.match(/^\/event\/(\d+)\/?$/)
+    if (!match) return null
+
+    const appEventId = Number(match[1])
+    return Number.isSafeInteger(appEventId) && appEventId > 0
+      ? appEventId
+      : null
+  } catch {
+    return null
+  }
+}
+
 export default function SharedWebViewScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const accessToken = useAuthStore((state) => state.accessToken)
   const params = useLocalSearchParams<{
     url?: string | string[]
-    title?: string | string[]
   }>()
   const candidateUrl = getValidHttpUrl(getSingleParam(params.url))
   const url = isTrustedAppEventUrl(candidateUrl) ? candidateUrl : null
-  const title = getSingleParam(params.title)?.trim() || '이벤트'
+  const appEventId = getAppEventIdFromUrl(url)
+  const { data: appEvent } = useAppEventDetail(appEventId)
+  const title = appEvent?.name.trim() || '이벤트'
   const webViewSource = useMemo(() => (url ? { uri: url } : null), [url])
   const authInjectionScript = useMemo(
     () => createAuthInjectionScript(accessToken),

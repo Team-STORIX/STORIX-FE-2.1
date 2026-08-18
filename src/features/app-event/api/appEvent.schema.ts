@@ -50,6 +50,17 @@ export const AppEventBannerSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const AppEventDetailSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string(),
+  eventType: z.string(),
+  pageKey: z.string().nullable(),
+  startAt: z.string(),
+  endAt: z.string(),
+  status: z.enum(['SCHEDULED', 'ACTIVE', 'ENDED', 'CANCELED']),
+})
+
 // CustomResponse<Void> omits `result` entirely because the backend uses
 // @JsonInclude(NON_NULL), so empty-success responses must accept a missing key.
 export const EmptyResultSchema = z.unknown().nullable().optional()
@@ -66,8 +77,13 @@ export const AppEventBannersResponseSchema = ApiEnvelopeSchema(
   z.array(AppEventBannerSchema),
 )
 
+export const AppEventDetailResponseSchema = ApiEnvelopeSchema(
+  AppEventDetailSchema,
+)
+
 export const EmptyResultResponseSchema = ApiEnvelopeSchema(EmptyResultSchema)
 
 export type AppEventTitleEvent = z.infer<typeof AppEventTitleEventSchema>
 export type AppEventPopup = z.infer<typeof AppEventPopupSchema>
 export type AppEventBanner = z.infer<typeof AppEventBannerSchema>
+export type AppEventDetail = z.infer<typeof AppEventDetailSchema>

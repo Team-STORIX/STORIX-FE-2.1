@@ -4,10 +4,23 @@ import {
   appEventKeys,
   dismissAppEventPopup,
   getAppEventBanners,
+  getAppEventDetail,
   getAppEventPopup,
   getAppEventTitleEvents,
   neverShowAppEventPopup,
 } from '../api'
+
+/** GET /api/v1/app-events/{appEventId} */
+export function useAppEventDetail(
+  appEventId: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: appEventKeys.detail(appEventId ?? 0),
+    enabled: enabled && appEventId != null,
+    queryFn: () => getAppEventDetail(appEventId as number),
+  })
+}
 
 /** GET /api/v1/app-events/title */
 export function useAppEventTitleEvents(enabled = true) {

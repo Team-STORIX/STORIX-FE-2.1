@@ -521,10 +521,7 @@ function AppEventPopupBootstrap({
       onClose={settlePopup}
       onAction={() => {
         settlePopup()
-        const webViewRoute = getAppEventWebViewRoute(
-          popup.targetId,
-          popup.popupTitle,
-        )
+        const webViewRoute = getAppEventWebViewRoute(popup.targetId)
         if (webViewRoute) {
           router.push(webViewRoute as never)
         }
