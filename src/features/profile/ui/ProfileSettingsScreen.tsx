@@ -3,6 +3,7 @@ import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Constants from 'expo-constants'
 import { C, Gray } from '../../../theme'
 import { getCurrentAppVersion, useCurrentAppVersionCheck } from '../../app-version'
 import { useLogoutAction, useSocialProvider } from '../hooks'
@@ -12,6 +13,10 @@ import { SettingsSection } from './SettingsSection'
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
 const APP_VERSION = getCurrentAppVersion()
+const VERSION_DATE =
+  typeof Constants.expoConfig?.extra?.versionDate === 'string'
+    ? Constants.expoConfig.extra.versionDate.trim()
+    : ''
 
 export function ProfileSettingsScreen() {
   const router = useRouter()
@@ -23,8 +28,7 @@ export function ProfileSettingsScreen() {
   const [showVersionModal, setShowVersionModal] = useState(false)
   const [isLatestVersion, setIsLatestVersion] = useState(true)
 
-  const releaseDate = appVersionQuery.data?.releaseDate?.trim()
-  const versionLabel = releaseDate ? `버전 ${APP_VERSION} (${releaseDate})` : `버전 ${APP_VERSION}`
+  const versionLabel = VERSION_DATE ? `버전 ${APP_VERSION} (${VERSION_DATE})` : `버전 ${APP_VERSION}`
 
   const confirmLogout = () => setShowLogoutModal(true)
 
