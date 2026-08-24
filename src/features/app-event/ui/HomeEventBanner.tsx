@@ -3,7 +3,7 @@ import { FlatList, Pressable, StyleSheet, useWindowDimensions, View } from 'reac
 import type { AppEventBanner } from '../api'
 
 const HOME_HORIZONTAL_PADDING = 16
-const BANNER_HEIGHT = 84
+const BANNER_ASPECT_RATIO = 360 / 84
 
 type HomeEventBannerProps = {
   banners?: AppEventBanner[]
@@ -16,6 +16,7 @@ export function HomeEventBanner({
 }: HomeEventBannerProps) {
   const { width } = useWindowDimensions()
   const bannerWidth = Math.max(0, width - HOME_HORIZONTAL_PADDING * 2)
+  const bannerHeight = bannerWidth / BANNER_ASPECT_RATIO
 
   if (!banners || banners.length === 0) return null
 
@@ -32,14 +33,14 @@ export function HomeEventBanner({
             onPress={() => onPressBanner(item, index)}
             style={({ pressed }) => [
               styles.banner,
-              { width: bannerWidth },
+              { width: bannerWidth, height: bannerHeight },
               pressed && styles.pressed,
             ]}
           >
             <Image
               source={{ uri: item.imageUrl }}
               style={styles.image}
-              contentFit="cover"
+              contentFit="contain"
               accessible={false}
             />
           </Pressable>
@@ -62,15 +63,9 @@ export function HomeEventBanner({
 
 const styles = StyleSheet.create({
   container: {
-    height: BANNER_HEIGHT,
     marginTop: 8,
-    overflow: 'hidden',
-    borderRadius: 12,
   },
   banner: {
-    height: BANNER_HEIGHT,
-    overflow: 'hidden',
-    borderRadius: 12,
   },
   image: {
     width: '100%',

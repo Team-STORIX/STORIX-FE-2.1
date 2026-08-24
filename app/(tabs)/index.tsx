@@ -165,6 +165,8 @@ export default function HomeScreen() {
 
   const openEventBanner = useCallback(
     (banner: AppEventBanner) => {
+      if (banner.contentTargetType !== "APP_EVENT") return;
+
       const route = getAppEventWebViewRoute(banner.targetId);
       if (route) router.push(route as never);
     },
