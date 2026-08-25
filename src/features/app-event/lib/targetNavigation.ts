@@ -54,7 +54,11 @@ export function getAppEventWebViewRoute(
     return null
   }
 
-  const url = `${APP_EVENT_WEB_BASE_URL}/event/${appEventId}`
+  // 개발 서버 사용 시 프로덕션 랜딩 + ?api=dev 쿼리 추가
+  const isDev = APP_EVENT_WEB_BASE_URL.includes('dev.storix.kr')
+  const baseUrl = isDev ? 'https://storix.kr' : APP_EVENT_WEB_BASE_URL
+  const apiQuery = isDev ? '?api=dev' : ''
+  const url = `${baseUrl}/event/${appEventId}${apiQuery}`
 
   return {
     pathname: '/webview',
