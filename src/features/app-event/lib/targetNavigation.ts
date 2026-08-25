@@ -8,6 +8,7 @@ export type WebViewRoute = {
 const DEFAULT_LANDING_BASE_URL = 'https://storix.kr'
 const configuredLandingBaseUrl =
   process.env.EXPO_PUBLIC_LANDING_BASE_URL?.trim() || DEFAULT_LANDING_BASE_URL
+const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || ''
 
 export const APP_EVENT_WEB_BASE_URL = configuredLandingBaseUrl?.replace(
   /\/+$/,
@@ -78,16 +79,15 @@ export function getAppEventWebViewRoute(
     return null
   }
 
-  // 개발 서버 사용 시 프로덕션 랜딩 + ?api=dev 쿼리 추가
-  const isDev = APP_EVENT_WEB_BASE_URL.includes('dev.storix.kr')
-  const baseUrl = isDev ? 'https://storix.kr' : APP_EVENT_WEB_BASE_URL
-  const apiQuery = isDev ? '?api=dev' : ''
-  const url = `${baseUrl}/event/${appEventId}${apiQuery}`
+  const url = new URL(`${APP_EVENT_WEB_BASE_URL}/event/${appEventId}`)
+  if (configuredApiBaseUrl.includes('dev.storix.kr')) {
+    url.searchParams.set('api', 'dev')
+  }
 
   return {
     pathname: '/webview',
     params: {
-      url,
+      url: url.toString(),
     },
   }
 }
