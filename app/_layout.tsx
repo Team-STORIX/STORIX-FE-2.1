@@ -204,10 +204,14 @@ export default function RootLayout() {
   const [appVersionResult, setAppVersionResult] =
     useState<AppVersionCheckResult | null>(null)
   const [appVersionDismissed, setAppVersionDismissed] = useState(false)
+  const fontsReady = fontsLoaded || Boolean(fontError)
 
-  // Surface font errors immediately so Expo Router's ErrorBoundary can catch them.
+  // Font loading must not block app launch. Some Android release builds can
+  // reject a bundled font asset; fall back to system fonts so QA can continue.
   useEffect(() => {
-    if (fontError) throw fontError
+    if (fontError) {
+      console.warn('[startup] font loading failed; continuing with system fonts', fontError)
+    }
   }, [fontError])
 
   // Keep the branded splash up while startup work runs in order:
@@ -236,7 +240,7 @@ export default function RootLayout() {
   // Hide the native splash once fonts are ready, with a short delay so
   // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsReady) {
       let mounted = true
       const t = setTimeout(() => {
         void SplashScreen.hideAsync()
@@ -250,9 +254,9 @@ export default function RootLayout() {
         clearTimeout(t)
       }
     }
-  }, [fontsLoaded])
+  }, [fontsReady])
 
-  if (!fontsLoaded || !startupReady) {
+  if (!fontsReady || !startupReady) {
     return <BrandedSplash />
   }
 
