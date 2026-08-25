@@ -18,13 +18,16 @@
       "buildNumber": "40",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ko",
-        "CFBundleLocalizations": ["ko"]
+        "CFBundleLocalizations": [
+          "ko"
+        ]
       }
     },
     "android": {
-      "versionCode": 18,
+      "versionCode": 19,
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",

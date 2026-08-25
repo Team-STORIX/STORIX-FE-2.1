@@ -4,6 +4,7 @@ const path = require("path");
 
 const rootDir = path.join(__dirname, "..");
 const androidDir = path.join(rootDir, "android");
+const appJsonPath = path.join(rootDir, "app.json");
 const envLocalPath = path.join(rootDir, ".env.local");
 const gradleCommand = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
 const productionApiUrl = "https://api.storix.kr";
@@ -29,6 +30,67 @@ const env = {
   EAS_BUILD_PROFILE: "production",
   STORIX_REQUIRE_PRODUCTION_API: "true",
   EXPO_PUBLIC_API_URL: productionApiUrl,
+};
+
+const formatBytes = (bytes) => {
+  if (!Number.isFinite(bytes)) return "unknown";
+  const mb = bytes / 1024 / 1024;
+  return `${mb.toFixed(1)} MB`;
+};
+
+const readAppJson = () => JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
+
+const incrementAndroidVersionCode = () => {
+  const appJson = readAppJson();
+  const currentVersionCode = Number(appJson.expo?.android?.versionCode);
+
+  if (!Number.isInteger(currentVersionCode) || currentVersionCode < 1) {
+    throw new Error(
+      `[build:android:aab] Invalid expo.android.versionCode: ${appJson.expo?.android?.versionCode}`,
+    );
+  }
+
+  const nextVersionCode = currentVersionCode + 1;
+  appJson.expo.android.versionCode = nextVersionCode;
+  fs.writeFileSync(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`);
+
+  return {
+    appVersion: appJson.expo?.version ?? "unknown",
+    previousVersionCode: currentVersionCode,
+    nextVersionCode,
+  };
+};
+
+const printBuildSummary = (versionInfo) => {
+  console.log("\n========================================");
+  console.log("STORIX Android Production AAB Build");
+  console.log("========================================");
+  console.log(`API server       : ${env.EXPO_PUBLIC_API_URL}`);
+  console.log(`NODE_ENV         : ${env.NODE_ENV}`);
+  console.log(`EAS profile      : ${env.EAS_BUILD_PROFILE}`);
+  console.log(`App version      : ${versionInfo.appVersion}`);
+  console.log(
+    `Android code     : ${versionInfo.previousVersionCode} -> ${versionInfo.nextVersionCode}`,
+  );
+  console.log(`AAB output       : ${productionAabPath}`);
+  console.log("========================================\n");
+};
+
+const printAabResult = () => {
+  if (!fs.existsSync(productionAabPath)) {
+    console.warn("\nAAB output was not found:");
+    console.warn(productionAabPath);
+    return;
+  }
+
+  const stats = fs.statSync(productionAabPath);
+  console.log("\n========================================");
+  console.log("Production AAB created");
+  console.log("========================================");
+  console.log(`API server : ${env.EXPO_PUBLIC_API_URL}`);
+  console.log(`File       : ${productionAabPath}`);
+  console.log(`Size       : ${formatBytes(stats.size)}`);
+  console.log("========================================\n");
 };
 
 const run = (command, args, options = {}) =>
@@ -86,6 +148,8 @@ const withTemporaryProductionEnvLocal = (callback) => {
 };
 
 withTemporaryProductionEnvLocal(() => {
+  const versionInfo = incrementAndroidVersionCode();
+  printBuildSummary(versionInfo);
   runOrExit("npm", ["run", "prebuild:android"]);
   removeStaleReleaseBundleArtifacts();
   runOrExit(gradleCommand, [":app:createBundleReleaseJsAndAssets", "--rerun-tasks"], { cwd: androidDir });
@@ -98,4 +162,6 @@ withTemporaryProductionEnvLocal(() => {
     console.error(productionAabPath);
     process.exit(verification.status ?? 1);
   }
+
+  printAabResult();
 });
