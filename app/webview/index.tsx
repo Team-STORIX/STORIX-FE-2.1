@@ -758,6 +758,10 @@ export default function SharedWebViewScreen() {
             // eslint-disable-next-line no-console
             console.warn('[app-event-webview] event error', message.payload)
           }
+          Alert.alert(
+            '이벤트 오류',
+            message.payload.message || '이벤트 정보를 불러오지 못했어요.',
+          )
           return
       }
     },
