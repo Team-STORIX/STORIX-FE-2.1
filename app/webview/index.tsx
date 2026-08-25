@@ -419,7 +419,18 @@ export default function SharedWebViewScreen() {
   }>()
   const candidateUrl = getValidHttpUrl(getSingleParam(params.url))
   const url = isTrustedAppEventUrl(candidateUrl) ? candidateUrl : null
-  const webViewSource = useMemo(() => (url ? { uri: url } : null), [url])
+  const webViewSource = useMemo(
+    () =>
+      url
+        ? {
+            uri: url,
+            headers: {
+              'x-vercel-skip-toolbar': '1',
+            },
+          }
+        : null,
+    [url],
+  )
   const authInjectionScript = useMemo(
     () => createAuthInjectionScript(accessToken),
     [accessToken],
@@ -704,6 +715,9 @@ export default function SharedWebViewScreen() {
           closeScreen()
           return
         case 'OPEN_EXTERNAL_URL':
+          if (isAppEventWebOrigin(message.payload.url)) {
+            return
+          }
           await Linking.openURL(message.payload.url).catch(() => undefined)
           return
         case 'OPEN_WORKS_DETAIL':
@@ -761,13 +775,8 @@ export default function SharedWebViewScreen() {
 
   const shouldStartLoad = useCallback(
     (request: { url: string }) => {
-      if (request.url === 'about:blank' || isAppEventWebOrigin(request.url)) {
+      if (request.url === 'about:blank' || getValidHttpUrl(request.url)) {
         return true
-      }
-
-      const externalUrl = getValidHttpUrl(request.url)
-      if (externalUrl) {
-        void Linking.openURL(externalUrl).catch(() => undefined)
       }
       return false
     },
@@ -789,7 +798,8 @@ export default function SharedWebViewScreen() {
             ref={webViewRef}
             source={webViewSource}
             style={styles.webView}
-            androidLayerType="software"
+            androidLayerType="hardware"
+            setSupportMultipleWindows={false}
             bounces={false}
             overScrollMode="never"
             injectedJavaScriptBeforeContentLoaded={authInjectionScript}
