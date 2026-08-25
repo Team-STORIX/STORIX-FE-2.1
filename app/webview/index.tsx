@@ -59,7 +59,6 @@ type StorixWebViewMessage =
       }
     }
   | { type: 'CLOSE_WEBVIEW' }
-  | { type: 'GO_HOME' }
   | { type: 'OPEN_EXTERNAL_URL'; payload: { url: string } }
   | { type: 'OPEN_WORKS_DETAIL'; payload: { worksId: number } }
   | { type: 'SAVE_STORY_CARD_IMAGE'; payload: StoryCardImagePayload }
@@ -104,7 +103,6 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
     switch (message.type) {
       case 'WEBVIEW_READY':
       case 'CLOSE_WEBVIEW':
-      case 'GO_HOME':
       case 'LOGIN_REQUIRED':
         return { type: message.type }
       case 'ATTENDANCE_COMPLETED': {
@@ -715,9 +713,6 @@ export default function SharedWebViewScreen() {
           return
         case 'CLOSE_WEBVIEW':
           closeScreen()
-          return
-        case 'GO_HOME':
-          router.replace('/(tabs)' as never)
           return
         case 'OPEN_EXTERNAL_URL':
           if (isAppEventWebOrigin(message.payload.url)) {
