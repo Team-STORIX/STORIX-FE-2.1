@@ -790,6 +790,7 @@ export default function SharedWebViewScreen() {
             source={webViewSource}
             style={styles.webView}
             androidLayerType="software"
+            setSupportMultipleWindows={false}
             bounces={false}
             overScrollMode="never"
             injectedJavaScriptBeforeContentLoaded={authInjectionScript}
