@@ -2,7 +2,7 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 
 const developmentApiUrl = "https://dev.storix.kr";
-const defaultLandingBaseUrl = "https://storix.kr";
+const defaultLandingBaseUrl = "https://dev.storix.kr";
 const landingBaseUrl =
   (process.env.EXPO_PUBLIC_TEST_LANDING_BASE_URL ||
     defaultLandingBaseUrl).replace(/\/+$/, "");
