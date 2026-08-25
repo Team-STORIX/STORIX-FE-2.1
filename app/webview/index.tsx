@@ -419,7 +419,18 @@ export default function SharedWebViewScreen() {
   }>()
   const candidateUrl = getValidHttpUrl(getSingleParam(params.url))
   const url = isTrustedAppEventUrl(candidateUrl) ? candidateUrl : null
-  const webViewSource = useMemo(() => (url ? { uri: url } : null), [url])
+  const webViewSource = useMemo(
+    () =>
+      url
+        ? {
+            uri: url,
+            headers: {
+              'x-vercel-skip-toolbar': '1',
+            },
+          }
+        : null,
+    [url],
+  )
   const authInjectionScript = useMemo(
     () => createAuthInjectionScript(accessToken),
     [accessToken],
@@ -787,7 +798,7 @@ export default function SharedWebViewScreen() {
             ref={webViewRef}
             source={webViewSource}
             style={styles.webView}
-            androidLayerType="software"
+            androidLayerType="hardware"
             setSupportMultipleWindows={false}
             bounces={false}
             overScrollMode="never"
