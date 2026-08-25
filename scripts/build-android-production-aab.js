@@ -8,6 +8,7 @@ const appJsonPath = path.join(rootDir, "app.json");
 const envLocalPath = path.join(rootDir, ".env.local");
 const gradleCommand = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
 const productionApiUrl = "https://api.storix.kr";
+const productionLandingBaseUrl = "https://storix.kr";
 const productionAabPath = path.join(
   androidDir,
   "app",
@@ -30,6 +31,7 @@ const env = {
   EAS_BUILD_PROFILE: "production",
   STORIX_REQUIRE_PRODUCTION_API: "true",
   EXPO_PUBLIC_API_URL: productionApiUrl,
+  EXPO_PUBLIC_LANDING_BASE_URL: productionLandingBaseUrl,
 };
 
 const formatBytes = (bytes) => {
@@ -66,6 +68,7 @@ const printBuildSummary = (versionInfo) => {
   console.log("STORIX Android Production AAB Build");
   console.log("========================================");
   console.log(`API server       : ${env.EXPO_PUBLIC_API_URL}`);
+  console.log(`Landing          : ${env.EXPO_PUBLIC_LANDING_BASE_URL}`);
   console.log(`NODE_ENV         : ${env.NODE_ENV}`);
   console.log(`EAS profile      : ${env.EAS_BUILD_PROFILE}`);
   console.log(`App version      : ${versionInfo.appVersion}`);
@@ -88,6 +91,7 @@ const printAabResult = () => {
   console.log("Production AAB created");
   console.log("========================================");
   console.log(`API server : ${env.EXPO_PUBLIC_API_URL}`);
+  console.log(`Landing    : ${env.EXPO_PUBLIC_LANDING_BASE_URL}`);
   console.log(`File       : ${productionAabPath}`);
   console.log(`Size       : ${formatBytes(stats.size)}`);
   console.log("========================================\n");
@@ -125,12 +129,19 @@ const withTemporaryProductionEnvLocal = (callback) => {
     ? fs.readFileSync(envLocalPath, "utf8")
     : null;
   const currentEnvLocal = originalEnvLocal ?? "";
-  const nextEnvLocal = /^EXPO_PUBLIC_API_URL=/m.test(currentEnvLocal)
+  let nextEnvLocal = /^EXPO_PUBLIC_API_URL=/m.test(currentEnvLocal)
     ? currentEnvLocal.replace(
         /^EXPO_PUBLIC_API_URL=.*$/m,
         `EXPO_PUBLIC_API_URL=${productionApiUrl}`,
       )
     : `${currentEnvLocal}${currentEnvLocal.endsWith("\n") || currentEnvLocal.length === 0 ? "" : "\n"}EXPO_PUBLIC_API_URL=${productionApiUrl}\n`;
+
+  nextEnvLocal = /^EXPO_PUBLIC_LANDING_BASE_URL=/m.test(nextEnvLocal)
+    ? nextEnvLocal.replace(
+        /^EXPO_PUBLIC_LANDING_BASE_URL=.*$/m,
+        `EXPO_PUBLIC_LANDING_BASE_URL=${productionLandingBaseUrl}`,
+      )
+    : `${nextEnvLocal}${nextEnvLocal.endsWith("\n") || nextEnvLocal.length === 0 ? "" : "\n"}EXPO_PUBLIC_LANDING_BASE_URL=${productionLandingBaseUrl}\n`;
 
   if (nextEnvLocal !== currentEnvLocal) {
     fs.writeFileSync(envLocalPath, nextEnvLocal);
