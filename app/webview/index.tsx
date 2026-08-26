@@ -74,6 +74,7 @@ type StorixWebViewMessage =
       }
     }
   | { type: 'LOGIN_REQUIRED' }
+  | { type: 'TOKEN_EXPIRED' }
   | { type: 'EVENT_ERROR'; payload: { code?: string; message: string } }
 
 type NativeShareModule = typeof import('react-native-share')
@@ -104,6 +105,7 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
       case 'WEBVIEW_READY':
       case 'CLOSE_WEBVIEW':
       case 'LOGIN_REQUIRED':
+      case 'TOKEN_EXPIRED':
         return { type: message.type }
       case 'ATTENDANCE_COMPLETED': {
         const payload = message.payload as Record<string, unknown> | null
@@ -741,6 +743,23 @@ export default function SharedWebViewScreen() {
           }
           authRecoveryInFlightRef.current = true
           authRecoveryAttemptedRef.current = true
+          const refreshed = await refreshAuthTokens()
+          authRecoveryInFlightRef.current = false
+
+          if (refreshed.ok) {
+            webViewRef.current?.injectJavaScript(
+              createAuthInjectionScript(refreshed.accessToken),
+            )
+          } else {
+            await useAuthStore.getState().clearAuth()
+          }
+          return
+        }
+        case 'TOKEN_EXPIRED': {
+          if (authRecoveryInFlightRef.current) {
+            return
+          }
+          authRecoveryInFlightRef.current = true
           const refreshed = await refreshAuthTokens()
           authRecoveryInFlightRef.current = false
 
