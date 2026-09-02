@@ -81,6 +81,7 @@ type NativeShareModule = typeof import('react-native-share')
 
 const STORIX_SHARE_URL = 'https://www.storix.kr/'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
+const WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS = 3000
 
 function createAuthInjectionScript(accessToken: string | null): string {
   const serializedToken = JSON.stringify(accessToken)
@@ -270,7 +271,11 @@ function getImageExtension(uri: string): string {
 async function getLocalImageUri(uri: string): Promise<string> {
   if (uri.startsWith('file://')) return uri
 
-  const filename = `storix-story-card-${Date.now()}.${getImageExtension(uri)}`
+  const uniqueSuffix =
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const filename = `storix-story-card-${uniqueSuffix}.${getImageExtension(uri)}`
   const destination = `${FileSystem.cacheDirectory}${filename}`
 
   if (uri.startsWith('data:image/')) {
@@ -442,6 +447,7 @@ export default function SharedWebViewScreen() {
   const canGoBackRef = useRef(false)
   const authRecoveryInFlightRef = useRef(false)
   const authRecoveryAttemptedRef = useRef(false)
+  const suppressWebViewErrorUntilRef = useRef(0)
   const [isLoading, setIsLoading] = useState(Boolean(url))
   const [hasError, setHasError] = useState(!url)
   const [reloadKey, setReloadKey] = useState(0)
@@ -610,6 +616,9 @@ export default function SharedWebViewScreen() {
 
   const shareStoryCardImage = useCallback(
     async (payload: StoryCardSharePayload) => {
+      suppressWebViewErrorUntilRef.current =
+        Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
+
       try {
         const localUri = await resolveStoryCardImageUri(payload)
         const nativeShare = loadNativeShare()
@@ -657,11 +666,13 @@ export default function SharedWebViewScreen() {
           // eslint-disable-next-line no-console
           console.warn('[app-event-webview] share story card failed', error)
         }
-        Alert.alert('공유 실패', '이미지 공유 중 오류가 발생했습니다.')
         postNativeResultToWebView({
           type: 'SHARE_STORY_CARD_IMAGE_RESULT',
           payload: { requestId: payload.requestId, success: false },
         })
+      } finally {
+        suppressWebViewErrorUntilRef.current =
+          Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
       }
     },
     [postNativeResultToWebView, resolveStoryCardImageUri],
@@ -802,6 +813,10 @@ export default function SharedWebViewScreen() {
     [],
   )
 
+  const shouldSuppressWebViewError = useCallback(() => {
+    return Date.now() < suppressWebViewErrorUntilRef.current
+  }, [])
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -833,12 +848,26 @@ export default function SharedWebViewScreen() {
                 webViewRef.current?.injectJavaScript(authInjectionScript)
               }
             }}
-            onError={() => {
+            onError={(event) => {
               setIsLoading(false)
+              if (shouldSuppressWebViewError()) {
+                if (__DEV__) {
+                  // eslint-disable-next-line no-console
+                  console.warn('[app-event-webview] suppressed transient webview error', event.nativeEvent)
+                }
+                return
+              }
               setHasError(true)
             }}
-            onHttpError={() => {
+            onHttpError={(event) => {
               setIsLoading(false)
+              if (shouldSuppressWebViewError()) {
+                if (__DEV__) {
+                  // eslint-disable-next-line no-console
+                  console.warn('[app-event-webview] suppressed transient webview http error', event.nativeEvent)
+                }
+                return
+              }
               setHasError(true)
             }}
           />
