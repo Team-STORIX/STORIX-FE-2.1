@@ -29,7 +29,15 @@ import { refreshAuthTokens } from '../../src/lib/auth/refresh-token'
 import { useAuthStore } from '../../src/store/auth.store'
 import { C, Magenta, Radius, Typography } from '../../src/theme'
 
-type StoryCardImagePayload = { requestId: string; uri: string }
+type StoryCardCaptureRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+type StoryCardImagePayload =
+  | { requestId: string; uri: string }
+  | { requestId: string; rect: StoryCardCaptureRect }
 type StoryCardSharePayload = StoryCardImagePayload & {
   message: string
   target: 'default' | 'twitter'
@@ -130,20 +138,24 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
         const payload = message.payload as {
           requestId?: unknown
           uri?: unknown
+          rect?: unknown
         } | null
         const uri =
           typeof payload?.uri === 'string' &&
           (payload.uri.startsWith('data:image/') || getValidHttpUrl(payload.uri))
             ? payload.uri
             : null
+        const rect = parseStoryCardCaptureRect(payload?.rect)
         if (typeof payload?.requestId !== 'string') return null
         if (uri) return { type: message.type, payload: { requestId: payload.requestId, uri } }
+        if (rect) return { type: message.type, payload: { requestId: payload.requestId, rect } }
         return null
       }
       case 'SHARE_STORY_CARD_IMAGE': {
         const payload = message.payload as {
           requestId?: unknown
           uri?: unknown
+          rect?: unknown
           message?: unknown
           target?: unknown
         } | null
@@ -152,6 +164,7 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
           (payload.uri.startsWith('data:image/') || getValidHttpUrl(payload.uri))
             ? payload.uri
             : null
+        const rect = parseStoryCardCaptureRect(payload?.rect)
         const shareMessage =
           typeof payload?.message === 'string' && payload.message.trim()
             ? payload.message.trim()
@@ -163,6 +176,12 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
           return {
             type: message.type,
             payload: { requestId: payload.requestId, uri, message: shareMessage, target },
+          }
+        }
+        if (rect) {
+          return {
+            type: message.type,
+            payload: { requestId: payload.requestId, rect, message: shareMessage, target },
           }
         }
         return null
@@ -213,6 +232,28 @@ function getSingleParam(value: string | string[] | undefined): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function parseStoryCardCaptureRect(value: unknown): StoryCardCaptureRect | null {
+  if (!value || typeof value !== 'object') return null
+  const rect = value as Record<string, unknown>
+  const x = Number(rect.x)
+  const y = Number(rect.y)
+  const width = Number(rect.width)
+  const height = Number(rect.height)
+
+  if (
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null
+  }
+
+  return { x, y, width, height }
+}
+
 function getImageExtension(uri: string): string {
   const withoutQuery = uri.split('?')[0] ?? uri
   const match = withoutQuery.match(/\.([a-zA-Z0-9]+)$/)
@@ -220,6 +261,13 @@ function getImageExtension(uri: string): string {
   return extension === 'jpg' || extension === 'jpeg' || extension === 'webp' || extension === 'svg'
     ? extension
     : 'png'
+}
+
+function getImageExtensionForMimeType(mimeType: string): string {
+  if (mimeType === 'image/jpeg') return 'jpg'
+  if (mimeType === 'image/webp') return 'webp'
+  if (mimeType === 'image/svg+xml') return 'svg'
+  return 'png'
 }
 
 function normalizeImageMimeType(value: string | null | undefined): string | null {
@@ -260,19 +308,22 @@ async function getLocalImageFile(uri: string): Promise<LocalImageFile> {
     typeof globalThis.crypto?.randomUUID === 'function'
       ? globalThis.crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const filename = `storix-story-card-${uniqueSuffix}.${getImageExtension(uri)}`
-  const destination = `${FileSystem.cacheDirectory}${filename}`
 
   if (uri.startsWith('data:image/')) {
+    const mimeType = inferImageMimeType(uri)
+    const filename = `storix-story-card-${uniqueSuffix}.${getImageExtensionForMimeType(mimeType)}`
+    const destination = `${FileSystem.cacheDirectory}${filename}`
     const base64 = uri.split(',')[1]
     if (!base64) throw new Error('Invalid data image URI')
     await FileSystem.writeAsStringAsync(destination, base64, {
       encoding: FileSystem.EncodingType.Base64,
     })
-    return { uri: destination, mimeType: inferImageMimeType(uri) }
+    return { uri: destination, mimeType }
   }
 
-  const downloaded = await FileSystem.downloadAsync(uri, destination)
+  const temporaryDestination =
+    `${FileSystem.cacheDirectory}storix-story-card-${uniqueSuffix}.download`
+  const downloaded = await FileSystem.downloadAsync(uri, temporaryDestination)
   if (downloaded.status < 200 || downloaded.status >= 300) {
     throw new Error(`Image download failed with status ${downloaded.status}`)
   }
@@ -281,11 +332,10 @@ async function getLocalImageFile(uri: string): Promise<LocalImageFile> {
     normalizeImageMimeType(downloaded.mimeType) ??
     getResponseContentType(downloaded.headers) ??
     inferImageMimeType(uri)
-  return { uri: downloaded.uri, mimeType }
-}
-
-async function getLocalImageUri(uri: string): Promise<string> {
-  return (await getLocalImageFile(uri)).uri
+  const filename = `storix-story-card-${uniqueSuffix}.${getImageExtensionForMimeType(mimeType)}`
+  const destination = `${FileSystem.cacheDirectory}${filename}`
+  await FileSystem.moveAsync({ from: downloaded.uri, to: destination })
+  return { uri: destination, mimeType }
 }
 
 async function downloadImageAsDataUrl(url: string): Promise<{
@@ -326,8 +376,16 @@ function getShareMessage(message: string) {
   return `${message} ${STORIX_SHARE_URL}`
 }
 
-function getOsShareOptions(uri: string, message: string) {
-  const fileUri = normalizeShareUri(uri)
+function getImageUti(mimeType: string): string {
+  if (mimeType === 'image/png') return 'public.png'
+  if (mimeType === 'image/jpeg') return 'public.jpeg'
+  if (mimeType === 'image/webp') return 'org.webmproject.webp'
+  if (mimeType === 'image/svg+xml') return 'public.svg-image'
+  return 'public.image'
+}
+
+function getOsShareOptions(image: LocalImageFile, message: string) {
+  const fileUri = normalizeShareUri(image.uri)
   const shareMessage = getShareMessage(message)
 
   if (Platform.OS === 'ios') {
@@ -349,7 +407,7 @@ function getOsShareOptions(uri: string, message: string) {
             default: { type: 'url' as const, content: fileUri },
           },
           dataTypeIdentifier: {
-            default: 'public.png',
+            default: getImageUti(image.mimeType),
           },
         },
       ],
@@ -359,7 +417,7 @@ function getOsShareOptions(uri: string, message: string) {
   return {
     message: shareMessage,
     url: fileUri,
-    type: 'image/png',
+    type: image.mimeType,
     subject: message,
     filename: 'storix-story-card',
     useInternalStorage: true,
@@ -465,9 +523,12 @@ export default function SharedWebViewScreen() {
     setReloadKey((value) => value + 1)
   }, [url])
 
-  const resolveStoryCardImageUri = useCallback(
-    async (payload: StoryCardImagePayload): Promise<string> => {
-      return getLocalImageUri(payload.uri)
+  const resolveStoryCardImageFile = useCallback(
+    async (payload: StoryCardImagePayload): Promise<LocalImageFile> => {
+      if ('rect' in payload) {
+        throw new Error('Legacy rect capture is no longer supported')
+      }
+      return getLocalImageFile(payload.uri)
     },
     [],
   )
@@ -489,6 +550,18 @@ export default function SharedWebViewScreen() {
 
   const saveStoryCardImage = useCallback(
     async (payload: StoryCardImagePayload) => {
+      if ('rect' in payload) {
+        postNativeResultToWebView({
+          type: 'SAVE_STORY_CARD_IMAGE_RESULT',
+          payload: {
+            requestId: payload.requestId,
+            success: false,
+            code: 'RECT_CAPTURE_UNSUPPORTED',
+          },
+        })
+        return
+      }
+
       if (mediaRequestInFlightRef.current) {
         postNativeResultToWebView({
           type: 'SAVE_STORY_CARD_IMAGE_RESULT',
@@ -508,8 +581,8 @@ export default function SharedWebViewScreen() {
           throw new Error('Media library permission denied')
         }
 
-        const localUri = await resolveStoryCardImageUri(payload)
-        await MediaLibrary.saveToLibraryAsync(localUri)
+        const localImage = await resolveStoryCardImageFile(payload)
+        await MediaLibrary.saveToLibraryAsync(localImage.uri)
         postNativeResultToWebView({
           type: 'SAVE_STORY_CARD_IMAGE_RESULT',
           payload: { requestId: payload.requestId, success: true },
@@ -528,11 +601,23 @@ export default function SharedWebViewScreen() {
         mediaRequestInFlightRef.current = false
       }
     },
-    [postNativeResultToWebView, resolveStoryCardImageUri],
+    [postNativeResultToWebView, resolveStoryCardImageFile],
   )
 
   const shareStoryCardImage = useCallback(
     async (payload: StoryCardSharePayload) => {
+      if ('rect' in payload) {
+        postNativeResultToWebView({
+          type: 'SHARE_STORY_CARD_IMAGE_RESULT',
+          payload: {
+            requestId: payload.requestId,
+            success: false,
+            code: 'RECT_CAPTURE_UNSUPPORTED',
+          },
+        })
+        return
+      }
+
       if (mediaRequestInFlightRef.current) {
         postNativeResultToWebView({
           type: 'SHARE_STORY_CARD_IMAGE_RESULT',
@@ -550,7 +635,7 @@ export default function SharedWebViewScreen() {
         Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
 
       try {
-        const localUri = await resolveStoryCardImageUri(payload)
+        const localImage = await resolveStoryCardImageFile(payload)
         const nativeShare = loadNativeShare()
 
         if (payload.target === 'twitter') {
@@ -558,20 +643,20 @@ export default function SharedWebViewScreen() {
           if (twitterInstalled && nativeShare) {
             await nativeShare.default.shareSingle({
               social: nativeShare.Social.Twitter,
-              url: normalizeShareUri(localUri),
-              type: 'image/png',
+              url: normalizeShareUri(localImage.uri),
+              type: localImage.mimeType,
               message: getShareMessage(payload.message),
             })
           } else {
-            await Sharing.shareAsync(localUri, {
-              mimeType: 'image/png',
+            await Sharing.shareAsync(localImage.uri, {
+              mimeType: localImage.mimeType,
               dialogTitle: payload.message,
-              UTI: 'public.png',
+              UTI: getImageUti(localImage.mimeType),
             })
           }
         } else if (nativeShare) {
           await nativeShare.default.open({
-            ...getOsShareOptions(localUri, payload.message),
+            ...getOsShareOptions(localImage, payload.message),
             title: payload.message,
             failOnCancel: false,
           })
@@ -580,10 +665,10 @@ export default function SharedWebViewScreen() {
           if (!isSharingAvailable) {
             throw new Error('Native sharing unavailable')
           }
-          await Sharing.shareAsync(localUri, {
-            mimeType: 'image/png',
+          await Sharing.shareAsync(localImage.uri, {
+            mimeType: localImage.mimeType,
             dialogTitle: payload.message,
-            UTI: 'public.png',
+            UTI: getImageUti(localImage.mimeType),
           })
         }
 
@@ -606,7 +691,7 @@ export default function SharedWebViewScreen() {
           Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
       }
     },
-    [postNativeResultToWebView, resolveStoryCardImageUri],
+    [postNativeResultToWebView, resolveStoryCardImageFile],
   )
 
   const convertStoryCardImages = useCallback(
