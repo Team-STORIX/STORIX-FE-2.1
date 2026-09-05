@@ -6,6 +6,11 @@ export type AppEventWebViewNavigationDecision =
 const PRODUCTION_LANDING_HOSTS = new Set(['storix.kr', 'www.storix.kr'])
 const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:'])
 
+// react-native-webview evaluates originWhitelist before
+// onShouldStartLoadWithRequest. Passing every URL through ensures the
+// classifier below remains the single navigation policy gate.
+export const APP_EVENT_WEBVIEW_ORIGIN_WHITELIST: string[] = ['*']
+
 export function buildAllowedLandingOrigins(baseUrl: string): string[] {
   try {
     const base = new URL(baseUrl)
@@ -78,4 +83,46 @@ export function classifyAppEventWebViewNavigation(
   } catch {
     return { action: 'BLOCK', reason: 'INVALID_URL' }
   }
+}
+
+export function shouldAllowAppEventWebViewNavigation(
+  value: unknown,
+  allowedOrigins: readonly string[],
+  handlers: {
+    openExternal: (url: string) => void | Promise<unknown>
+    onBlocked?: (
+      reason: Extract<AppEventWebViewNavigationDecision, { action: 'BLOCK' }>['reason'],
+    ) => void
+  },
+): boolean {
+  const decision = classifyAppEventWebViewNavigation(value, allowedOrigins)
+
+  if (decision.action === 'ALLOW_IN_WEBVIEW') return true
+
+  if (decision.action === 'OPEN_EXTERNALLY') {
+    void handlers.openExternal(decision.url)
+  } else {
+    handlers.onBlocked?.(decision.reason)
+  }
+
+  return false
+}
+
+export function createAppEventAuthInjectionScript(
+  accessToken: string | null,
+  allowedOrigins: readonly string[],
+): string {
+  const serializedToken = JSON.stringify(accessToken)
+  const serializedAllowedOrigins = JSON.stringify(allowedOrigins)
+
+  return `
+    (function () {
+      var allowedOrigins = ${serializedAllowedOrigins};
+      if (allowedOrigins.indexOf(window.location.origin) === -1) return;
+      var detail = { accessToken: ${serializedToken} };
+      window.__STORIX_AUTH__ = detail;
+      window.dispatchEvent(new CustomEvent('STORIX_AUTH', { detail: detail }));
+    })();
+    true;
+  `
 }

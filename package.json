@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "typecheck": "tsc --noEmit",
+    "test:webview-security": "node --no-warnings --experimental-strip-types --test src/features/app-event/lib/__tests__/webViewSecurity.test.js src/features/app-event/lib/__tests__/webViewSecurity.integration.test.js",
+    "verify": "npm run typecheck && npm run test:webview-security",
     "prebuild:android": "expo prebuild --platform android && node scripts/patch-gradle.js",
     "android:open": "start android",
     "android": "node scripts/run-android-development.js",

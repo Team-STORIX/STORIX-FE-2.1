@@ -27,7 +27,9 @@ import {
   isTrustedAppEventUrl,
 } from '../../src/features/app-event/lib/targetNavigation'
 import {
-  classifyAppEventWebViewNavigation,
+  APP_EVENT_WEBVIEW_ORIGIN_WHITELIST,
+  createAppEventAuthInjectionScript,
+  shouldAllowAppEventWebViewNavigation,
 } from '../../src/features/app-event/lib/webViewSecurity'
 import { refreshAuthTokens } from '../../src/lib/auth/refresh-token'
 import { useAuthStore } from '../../src/store/auth.store'
@@ -81,21 +83,6 @@ type NativeShareModule = typeof import('react-native-share')
 const STORIX_SHARE_URL = 'https://www.storix.kr/'
 const TWITTER_ANDROID_PACKAGE = 'com.twitter.android'
 const WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS = 3000
-
-function createAuthInjectionScript(accessToken: string | null): string {
-  const serializedToken = JSON.stringify(accessToken)
-  const serializedAllowedOrigins = JSON.stringify(APP_EVENT_ALLOWED_ORIGINS)
-  return `
-    (function () {
-      var allowedOrigins = ${serializedAllowedOrigins};
-      if (allowedOrigins.indexOf(window.location.origin) === -1) return;
-      var detail = { accessToken: ${serializedToken} };
-      window.__STORIX_AUTH__ = detail;
-      window.dispatchEvent(new CustomEvent('STORIX_AUTH', { detail: detail }));
-    })();
-    true;
-  `
-}
 
 function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
   try {
@@ -473,7 +460,11 @@ export default function SharedWebViewScreen() {
     [url],
   )
   const authInjectionScript = useMemo(
-    () => createAuthInjectionScript(accessToken),
+    () =>
+      createAppEventAuthInjectionScript(
+        accessToken,
+        APP_EVENT_ALLOWED_ORIGINS,
+      ),
     [accessToken],
   )
   const webViewRef = useRef<WebView>(null)
@@ -514,7 +505,9 @@ export default function SharedWebViewScreen() {
   const injectAuthIfTrusted = useCallback((token: string | null) => {
     if (!isAppEventWebOrigin(currentDocumentUrlRef.current)) return false
 
-    webViewRef.current?.injectJavaScript(createAuthInjectionScript(token))
+    webViewRef.current?.injectJavaScript(
+      createAppEventAuthInjectionScript(token, APP_EVENT_ALLOWED_ORIGINS),
+    )
     return true
   }, [])
 
@@ -537,7 +530,7 @@ export default function SharedWebViewScreen() {
   }, [])
 
   useEffect(() => {
-    if (!url || !accessToken) return
+    if (!url) return
     injectAuthIfTrusted(accessToken)
   }, [accessToken, injectAuthIfTrusted, url])
 
@@ -794,9 +787,7 @@ export default function SharedWebViewScreen() {
 
       switch (message.type) {
         case 'WEBVIEW_READY':
-          if (accessToken) {
-            injectAuthIfTrusted(accessToken)
-          }
+          injectAuthIfTrusted(accessToken)
           return
         case 'ATTENDANCE_COMPLETED':
           return
@@ -880,25 +871,19 @@ export default function SharedWebViewScreen() {
 
   const shouldStartLoad = useCallback(
     (request: { url: string }) => {
-      const decision = classifyAppEventWebViewNavigation(
+      return shouldAllowAppEventWebViewNavigation(
         request.url,
         APP_EVENT_ALLOWED_ORIGINS,
+        {
+          openExternal: openExternalUrl,
+          onBlocked: (reason) => {
+            if (__DEV__) {
+              // eslint-disable-next-line no-console
+              console.warn('[app-event-webview] blocked navigation', { reason })
+            }
+          },
+        },
       )
-
-      if (decision.action === 'ALLOW_IN_WEBVIEW') {
-        return true
-      }
-
-      if (decision.action === 'OPEN_EXTERNALLY') {
-        void openExternalUrl(decision.url)
-      } else if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.warn('[app-event-webview] blocked navigation', {
-          reason: decision.reason,
-        })
-      }
-
-      return false
     },
     [openExternalUrl],
   )
@@ -917,7 +902,7 @@ export default function SharedWebViewScreen() {
             key={reloadKey}
             ref={webViewRef}
             source={webViewSource}
-            originWhitelist={APP_EVENT_ALLOWED_ORIGINS}
+            originWhitelist={APP_EVENT_WEBVIEW_ORIGIN_WHITELIST}
             style={styles.webView}
             androidLayerType="hardware"
             setSupportMultipleWindows={false}
@@ -935,9 +920,7 @@ export default function SharedWebViewScreen() {
             onLoadEnd={(event) => {
               currentDocumentUrlRef.current = event.nativeEvent.url
               setIsLoading(false)
-              if (accessToken) {
-                injectAuthIfTrusted(accessToken)
-              }
+              injectAuthIfTrusted(accessToken)
             }}
             onError={(event) => {
               setIsLoading(false)
