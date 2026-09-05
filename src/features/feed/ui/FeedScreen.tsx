@@ -273,6 +273,7 @@ export function FeedScreen() {
           currentUserId={currentUserId}
           profileImageUrl={profile.profileImageUrl}
           nickName={profile.nickName}
+          role={profile.role}
           createdAt={board.lastCreatedTime ?? undefined}
           content={board.content}
           images={(images ?? [])

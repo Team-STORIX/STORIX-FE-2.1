@@ -45,6 +45,12 @@ export const TopicRoomStompMessageSchema = z.preprocess(
         o.nickname,
         o.userName,
       ),
+      senderRole: firstString(
+        o.senderRole,
+        o.role,
+        o.profileRole,
+        (o.profile as Record<string, unknown> | undefined)?.role,
+      ),
       // senderProfileImageUrl / profileImageUrl / senderProfileImage
       senderProfileImageUrl: firstString(
         o.senderProfileImageUrl,
@@ -76,6 +82,7 @@ export const TopicRoomStompMessageSchema = z.preprocess(
       message: z.string().optional(),
       senderId: z.number().optional(),
       senderName: z.string().optional(),
+      senderRole: z.string().optional(),
       senderProfileImageUrl: z.string().optional(),
       activeUserNumber: z.number().optional(),
       createdAt: z.string().optional(),
@@ -102,6 +109,7 @@ export type TopicRoomUiMsg = {
   activeUserNumber?: number
   type: 'me' | 'other'
   userName?: string
+  senderRole?: string
   senderId?: number
   profileImageUrl?: string
   text: string

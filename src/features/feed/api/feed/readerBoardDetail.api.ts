@@ -10,7 +10,7 @@ type ApiResponse<T> = {
 }
 
 export type ReplyItem = {
-  profile: { userId: number; profileImageUrl: string | null; nickName: string }
+  profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
   reply: {
     replyId: number
     userId: number

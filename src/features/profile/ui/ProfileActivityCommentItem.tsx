@@ -9,6 +9,7 @@ import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
 import { ReportModal } from '../../feed/ui/ReportModal'
 import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
+import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
@@ -23,6 +24,7 @@ export function ProfileActivityCommentItem({
   currentUserId,
   currentUserProfileImageUrl,
   currentUserNickName,
+  currentUserRole,
   isMenuOpen,
   onToggleMenu,
   queryKey,
@@ -31,6 +33,7 @@ export function ProfileActivityCommentItem({
   currentUserId?: number
   currentUserProfileImageUrl?: string | null
   currentUserNickName?: string
+  currentUserRole?: string | null
   isMenuOpen: boolean
   onToggleMenu: () => void
   queryKey: readonly string[]
@@ -47,6 +50,7 @@ export function ProfileActivityCommentItem({
   const nickName = isMine && currentUserNickName
     ? currentUserNickName
     : item.profile.nickName
+  const role = isMine && currentUserRole ? currentUserRole : item.profile.role
 
   const syncReplyItem = (
     replyId: number,
@@ -144,6 +148,7 @@ export function ProfileActivityCommentItem({
 
           <View style={styles.metaRow}>
             <Text style={styles.name}>{nickName}</Text>
+            <OfficialMark role={role} />
             <Text style={styles.dot}>·</Text>
             <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
@@ -268,6 +273,7 @@ const styles = StyleSheet.create({
   name: {
     ...Typography.body2Medium,
     color: Gray[900],
+    flexShrink: 1,
   },
   dot: {
     marginHorizontal: 4,

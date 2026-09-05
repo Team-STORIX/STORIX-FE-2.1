@@ -2,7 +2,7 @@ import { apiClient } from '../../../../lib/api/axios-instance'
 import type { FeedSort } from './readerBoard.api'
 
 export type WorksFeedBoardItem = {
-  profile: { userId: number; profileImageUrl: string | null; nickName: string }
+  profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
   board: {
     userId: number
     boardId: number

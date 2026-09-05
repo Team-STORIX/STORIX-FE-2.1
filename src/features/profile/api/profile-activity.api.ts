@@ -24,6 +24,7 @@ export type ProfileActivityProfile = {
   userId: number
   profileImageUrl: string | null
   nickName: string
+  role?: string | null
 }
 
 export type ProfileActivityImage = {

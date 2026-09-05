@@ -196,6 +196,7 @@ export function ProfileScreen() {
           currentUserId={me.userId}
           currentUserProfileImageUrl={me.profileImageUrl}
           currentUserNickName={me.nickName}
+          currentUserRole={me.role}
           bottomInset={insets.bottom}
           header={
             <>

@@ -13,6 +13,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
+import { OfficialMark } from "../../../components/common/OfficialMark";
 import { C, Gray, Magenta } from "../../../theme/colors";
 import { FontFamily, Typography } from "../../../theme/typography";
 
@@ -51,6 +52,7 @@ type FeedPostCardProps = {
   currentUserId?: number;
   profileImageUrl?: string | null;
   nickName: string;
+  role?: string | null;
   createdAt?: string | null;
   content: string;
   images?: string[];
@@ -189,6 +191,7 @@ export function FeedPostCard({
   currentUserId,
   profileImageUrl,
   nickName,
+  role,
   createdAt,
   content,
   images = [],
@@ -277,7 +280,10 @@ export function FeedPostCard({
           </View>
 
           <View style={styles.authorMeta}>
-            <Text style={styles.authorName}>{nickName}</Text>
+            <View style={styles.authorNameRow}>
+              <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
+              <OfficialMark role={role} />
+            </View>
             {!!displayCreatedAt && (
               <Text style={styles.timestamp}>{displayCreatedAt}</Text>
             )}
@@ -694,6 +700,12 @@ const styles = StyleSheet.create({
   },
   authorMeta: {
     flex: 1,
+    minWidth: 0,
+  },
+  authorNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
   },
   authorName: {
     fontFamily: "SUITMedium",
@@ -702,6 +714,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 19.6,
     color: Gray[900],
+    flexShrink: 1,
   },
   timestamp: {
     marginTop: 2,

@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { TodayFeedItem } from "../../features/home";
+import { OfficialMark } from "../common/OfficialMark";
 import { C, Gray, Magenta } from "../../theme/colors";
 import { FontFamily, Typography } from "../../theme/typography";
 
@@ -77,9 +78,12 @@ export function HotFeedCard({
             contentFit="cover"
           />
         </View>
-        <Text style={styles.authorName} numberOfLines={1}>
-          {profile.nickName ?? ""}
-        </Text>
+        <View style={styles.authorNameRow}>
+          <Text style={styles.authorName} numberOfLines={1}>
+            {profile.nickName ?? ""}
+          </Text>
+          <OfficialMark role={profile.role} />
+        </View>
       </View>
 
       <View style={styles.spoilerContainer}>
@@ -171,6 +175,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 12,
+  },
+  authorNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    flex: 1,
   },
   avatarWrap: {
     width: 20,

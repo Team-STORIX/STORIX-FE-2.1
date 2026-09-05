@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
+import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
@@ -29,7 +30,10 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
             </View>
           ) : null}
 
-          <Text style={styles.nickname}>{me.nickName}</Text>
+          <View style={styles.nicknameRow}>
+            <Text style={styles.nickname} numberOfLines={1}>{me.nickName}</Text>
+            <OfficialMark role={me.role} />
+          </View>
           <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>
             {hasBio ? me.profileDescription : '한줄소개를 입력해보세요 !'}
           </Text>
@@ -89,9 +93,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     color: Magenta[300],
   },
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: '100%',
+  },
   nickname: {
     ...Typography.heading3,
-    width: '100%',
+    flexShrink: 1,
     textAlign: 'left',
     color: C.text,
   },

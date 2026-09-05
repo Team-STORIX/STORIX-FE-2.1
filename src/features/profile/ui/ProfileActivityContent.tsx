@@ -26,6 +26,7 @@ type Props = {
   currentUserId: number
   currentUserProfileImageUrl?: string | null
   currentUserNickName?: string
+  currentUserRole?: string | null
   header?: ReactElement | null
   bottomInset?: number
 }
@@ -36,6 +37,7 @@ export function ProfileActivityContent({
   currentUserId,
   currentUserProfileImageUrl,
   currentUserNickName,
+  currentUserRole,
   header = null,
   bottomInset = 0,
 }: Props) {
@@ -112,6 +114,7 @@ export function ProfileActivityContent({
           currentUserId,
           currentUserProfileImageUrl,
           currentUserNickName,
+          currentUserRole,
           openCommentMenuId,
           setOpenCommentMenuId,
         )
@@ -135,6 +138,7 @@ function renderActivityItem(
   userId: number,
   currentUserProfileImageUrl: string | null | undefined,
   currentUserNickName: string | undefined,
+  currentUserRole: string | null | undefined,
   openCommentMenuId: number | null,
   setOpenCommentMenuId: (value: number | null) => void,
 ) {
@@ -146,6 +150,7 @@ function renderActivityItem(
         currentUserId={userId}
         currentUserProfileImageUrl={currentUserProfileImageUrl}
         currentUserNickName={currentUserNickName}
+        currentUserRole={currentUserRole}
         isMenuOpen={openCommentMenuId === item.reply.replyId}
         onToggleMenu={() =>
           setOpenCommentMenuId(

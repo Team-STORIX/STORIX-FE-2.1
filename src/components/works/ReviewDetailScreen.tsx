@@ -27,6 +27,7 @@ import { useLikesStore } from "../../store/likes.store";
 import { C, Gray } from "../../theme/colors";
 import { Radius } from "../../theme/radius";
 import { FontFamily, Typography } from "../../theme/typography";
+import { OfficialMark } from "../common/OfficialMark";
 import { UserActionModal } from "../common/UserActionModal";
 import { RecordCardModal } from "./RecordCardModal";
 import { ReviewSpoilerBlock } from "./ReviewSpoilerBlock";
@@ -98,6 +99,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
       worksId: data?.worksId ?? 0,
       userId: typeof data?.userId === "number" ? data.userId : null,
       userName: data?.userName ?? "",
+      role: data?.role ?? null,
       profileImageUrl: data?.profileImageUrl?.trim() || null,
       worksTitle: data?.worksName ?? "",
       worksMeta: worksMetaParts.join(" · "),
@@ -372,9 +374,12 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
             />
           </View>
           <View style={styles.userMeta}>
-            <Text style={styles.userName} numberOfLines={1}>
-              {ui.userName}
-            </Text>
+            <View style={styles.userNameRow}>
+              <Text style={styles.userName} numberOfLines={1}>
+                {ui.userName}
+              </Text>
+              <OfficialMark role={ui.role} />
+            </View>
             {relativeTime ? (
               <Text style={styles.userTime}>{relativeTime}</Text>
             ) : null}
@@ -790,6 +795,12 @@ const styles = StyleSheet.create({
   userName: {
     ...Typography.body2Medium,
     color: Gray[900],
+    flexShrink: 1,
+  },
+  userNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
   },
   userTime: {
     fontFamily: "SUIT",

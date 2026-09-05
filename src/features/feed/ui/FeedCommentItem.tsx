@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'r
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
+import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
@@ -84,6 +85,7 @@ export function FeedCommentItem(props: Props) {
 
           <View style={styles.metaRow}>
             <Text style={[styles.name, isWriter && styles.writerName]}>{item.profile.nickName}{isWriter ? <Text style={styles.writerBadge}>(글쓴이)</Text> : null}</Text>
+            <OfficialMark role={item.profile.role} />
             <Text style={styles.dot}>·</Text>
             <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
@@ -268,6 +270,7 @@ const styles = StyleSheet.create({
     lineHeight: 19.6,
     color: Gray[900],
     textAlign: 'justify',
+    flexShrink: 1,
   },
   dot: {
     marginHorizontal: 4,
