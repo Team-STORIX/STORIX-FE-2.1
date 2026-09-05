@@ -122,12 +122,14 @@ export const TopicRoomMemberSchema = z
     userId: z.preprocess((v) => Number(v), z.number()),
     nickName: z.string().optional(),
     nickname: z.string().optional(),
+    role: z.string().nullable().optional(),
     profileImageUrl: z.string().nullable().optional(),
     profileImage: z.string().nullable().optional(),
   })
   .transform((m) => ({
     userId: m.userId,
     nickName: m.nickName ?? m.nickname ?? '',
+    role: m.role ?? null,
     profileImageUrl: m.profileImageUrl ?? m.profileImage ?? null,
   }))
 

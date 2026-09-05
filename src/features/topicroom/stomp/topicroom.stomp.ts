@@ -125,6 +125,7 @@ export function normalizeTopicRoomStompObject(
       activeUserNumber: m.activeUserNumber,
       type: isMe ? 'me' : 'other',
       userName: m.senderName,
+      senderRole: m.senderRole,
       senderId: m.senderId,
       profileImageUrl: m.senderProfileImageUrl,
       text: message,

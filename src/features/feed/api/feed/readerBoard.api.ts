@@ -16,7 +16,7 @@ export type FeedWorks = {
 }
 
 export type FeedBoardItem = {
-  profile: { userId: number; profileImageUrl: string | null; nickName: string }
+  profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
   board: {
     userId: number
     boardId: number

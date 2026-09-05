@@ -1,13 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   BackHandler,
-  Dimensions,
-  Image,
   Linking,
-  PixelRatio,
   Platform,
   Pressable,
   StyleSheet,
@@ -15,11 +12,9 @@ import {
   View,
 } from 'react-native'
 import * as FileSystem from 'expo-file-system/legacy'
-import * as ImageManipulator from 'expo-image-manipulator'
 import * as MediaLibrary from 'expo-media-library'
 import * as Sharing from 'expo-sharing'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { captureScreen } from 'react-native-view-shot'
 import {
   WebView,
   type WebViewMessageEvent,
@@ -34,15 +29,7 @@ import { refreshAuthTokens } from '../../src/lib/auth/refresh-token'
 import { useAuthStore } from '../../src/store/auth.store'
 import { C, Magenta, Radius, Typography } from '../../src/theme'
 
-type StoryCardCaptureRect = {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-type StoryCardImagePayload =
-  | { requestId: string; uri: string }
-  | { requestId: string; rect: StoryCardCaptureRect }
+type StoryCardImagePayload = { requestId: string; uri: string }
 type StoryCardSharePayload = StoryCardImagePayload & {
   message: string
   target: 'default' | 'twitter'
@@ -143,24 +130,20 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
         const payload = message.payload as {
           requestId?: unknown
           uri?: unknown
-          rect?: unknown
         } | null
         const uri =
           typeof payload?.uri === 'string' &&
           (payload.uri.startsWith('data:image/') || getValidHttpUrl(payload.uri))
             ? payload.uri
             : null
-        const rect = parseStoryCardCaptureRect(payload?.rect)
         if (typeof payload?.requestId !== 'string') return null
         if (uri) return { type: message.type, payload: { requestId: payload.requestId, uri } }
-        if (rect) return { type: message.type, payload: { requestId: payload.requestId, rect } }
         return null
       }
       case 'SHARE_STORY_CARD_IMAGE': {
         const payload = message.payload as {
           requestId?: unknown
           uri?: unknown
-          rect?: unknown
           message?: unknown
           target?: unknown
         } | null
@@ -169,7 +152,6 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
           (payload.uri.startsWith('data:image/') || getValidHttpUrl(payload.uri))
             ? payload.uri
             : null
-        const rect = parseStoryCardCaptureRect(payload?.rect)
         const shareMessage =
           typeof payload?.message === 'string' && payload.message.trim()
             ? payload.message.trim()
@@ -181,12 +163,6 @@ function parseWebViewMessage(raw: string): StorixWebViewMessage | null {
           return {
             type: message.type,
             payload: { requestId: payload.requestId, uri, message: shareMessage, target },
-          }
-        }
-        if (rect) {
-          return {
-            type: message.type,
-            payload: { requestId: payload.requestId, rect, message: shareMessage, target },
           }
         }
         return null
@@ -237,39 +213,48 @@ function getSingleParam(value: string | string[] | undefined): string | null {
   return typeof value === 'string' ? value : null
 }
 
-function parseStoryCardCaptureRect(value: unknown): StoryCardCaptureRect | null {
-  if (!value || typeof value !== 'object') return null
-  const rect = value as Record<string, unknown>
-  const x = Number(rect.x)
-  const y = Number(rect.y)
-  const width = Number(rect.width)
-  const height = Number(rect.height)
-
-  if (
-    !Number.isFinite(x) ||
-    !Number.isFinite(y) ||
-    !Number.isFinite(width) ||
-    !Number.isFinite(height) ||
-    width <= 0 ||
-    height <= 0
-  ) {
-    return null
-  }
-
-  return { x, y, width, height }
-}
-
 function getImageExtension(uri: string): string {
   const withoutQuery = uri.split('?')[0] ?? uri
   const match = withoutQuery.match(/\.([a-zA-Z0-9]+)$/)
   const extension = match?.[1]?.toLowerCase()
-  return extension === 'jpg' || extension === 'jpeg' || extension === 'webp'
+  return extension === 'jpg' || extension === 'jpeg' || extension === 'webp' || extension === 'svg'
     ? extension
     : 'png'
 }
 
-async function getLocalImageUri(uri: string): Promise<string> {
-  if (uri.startsWith('file://')) return uri
+function normalizeImageMimeType(value: string | null | undefined): string | null {
+  const mimeType = value?.split(';')[0]?.trim().toLowerCase()
+  if (!mimeType?.startsWith('image/')) return null
+  if (mimeType === 'image/jpg') return 'image/jpeg'
+  return mimeType
+}
+
+function inferImageMimeType(uri: string): string {
+  const dataMimeType = uri.match(/^data:([^;,]+)/i)?.[1]
+  const normalizedDataMimeType = normalizeImageMimeType(dataMimeType)
+  if (normalizedDataMimeType) return normalizedDataMimeType
+
+  const extension = getImageExtension(uri)
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
+  if (extension === 'webp') return 'image/webp'
+  if (extension === 'svg') return 'image/svg+xml'
+  return 'image/png'
+}
+
+function getResponseContentType(headers: Record<string, string>): string | null {
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === 'content-type')
+  return normalizeImageMimeType(entry?.[1])
+}
+
+type LocalImageFile = {
+  uri: string
+  mimeType: string
+}
+
+async function getLocalImageFile(uri: string): Promise<LocalImageFile> {
+  if (uri.startsWith('file://')) {
+    return { uri, mimeType: inferImageMimeType(uri) }
+  }
 
   const uniqueSuffix =
     typeof globalThis.crypto?.randomUUID === 'function'
@@ -284,54 +269,38 @@ async function getLocalImageUri(uri: string): Promise<string> {
     await FileSystem.writeAsStringAsync(destination, base64, {
       encoding: FileSystem.EncodingType.Base64,
     })
-    return destination
+    return { uri: destination, mimeType: inferImageMimeType(uri) }
   }
 
   const downloaded = await FileSystem.downloadAsync(uri, destination)
-  return downloaded.uri
+  if (downloaded.status < 200 || downloaded.status >= 300) {
+    throw new Error(`Image download failed with status ${downloaded.status}`)
+  }
+
+  const mimeType =
+    normalizeImageMimeType(downloaded.mimeType) ??
+    getResponseContentType(downloaded.headers) ??
+    inferImageMimeType(uri)
+  return { uri: downloaded.uri, mimeType }
 }
 
-async function downloadImageAsDataUrl(url: string): Promise<string> {
-  const localUri = await getLocalImageUri(url)
-  const base64 = await FileSystem.readAsStringAsync(localUri, {
+async function getLocalImageUri(uri: string): Promise<string> {
+  return (await getLocalImageFile(uri)).uri
+}
+
+async function downloadImageAsDataUrl(url: string): Promise<{
+  dataUrl: string
+  mimeType: string
+}> {
+  const localImage = await getLocalImageFile(url)
+  const base64 = await FileSystem.readAsStringAsync(localImage.uri, {
     encoding: FileSystem.EncodingType.Base64,
   })
-  const extension = getImageExtension(url)
-  const mimeType = extension === 'jpg' || extension === 'jpeg'
-    ? 'image/jpeg'
-    : extension === 'webp'
-      ? 'image/webp'
-      : 'image/png'
 
-  return `data:${mimeType};base64,${base64}`
-}
-
-function getCapturedImageSize(uri: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    Image.getSize(uri, (width, height) => resolve({ width, height }), reject)
-  })
-}
-
-function measureViewInWindow(ref: RefObject<View | null>): Promise<{
-  x: number
-  y: number
-  width: number
-  height: number
-}> {
-  return new Promise((resolve, reject) => {
-    if (!ref.current) {
-      reject(new Error('WebView container is unavailable'))
-      return
-    }
-
-    ref.current.measureInWindow((x, y, width, height) => {
-      if (width > 0 && height > 0) {
-        resolve({ x, y, width, height })
-      } else {
-        reject(new Error('Invalid measured WebView bounds'))
-      }
-    })
-  })
+  return {
+    dataUrl: `data:${localImage.mimeType};base64,${base64}`,
+    mimeType: localImage.mimeType,
+  }
 }
 
 function loadNativeShare(): NativeShareModule | null {
@@ -443,11 +412,11 @@ export default function SharedWebViewScreen() {
     [accessToken],
   )
   const webViewRef = useRef<WebView>(null)
-  const webViewContainerRef = useRef<View>(null)
   const canGoBackRef = useRef(false)
   const authRecoveryInFlightRef = useRef(false)
   const authRecoveryAttemptedRef = useRef(false)
   const suppressWebViewErrorUntilRef = useRef(0)
+  const mediaRequestInFlightRef = useRef(false)
   const [isLoading, setIsLoading] = useState(Boolean(url))
   const [hasError, setHasError] = useState(!url)
   const [reloadKey, setReloadKey] = useState(0)
@@ -496,78 +465,11 @@ export default function SharedWebViewScreen() {
     setReloadKey((value) => value + 1)
   }, [url])
 
-  const captureStoryCardView = useCallback(
-    async (rect: StoryCardCaptureRect): Promise<string> => {
-      const [capturedUri, webViewBounds] = await Promise.all([
-        captureScreen({ format: 'png', quality: 1 }),
-        measureViewInWindow(webViewContainerRef),
-      ])
-      const imageSize = await getCapturedImageSize(capturedUri)
-      const windowSize = Dimensions.get('window')
-      if (windowSize.width <= 0 || windowSize.height <= 0) return capturedUri
-
-      // PixelRatio를 고려한 정확한 스케일 계산
-      const pixelRatio = PixelRatio.get()
-      const scaleX = imageSize.width / windowSize.width
-      const scaleY = imageSize.height / windowSize.height
-
-      // 웹뷰 rect는 CSS 픽셀 단위이므로 PixelRatio 적용 필요
-      const originX = Math.max(0, Math.floor((webViewBounds.x + rect.x) * scaleX))
-      const originY = Math.max(0, Math.floor((webViewBounds.y + rect.y) * scaleY))
-      const cropWidth = Math.min(
-        imageSize.width - originX,
-        Math.ceil(rect.width * scaleX),
-      )
-      const cropHeight = Math.min(
-        imageSize.height - originY,
-        Math.ceil(rect.height * scaleY),
-      )
-
-      if (__DEV__) {
-        console.log('[StoryCard] Capture debug:', {
-          pixelRatio,
-          windowSize,
-          imageSize,
-          webViewBounds,
-          rect,
-          scale: { scaleX, scaleY },
-          crop: { originX, originY, cropWidth, cropHeight },
-        })
-      }
-
-      if (cropWidth <= 0 || cropHeight <= 0) {
-        if (__DEV__) {
-          console.warn('[StoryCard] Invalid crop dimensions, returning full capture')
-        }
-        return capturedUri
-      }
-
-      const result = await ImageManipulator.manipulateAsync(
-        capturedUri,
-        [
-          {
-            crop: {
-              originX,
-              originY,
-              width: cropWidth,
-              height: cropHeight,
-            },
-          },
-        ],
-        { compress: 1, format: ImageManipulator.SaveFormat.PNG },
-      )
-
-      return result.uri
-    },
-    [],
-  )
-
   const resolveStoryCardImageUri = useCallback(
     async (payload: StoryCardImagePayload): Promise<string> => {
-      if ('uri' in payload) return getLocalImageUri(payload.uri)
-      return captureStoryCardView(payload.rect)
+      return getLocalImageUri(payload.uri)
     },
-    [captureStoryCardView],
+    [],
   )
 
   const postNativeResultToWebView = useCallback(
@@ -587,6 +489,19 @@ export default function SharedWebViewScreen() {
 
   const saveStoryCardImage = useCallback(
     async (payload: StoryCardImagePayload) => {
+      if (mediaRequestInFlightRef.current) {
+        postNativeResultToWebView({
+          type: 'SAVE_STORY_CARD_IMAGE_RESULT',
+          payload: {
+            requestId: payload.requestId,
+            success: false,
+            code: 'MEDIA_REQUEST_IN_PROGRESS',
+          },
+        })
+        return
+      }
+
+      mediaRequestInFlightRef.current = true
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync(true)
         if (status !== 'granted') {
@@ -609,6 +524,8 @@ export default function SharedWebViewScreen() {
           type: 'SAVE_STORY_CARD_IMAGE_RESULT',
           payload: { requestId: payload.requestId, success: false },
         })
+      } finally {
+        mediaRequestInFlightRef.current = false
       }
     },
     [postNativeResultToWebView, resolveStoryCardImageUri],
@@ -616,6 +533,19 @@ export default function SharedWebViewScreen() {
 
   const shareStoryCardImage = useCallback(
     async (payload: StoryCardSharePayload) => {
+      if (mediaRequestInFlightRef.current) {
+        postNativeResultToWebView({
+          type: 'SHARE_STORY_CARD_IMAGE_RESULT',
+          payload: {
+            requestId: payload.requestId,
+            success: false,
+            code: 'MEDIA_REQUEST_IN_PROGRESS',
+          },
+        })
+        return
+      }
+
+      mediaRequestInFlightRef.current = true
       suppressWebViewErrorUntilRef.current =
         Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
 
@@ -671,6 +601,7 @@ export default function SharedWebViewScreen() {
           payload: { requestId: payload.requestId, success: false },
         })
       } finally {
+        mediaRequestInFlightRef.current = false
         suppressWebViewErrorUntilRef.current =
           Date.now() + WEBVIEW_ERROR_SUPPRESSION_AFTER_SHARE_MS
       }
@@ -684,27 +615,46 @@ export default function SharedWebViewScreen() {
       images: Array<{ key: string; url: string }>
     }) => {
       const images: Record<string, string> = {}
+      const mimeTypes: Record<string, string> = {}
+      const errors: Array<{ key: string; code: string }> = []
 
-      await Promise.all(
-        payload.images.map(async (image) => {
-          try {
-            images[image.key] = await downloadImageAsDataUrl(image.url)
-          } catch (error) {
-            if (__DEV__) {
-              // eslint-disable-next-line no-console
-              console.warn('[app-event-webview] convert story card image failed', {
-                key: image.key,
-                url: image.url,
-                error,
-              })
-            }
+      for (const image of payload.images) {
+        try {
+          const converted = await downloadImageAsDataUrl(image.url)
+          images[image.key] = converted.dataUrl
+          mimeTypes[image.key] = converted.mimeType
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[app-event-webview] converted story card image', {
+              requestId: payload.requestId,
+              key: image.key,
+              mimeType: converted.mimeType,
+              dataUrlLength: converted.dataUrl.length,
+            })
           }
-        }),
-      )
+        } catch (error) {
+          errors.push({ key: image.key, code: 'IMAGE_DOWNLOAD_FAILED' })
+          if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.warn('[app-event-webview] convert story card image failed', {
+              requestId: payload.requestId,
+              key: image.key,
+              url: image.url,
+              error,
+            })
+          }
+        }
+      }
 
       postNativeResultToWebView({
         type: 'CONVERT_STORY_CARD_IMAGES_RESULT',
-        payload: { requestId: payload.requestId, images },
+        payload: {
+          requestId: payload.requestId,
+          success: errors.length === 0,
+          images: errors.length === 0 ? images : {},
+          mimeTypes,
+          errors,
+        },
       })
     },
     [postNativeResultToWebView],
@@ -822,11 +772,7 @@ export default function SharedWebViewScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {webViewSource && !hasError ? (
-        <View
-          ref={webViewContainerRef}
-          style={styles.content}
-          collapsable={false}
-        >
+        <View style={styles.content}>
           <WebView
             key={reloadKey}
             ref={webViewRef}

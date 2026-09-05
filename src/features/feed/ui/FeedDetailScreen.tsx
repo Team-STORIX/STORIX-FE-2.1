@@ -434,6 +434,7 @@ export function FeedDetailScreen() {
           userId: me?.userId ?? 0,
           profileImageUrl: me?.profileImageUrl ?? null,
           nickName: me?.nickName ?? '',
+          role: me?.role,
         },
         reply: {
           replyId: tempId,
@@ -592,6 +593,7 @@ export function FeedDetailScreen() {
                 currentUserId={myUserId ?? undefined}
                 profileImageUrl={profile.profileImageUrl}
                 nickName={profile.nickName}
+                role={profile.role}
                 createdAt={board.lastCreatedTime}
                 content={board.content}
                 images={images}

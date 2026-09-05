@@ -43,6 +43,7 @@ function normalizeReviewItem(raw: unknown): WorksReviewItem | null {
       likeCount:       obj.review.likeCount,
       userId:          obj.profile.userId,
       profileImageUrl: obj.profile.profileImageUrl ?? null,
+      role:            obj.profile.role,
     }
   } else {
     flat = obj
@@ -61,6 +62,7 @@ function normalizeReviewItem(raw: unknown): WorksReviewItem | null {
     likeCount:       flat.likeCount     != null ? Number(flat.likeCount)     : null,
     userId:          flat.userId        != null ? Number(flat.userId)        : undefined,
     profileImageUrl: flat.profileImageUrl ?? null,
+    role:            flat.role          != null ? String(flat.role)          : undefined,
   }
 }
 

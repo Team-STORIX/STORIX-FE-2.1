@@ -311,6 +311,12 @@ export default function TopicRoomScreen() {
     return map;
   }, [members]);
 
+  const memberRoleById = useMemo(() => {
+    const map = new Map<number, string | null>();
+    for (const m of members) map.set(m.userId, m.role ?? null);
+    return map;
+  }, [members]);
+
   const historyActiveUserNumber =
     historyData?.pages?.find(
       (page) => typeof page.activeUserNumber === "number",
@@ -387,12 +393,13 @@ export default function TopicRoomScreen() {
         createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.senderName,
+        senderRole: m.senderRole || memberRoleById.get(m.senderId) || null,
         profileImageUrl: memberAvatarById.get(m.senderId) ?? null,
         time: formatTime(m.createdAt),
         isMe: m.senderId === myUserId,
       })),
     );
-  }, [historyData, memberAvatarById, myUserId]);
+  }, [historyData, memberAvatarById, memberRoleById, myUserId]);
 
   const realtimeDisplay: DisplayMsg[] = useMemo(
     () =>
@@ -403,6 +410,11 @@ export default function TopicRoomScreen() {
         createdAt: m.createdAt,
         senderId: m.senderId,
         senderName: m.userName ?? "",
+        senderRole:
+          m.senderRole ??
+          (typeof m.senderId === "number"
+            ? (memberRoleById.get(m.senderId) ?? null)
+            : null),
         profileImageUrl:
           m.profileImageUrl ??
           (typeof m.senderId === "number"
@@ -411,7 +423,7 @@ export default function TopicRoomScreen() {
         time: m.time,
         isMe: m.type === "me",
       })),
-    [memberAvatarById, realtimeMsgs],
+    [memberAvatarById, memberRoleById, realtimeMsgs],
   );
 
   const allMessages: DisplayMsg[] = useMemo(() => {

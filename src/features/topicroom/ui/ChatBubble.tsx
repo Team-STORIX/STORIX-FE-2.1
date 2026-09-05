@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
+import { OfficialMark } from "../../../components/common/OfficialMark";
 
 const profileDefault = require("../../../../assets/placeholders/profile-default.png");
 const kebabIcon = require("../../../../assets/icons/common/menu-3dots.svg");
@@ -17,6 +18,7 @@ export type DisplayMsg = {
   createdAt?: string | null;
   senderId?: number;
   senderName: string;
+  senderRole?: string | null;
   profileImageUrl?: string | null;
   time: string;
   isMe: boolean;
@@ -83,7 +85,10 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
         />
       </Pressable>
       <View style={styles.otherBody}>
-        <Text style={styles.senderName}>{msg.senderName || "익명"}</Text>
+        <View style={styles.senderNameRow}>
+          <Text style={styles.senderName} numberOfLines={1}>{msg.senderName || "익명"}</Text>
+          <OfficialMark role={msg.senderRole} />
+        </View>
         <View style={styles.otherBubbleRow}>
           <View
             style={[styles.bubble, styles.bubbleOther, styles.bubbleOtherWidth]}
@@ -153,11 +158,17 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
   },
 
-  otherBody: { flexShrink: 1 },
+  otherBody: { flexShrink: 1, minWidth: 0 },
+  senderNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    marginBottom: 4,
+  },
   senderName: {
     ...Typography.body2Medium,
     color: Gray[800],
-    marginBottom: 4,
+    flexShrink: 1,
   },
   otherBubbleRow: {
     flexDirection: "row",

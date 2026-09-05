@@ -42,6 +42,11 @@ export const ChatRoomMessageSchema = z.preprocess((input) => {
       obj.nickname,
       obj.nickName,
     ),
+    senderRole: stringFrom(
+      obj.senderRole,
+      obj.role,
+      (obj.profile as Record<string, unknown> | undefined)?.role,
+    ),
     message: stringFrom(obj.message, obj.content, obj.text),
     createdAt: stringFrom(obj.createdAt, obj.sentAt, obj.createdDate),
   }
@@ -50,6 +55,7 @@ export const ChatRoomMessageSchema = z.preprocess((input) => {
   roomId: z.number(),
   senderId: z.number(),
   senderName: z.string(),
+  senderRole: z.string().optional(),
   message: z.string(),
   messageType: z.string().nullish(),
   createdAt: z.string().optional().nullish(),

@@ -5,6 +5,7 @@ import type { WorksReviewItem } from '../../features/works'
 import { C, Gray } from '../../theme/colors'
 import { Radius } from '../../theme/radius'
 import { Typography } from '../../theme/typography'
+import { OfficialMark } from '../common/OfficialMark'
 import { ReviewMetaBar } from './ReviewMetaBar'
 import { ReviewSpoilerBlock } from './ReviewSpoilerBlock'
 
@@ -43,9 +44,12 @@ export function OtherReviewCard({
             contentFit="cover"
           />
         </View>
-        <Text style={styles.userName} numberOfLines={1}>
-          {item.userName ?? '익명'}
-        </Text>
+        <View style={styles.userNameRow}>
+          <Text style={styles.userName} numberOfLines={1}>
+            {item.userName ?? '익명'}
+          </Text>
+          <OfficialMark role={item.role} />
+        </View>
       </View>
 
       <Pressable
@@ -116,6 +120,12 @@ const styles = StyleSheet.create({
   userName: {
     ...Typography.body2Medium,
     color: C.text,
+    flexShrink: 1,
+  },
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
     flex: 1,
   },
   contentButton: {

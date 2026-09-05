@@ -15,6 +15,7 @@ export const FeedProfileSchema = z.object({
   userId: z.number(),
   profileImageUrl: z.string().nullish(),
   nickName: z.string(),
+  role: z.string().nullish().optional(),
 })
 
 export const FeedBoardSchema = z.object({

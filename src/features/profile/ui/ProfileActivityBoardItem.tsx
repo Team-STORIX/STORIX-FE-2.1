@@ -118,6 +118,7 @@ export function ProfileActivityBoardCard({
       currentUserId={currentUserId}
       profileImageUrl={item.profile.profileImageUrl}
       nickName={item.profile.nickName}
+      role={item.profile.role}
       createdAt={item.board.lastCreatedTime}
       content={item.board.content}
       images={(item.images ?? [])
