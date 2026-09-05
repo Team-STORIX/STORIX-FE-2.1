@@ -736,7 +736,7 @@ export default function SharedWebViewScreen() {
         payload: {
           requestId: payload.requestId,
           success: errors.length === 0,
-          images: errors.length === 0 ? images : {},
+          images,
           mimeTypes,
           errors,
         },
