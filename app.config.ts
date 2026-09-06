@@ -10,6 +10,8 @@
 require("dotenv").config({ path: ".env.local", override: false });
 require("dotenv").config({ override: false });
 
+const { getKoreaBuildDate } = require("./scripts/build-date");
+
 import fs from "fs";
 import path from "path";
 import {
@@ -261,6 +263,13 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       androidCollapsedTitle: "STORIX",
     },
 
+    extra: {
+      ...(config.extra ?? {}),
+      // Evaluated during every native build/prebuild, independent of the
+      // machine or CI server timezone.
+      versionDate: getKoreaBuildDate(),
+    },
+
     plugins: [
       // Preserve plugins declared in app.json (expo-router, expo-secure-store).
       ...(config.plugins ?? []),
@@ -271,6 +280,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       // notification permission and registers the FCM module.
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "@portone/react-native-sdk/plugin",
       "./plugins/withNotificationServiceExtension",
       [
         "expo-image-picker",
