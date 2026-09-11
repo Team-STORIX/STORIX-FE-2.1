@@ -20,6 +20,7 @@ import {
   ADULT_VERIFICATION_ERROR_CODES,
   confirmAdultVerification,
   getAdultVerificationErrorCode,
+  getAdultVerificationStatus,
   issueAdultVerification,
   syncAdultVerification,
   type AdultVerificationTicket,
@@ -85,6 +86,21 @@ export function AdultVerificationScreen() {
     setErrorMessage('')
 
     try {
+      const currentStatus = await getAdultVerificationStatus()
+      if (!mountedRef.current) return
+
+      if (currentStatus.state === 'VERIFIED') {
+        goBack()
+        return
+      }
+
+      if (!currentStatus.canVerify) {
+        setErrorMessage('현재 성인인증을 진행할 수 없어요.')
+        setCanRetry(false)
+        setStage('error')
+        return
+      }
+
       const nextTicket = await issueAdultVerification()
       if (!mountedRef.current) return
       setTicket(nextTicket)

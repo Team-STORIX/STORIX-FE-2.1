@@ -2,6 +2,9 @@ import { useCallback, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 
 import {
+  ADULT_VERIFICATION_ERROR_CODES,
+  getAdultVerificationErrorCode,
+  getAdultVerificationStatus,
   syncAdultVerification,
   type AdultVerificationStatus,
 } from '../api'
@@ -18,7 +21,20 @@ export function useAdultVerificationStatus() {
     setError(null)
 
     try {
-      const nextStatus = await syncAdultVerification()
+      let nextStatus: AdultVerificationStatus
+
+      try {
+        nextStatus = await syncAdultVerification()
+      } catch (syncError) {
+        const code = getAdultVerificationErrorCode(syncError)
+        const canRecoverFromStoredStatus =
+          code === ADULT_VERIFICATION_ERROR_CODES.incompleteVerification ||
+          code === ADULT_VERIFICATION_ERROR_CODES.expiredVerification
+
+        if (!canRecoverFromStoredStatus) throw syncError
+        nextStatus = await getAdultVerificationStatus()
+      }
+
       if (requestId === requestIdRef.current) setStatus(nextStatus)
       return nextStatus
     } catch (nextError) {

@@ -69,6 +69,17 @@ export const getAdultVerificationErrorCode = (
 ): string | undefined =>
   error instanceof AdultVerificationApiError ? error.code : undefined
 
+export async function getAdultVerificationStatus(): Promise<
+  AdultVerificationStatus
+> {
+  try {
+    const { data } = await apiClient.get(`${BASE_PATH}/me`)
+    return AdultVerificationStatusResponseSchema.parse(data).result
+  } catch (error) {
+    throw toAdultVerificationError(error)
+  }
+}
+
 export async function syncAdultVerification(): Promise<AdultVerificationStatus> {
   try {
     const { data } = await apiClient.post(`${BASE_PATH}/sync`)
