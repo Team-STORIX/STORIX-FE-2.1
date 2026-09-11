@@ -1,12 +1,28 @@
 import { useState } from 'react'
-import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { C, Gray } from '../../../theme'
 import { getCurrentAppVersion, useCurrentAppVersionCheck } from '../../app-version'
-import { useLogoutAction, useSocialProvider } from '../hooks'
+import {
+  useAdultVerificationStatus,
+  useLogoutAction,
+  useSocialProvider,
+} from '../hooks'
+import {
+  ADULT_VERIFICATION_ERROR_CODES,
+  getAdultVerificationErrorCode,
+} from '../api'
 import { SettingsSection } from './SettingsSection'
 
 
@@ -24,6 +40,7 @@ export function ProfileSettingsScreen() {
   const { isPending: isLoggingOut, logout } = useLogoutAction()
   const socialProviderName = useSocialProvider()
   const appVersionQuery = useCurrentAppVersionCheck()
+  const adultVerification = useAdultVerificationStatus()
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showVersionModal, setShowVersionModal] = useState(false)
   const [isLatestVersion, setIsLatestVersion] = useState(true)
@@ -36,6 +53,36 @@ export function ProfileSettingsScreen() {
     const status = appVersionQuery.data?.status
     setIsLatestVersion(status == null || status === 'LATEST')
     setShowVersionModal(true)
+  }
+
+  const adultVerificationErrorCode = getAdultVerificationErrorCode(
+    adultVerification.error,
+  )
+  const isUnderage =
+    adultVerificationErrorCode === ADULT_VERIFICATION_ERROR_CODES.underage
+  const adultVerificationState = adultVerification.status?.state
+  const canStartAdultVerification =
+    !adultVerification.isLoading &&
+    adultVerification.error == null &&
+    !isUnderage &&
+    adultVerification.status?.canVerify === true &&
+    (adultVerificationState === 'NOT_VERIFIED' ||
+      adultVerificationState === 'EXPIRED')
+  const adultVerificationLabel = adultVerification.isLoading
+    ? '확인 중'
+    : isUnderage
+      ? '이용 불가'
+      : adultVerification.error
+        ? '확인 실패'
+        : adultVerification.status?.state === 'VERIFIED'
+          ? '인증 완료'
+          : adultVerification.status?.state === 'EXPIRED'
+            ? '인증 만료'
+            : '미인증'
+
+  const handleAdultVerificationPress = () => {
+    if (!canStartAdultVerification) return
+    router.push('/profile/adult-verification' as never)
   }
 
   return (
@@ -56,7 +103,11 @@ export function ProfileSettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}
+        showsVerticalScrollIndicator={false}
+      >
         <SettingsSection
           title="앱 설정"
           items={[
@@ -97,6 +148,15 @@ export function ProfileSettingsScreen() {
               rightLabelVariant: 'social',
             },
             {
+              label: '성인 인증',
+              rightLabel: adultVerificationLabel,
+              rightLabelVariant: 'status',
+              hasArrow: canStartAdultVerification,
+              onPress: canStartAdultVerification
+                ? handleAdultVerificationPress
+                : undefined,
+            },
+            {
               label: isLoggingOut ? '로그아웃 중...' : '로그아웃',
               hasArrow: true,
               onPress: confirmLogout,
@@ -108,7 +168,7 @@ export function ProfileSettingsScreen() {
             },
           ]}
         />
-      </View>
+      </ScrollView>
 
       <Modal
         visible={showVersionModal}
