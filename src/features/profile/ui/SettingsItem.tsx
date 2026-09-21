@@ -8,7 +8,7 @@ type Props = {
   label: string
   hasArrow?: boolean
   rightLabel?: string
-  rightLabelVariant?: 'version' | 'social'
+  rightLabelVariant?: 'version' | 'social' | 'status'
   onPress?: () => void
 }
 
@@ -21,7 +21,11 @@ export function SettingsItem({ label, hasArrow, rightLabel, rightLabelVariant, o
           <Text
             style={[
               styles.rightLabel,
-              rightLabelVariant === 'version' ? styles.rightLabelVersion : styles.rightLabelSocial,
+              rightLabelVariant === 'version'
+                ? styles.rightLabelVersion
+                : rightLabelVariant === 'status'
+                  ? styles.rightLabelStatus
+                  : styles.rightLabelSocial,
             ]}
           >
             {rightLabel}
@@ -85,6 +89,11 @@ const styles = StyleSheet.create({
     color: Gray[400],
     textAlign: 'center',
     marginRight: 4,
+  },
+  rightLabelStatus: {
+    fontWeight: '500',
+    color: Magenta[300],
+    textAlign: 'right',
   },
   arrow: {
     width: 24,

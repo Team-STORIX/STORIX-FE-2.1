@@ -6,7 +6,7 @@ export type SettingsItemConfig = {
   label: string
   hasArrow?: boolean
   rightLabel?: string
-  rightLabelVariant?: 'version' | 'social'
+  rightLabelVariant?: 'version' | 'social' | 'status'
   onPress?: () => void
 }
 
