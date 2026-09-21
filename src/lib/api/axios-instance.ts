@@ -7,6 +7,8 @@ import { getAccessToken } from "../storage/secure";
 // useAuthStore is imported here (not in component context) to call clearAuth()
 // on token refresh failure. No circular dependency: auth.store never imports axios-instance.
 import { useAuthStore } from "../../store/auth.store";
+import { useAdultVerificationStore } from "../../store/adultVerification.store";
+import { isAdultVerificationRequiredError } from "./adultVerificationRequired";
 // Shared refresh implementation, reused by the STOMP connect flow so both
 // transports rotate tokens identically. See lib/auth/refresh-token.ts.
 import { refreshAuthTokens } from "../auth/refresh-token";
@@ -159,6 +161,14 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => logResponse(response),
   async (error: AxiosError) => {
     logError(error);
+
+    // Adult-only content was requested without a valid verification. Surface
+    // the shared prompt once and still reject so the caller can leave its
+    // loading state.
+    if (isAdultVerificationRequiredError(error)) {
+      useAdultVerificationStore.getState().showPrompt();
+    }
+
     const original = error.config as RetryableConfig | undefined;
 
     // Pass through immediately for non-auth endpoints and non-401 errors.

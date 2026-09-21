@@ -41,6 +41,7 @@ export type ProfileActivityWorks = {
   worksType: string
   genre: string
   hashtags: string[]
+  isAdultOnly?: boolean
 }
 
 export type ProfileActivityBoard = {
@@ -56,6 +57,8 @@ export type ProfileActivityBoard = {
   theme?: 'BIRTHDAY'
   replyCount: number
   isLiked: boolean
+  isAdultOnly?: boolean
+  isBlinded?: boolean
 }
 
 export type ProfileActivityBoardItem = {

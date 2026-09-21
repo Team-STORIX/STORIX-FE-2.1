@@ -5,6 +5,9 @@ export type FavoriteWorkItem = {
   worksId: number
   thumbnailUrl: string
   worksName: string
+  ageClassification?: 'ALL' | 'AGE_12' | 'AGE_15' | 'AGE_18'
+  isAdultOnly?: boolean
+  isBlinded?: boolean
 }
 
 export type FavoriteWorksResult = {

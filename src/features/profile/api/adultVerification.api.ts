@@ -1,6 +1,8 @@
 import { isAxiosError } from 'axios'
 
 import { apiClient } from '../../../lib/api/axios-instance'
+import { ADULT_VERIFICATION_REQUIRED_CODE } from '../../../lib/api/adultVerificationRequired'
+import { useAdultVerificationStore } from '../../../store/adultVerification.store'
 import {
   AdultVerificationStatusResponseSchema,
   AdultVerificationTicketResponseSchema,
@@ -18,7 +20,7 @@ export const ADULT_VERIFICATION_ERROR_CODES = {
   underage: 'ADULT_VERIFICATION_ERROR_005',
   missingBirthDate: 'ADULT_VERIFICATION_ERROR_006',
   providerFailure: 'ADULT_VERIFICATION_ERROR_007',
-  verificationRequired: 'ADULT_VERIFICATION_ERROR_008',
+  verificationRequired: ADULT_VERIFICATION_REQUIRED_CODE,
   alreadyVerified: 'ADULT_VERIFICATION_ERROR_009',
 } as const
 
@@ -37,6 +39,13 @@ export class AdultVerificationApiError extends Error {
     this.code = code
     this.status = status
   }
+}
+
+const shareStatus = (
+  status: AdultVerificationStatus,
+): AdultVerificationStatus => {
+  useAdultVerificationStore.getState().setStatus(status)
+  return status
 }
 
 const toAdultVerificationError = (error: unknown): Error => {
@@ -74,7 +83,7 @@ export async function getAdultVerificationStatus(): Promise<
 > {
   try {
     const { data } = await apiClient.get(`${BASE_PATH}/me`)
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(AdultVerificationStatusResponseSchema.parse(data).result)
   } catch (error) {
     throw toAdultVerificationError(error)
   }
@@ -83,7 +92,7 @@ export async function getAdultVerificationStatus(): Promise<
 export async function syncAdultVerification(): Promise<AdultVerificationStatus> {
   try {
     const { data } = await apiClient.post(`${BASE_PATH}/sync`)
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(AdultVerificationStatusResponseSchema.parse(data).result)
   } catch (error) {
     throw toAdultVerificationError(error)
   }
@@ -104,7 +113,7 @@ export async function confirmAdultVerification(
     const { data } = await apiClient.post(`${BASE_PATH}/confirm`, {
       identityVerificationId,
     })
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(AdultVerificationStatusResponseSchema.parse(data).result)
   } catch (error) {
     throw toAdultVerificationError(error)
   }

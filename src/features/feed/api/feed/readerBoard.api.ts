@@ -13,6 +13,7 @@ export type FeedWorks = {
   worksType: string
   genre: string
   hashtags: string[]
+  isAdultOnly?: boolean
 }
 
 export type FeedBoardItem = {
@@ -30,6 +31,8 @@ export type FeedBoardItem = {
     spoilerScript?: string
     theme?: 'BIRTHDAY'
     isLiked: boolean
+    isAdultOnly?: boolean
+    isBlinded?: boolean
   }
   images: FeedBoardImage[]
   works: FeedWorks | null

@@ -16,6 +16,7 @@ import { queryClient } from '../lib/query/queryClient'
 import { useProfileStore } from '../features/profile/store/profile.store'
 import { useLikesStore } from './likes.store'
 import { useFavoritesStore } from './favorites.store'
+import { useAdultVerificationStore } from './adultVerification.store'
 import { resetToLogin } from '../lib/navigation/navigationRef'
 import { areTokensFromSameUser } from '../lib/utils/jwt'
 
@@ -318,6 +319,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       useFavoritesStore.getState().clearFavorites(),
     ])
     useProfileStore.getState().clearMe()
+    useAdultVerificationStore.getState().clear()
     queryClient.clear()
 
     set({

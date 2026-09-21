@@ -32,6 +32,9 @@ export const FeedBoardSchema = z.object({
   isSpoiler: z.boolean(),
   spoilerScript: z.string().nullish(),
   isLiked: z.boolean(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const TodayFeedItemSchema = z.object({
