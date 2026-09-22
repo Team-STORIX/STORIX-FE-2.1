@@ -6,4 +6,5 @@ export type LibraryUiWork = {
   thumb: string
   rating: number
   reviewCount: number
+  isAdultOnly?: boolean
 }

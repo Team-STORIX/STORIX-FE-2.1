@@ -11,6 +11,7 @@ import {
 import { C, Gray, Typography } from "../../../theme";
 import { LibraryRatingBadge } from "./LibraryRatingBadge";
 import type { LibraryUiWork } from "./types";
+import { AdultThumbnail } from "../../../components/adult";
 
 const leftGradient = require("../../../../assets/icons/library/leftGradient.svg");
 const rightGradient = require("../../../../assets/icons/library/rightGradient.svg");
@@ -143,15 +144,20 @@ export function LibraryGalleryCarousel({
               accessibilityLabel={item.title}
             >
               {isActive ? (
-                item.thumb ? (
-                  <Image
-                    source={{ uri: item.thumb }}
-                    style={styles.activeCover}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={[styles.activeCover, styles.coverFallback]} />
-                )
+                <AdultThumbnail
+                  isAdultOnly={item.isAdultOnly}
+                  style={styles.activeCover}
+                >
+                  {item.thumb ? (
+                    <Image
+                      source={{ uri: item.thumb }}
+                      style={styles.activeCover}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.activeCover, styles.coverFallback]} />
+                  )}
+                </AdultThumbnail>
               ) : (
                 <>
                   <View

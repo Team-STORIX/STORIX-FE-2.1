@@ -10,6 +10,7 @@ import { Image } from 'expo-image'
 import { C, Gray, Typography } from '../../../theme'
 import { LibraryRatingBadge } from './LibraryRatingBadge'
 import type { LibraryUiWork } from './types'
+import { AdultThumbnail } from '../../../components/adult'
 
 type Props = {
   data: LibraryUiWork[]
@@ -37,15 +38,17 @@ export function LibraryWorksList({
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>
-            {item.thumb ? (
-              <Image
-                source={{ uri: item.thumb }}
-                style={styles.thumbnail}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.thumbnail, styles.thumbnailFallback]} />
-            )}
+            <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.thumbnail}>
+              {item.thumb ? (
+                <Image
+                  source={{ uri: item.thumb }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+              )}
+            </AdultThumbnail>
           </View>
 
           <View style={styles.body}>

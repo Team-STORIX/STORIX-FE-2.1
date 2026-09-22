@@ -23,6 +23,10 @@ import { LibraryEmptyState } from "./LibraryEmptyState";
 import { LibrarySearchHeader } from "./LibrarySearchHeader";
 import { LibraryWorksList } from "./LibraryWorksList";
 import type { LibraryUiWork } from "./types";
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from "../../../store/adultVerification.store";
 
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 
@@ -113,6 +117,7 @@ export function LibrarySearchScreen() {
       thumb: item.thumbnailUrl ?? "",
       rating: Number(item.rating ?? 0),
       reviewCount: 0,
+      isAdultOnly: item.isAdultOnly ?? false,
     }));
   }, [searchWorksQuery.items]);
 
@@ -180,7 +185,14 @@ export function LibrarySearchScreen() {
                   void searchWorksQuery.fetchNextPage();
                 }
               }}
-              onPressItem={(item) => router.push(`/works/${item.id}` as const)}
+              onPressItem={(item) => {
+                // The works detail API answers 403 for masked works.
+                if (shouldMaskAdultContent(item.isAdultOnly)) {
+                  useAdultVerificationStore.getState().showPrompt("read");
+                  return;
+                }
+                router.push(`/works/${item.id}` as const);
+              }}
             />
           )}
         </View>

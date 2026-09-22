@@ -19,6 +19,10 @@ import { LibraryGalleryCarousel } from "./LibraryGalleryCarousel";
 import { LibraryHeader } from "./LibraryHeader";
 import { LibraryWorksList } from "./LibraryWorksList";
 import type { LibraryUiWork } from "./types";
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from "../../../store/adultVerification.store";
 import { trackScreenView } from "../../../lib/analytics/events";
 
 const arrowDownIcon = require("../../../../assets/icons/common/arrow-down.svg");
@@ -82,6 +86,7 @@ export function LibraryScreen() {
         thumb: item.thumbnailUrl ?? "",
         rating: Number(ratingRaw ?? 0),
         reviewCount: item.reviewCount ?? (item.reviewId ? 1 : 0),
+        isAdultOnly: item.isAdultOnly ?? false,
       };
     });
 
@@ -114,6 +119,11 @@ export function LibraryScreen() {
   };
 
   const openWorkReview = (item: LibraryUiWork) => {
+    // Review and works detail both answer 403 for masked works.
+    if (shouldMaskAdultContent(item.isAdultOnly)) {
+      useAdultVerificationStore.getState().showPrompt("read");
+      return;
+    }
     if (item.reviewId != null) {
       router.push(
         `/works/review/${item.reviewId}?from=library&worksId=${item.id}` as never,
