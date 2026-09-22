@@ -4,6 +4,7 @@ import {
   updateTopicRoomNotificationSetting,
 } from '../api/topicroom.api'
 import type { TopicRoomNotificationSetting } from '../api/topicroom.schema'
+import { isTopicRoomNotMemberError } from '../services/topicRoomMembership'
 
 export const topicRoomNotificationSettingKey = (roomId: number) =>
   ['topicroom', 'notification', roomId] as const
@@ -16,6 +17,9 @@ export function useTopicRoomNotificationSetting(
     queryKey: topicRoomNotificationSettingKey(roomId),
     queryFn: () => getTopicRoomNotificationSetting(roomId),
     enabled: enabled && Number.isFinite(roomId) && roomId > 0,
+    // A non-member 403 will not change on retry; the screen redirects instead.
+    retry: (failureCount, error) =>
+      !isTopicRoomNotMemberError(error) && failureCount < 1,
   })
 }
 
