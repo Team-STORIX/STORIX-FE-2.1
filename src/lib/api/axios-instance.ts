@@ -8,7 +8,10 @@ import { getAccessToken } from "../storage/secure";
 // on token refresh failure. No circular dependency: auth.store never imports axios-instance.
 import { useAuthStore } from "../../store/auth.store";
 import { useAdultVerificationStore } from "../../store/adultVerification.store";
-import { isAdultVerificationRequiredError } from "./adultVerificationRequired";
+import {
+  getAdultVerificationContext,
+  isAdultVerificationRequiredError,
+} from "./adultVerificationRequired";
 // Shared refresh implementation, reused by the STOMP connect flow so both
 // transports rotate tokens identically. See lib/auth/refresh-token.ts.
 import { refreshAuthTokens } from "../auth/refresh-token";
@@ -166,7 +169,9 @@ apiClient.interceptors.response.use(
     // the shared prompt once and still reject so the caller can leave its
     // loading state.
     if (isAdultVerificationRequiredError(error)) {
-      useAdultVerificationStore.getState().showPrompt();
+      useAdultVerificationStore
+        .getState()
+        .showPrompt(getAdultVerificationContext(error.config?.url));
     }
 
     const original = error.config as RetryableConfig | undefined;

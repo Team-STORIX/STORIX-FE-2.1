@@ -41,3 +41,24 @@ test('errors without a response body are ignored', async () => {
   assert.equal(isAdultVerificationRequiredError(null), false)
   assert.equal(isAdultVerificationRequiredError(undefined), false)
 })
+
+test('prompt context follows the rejected request path', async () => {
+  const { getAdultVerificationContext } = await loadModule()
+
+  // Writes have their own wording.
+  assert.equal(getAdultVerificationContext('/api/v1/plus/reader/review'), 'writeReview')
+  assert.equal(getAdultVerificationContext('/api/v1/plus/reader/board'), 'writePost')
+
+  // Topic rooms and their chat share one wording.
+  assert.equal(getAdultVerificationContext('/api/v1/topic-rooms/5/join'), 'topicroom')
+  assert.equal(getAdultVerificationContext('/api/v1/topic-rooms'), 'topicroom')
+  assert.equal(getAdultVerificationContext('/api/v1/chat/rooms/5/messages'), 'topicroom')
+
+  // Everything that only reads falls back to the default copy.
+  assert.equal(getAdultVerificationContext('/api/v1/works/3'), 'read')
+  assert.equal(getAdultVerificationContext('/api/v1/works/3/review'), 'read')
+  assert.equal(getAdultVerificationContext('/api/v1/works/review/12'), 'read')
+  assert.equal(getAdultVerificationContext('/api/v1/favorite/works/3'), 'read')
+  assert.equal(getAdultVerificationContext('/api/v1/feed/reader/board/7'), 'read')
+  assert.equal(getAdultVerificationContext(undefined), 'read')
+})

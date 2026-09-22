@@ -32,7 +32,11 @@ import { useColorScheme } from '@/components/useColorScheme'
 import { C } from '../src/theme'
 import { AppEventPopupModal, useAppEventPopup } from '../src/features/app-event'
 import { getAppEventWebViewRoute } from '../src/features/app-event/lib/targetNavigation'
-import { AdultVerificationRequiredModal, useMe } from '../src/features/profile'
+import {
+  AdultVerificationRequiredModal,
+  useAdultVerificationBootstrap,
+  useMe,
+} from '../src/features/profile'
 import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
 import { refreshAuthTokens } from '../src/lib/auth/refresh-token'
@@ -537,6 +541,7 @@ function AppEventPopupBootstrap({
 
 function ProfileBootstrap() {
   useMe()
+  useAdultVerificationBootstrap()
   return null
 }
 
