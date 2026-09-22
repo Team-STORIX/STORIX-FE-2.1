@@ -8,6 +8,7 @@ import { AdultBadge } from './AdultBadge'
 const CONTEXT_LEAD: Record<AdultVerificationContext, string> = {
   read: '게시글 접근을 위해 성인인증이 필요합니다.',
   topicroom: '해당 토픽룸 접근을 위해 성인인증이 필요합니다.',
+  createTopicRoom: '해당 토픽룸 생성을 위해 성인인증이 필요합니다.',
   writeReview: '리뷰 작성을 위해 성인인증이 필요합니다.',
   writePost: '게시글 작성을 위해 성인인증이 필요합니다.',
 }

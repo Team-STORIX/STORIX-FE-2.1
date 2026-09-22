@@ -6,12 +6,14 @@ import type { AdultVerificationStatus } from '../features/profile/api/adultVerif
  * Why the verification prompt was raised. Selects the modal body copy.
  * - read: opening adult posts or works (search, feed)
  * - topicroom: entering an adult topic room
+ * - createTopicRoom: creating a topic room for an adult work
  * - writeReview: writing a review for an adult work
  * - writePost: writing a feed post for an adult work
  */
 export type AdultVerificationContext =
   | 'read'
   | 'topicroom'
+  | 'createTopicRoom'
   | 'writeReview'
   | 'writePost'
 

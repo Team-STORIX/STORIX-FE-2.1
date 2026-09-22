@@ -23,6 +23,11 @@ import type { WorksSearchItem } from "../../search/api/search.schema";
 import { useWorksSearch } from "../../search/hooks/useSearch";
 import { findTopicRoomIdByWorksName } from "../api/topicroom.api";
 import { getTopicRoomDiscoveryRoute } from "../services/topicRoomNavigation";
+import {
+  AdultThumbnail,
+  AdultVerificationModal,
+} from "../../../components/adult";
+import { shouldMaskAdultContent } from "../../../store/adultVerification.store";
 
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
@@ -69,19 +74,21 @@ function WorkResultItem({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.itemThumb}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.itemThumbFallback}>
-            <Text style={styles.itemThumbFallbackText}>
-              {(item.worksName ?? "").trim().charAt(0) || "?"}
-            </Text>
-          </View>
-        )}
+        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.itemThumb}>
+          {item.thumbnailUrl ? (
+            <Image
+              source={{ uri: item.thumbnailUrl }}
+              style={styles.itemThumb}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.itemThumbFallback}>
+              <Text style={styles.itemThumbFallbackText}>
+                {(item.worksName ?? "").trim().charAt(0) || "?"}
+              </Text>
+            </View>
+          )}
+        </AdultThumbnail>
       </View>
 
       <View style={styles.itemTextWrap}>
@@ -120,6 +127,7 @@ export function TopicRoomWorksPickerBottomSheet({
   const [selectedId, setSelectedId] = useState<number | undefined>();
   const [existingRoomId, setExistingRoomId] = useState<number | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
+  const [adultPromptVisible, setAdultPromptVisible] = useState(false);
   const checkSeqRef = useRef(0);
 
   useEffect(() => {
@@ -133,6 +141,7 @@ export function TopicRoomWorksPickerBottomSheet({
     setSelectedId(undefined);
     setExistingRoomId(null);
     setCheckingExisting(false);
+    setAdultPromptVisible(false);
     checkSeqRef.current += 1;
 
     Animated.timing(progress, {
@@ -186,6 +195,12 @@ export function TopicRoomWorksPickerBottomSheet({
   };
 
   const handleSelectWork = (item: WorksSearchItem) => {
+    // Creating (and joining) a room for an adult work needs verification.
+    // Blocking here also skips the existing-room lookup for that work.
+    if (shouldMaskAdultContent(item.isAdultOnly)) {
+      setAdultPromptVisible(true);
+      return;
+    }
     if (selectedId === item.worksId) {
       checkSeqRef.current += 1;
       setSelectedId(undefined);
@@ -414,6 +429,21 @@ export function TopicRoomWorksPickerBottomSheet({
               </KeyboardAvoidingView>
             </Animated.View>
           </Animated.View>
+
+      {/* Rendered inside the sheet: a root-level modal can stay hidden
+          behind an open RN Modal on iOS. */}
+      <AdultVerificationModal
+        visible={adultPromptVisible}
+        context="createTopicRoom"
+        onClose={() => setAdultPromptVisible(false)}
+        onConfirm={() => {
+          setAdultPromptVisible(false);
+          animateOut(() => {
+            onClose();
+            router.push("/profile/adult-verification" as never);
+          });
+        }}
+      />
     </Modal>
   );
 }
