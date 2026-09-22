@@ -33,6 +33,7 @@ import {
 import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
 import { Typography } from '../../src/theme/typography'
+import { useLeaveOnAdultVerificationRequired } from '../../src/lib/navigation/useLeaveOnAdultVerificationRequired'
 
 type EntryPhase = 'idle' | 'searching'
 type TabKey = 'info' | 'review'
@@ -67,6 +68,9 @@ export default function WorksDetailScreen() {
 
   const worksQuery = useWorksDetail(worksId)
   const works = worksQuery.data
+  const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(
+    worksQuery.error,
+  )
 
   const { data: meData } = useMe()
   const myNickname = meData?.nickName
@@ -244,7 +248,7 @@ export default function WorksDetailScreen() {
         onToggleFavorite={() => void toggleFavorite()}
       />
 
-      {worksQuery.isLoading ? (
+      {worksQuery.isLoading || isLeavingForAdultVerification ? (
         <CenteredState text="작품 정보를 불러오는 중이에요.">
           <ActivityIndicator size="large" color={C.primary} />
         </CenteredState>

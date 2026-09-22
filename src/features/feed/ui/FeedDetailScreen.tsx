@@ -30,6 +30,7 @@ import {
 } from '../api/feed/readerBoardDetail.api'
 import { deleteBoard, reportBoard, toggleBoardLike } from '../api/feed/readerBoard.api'
 import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
+import { useLeaveOnAdultVerificationRequired } from '../../../lib/navigation/useLeaveOnAdultVerificationRequired'
 import { blockUser } from '../../users/api/users.api'
 import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
@@ -69,6 +70,9 @@ export function FeedDetailScreen() {
   const { data: me } = useMe()
   const myUserId = me?.userId ?? null
   const detailQuery = useBoardDetailInfinite(boardId ?? 0)
+  const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(
+    detailQuery.error,
+  )
 
   const firstPage = detailQuery.data?.pages[0]
   const boardItem = firstPage?.board
@@ -552,7 +556,7 @@ export function FeedDetailScreen() {
         <View style={styles.topBarSpacer} />
       </View>
 
-      {detailQuery.isLoading ? (
+      {detailQuery.isLoading || isLeavingForAdultVerification ? (
         <View style={styles.centerState}>
           <ActivityIndicator size="small" color={Magenta[300]} />
         </View>
@@ -612,6 +616,7 @@ export function FeedDetailScreen() {
                 }
                 isSpoiler={board.isSpoiler ?? false}
                 isAdultOnly={board.isAdultOnly ?? false}
+                isBlinded={board.isBlinded}
                 spoilerScript={board.spoilerScript}
                 isLiked={effectivePostLike.isLiked}
                 likeCount={effectivePostLike.likeCount}

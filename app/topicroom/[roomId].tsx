@@ -62,6 +62,7 @@ import {
   trackExitTopicRoom,
   trackScreenView,
 } from "../../src/lib/analytics/events";
+import { useLeaveOnAdultVerificationRequired } from "../../src/lib/navigation/useLeaveOnAdultVerificationRequired";
 
 const checkboxActiveIcon = require("../../assets/topicroom/icon-checkbox-active.svg");
 
@@ -628,6 +629,8 @@ export default function TopicRoomScreen() {
   // Not a participant (push, deep link, or a stale list after leaving): the
   // room-scoped APIs answer 403 TOPIC_ROOM_ERROR_008, so hand over to the
   // preview, where the user can join again.
+  const isLeavingForAdultVerification =
+    useLeaveOnAdultVerificationRequired(historyErrorDetail);
   const isNotMember =
     isTopicRoomNotMemberError(historyErrorDetail) ||
     isTopicRoomNotMemberError(notificationSettingQuery.error);
@@ -970,7 +973,10 @@ export default function TopicRoomScreen() {
         />
       ) : null}
 
-      {!historyLoading && historyError && !isNotMember ? (
+      {!historyLoading &&
+      historyError &&
+      !isNotMember &&
+      !isLeavingForAdultVerification ? (
         <Text style={styles.errorText}>메시지 기록을 불러오지 못했습니다.</Text>
       ) : null}
 
