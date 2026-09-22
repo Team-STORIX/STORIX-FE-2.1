@@ -289,10 +289,12 @@ export function FeedScreen() {
                   worksType: works.worksType,
                   genre: works.genre,
                   hashtags: works.hashtags ?? [],
+                  isAdultOnly: works.isAdultOnly,
                 }
               : null
           }
           isSpoiler={board.isSpoiler ?? false}
+          isAdultOnly={board.isAdultOnly ?? false}
           spoilerScript={board.spoilerScript}
           isLiked={isLiked}
           likeCount={likeCount}

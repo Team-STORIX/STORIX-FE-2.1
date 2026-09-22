@@ -13,7 +13,13 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
+import { useRouter } from "expo-router";
 import { OfficialMark } from "../../../components/common/OfficialMark";
+import { AdultLockedPanel } from "../../../components/adult";
+import {
+  useAdultVerificationStore,
+  useShouldMaskAdultContent,
+} from "../../../store/adultVerification.store";
 import { C, Gray, Magenta } from "../../../theme/colors";
 import { FontFamily, Typography } from "../../../theme/typography";
 
@@ -41,6 +47,7 @@ export type PostCardWorks = {
   worksType: string;
   genre: string;
   hashtags: string[];
+  isAdultOnly?: boolean;
 };
 
 type FeedPostCardVariant = "list" | "detail";
@@ -71,6 +78,8 @@ type FeedPostCardProps = {
   birthdayTheme?: boolean;
   birthdayPreview?: boolean;
   disableSpoilerMask?: boolean;
+  /** The post or its linked work is adult-only. */
+  isAdultOnly?: boolean;
 };
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
@@ -210,7 +219,13 @@ export function FeedPostCard({
   birthdayTheme = false,
   birthdayPreview = false,
   disableSpoilerMask = false,
+  isAdultOnly = false,
 }: FeedPostCardProps) {
+  const router = useRouter();
+  const isAdultMasked = useShouldMaskAdultContent(
+    isAdultOnly || works?.isAdultOnly === true,
+  );
+  const showAdultPrompt = useAdultVerificationStore((state) => state.showPrompt);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuDropdownTop, setMenuDropdownTop] = useState(0);
   const menuBtnRef = useRef<any>(null);
@@ -247,6 +262,7 @@ export function FeedPostCard({
   const useBirthdayPreviewLayout = birthdayPreview || birthdayTheme;
 
   const showWorks =
+    !isAdultMasked &&
     works != null &&
     !!works.thumbnailUrl &&
     !!works.worksName &&
@@ -471,72 +487,86 @@ export function FeedPostCard({
       )}
 
       {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.spoilerContainer}>
-        <View style={styles.bodySection}>
-          <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
-            {images.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.imageScroll}
-                contentContainerStyle={styles.imageContent}
-              >
-                {images.slice(0, 3).map((src, idx) => (
-                  <Pressable
-                    key={`${boardId}-img-${idx}`}
-                    style={[
-                      styles.imageBox,
-                      useBirthdayPreviewLayout && styles.birthdayImageBox,
-                    ]}
-                    onPress={() => {
-                      setLightboxIndex(idx);
-                      setLightboxCurrent(idx);
-                      setLightboxControls(false);
-                    }}
-                  >
-                    <Image
-                      source={{ uri: src }}
+      <View
+        style={[
+          styles.spoilerContainer,
+          isAdultMasked && styles.adultMaskedContainer,
+        ]}
+      >
+        {isAdultMasked ? (
+          <AdultLockedPanel
+            onPressVerify={() =>
+              router.push("/profile/adult-verification" as never)
+            }
+          />
+        ) : (
+          <View style={styles.bodySection}>
+            <View style={isSpoilerHidden ? ({ filter: 'blur(17px)', overflow: 'hidden' } as any) : undefined}>
+              {images.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.imageScroll}
+                  contentContainerStyle={styles.imageContent}
+                >
+                  {images.slice(0, 3).map((src, idx) => (
+                    <Pressable
+                      key={`${boardId}-img-${idx}`}
                       style={[
-                        styles.imageFill,
-                        useBirthdayPreviewLayout && styles.birthdayImageFill,
+                        styles.imageBox,
+                        useBirthdayPreviewLayout && styles.birthdayImageBox,
                       ]}
-                      contentFit="cover"
-                    />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
-            <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-              <Text
-                style={[
-                  styles.contentText,
-                  useBirthdayPreviewLayout && styles.birthdayContentText,
-                ]}
-                numberOfLines={variant === "detail" ? undefined : 3}
-              >
-                {content}
-              </Text>
+                      onPress={() => {
+                        setLightboxIndex(idx);
+                        setLightboxCurrent(idx);
+                        setLightboxControls(false);
+                      }}
+                    >
+                      <Image
+                        source={{ uri: src }}
+                        style={[
+                          styles.imageFill,
+                          useBirthdayPreviewLayout && styles.birthdayImageFill,
+                        ]}
+                        contentFit="cover"
+                      />
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+              <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
+                <Text
+                  style={[
+                    styles.contentText,
+                    useBirthdayPreviewLayout && styles.birthdayContentText,
+                  ]}
+                  numberOfLines={variant === "detail" ? undefined : 3}
+                >
+                  {content}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          {isSpoilerHidden && (
-            <Pressable
-              style={styles.spoilerOverlay}
-              onPress={() => setSpoilerRevealed(true)}
-              accessibilityLabel="스포일러가 포함된 피드글 보기"
-            >
-              <Text style={styles.spoilerRevealText}>
-                {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
-              </Text>
-            </Pressable>
-          )}
-        </View>
+            {isSpoilerHidden && (
+              <Pressable
+                style={styles.spoilerOverlay}
+                onPress={() => setSpoilerRevealed(true)}
+                accessibilityLabel="스포일러가 포함된 피드글 보기"
+              >
+                <Text style={styles.spoilerRevealText}>
+                  {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {/* ── Reactions row ────────────────────────────────────── */}
         <View
           style={[
             styles.reactionRow,
             useBirthdayPreviewLayout && styles.birthdayReactionRow,
+            isAdultMasked && styles.adultMaskedReactionRow,
           ]}
         >
           <Pressable
@@ -602,7 +632,8 @@ export function FeedPostCard({
   if (variant === "list" && onPressCard) {
     return (
       <Pressable
-        onPress={onPressCard}
+        // A masked post would answer 403 on the detail screen.
+        onPress={isAdultMasked ? () => showAdultPrompt("read") : onPressCard}
         style={({ pressed }) => pressed && styles.cardPressed}
         accessibilityRole="button"
         accessibilityLabel={`${nickName}의 피드`}
@@ -921,6 +952,14 @@ const styles = StyleSheet.create({
   },
   bodySection: {
     overflow: "hidden",
+  },
+  // Figma 11290:50053: the panel sits right under the profile row and the
+  // reactions follow 12px below it.
+  adultMaskedContainer: {
+    marginTop: 0,
+  },
+  adultMaskedReactionRow: {
+    marginTop: 12,
   },
   imageScroll: {
     paddingHorizontal: 0,
