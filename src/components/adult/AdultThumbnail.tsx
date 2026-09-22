@@ -7,6 +7,8 @@ import { AdultBadge } from './AdultBadge'
 
 type AdultThumbnailProps = {
   isAdultOnly?: boolean | null
+  /** Server flag; masks on its own when present (see isAdultContentMasked). */
+  isBlinded?: boolean | null
   /** Size, radius and margins of the thumbnail slot; applied to both states. */
   style?: StyleProp<ViewStyle>
   /** The regular thumbnail, rendered when the content is not masked. */
@@ -19,10 +21,11 @@ type AdultThumbnailProps = {
  */
 export function AdultThumbnail({
   isAdultOnly,
+  isBlinded,
   style,
   children,
 }: AdultThumbnailProps) {
-  const masked = useShouldMaskAdultContent(isAdultOnly)
+  const masked = useShouldMaskAdultContent({ isAdultOnly, isBlinded })
 
   if (!masked) return <>{children}</>
 

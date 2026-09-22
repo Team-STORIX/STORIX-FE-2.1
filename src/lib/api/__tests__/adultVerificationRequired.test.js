@@ -79,3 +79,19 @@ test('only a transition into VERIFIED counts as newly verified', async () => {
   assert.equal(isNewlyVerified('NOT_VERIFIED', 'NOT_VERIFIED'), false)
   assert.equal(isNewlyVerified('VERIFIED', 'EXPIRED'), false)
 })
+
+test('isBlinded from the server decides masking when present', async () => {
+  const { isAdultContentMasked } = await loadModule()
+
+  assert.equal(isAdultContentMasked({ isAdultOnly: true, isBlinded: true }, true), true)
+  assert.equal(isAdultContentMasked({ isAdultOnly: true, isBlinded: false }, false), false)
+})
+
+test('without isBlinded, adult content is masked until verified', async () => {
+  const { isAdultContentMasked } = await loadModule()
+
+  assert.equal(isAdultContentMasked({ isAdultOnly: true }, false), true)
+  assert.equal(isAdultContentMasked({ isAdultOnly: true, isBlinded: null }, true), false)
+  assert.equal(isAdultContentMasked({ isAdultOnly: false }, false), false)
+  assert.equal(isAdultContentMasked({}, false), false)
+})

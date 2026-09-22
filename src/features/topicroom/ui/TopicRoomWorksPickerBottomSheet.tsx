@@ -74,7 +74,11 @@ function WorkResultItem({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.itemThumb}>
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.itemThumb}
+        >
           {item.thumbnailUrl ? (
             <Image
               source={{ uri: item.thumbnailUrl }}
@@ -197,7 +201,7 @@ export function TopicRoomWorksPickerBottomSheet({
   const handleSelectWork = (item: WorksSearchItem) => {
     // Creating (and joining) a room for an adult work needs verification.
     // Blocking here also skips the existing-room lookup for that work.
-    if (shouldMaskAdultContent(item.isAdultOnly)) {
+    if (shouldMaskAdultContent(item)) {
       setAdultPromptVisible(true);
       return;
     }

@@ -39,7 +39,7 @@ export function ProfileLikedWorkItem({
     }
 
     // The works detail API answers 403 for masked works.
-    if (shouldMaskAdultContent(item.isAdultOnly)) {
+    if (shouldMaskAdultContent(item)) {
       useAdultVerificationStore.getState().showPrompt('read')
       return
     }
@@ -59,7 +59,11 @@ export function ProfileLikedWorkItem({
       }
     >
       <View style={styles.thumbnailWrap}>
-        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.thumbnail}>
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.thumbnail}
+        >
           {item.thumbnailUrl ? (
             <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
           ) : null}

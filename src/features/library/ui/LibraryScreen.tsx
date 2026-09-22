@@ -87,6 +87,7 @@ export function LibraryScreen() {
         rating: Number(ratingRaw ?? 0),
         reviewCount: item.reviewCount ?? (item.reviewId ? 1 : 0),
         isAdultOnly: item.isAdultOnly ?? false,
+        isBlinded: item.isBlinded ?? undefined,
       };
     });
 
@@ -120,7 +121,7 @@ export function LibraryScreen() {
 
   const openWorkReview = (item: LibraryUiWork) => {
     // Review and works detail both answer 403 for masked works.
-    if (shouldMaskAdultContent(item.isAdultOnly)) {
+    if (shouldMaskAdultContent(item)) {
       useAdultVerificationStore.getState().showPrompt("read");
       return;
     }

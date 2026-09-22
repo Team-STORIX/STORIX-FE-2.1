@@ -295,6 +295,7 @@ export function FeedScreen() {
           }
           isSpoiler={board.isSpoiler ?? false}
           isAdultOnly={board.isAdultOnly ?? false}
+          isBlinded={board.isBlinded}
           spoilerScript={board.spoilerScript}
           isLiked={isLiked}
           likeCount={likeCount}

@@ -7,4 +7,5 @@ export type LibraryUiWork = {
   rating: number
   reviewCount: number
   isAdultOnly?: boolean
+  isBlinded?: boolean
 }

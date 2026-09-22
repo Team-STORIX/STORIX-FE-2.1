@@ -44,3 +44,23 @@ export const getAdultVerificationContext = (
   if (/\/topic-rooms|\/chat\//.test(url)) return 'topicroom'
   return 'read'
 }
+
+export type AdultContentFlags = {
+  isAdultOnly?: boolean | null
+  isBlinded?: boolean | null
+}
+
+/**
+ * Whether adult content must be masked. The server sets isBlinded only for
+ * adult content requested by an unverified or expired user, and strips the
+ * hidden fields from that payload, so it wins whenever it is present. The
+ * local verification state is only a fallback for payloads without it
+ * (e.g. the works nested in a feed post).
+ */
+export const isAdultContentMasked = (
+  { isAdultOnly, isBlinded }: AdultContentFlags,
+  verified: boolean,
+): boolean => {
+  if (typeof isBlinded === 'boolean') return isBlinded
+  return isAdultOnly === true && !verified
+}

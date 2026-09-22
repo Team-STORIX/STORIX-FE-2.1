@@ -80,6 +80,8 @@ type FeedPostCardProps = {
   disableSpoilerMask?: boolean;
   /** The post or its linked work is adult-only. */
   isAdultOnly?: boolean;
+  /** Server flag: this post is adult content hidden from the current user. */
+  isBlinded?: boolean;
 };
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
@@ -220,11 +222,13 @@ export function FeedPostCard({
   birthdayPreview = false,
   disableSpoilerMask = false,
   isAdultOnly = false,
+  isBlinded,
 }: FeedPostCardProps) {
   const router = useRouter();
-  const isAdultMasked = useShouldMaskAdultContent(
-    isAdultOnly || works?.isAdultOnly === true,
-  );
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: isAdultOnly || works?.isAdultOnly === true,
+    isBlinded,
+  });
   const showAdultPrompt = useAdultVerificationStore((state) => state.showPrompt);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuDropdownTop, setMenuDropdownTop] = useState(0);

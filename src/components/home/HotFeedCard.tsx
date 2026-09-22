@@ -31,7 +31,10 @@ export function HotFeedCard({
   width = CARD_W,
   onPress,
 }: HotFeedCardProps) {
-  const isAdultMasked = useShouldMaskAdultContent(item?.board.isAdultOnly);
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: item?.board.isAdultOnly,
+    isBlinded: item?.board.isBlinded,
+  });
   const showPrompt = useAdultVerificationStore((state) => state.showPrompt);
 
   if (loading || !item) {

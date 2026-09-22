@@ -146,6 +146,7 @@ export function LibraryGalleryCarousel({
               {isActive ? (
                 <AdultThumbnail
                   isAdultOnly={item.isAdultOnly}
+                  isBlinded={item.isBlinded}
                   style={styles.activeCover}
                 >
                   {item.thumb ? (

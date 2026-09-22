@@ -58,7 +58,11 @@ export function SearchWorksResultList({
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>
-            <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.thumbnail}>
+            <AdultThumbnail
+              isAdultOnly={item.isAdultOnly}
+              isBlinded={item.isBlinded}
+              style={styles.thumbnail}
+            >
               {item.thumbnailUrl ? (
                 <Image
                   source={{ uri: item.thumbnailUrl }}

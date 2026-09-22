@@ -75,7 +75,11 @@ function WorkItemRow({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.itemThumb}>
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.itemThumb}
+        >
           {item.thumbnailUrl ? (
             <Image
               source={{ uri: item.thumbnailUrl }}
@@ -318,7 +322,7 @@ export function FeedWritePickerBottomSheet({
                       selected={item.worksId === selectedWorkId}
                       onPress={() => {
                         // Adult works cannot be attached until verified.
-                        if (shouldMaskAdultContent(item.isAdultOnly)) {
+                        if (shouldMaskAdultContent(item)) {
                           setAdultPromptVisible(true);
                           return;
                         }

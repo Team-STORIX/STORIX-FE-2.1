@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 
 import type { AdultVerificationStatus } from '../features/profile/api/adultVerification.schema'
+import {
+  isAdultContentMasked,
+  type AdultContentFlags,
+} from '../lib/api/adultVerificationRequired'
 
 /**
  * Why the verification prompt was raised. Selects the modal body copy.
@@ -56,21 +60,17 @@ export const useIsAdultVerified = (): boolean =>
   useAdultVerificationStore((state) => state.status?.state === 'VERIFIED')
 
 /**
- * Whether adult-only content must be masked for the current user.
- * Single decision point so the rule can change in one place (e.g. if the
- * server-side isBlinded flag turns out to be the per-user answer).
+ * Whether adult content must be masked for the current user.
+ * The rule lives in isAdultContentMasked (server isBlinded first).
  */
-export const useShouldMaskAdultContent = (
-  isAdultOnly: boolean | null | undefined,
-): boolean => {
+export const useShouldMaskAdultContent = (flags: AdultContentFlags): boolean => {
   const verified = useIsAdultVerified()
-  return isAdultOnly === true && !verified
+  return isAdultContentMasked(flags, verified)
 }
 
 /** Same rule as useShouldMaskAdultContent, for event handlers. */
-export const shouldMaskAdultContent = (
-  isAdultOnly: boolean | null | undefined,
-): boolean =>
-  isAdultOnly === true &&
-  useAdultVerificationStore.getState().status?.state !== 'VERIFIED'
-
+export const shouldMaskAdultContent = (flags: AdultContentFlags): boolean =>
+  isAdultContentMasked(
+    flags,
+    useAdultVerificationStore.getState().status?.state === 'VERIFIED',
+  )

@@ -248,7 +248,7 @@ export function SearchScreen() {
 
   const handlePressWorks = (item: WorksSearchItem, _index: number) => {
     // The detail API answers 403 for masked works; prompt before navigating.
-    if (shouldMaskAdultContent(item.isAdultOnly)) {
+    if (shouldMaskAdultContent(item)) {
       useAdultVerificationStore.getState().showPrompt('read')
       return
     }

@@ -118,6 +118,7 @@ export function LibrarySearchScreen() {
       rating: Number(item.rating ?? 0),
       reviewCount: 0,
       isAdultOnly: item.isAdultOnly ?? false,
+      isBlinded: item.isBlinded ?? undefined,
     }));
   }, [searchWorksQuery.items]);
 
@@ -187,7 +188,7 @@ export function LibrarySearchScreen() {
               }}
               onPressItem={(item) => {
                 // The works detail API answers 403 for masked works.
-                if (shouldMaskAdultContent(item.isAdultOnly)) {
+                if (shouldMaskAdultContent(item)) {
                   useAdultVerificationStore.getState().showPrompt("read");
                   return;
                 }

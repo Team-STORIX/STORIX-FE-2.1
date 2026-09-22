@@ -60,7 +60,11 @@ function WorkResultItem({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.itemThumb}>
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.itemThumb}
+        >
           {item.thumbnailUrl ? (
             <Image
               source={{ uri: item.thumbnailUrl }}
@@ -311,7 +315,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                       onPress={() => {
                         // Selecting also fires the duplicate-review check,
                         // which the server rejects for unverified users.
-                        if (shouldMaskAdultContent(item.isAdultOnly)) {
+                        if (shouldMaskAdultContent(item)) {
                           setAdultPromptVisible(true);
                           return;
                         }
