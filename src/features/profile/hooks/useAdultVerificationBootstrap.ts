@@ -18,7 +18,7 @@ export const useAdultVerificationBootstrap = () => {
 
   return useQuery({
     queryKey: ADULT_VERIFICATION_STATUS_QUERY_KEY,
-    queryFn: getAdultVerificationStatus,
+    queryFn: () => getAdultVerificationStatus({ refreshOnVerified: false }),
     enabled: isAuthenticated,
     staleTime: Infinity,
   })
