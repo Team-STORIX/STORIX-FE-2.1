@@ -19,6 +19,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { C, Gray, Radius, S, Typography } from "../../../theme";
 import type { PlusWorksSearchItem } from "../api";
 import { usePlusReviewDuplicateCheck, usePlusWorksSearch } from "../hooks";
+import {
+  AdultThumbnail,
+  AdultVerificationModal,
+} from "../../../components/adult";
+import { shouldMaskAdultContent } from "../../../store/adultVerification.store";
 
 const checkPinkIcon = require("../../../../assets/icons/common/check-pink.svg");
 const checkGrayIcon = require("../../../../assets/icons/common/check-gray.svg");
@@ -55,19 +60,21 @@ function WorkResultItem({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.itemThumb}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.itemThumbFallback}>
-            <Text style={styles.itemThumbFallbackText}>
-              {(item.worksName ?? "").trim().charAt(0) || "?"}
-            </Text>
-          </View>
-        )}
+        <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.itemThumb}>
+          {item.thumbnailUrl ? (
+            <Image
+              source={{ uri: item.thumbnailUrl }}
+              style={styles.itemThumb}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.itemThumbFallback}>
+              <Text style={styles.itemThumbFallbackText}>
+                {(item.worksName ?? "").trim().charAt(0) || "?"}
+              </Text>
+            </View>
+          )}
+        </AdultThumbnail>
       </View>
 
       <View style={styles.itemTextWrap}>
@@ -102,6 +109,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [selectedWorkId, setSelectedWorkId] = useState<number>();
+  const [adultPromptVisible, setAdultPromptVisible] = useState(false);
 
   useEffect(() => {
     if (!visible) {
@@ -112,6 +120,7 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
     setKeyword("");
     setDebouncedKeyword("");
     setSelectedWorkId(undefined);
+    setAdultPromptVisible(false);
 
     Animated.timing(progress, {
       toValue: 1,
@@ -299,11 +308,17 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
                     <WorkResultItem
                       item={item}
                       selected={item.worksId === selectedWorkId}
-                      onPress={() =>
+                      onPress={() => {
+                        // Selecting also fires the duplicate-review check,
+                        // which the server rejects for unverified users.
+                        if (shouldMaskAdultContent(item.isAdultOnly)) {
+                          setAdultPromptVisible(true);
+                          return;
+                        }
                         setSelectedWorkId((current) =>
                           current === item.worksId ? undefined : item.worksId,
-                        )
-                      }
+                        );
+                      }}
                     />
                   )}
                   contentContainerStyle={styles.listContent}
@@ -366,6 +381,20 @@ export function ReviewWriteBottomSheet({ visible, onClose }: Props) {
           </KeyboardAvoidingView>
         </Animated.View>
       </Animated.View>
+
+      {/* Rendered inside the sheet: a root-level modal can stay hidden
+          behind an open RN Modal on iOS. */}
+      <AdultVerificationModal
+        visible={adultPromptVisible}
+        context="writeReview"
+        onClose={() => setAdultPromptVisible(false)}
+        onConfirm={() => {
+          setAdultPromptVisible(false);
+          handleClose(() =>
+            router.push("/profile/adult-verification" as never),
+          );
+        }}
+      />
     </Modal>
   );
 }

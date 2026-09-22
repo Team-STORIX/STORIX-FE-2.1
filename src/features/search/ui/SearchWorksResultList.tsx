@@ -4,6 +4,7 @@ import { C, Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import type { WorksSearchItem } from '../api'
 import { SearchEmptyState } from './SearchEmptyState'
+import { AdultThumbnail } from '../../../components/adult'
 
 const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
 
@@ -57,15 +58,17 @@ export function SearchWorksResultList({
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>
-            {item.thumbnailUrl ? (
-              <Image
-                source={{ uri: item.thumbnailUrl }}
-                style={styles.thumbnail}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.thumbnail, styles.thumbnailFallback]} />
-            )}
+            <AdultThumbnail isAdultOnly={item.isAdultOnly} style={styles.thumbnail}>
+              {item.thumbnailUrl ? (
+                <Image
+                  source={{ uri: item.thumbnailUrl }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+              )}
+            </AdultThumbnail>
           </View>
 
           <View style={styles.body}>
