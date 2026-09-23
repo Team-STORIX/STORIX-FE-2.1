@@ -74,7 +74,6 @@ export function ReviewWriteEntryScreen() {
     if (!worksId) return false
     if (isEditMode && !editInitialised) return false
     if (rating < 0.5) return false
-    if (content.length === 0) return false
     if (content.length > MAX_CONTENT_LENGTH) return false
     if (spoiler && spoilerMessage.trim().length === 0) return false
     if (submitMutation.isPending || updateMutation.isPending) return false
