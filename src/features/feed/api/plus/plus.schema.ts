@@ -92,7 +92,11 @@ export const PlusWorksSearchItemSchema = z.object({
   worksId: z.number(),
   worksName: z.string().optional(),
   artistName: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
+  // A blinded adult work keeps its name and artist but comes back with a null
+  // thumbnail, and .optional() alone rejects null. One such row used to fail
+  // the whole page (content is a z.array), so an unverified user searching a
+  // keyword that matched any adult work got "검색에 실패했어요" and no results.
+  thumbnailUrl: z.string().nullish(),
   worksType: z.string().optional(),
   platform: z.string().optional(),
   genre: z.string().optional(),

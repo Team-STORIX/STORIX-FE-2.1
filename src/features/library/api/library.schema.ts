@@ -30,7 +30,9 @@ export const LibrarySearchWorkSchema = z.object({
   worksId: z.number(),
   worksName: z.string().optional(),
   artistName: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
+  // Null for a blinded adult work, same as the [+] tab search. See the note on
+  // PlusWorksSearchItemSchema: .optional() rejects null and takes the page with it.
+  thumbnailUrl: z.string().nullish(),
   worksType: z.string().optional(),
   genre: z.string().optional(),
   platform: z.string().optional(),
