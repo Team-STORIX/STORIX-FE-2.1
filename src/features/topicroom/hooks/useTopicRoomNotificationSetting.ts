@@ -4,6 +4,7 @@ import {
   updateTopicRoomNotificationSetting,
 } from '../api/topicroom.api'
 import type { TopicRoomNotificationSetting } from '../api/topicroom.schema'
+import { isAdultVerificationRequiredError } from '../../../lib/api/adultVerificationRequired'
 import { isTopicRoomNotMemberError } from '../services/topicRoomMembership'
 
 export const topicRoomNotificationSettingKey = (roomId: number) =>
@@ -17,9 +18,13 @@ export function useTopicRoomNotificationSetting(
     queryKey: topicRoomNotificationSettingKey(roomId),
     queryFn: () => getTopicRoomNotificationSetting(roomId),
     enabled: enabled && Number.isFinite(roomId) && roomId > 0,
-    // A non-member 403 will not change on retry; the screen redirects instead.
+    // Neither a non-member nor an adult-verification 403 changes on retry,
+    // and the retry delays the screen's redirect past the prompt the user
+    // may already have acted on.
     retry: (failureCount, error) =>
-      !isTopicRoomNotMemberError(error) && failureCount < 1,
+      !isTopicRoomNotMemberError(error) &&
+      !isAdultVerificationRequiredError(error) &&
+      failureCount < 1,
   })
 }
 

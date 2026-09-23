@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { useIsFocused } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 
 import { isAdultVerificationRequiredError } from '../api/adultVerificationRequired'
+import { useIsAdultVerified } from '../../store/adultVerification.store'
+import { shouldLeaveForAdultVerification } from './leaveOnAdultVerification'
 
 /**
  * For screens opened without knowing the content is adult-only (push, deep
@@ -14,15 +17,26 @@ import { isAdultVerificationRequiredError } from '../api/adultVerificationRequir
  */
 export function useLeaveOnAdultVerificationRequired(error: unknown): boolean {
   const router = useRouter()
+  const isFocused = useIsFocused()
+  const isVerified = useIsAdultVerified()
   const leftRef = useRef(false)
   const required = isAdultVerificationRequiredError(error)
 
   useEffect(() => {
-    if (!required || leftRef.current) return
+    const leave = shouldLeaveForAdultVerification({
+      hasRequiredError: required,
+      isFocused,
+      isVerified,
+      alreadyLeft: leftRef.current,
+    })
+    if (!leave) return
+
+    // Set only when this screen actually navigates, so a screen that was
+    // unfocused at the time still leaves when the user comes back to it.
     leftRef.current = true
     if (router.canGoBack()) router.back()
     else router.replace('/(tabs)' as never)
-  }, [required, router])
+  }, [required, isFocused, isVerified, router])
 
   return required
 }
