@@ -31,25 +31,41 @@ test('a Korean particle written straight after a link is not swallowed', async (
   ])
 })
 
-test('a Korean path is never linked as a truncated prefix', async () => {
+test('a Korean path or query is kept whole', async () => {
   const { splitLinkSegments } = await loadLinkify()
 
-  // Linking the prefix here would open a different page than the one shared.
+  // Linking a prefix here would open a different page than the one shared.
   for (const value of [
     'https://namu.wiki/w/전지적%20독자%20시점',
     'https://namu.wiki/w/전지적독자시점',
     'https://example.com/search?q=웹툰&page=2',
   ]) {
-    assert.deepEqual(splitLinkSegments(value), [{ text: value }], value)
+    assert.deepEqual(splitLinkSegments(value), [{ text: value, url: value }], value)
   }
 })
 
-test('a particle after a path does not block the link', async () => {
+test('a particle attached to a host is cut so the host still resolves', async () => {
   const { splitLinkSegments } = await loadLinkify()
 
-  assert.deepEqual(splitLinkSegments('https://storix.kr/works/1에서 봤어요'), [
-    { text: 'https://storix.kr/works/1', url: 'https://storix.kr/works/1' },
+  assert.deepEqual(splitLinkSegments('https://storix.kr에서 봤어요'), [
+    { text: 'https://storix.kr', url: 'https://storix.kr' },
     { text: '에서 봤어요' },
+  ])
+  assert.deepEqual(splitLinkSegments('www.storix.kr입니다'), [
+    { text: 'www.storix.kr', url: 'https://www.storix.kr' },
+    { text: '입니다' },
+  ])
+})
+
+test('a particle attached to a path is kept, since it may be the path', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  // The known cost of the whitespace rule: this 404s rather than opening
+  // /works/1. A wrong page is the failure mode worth avoiding; a dead link is
+  // visible to whoever taps it.
+  assert.deepEqual(splitLinkSegments('https://storix.kr/works/1에서 봤어요'), [
+    { text: 'https://storix.kr/works/1에서', url: 'https://storix.kr/works/1에서' },
+    { text: ' 봤어요' },
   ])
 })
 

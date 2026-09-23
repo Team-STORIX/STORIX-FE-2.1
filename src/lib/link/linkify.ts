@@ -2,25 +2,17 @@
 // comments, reviews and chat messages can render tappable URLs.
 
 /**
- * Hangul is excluded from the URL body so a Korean particle written directly
- * after a link ("https://storix.kr에서") is not swallowed into the href. The
- * same cut also lands inside a Korean path or query, where linking the prefix
- * would silently point at a different page, so isTruncatedByHangul spots those
- * and drops the link entirely instead.
+ * An address runs to the next whitespace, the same rule every messenger uses.
+ * Korean writes particles with no space ("https://storix.kr에서"), so the
+ * boundary is genuinely ambiguous — the path could be Korean, or the Hangul
+ * could be a particle, and nothing in the text tells the two apart. Cutting at
+ * the first Hangul character was worse than guessing: it silently linked a
+ * prefix that resolved to a different page. Keeping the whole run means a link
+ * either opens what was shared or fails to load, never something else.
  */
-const URL_PATTERN =
-  /(?:https?:\/\/|www\.)[^\s<>"'`가-힣ㄱ-ㆎᄀ-ᇿ]+/gi
+const URL_PATTERN = /(?:https?:\/\/|www\.)[^\s<>"'`]+/gi
 
 const HANGUL = /[가-힣ㄱ-ㆎᄀ-ᇿ]/
-
-/** An address that stops on one of these is mid-path or mid-value, not done. */
-const DELIMITER_TAIL = /[/?#=&]$/
-
-/**
- * Characters that continue an address. Sentence punctuation is left out, since
- * "?" or "." after Korean ends a sentence ("https://storix.kr에서요?").
- */
-const URL_CONTINUATION = /[A-Za-z0-9%/=&_~+:-]/
 
 const TRAILING_PUNCTUATION = /[.,!?;:'"’”…)\]}>]+$/
 
@@ -47,6 +39,23 @@ function countOccurrences(value: string, char: string): number {
 }
 
 /**
+ * Hangul inside a host is always a particle: a domain cannot continue past its
+ * TLD without a dot, and an IDN host would have started in Hangul. Cutting here
+ * keeps "https://storix.kr에서" resolvable, while Hangul after the first "/"
+ * is left alone because it may well be the path that was shared.
+ */
+export function cutHostParticle(raw: string): string {
+  const schemeEnd = raw.indexOf('://')
+  const hostStart = schemeEnd >= 0 ? schemeEnd + 3 : 0
+
+  const pathOffset = raw.slice(hostStart).search(/[/?#]/)
+  const hostEnd = pathOffset >= 0 ? hostStart + pathOffset : raw.length
+
+  const hangulOffset = raw.slice(hostStart, hostEnd).search(HANGUL)
+  return hangulOffset >= 0 ? raw.slice(0, hostStart + hangulOffset) : raw
+}
+
+/**
  * Sentence punctuation that trails a URL belongs to the sentence, not the link.
  * A closing bracket is kept when the link itself opened it, so paths such as
  * "/wiki/Example_(film)" survive.
@@ -68,35 +77,20 @@ export function trimTrailingPunctuation(raw: string): string {
   return restored
 }
 
+/** Trims a match down to the text that is actually part of the address. */
+function toLinkText(raw: string): string {
+  return trimTrailingPunctuation(cutHostParticle(raw))
+}
+
 /** Returns an absolute http/https URL, or null when the text is not linkable. */
 export function normalizeLinkUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null
 
-  const raw = trimTrailingPunctuation(value.trim())
+  const raw = toLinkText(value.trim())
   if (raw.length === 0) return null
 
   const candidate = /^www\./i.test(raw) ? `https://${raw}` : raw
   return VALID_URL.test(candidate) ? candidate : null
-}
-
-/**
- * Tells a trailing Korean particle apart from Hangul that sat inside the
- * address. The boundary is genuinely ambiguous, so the address is protected by
- * refusing to link at all whenever the match looks cut short:
- *
- *   https://storix.kr/works/1에서   → particle, link the address
- *   https://namu.wiki/w/전지적독자   → cut after "/", link nothing
- *   https://example.com/?q=웹툰&p=2 → cut after "=", link nothing
- */
-function isTruncatedByHangul(linkText: string, rest: string): boolean {
-  if (rest.length === 0 || !HANGUL.test(rest[0])) return false
-  if (DELIMITER_TAIL.test(linkText)) return true
-
-  let index = 0
-  while (index < rest.length && HANGUL.test(rest[index])) index += 1
-
-  // More address after the Hangul run means the run was part of the address.
-  return index < rest.length && URL_CONTINUATION.test(rest[index])
 }
 
 export function splitLinkSegments(value: string): LinkSegment[] {
@@ -109,11 +103,10 @@ export function splitLinkSegments(value: string): LinkSegment[] {
     const start = match.index ?? 0
     if (start < cursor) continue
 
-    const linkText = trimTrailingPunctuation(match[0])
+    const linkText = toLinkText(match[0])
     const url = normalizeLinkUrl(linkText)
     // Unlinkable matches stay inside the surrounding plain-text segment.
     if (url == null) continue
-    if (isTruncatedByHangul(linkText, value.slice(start + linkText.length))) continue
 
     if (start > cursor) segments.push({ text: value.slice(cursor, start) })
     segments.push({ text: linkText, url })
