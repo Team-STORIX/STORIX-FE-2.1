@@ -55,6 +55,16 @@ export const useAdultVerificationStore = create<
   clear: () => set({ status: null, promptVisible: false }),
 }))
 
+/**
+ * The session's verification status query. Declared here so the axios
+ * interceptor can refetch it without importing the hook (which would pull in
+ * the api module and close an import cycle).
+ */
+export const ADULT_VERIFICATION_STATUS_QUERY_KEY = [
+  'adult-verification',
+  'me',
+] as const
+
 /** Server-confirmed verification. False while the status is unknown. */
 export const useIsAdultVerified = (): boolean =>
   useAdultVerificationStore((state) => state.status?.state === 'VERIFIED')

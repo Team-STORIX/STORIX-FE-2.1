@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { useAuthStore } from '../../../store/auth.store'
+import { ADULT_VERIFICATION_STATUS_QUERY_KEY } from '../../../store/adultVerification.store'
 import { getAdultVerificationStatus } from '../api'
 
-export const ADULT_VERIFICATION_STATUS_QUERY_KEY = [
-  'adult-verification',
-  'me',
-] as const
+export { ADULT_VERIFICATION_STATUS_QUERY_KEY }
 
 /**
  * Loads the verification status once per session so adult masks reflect the

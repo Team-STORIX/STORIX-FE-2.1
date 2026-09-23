@@ -49,3 +49,39 @@ test('other errors and a second run do not navigate', async () => {
     false,
   )
 })
+
+const errorInput = (overrides) => ({
+  hasRequiredError: true,
+  isLeaving: false,
+  alreadyLeft: false,
+  isCheckingStatus: false,
+  ...overrides,
+})
+
+test('the error is hidden while leaving or re-checking the status', async () => {
+  const { shouldHideErrorForAdultVerification } = await loadModule()
+
+  assert.equal(
+    shouldHideErrorForAdultVerification(errorInput({ isLeaving: true })),
+    true,
+  )
+  assert.equal(
+    shouldHideErrorForAdultVerification(errorInput({ alreadyLeft: true })),
+    true,
+  )
+  assert.equal(
+    shouldHideErrorForAdultVerification(errorInput({ isCheckingStatus: true })),
+    true,
+  )
+})
+
+test('a stale VERIFIED state does not hold the screen on a spinner', async () => {
+  const { shouldHideErrorForAdultVerification, shouldLeaveForAdultVerification } =
+    await loadModule()
+
+  // Verified in this session but expired since: the screen neither leaves nor
+  // hides its error once the status refetch has answered.
+  const stale = { hasRequiredError: true, isFocused: true, isVerified: true, alreadyLeft: false }
+  assert.equal(shouldLeaveForAdultVerification(stale), false)
+  assert.equal(shouldHideErrorForAdultVerification(errorInput()), false)
+})

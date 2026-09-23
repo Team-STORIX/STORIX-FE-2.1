@@ -7,7 +7,11 @@ import { getAccessToken } from "../storage/secure";
 // useAuthStore is imported here (not in component context) to call clearAuth()
 // on token refresh failure. No circular dependency: auth.store never imports axios-instance.
 import { useAuthStore } from "../../store/auth.store";
-import { useAdultVerificationStore } from "../../store/adultVerification.store";
+import {
+  ADULT_VERIFICATION_STATUS_QUERY_KEY,
+  useAdultVerificationStore,
+} from "../../store/adultVerification.store";
+import { queryClient } from "../query/queryClient";
 import {
   getAdultVerificationContext,
   isAdultVerificationRequiredError,
@@ -172,6 +176,12 @@ apiClient.interceptors.response.use(
       useAdultVerificationStore
         .getState()
         .showPrompt(getAdultVerificationContext(error.config?.url));
+      // The stored state can be stale (verified in this session, expired
+      // since). The server just disagreed with it, so refetch rather than
+      // trust it; screens decide whether to leave from the fresh value.
+      void queryClient.invalidateQueries({
+        queryKey: ADULT_VERIFICATION_STATUS_QUERY_KEY,
+      });
     }
 
     const original = error.config as RetryableConfig | undefined;
