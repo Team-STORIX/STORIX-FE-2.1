@@ -9,6 +9,7 @@ import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
 import { ReportModal } from '../../feed/ui/ReportModal'
 import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
+import { LinkedText } from '../../../components/common/LinkedText'
 import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
@@ -187,7 +188,7 @@ export function ProfileActivityCommentItem({
         </View>
       </View>
 
-      <Text style={styles.commentText}>{item.reply.comment}</Text>
+      <LinkedText style={styles.commentText}>{item.reply.comment}</LinkedText>
 
       <View style={styles.actionRow}>
         <Pressable

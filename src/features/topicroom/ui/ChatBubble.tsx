@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray } from "../../../theme/colors";
 import { Typography } from "../../../theme/typography";
+import { LinkedText } from "../../../components/common/LinkedText";
 import { OfficialMark } from "../../../components/common/OfficialMark";
 
 const profileDefault = require("../../../../assets/placeholders/profile-default.png");
@@ -42,7 +43,9 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
           {msg.time}
         </Text>
         <View style={[styles.bubble, styles.bubbleMe, styles.bubbleMeWidth]}>
-          <Text style={styles.textMe}>{msg.text}</Text>
+          <LinkedText style={styles.textMe} linkStyle={styles.linkOnMe}>
+            {msg.text}
+          </LinkedText>
         </View>
       </View>
     );
@@ -93,7 +96,7 @@ export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
           <View
             style={[styles.bubble, styles.bubbleOther, styles.bubbleOtherWidth]}
           >
-            <Text style={styles.textOther}>{msg.text}</Text>
+            <LinkedText style={styles.textOther}>{msg.text}</LinkedText>
           </View>
           <Text style={styles.timeOther} numberOfLines={1}>
             {msg.time}
@@ -208,6 +211,9 @@ const styles = StyleSheet.create({
   },
 
   textMe: { ...Typography.body1Semibold, color: C.card },
+  // The outgoing bubble is magenta, so the link colour has no contrast
+  // there; the underline carries the affordance instead.
+  linkOnMe: { color: C.card, textDecorationLine: "underline" },
   textOther: { ...Typography.body1Medium, color: Gray[800] },
 
   timeMe: {
