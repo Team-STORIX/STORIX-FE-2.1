@@ -13,6 +13,7 @@ import { Typography } from '../../../theme/typography'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
 import type { TopicRoomSearchItem } from '../api'
 import { SearchEmptyState } from './SearchEmptyState'
+import { AdultThumbnail } from '../../../components/adult'
 
 function formatTopicRoomSubtitle(
   worksType?: string | null,
@@ -97,17 +98,24 @@ export function SearchTopicRoomResultList({
             accessibilityRole="button"
           >
             <View style={styles.thumbnailWrap}>
-              {item.thumbnailUrl ? (
-                <Image
-                  source={{ uri: item.thumbnailUrl }}
-                  style={styles.thumbnail}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[styles.thumbnail, styles.thumbnailFallback]}>
-                  <Text style={styles.thumbnailFallbackText}>{initial}</Text>
-                </View>
-              )}
+              {/* Interim: no topic room design yet, so the work placeholder is reused. */}
+              <AdultThumbnail
+                isAdultOnly={item.isAdultOnly}
+                isBlinded={item.isBlinded}
+                style={styles.thumbnail}
+              >
+                {item.thumbnailUrl ? (
+                  <Image
+                    source={{ uri: item.thumbnailUrl }}
+                    style={styles.thumbnail}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.thumbnail, styles.thumbnailFallback]}>
+                    <Text style={styles.thumbnailFallbackText}>{initial}</Text>
+                  </View>
+                )}
+              </AdultThumbnail>
             </View>
 
             <View style={styles.body}>
