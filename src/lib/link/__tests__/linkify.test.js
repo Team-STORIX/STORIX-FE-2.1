@@ -69,6 +69,60 @@ test('a particle attached to a path is kept, since it may be the path', async ()
   ])
 })
 
+test('mixed ASCII and Hangul addresses preserve the complete destination', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  for (const value of [
+    'https://example.com/2026신작',
+    'https://example.com/webtoon추천',
+    'https://example.com/search?q=2026웹툰',
+    'https://example.com/search?q=best웹툰&page=2',
+    'https://example.com/#2026신작',
+    'https://example.com/series?웹툰',
+    'https://example.com/series#웹툰',
+    'https://example.com/2026신작',
+  ]) {
+    assert.deepEqual(splitLinkSegments(value), [{ text: value, url: value }], value)
+  }
+  assert.deepEqual(splitLinkSegments('www.example.com/2026신작'), [
+    { text: 'www.example.com/2026신작', url: 'https://www.example.com/2026신작' },
+  ])
+})
+
+test('a nested URL inside a Korean address is not exposed as a separate link', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  const address = 'https://example.com/한글?next=https://other.example.com'
+  assert.deepEqual(splitLinkSegments(`앞 ${address} 다음 https://storix.kr 끝`), [
+    { text: '앞 ' },
+    { text: address, url: address },
+    { text: ' 다음 ' },
+    { text: 'https://storix.kr', url: 'https://storix.kr' },
+    { text: ' 끝' },
+  ])
+})
+
+test('percent-encoded Korean addresses keep their complete URL', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  for (const value of [
+    'https://namu.wiki/w/%EC%A0%84%EC%A7%80%EC%A0%81%20%EB%8F%85%EC%9E%90%20%EC%8B%9C%EC%A0%90',
+    'https://example.com/search?q=2026%EC%9B%B9%ED%88%B0&page=2#results',
+  ]) {
+    assert.deepEqual(splitLinkSegments(value), [{ text: value, url: value }], value)
+  }
+})
+
+test('sentence punctuation around a Korean path stays outside the link', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  assert.deepEqual(splitLinkSegments('(https://example.com/2026신작).'), [
+    { text: '(' },
+    { text: 'https://example.com/2026신작', url: 'https://example.com/2026신작' },
+    { text: ').' },
+  ])
+})
+
 test('a question mark ending a Korean sentence is not read as a query', async () => {
   const { splitLinkSegments } = await loadLinkify()
 
