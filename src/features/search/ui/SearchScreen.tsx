@@ -28,6 +28,10 @@ import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
 import { SearchHeader } from './SearchHeader'
 import { SearchOptionSheet } from './SearchOptionSheet'
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from '../../../store/adultVerification.store'
 import { SearchRecentKeywordsSection } from './SearchRecentKeywordsSection'
 import { SearchResultTabs, type SearchTab } from './SearchResultTabs'
 import { SearchTopicRoomResultList } from './SearchTopicRoomResultList'
@@ -243,6 +247,11 @@ export function SearchScreen() {
   }
 
   const handlePressWorks = (item: WorksSearchItem, _index: number) => {
+    // The detail API answers 403 for masked works; prompt before navigating.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('read')
+      return
+    }
     router.push(`/works/${item.worksId}` as const)
   }
 

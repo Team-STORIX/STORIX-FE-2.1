@@ -29,7 +29,7 @@ export function MyReviewSection({
   onPressLike,
   isLiking = false,
 }: Props) {
-  const hasReview = !!myReview?.content;
+  const hasReview = myReview?.reviewId != null;
   const safeName = userName?.trim() || "유저";
   const baseLikeCount = Math.max(0, Number(myReview?.likeCount ?? 0));
   const [displayLikeCount, setDisplayLikeCount] = useState(baseLikeCount);

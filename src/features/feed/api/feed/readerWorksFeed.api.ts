@@ -14,6 +14,8 @@ export type WorksFeedBoardItem = {
     replyCount: number
     isSpoiler: boolean
     isLiked: boolean
+    isAdultOnly?: boolean
+    isBlinded?: boolean
   }
   images?: { boardId: number; imageUrl: string; sortOrder: number }[]
   works?: {
@@ -24,6 +26,7 @@ export type WorksFeedBoardItem = {
     worksType: string
     genre: string
     hashtags: string[]
+    isAdultOnly?: boolean
   } | null
 }
 

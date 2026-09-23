@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,6 +22,11 @@ import { S } from "../../../theme/spacing";
 import { Typography } from "../../../theme/typography";
 import type { PlusWorksSearchItem } from "../api";
 import { usePlusWorksSearch } from "../hooks";
+import {
+  AdultThumbnail,
+  AdultVerificationModal,
+} from "../../../components/adult";
+import { shouldMaskAdultContent } from "../../../store/adultVerification.store";
 
 const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 const searchIcon = require("../../../../assets/icons/common/search.svg");
@@ -69,13 +75,19 @@ function WorkItemRow({
       accessibilityState={selected ? { selected: true } : {}}
     >
       <View style={styles.itemThumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.itemThumb}
-            contentFit="cover"
-          />
-        ) : null}
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.itemThumb}
+        >
+          {item.thumbnailUrl ? (
+            <Image
+              source={{ uri: item.thumbnailUrl }}
+              style={styles.itemThumb}
+              contentFit="cover"
+            />
+          ) : null}
+        </AdultThumbnail>
       </View>
 
       <View style={styles.itemTextWrap}>
@@ -104,8 +116,10 @@ export function FeedWritePickerBottomSheet({
   onPick,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const progress = useRef(new Animated.Value(0)).current;
   const [keyword, setKeyword] = useState("");
+  const [adultPromptVisible, setAdultPromptVisible] = useState(false);
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [selectedWorkId, setSelectedWorkId] = useState<number | undefined>();
 
@@ -118,6 +132,7 @@ export function FeedWritePickerBottomSheet({
     setKeyword("");
     setDebouncedKeyword("");
     setSelectedWorkId(undefined);
+    setAdultPromptVisible(false);
 
     Animated.timing(progress, {
       toValue: 1,
@@ -305,11 +320,16 @@ export function FeedWritePickerBottomSheet({
                     <WorkItemRow
                       item={item}
                       selected={item.worksId === selectedWorkId}
-                      onPress={() =>
+                      onPress={() => {
+                        // Adult works cannot be attached until verified.
+                        if (shouldMaskAdultContent(item)) {
+                          setAdultPromptVisible(true);
+                          return;
+                        }
                         setSelectedWorkId((curr) =>
                           curr === item.worksId ? undefined : item.worksId,
-                        )
-                      }
+                        );
+                      }}
                     />
                   )}
                   contentContainerStyle={styles.listContent}
@@ -395,6 +415,20 @@ export function FeedWritePickerBottomSheet({
           ) : null}
         </Animated.View>
       </Animated.View>
+
+      {/* Rendered inside the sheet: a root-level modal can stay hidden
+          behind an open RN Modal on iOS. */}
+      <AdultVerificationModal
+        visible={adultPromptVisible}
+        context="writePost"
+        onClose={() => setAdultPromptVisible(false)}
+        onConfirm={() => {
+          setAdultPromptVisible(false);
+          handleClose(() =>
+            router.push("/profile/adult-verification" as never),
+          );
+        }}
+      />
     </Modal>
   );
 }

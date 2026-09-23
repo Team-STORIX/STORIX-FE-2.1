@@ -2,6 +2,12 @@ import { isAxiosError } from 'axios'
 
 import { apiClient } from '../../../lib/api/axios-instance'
 import {
+  ADULT_VERIFICATION_REQUIRED_CODE,
+  isNewlyVerified,
+} from '../../../lib/api/adultVerificationRequired'
+import { queryClient } from '../../../lib/query/queryClient'
+import { useAdultVerificationStore } from '../../../store/adultVerification.store'
+import {
   AdultVerificationStatusResponseSchema,
   AdultVerificationTicketResponseSchema,
   type AdultVerificationStatus,
@@ -18,7 +24,7 @@ export const ADULT_VERIFICATION_ERROR_CODES = {
   underage: 'ADULT_VERIFICATION_ERROR_005',
   missingBirthDate: 'ADULT_VERIFICATION_ERROR_006',
   providerFailure: 'ADULT_VERIFICATION_ERROR_007',
-  verificationRequired: 'ADULT_VERIFICATION_ERROR_008',
+  verificationRequired: ADULT_VERIFICATION_REQUIRED_CODE,
   alreadyVerified: 'ADULT_VERIFICATION_ERROR_009',
 } as const
 
@@ -37,6 +43,29 @@ export class AdultVerificationApiError extends Error {
     this.code = code
     this.status = status
   }
+}
+
+type ShareStatusOptions = {
+  /**
+   * Refetch everything once the user becomes verified, so screens that failed
+   * with 403 recover when the user comes back. The startup bootstrap turns
+   * it off, which would otherwise refetch the whole app on every launch.
+   */
+  refreshOnVerified?: boolean
+}
+
+const shareStatus = (
+  status: AdultVerificationStatus,
+  { refreshOnVerified = true }: ShareStatusOptions = {},
+): AdultVerificationStatus => {
+  const store = useAdultVerificationStore.getState()
+  const previousState = store.status?.state
+  store.setStatus(status)
+
+  if (refreshOnVerified && isNewlyVerified(previousState, status.state)) {
+    void queryClient.invalidateQueries()
+  }
+  return status
 }
 
 const toAdultVerificationError = (error: unknown): Error => {
@@ -69,12 +98,15 @@ export const getAdultVerificationErrorCode = (
 ): string | undefined =>
   error instanceof AdultVerificationApiError ? error.code : undefined
 
-export async function getAdultVerificationStatus(): Promise<
-  AdultVerificationStatus
-> {
+export async function getAdultVerificationStatus(
+  options?: ShareStatusOptions,
+): Promise<AdultVerificationStatus> {
   try {
     const { data } = await apiClient.get(`${BASE_PATH}/me`)
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(
+      AdultVerificationStatusResponseSchema.parse(data).result,
+      options,
+    )
   } catch (error) {
     throw toAdultVerificationError(error)
   }
@@ -83,7 +115,7 @@ export async function getAdultVerificationStatus(): Promise<
 export async function syncAdultVerification(): Promise<AdultVerificationStatus> {
   try {
     const { data } = await apiClient.post(`${BASE_PATH}/sync`)
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(AdultVerificationStatusResponseSchema.parse(data).result)
   } catch (error) {
     throw toAdultVerificationError(error)
   }
@@ -104,7 +136,7 @@ export async function confirmAdultVerification(
     const { data } = await apiClient.post(`${BASE_PATH}/confirm`, {
       identityVerificationId,
     })
-    return AdultVerificationStatusResponseSchema.parse(data).result
+    return shareStatus(AdultVerificationStatusResponseSchema.parse(data).result)
   } catch (error) {
     throw toAdultVerificationError(error)
   }

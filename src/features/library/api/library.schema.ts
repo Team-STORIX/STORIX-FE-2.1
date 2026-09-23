@@ -43,6 +43,10 @@ export const LibrarySearchWorkSchema = z.object({
     const n = Number(v)
     return Number.isFinite(n) ? n : undefined
   }, z.number().optional()),
+
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 /** 최근 검색어 */
@@ -64,6 +68,9 @@ export const LibraryReviewItemSchema = z.object({
   reviewId: z.number().optional(),
   rating: z.union([z.string(), z.number()]).nullable().optional(),
   reviewCount: z.number().nullable().optional(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const LibraryReviewResultSchema = z.object({

@@ -61,11 +61,13 @@ export function ProfileSettingsScreen() {
   const isUnderage =
     adultVerificationErrorCode === ADULT_VERIFICATION_ERROR_CODES.underage
   const adultVerificationState = adultVerification.status?.state
+  // Not-verified and expired rows always link to verification (Figma
+  // 11317:49145, 11317:49065). When the server reports canVerify=false the
+  // verification screen explains why instead of the row going dead.
   const canStartAdultVerification =
     !adultVerification.isLoading &&
     adultVerification.error == null &&
     !isUnderage &&
-    adultVerification.status?.canVerify === true &&
     (adultVerificationState === 'NOT_VERIFIED' ||
       adultVerificationState === 'EXPIRED')
   const adultVerificationLabel = adultVerification.isLoading

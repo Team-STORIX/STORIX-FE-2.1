@@ -26,6 +26,7 @@ export function SettingsItem({ label, hasArrow, rightLabel, rightLabelVariant, o
                 : rightLabelVariant === 'status'
                   ? styles.rightLabelStatus
                   : styles.rightLabelSocial,
+              rightLabelVariant === 'status' && !hasArrow && styles.rightLabelStatusEnd,
             ]}
           >
             {rightLabel}
@@ -46,7 +47,11 @@ export function SettingsItem({ label, hasArrow, rightLabel, rightLabelVariant, o
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.row,
+          styles.rowWithArrow,
+          pressed && styles.pressed,
+        ]}
         accessibilityRole="button"
       >
         {rowContent}
@@ -63,6 +68,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
+  },
+  // Sections pad 20px; rows with an arrow end 16px from the screen edge
+  // (Figma setting rows use pl-20 / pr-16).
+  rowWithArrow: {
+    marginRight: -4,
   },
   label: {
     fontSize: 16,
@@ -94,6 +104,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Magenta[300],
     textAlign: 'right',
+  },
+  // Without an arrow the label ends 24px from the edge, like the social row.
+  rightLabelStatusEnd: {
+    marginRight: 4,
   },
   arrow: {
     width: 24,

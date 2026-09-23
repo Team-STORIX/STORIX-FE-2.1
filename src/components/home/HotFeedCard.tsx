@@ -2,6 +2,11 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { TodayFeedItem } from "../../features/home";
 import { OfficialMark } from "../common/OfficialMark";
+import { AdultLockedInline } from "../adult";
+import {
+  useAdultVerificationStore,
+  useShouldMaskAdultContent,
+} from "../../store/adultVerification.store";
 import { C, Gray, Magenta } from "../../theme/colors";
 import { FontFamily, Typography } from "../../theme/typography";
 
@@ -26,6 +31,12 @@ export function HotFeedCard({
   width = CARD_W,
   onPress,
 }: HotFeedCardProps) {
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: item?.board.isAdultOnly,
+    isBlinded: item?.board.isBlinded,
+  });
+  const showPrompt = useAdultVerificationStore((state) => state.showPrompt);
+
   if (loading || !item) {
     return (
       <View style={[styles.card, { width }, styles.placeholderCard]}>
@@ -51,11 +62,15 @@ export function HotFeedCard({
   const spoilerText =
     board.spoilerScript?.trim() || "스포일러가 포함된 피드글 보기";
 
-  const Wrapper: any = onPress ? Pressable : View;
+  // A masked post would answer 403 on the detail screen, so ask for
+  // verification here instead of navigating.
+  const handlePress = isAdultMasked ? () => showPrompt("read") : onPress;
+
+  const Wrapper: any = handlePress ? Pressable : View;
   const cardStyle = [styles.card, { width }];
-  const wrapperProps = onPress
+  const wrapperProps = handlePress
     ? {
-        onPress,
+        onPress: handlePress,
         accessibilityRole: "button" as const,
         style: ({ pressed }: { pressed: boolean }) => [
           ...cardStyle,
@@ -86,32 +101,38 @@ export function HotFeedCard({
         </View>
       </View>
 
-      <View style={styles.spoilerContainer}>
-        <View style={styles.bodySection}>
-          <View
-            style={
-              isSpoiler
-                ? ({ filter: "blur(17px)", overflow: "hidden" } as any)
-                : undefined
-            }
-          >
-            <Text style={styles.contentText} numberOfLines={2}>
-              {content}
-            </Text>
-          </View>
-
-          {isSpoiler && (
+      {isAdultMasked ? (
+        <View style={styles.adultNotice}>
+          <AdultLockedInline />
+        </View>
+      ) : (
+        <View style={styles.spoilerContainer}>
+          <View style={styles.bodySection}>
             <View
-              style={styles.spoilerOverlay}
-              pointerEvents="none"
+              style={
+                isSpoiler
+                  ? ({ filter: "blur(17px)", overflow: "hidden" } as any)
+                  : undefined
+              }
             >
-              <Text style={styles.spoilerRevealText} numberOfLines={2}>
-                {spoilerText}
+              <Text style={styles.contentText} numberOfLines={2}>
+                {content}
               </Text>
             </View>
-          )}
+
+            {isSpoiler && (
+              <View
+                style={styles.spoilerOverlay}
+                pointerEvents="none"
+              >
+                <Text style={styles.spoilerRevealText} numberOfLines={2}>
+                  {spoilerText}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={styles.reactionRow}>
         <View style={styles.reactionItem}>
@@ -213,6 +234,9 @@ const styles = StyleSheet.create({
   },
   bodySection: {
     overflow: "hidden",
+  },
+  adultNotice: {
+    marginBottom: 8,
   },
   spoilerOverlay: {
     position: "absolute",

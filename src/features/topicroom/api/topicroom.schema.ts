@@ -55,6 +55,9 @@ export const TopicRoomItemSchema = z.object({
   lastMessageType: z.string().nullish(),
   lastMessageSenderId: z.coerce.number().nullish(),
   lastMessageSenderNickname: z.string().nullish(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export type TopicRoomItem = z.infer<typeof TopicRoomItemSchema>

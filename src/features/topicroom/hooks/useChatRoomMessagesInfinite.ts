@@ -1,5 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { getChatRoomMessages } from '../api/chat.api'
+import { isAdultVerificationRequiredError } from '../../../lib/api/adultVerificationRequired'
+import { isTopicRoomNotMemberError } from '../services/topicRoomMembership'
 
 export const useChatRoomMessagesInfinite = (params: {
   roomId: number
@@ -15,6 +17,13 @@ export const useChatRoomMessagesInfinite = (params: {
     initialPageParam: 0,
     refetchOnMount: 'always',
     refetchOnReconnect: true,
+    // Neither a non-member nor an adult-verification 403 changes on retry,
+    // and the retry delays the screen's redirect past the prompt the user
+    // may already have acted on.
+    retry: (failureCount, error) =>
+      !isTopicRoomNotMemberError(error) &&
+      !isAdultVerificationRequiredError(error) &&
+      failureCount < 1,
     queryFn: ({ pageParam }) =>
       getChatRoomMessages({ roomId, page: pageParam as number, size, sort }),
     getNextPageParam: (lastPage) => {

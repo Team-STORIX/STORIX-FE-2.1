@@ -190,6 +190,13 @@ const normalizeResultItem = (raw: unknown): unknown => {
   return { ...raw, avgRating }
 }
 
+// Unknown future values fall back to undefined so one new rating never
+// invalidates the whole result list.
+const AgeClassificationSchema = z
+  .enum(['ALL', 'AGE_12', 'AGE_15', 'AGE_18'])
+  .nullish()
+  .catch(undefined)
+
 export const PreferenceResultWorkSchema = z
   .preprocess(
     normalizeResultItem,
@@ -203,6 +210,7 @@ export const PreferenceResultWorkSchema = z
         thumbnailUrl: z.string().nullable().optional(),
         worksType: z.string().catch(''),
         genre: GenreKeySchema,
+        ageClassification: AgeClassificationSchema,
         avgRating: z
           .preprocess((value) => {
             if (value != null) return value

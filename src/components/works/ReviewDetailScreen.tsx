@@ -31,6 +31,7 @@ import { OfficialMark } from "../common/OfficialMark";
 import { UserActionModal } from "../common/UserActionModal";
 import { RecordCardModal } from "./RecordCardModal";
 import { ReviewSpoilerBlock } from "./ReviewSpoilerBlock";
+import { useLeaveOnAdultVerificationRequired } from "../../lib/navigation/useLeaveOnAdultVerificationRequired";
 
 const backIcon = require("../../../assets/icons/common/back.svg");
 const defaultProfileImage = require("../../../assets/placeholders/profile-default.png");
@@ -86,9 +87,11 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
   const savedToastBottom = insets.bottom + TAB_BAR_HEIGHT + CARD_TOAST_NAV_GAP;
 
   const isValidReviewId = Number.isFinite(reviewId) && reviewId > 0;
-  const { data, isLoading, isError } = useWorksReviewDetail(
+  const { data, isLoading, isError, error } = useWorksReviewDetail(
     isValidReviewId ? reviewId : 0,
   );
+  const isLeavingForAdultVerification =
+    useLeaveOnAdultVerificationRequired(error);
 
   const ui = useMemo(() => {
     const worksMetaParts: string[] = [];
@@ -319,7 +322,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLeavingForAdultVerification) {
     return (
       <View style={styles.screen}>
         <Stack.Screen options={{ headerShown: false }} />

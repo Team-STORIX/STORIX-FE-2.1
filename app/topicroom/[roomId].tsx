@@ -50,6 +50,8 @@ import {
   type ConfirmVariant,
   type DisplayMsg,
   getChatDateKey,
+  getTopicRoomPreviewRoute,
+  isTopicRoomNotMemberError,
   type KebabAnchor,
   type TopicRoomActionTarget,
   type TopicRoomItem,
@@ -60,6 +62,7 @@ import {
   trackExitTopicRoom,
   trackScreenView,
 } from "../../src/lib/analytics/events";
+import { useLeaveOnAdultVerificationRequired } from "../../src/lib/navigation/useLeaveOnAdultVerificationRequired";
 
 const checkboxActiveIcon = require("../../assets/topicroom/icon-checkbox-active.svg");
 
@@ -209,6 +212,7 @@ export default function TopicRoomScreen() {
     data: historyData,
     isLoading: historyLoading,
     isError: historyError,
+    error: historyErrorDetail,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -622,6 +626,40 @@ export default function TopicRoomScreen() {
           cachedRoom?.activeUserNumber ||
           undefined;
 
+  // Not a participant (push, deep link, or a stale list after leaving): the
+  // room-scoped APIs answer 403 TOPIC_ROOM_ERROR_008, so hand over to the
+  // preview, where the user can join again.
+  const isLeavingForAdultVerification =
+    useLeaveOnAdultVerificationRequired(historyErrorDetail);
+  const isNotMember =
+    isTopicRoomNotMemberError(historyErrorDetail) ||
+    isTopicRoomNotMemberError(notificationSettingQuery.error);
+  const redirectedToPreviewRef = useRef(false);
+  useEffect(() => {
+    if (!isNotMember || redirectedToPreviewRef.current) return;
+    // Leaving makes these calls fail too; the leave flow navigates itself.
+    if (leaveMutation.isPending || leaveMutation.isSuccess) return;
+    redirectedToPreviewRef.current = true;
+    router.replace(
+      getTopicRoomPreviewRoute(roomId, {
+        topicRoomName,
+        worksName,
+        worksType,
+        activeUserNumber: headerMemberCount ?? null,
+      }),
+    );
+  }, [
+    headerMemberCount,
+    isNotMember,
+    leaveMutation.isPending,
+    leaveMutation.isSuccess,
+    roomId,
+    router,
+    topicRoomName,
+    worksName,
+    worksType,
+  ]);
+
   // First line: "웹툰 <상수리나무 아래>" when a works name exists; otherwise the
   // room name. Second line is the room name when the first line already shows
   // the works.
@@ -935,7 +973,10 @@ export default function TopicRoomScreen() {
         />
       ) : null}
 
-      {!historyLoading && historyError ? (
+      {!historyLoading &&
+      historyError &&
+      !isNotMember &&
+      !isLeavingForAdultVerification ? (
         <Text style={styles.errorText}>메시지 기록을 불러오지 못했습니다.</Text>
       ) : null}
 

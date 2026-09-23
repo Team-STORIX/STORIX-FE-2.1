@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { C, Gray, Radius, Typography } from "../../../theme";
+import { AdultThumbnail } from "../../../components/adult";
 import { formatTopicRoomSubtitle } from "../api/formatTopicRoomSubtitle";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 
@@ -36,17 +37,24 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
     >
       {/* Thumbnail with rank badge */}
       <View style={styles.thumbWrap}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.thumb}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.thumb, styles.thumbFallback]}>
-            <Text style={styles.thumbFallbackText}>{initial}</Text>
-          </View>
-        )}
+        {/* Interim: no topic room design yet, so the work placeholder is reused. */}
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.thumb}
+        >
+          {item.thumbnailUrl ? (
+            <Image
+              source={{ uri: item.thumbnailUrl }}
+              style={styles.thumb}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.thumb, styles.thumbFallback]}>
+              <Text style={styles.thumbFallbackText}>{initial}</Text>
+            </View>
+          )}
+        </AdultThumbnail>
         <View style={styles.rankBadge}>
           <Text style={styles.rankText}>{rank}</Text>
         </View>

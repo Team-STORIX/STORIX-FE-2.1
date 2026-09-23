@@ -3,6 +3,11 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWork } from '../types'
 import { C, Gray, Magenta } from '../../../theme'
+import { AdultThumbnail } from '../../../components/adult'
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from '../../../store/adultVerification.store'
 
 const favoriteCheckGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
 const favoriteCheckPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
@@ -33,6 +38,11 @@ export function ProfileLikedWorkItem({
       return
     }
 
+    // The works detail API answers 403 for masked works.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('read')
+      return
+    }
     router.push(`/works/${item.worksId}` as const)
   }
   const worksTypeLabel = getWorksTypeLabel(item.worksType)
@@ -49,9 +59,15 @@ export function ProfileLikedWorkItem({
       }
     >
       <View style={styles.thumbnailWrap}>
-        {item.thumbnailUrl ? (
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
-        ) : null}
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.thumbnail}
+        >
+          {item.thumbnailUrl ? (
+            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
+          ) : null}
+        </AdultThumbnail>
       </View>
 
       <View style={styles.content}>

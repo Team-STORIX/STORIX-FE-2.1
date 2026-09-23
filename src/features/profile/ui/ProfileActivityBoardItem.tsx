@@ -134,10 +134,13 @@ export function ProfileActivityBoardCard({
               worksType: item.works.worksType,
               genre: item.works.genre,
               hashtags: item.works.hashtags ?? [],
+              isAdultOnly: item.works.isAdultOnly,
             }
           : null
       }
       isSpoiler={item.board.isSpoiler ?? item.isSpoiler ?? false}
+      isAdultOnly={item.board.isAdultOnly ?? false}
+      isBlinded={item.board.isBlinded}
       spoilerScript={item.board.spoilerScript}
       isLiked={item.board.isLiked}
       likeCount={item.board.likeCount}

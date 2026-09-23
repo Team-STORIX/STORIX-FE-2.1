@@ -97,6 +97,9 @@ export const PlusWorksSearchItemSchema = z.object({
   platform: z.string().optional(),
   genre: z.string().optional(),
   hashtags: z.array(z.string()).optional(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const PlusWorksSearchResultSchema = SliceSchema(
