@@ -16,6 +16,7 @@ import {
   useJoinTopicRoom,
   useTopicRoomInfoById,
 } from "../../src/features/topicroom";
+import { isAdultVerificationRequiredError } from "../../src/lib/api/adultVerificationRequired";
 import { C, Radius, Typography } from "../../src/theme";
 
 const backIcon = require("../../assets/icons/common/back.svg");
@@ -110,6 +111,9 @@ export default function TopicRoomPreviewScreen() {
         setLimitModalVisible(true);
         return;
       }
+      // The axios interceptor already raised the verification prompt; a retry
+      // notice underneath it would contradict what that modal is asking for.
+      if (isAdultVerificationRequiredError(err)) return;
       setErrorMessage("토픽룸에 입장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     }
   };

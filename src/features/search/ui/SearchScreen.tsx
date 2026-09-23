@@ -256,6 +256,12 @@ export function SearchScreen() {
   }
 
   const handlePressTopicRoom = async (item: TopicRoomSearchItem) => {
+    // Join and chat history both answer 403 for an adult room; prompt here so
+    // the card that is already blinded never opens the preview.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('topicroom')
+      return
+    }
     // Joined rooms open immediately; only a user's first entry goes through
     // the preview screen, which handles joining before opening the chat.
     router.push(

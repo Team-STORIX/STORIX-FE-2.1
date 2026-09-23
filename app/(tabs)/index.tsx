@@ -35,6 +35,10 @@ import {
   trackScreenView,
   trackSelectContent,
 } from "../../src/lib/analytics/events";
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from "../../src/store/adultVerification.store";
 import { C } from "../../src/theme/colors";
 
 const HOME_PAD = 16;
@@ -152,6 +156,12 @@ export default function HomeScreen() {
 
   const enterTopicRoom = useCallback(
     async (room: TopicRoomItem, index = 0) => {
+      // Join and chat history both answer 403 for an adult room; prompt here so
+      // the card that is already blinded never opens the preview.
+      if (shouldMaskAdultContent(room)) {
+        useAdultVerificationStore.getState().showPrompt("topicroom");
+        return;
+      }
       void trackSelectContent({
         source_section: "home_today_topic_room",
         content_type: "topic_room",
