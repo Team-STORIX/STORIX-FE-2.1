@@ -4,11 +4,23 @@
 /**
  * Hangul is excluded from the URL body so a Korean particle written directly
  * after a link ("https://storix.kr에서") is not swallowed into the href. The
- * trade-off is that raw, non percent-encoded Korean inside a path is not
- * matched; browsers and share sheets emit percent-encoded paths anyway.
+ * same cut also lands inside a Korean path or query, where linking the prefix
+ * would silently point at a different page, so isTruncatedByHangul spots those
+ * and drops the link entirely instead.
  */
 const URL_PATTERN =
   /(?:https?:\/\/|www\.)[^\s<>"'`가-힣ㄱ-ㆎᄀ-ᇿ]+/gi
+
+const HANGUL = /[가-힣ㄱ-ㆎᄀ-ᇿ]/
+
+/** An address that stops on one of these is mid-path or mid-value, not done. */
+const DELIMITER_TAIL = /[/?#=&]$/
+
+/**
+ * Characters that continue an address. Sentence punctuation is left out, since
+ * "?" or "." after Korean ends a sentence ("https://storix.kr에서요?").
+ */
+const URL_CONTINUATION = /[A-Za-z0-9%/=&_~+:-]/
 
 const TRAILING_PUNCTUATION = /[.,!?;:'"’”…)\]}>]+$/
 
@@ -67,6 +79,26 @@ export function normalizeLinkUrl(value: unknown): string | null {
   return VALID_URL.test(candidate) ? candidate : null
 }
 
+/**
+ * Tells a trailing Korean particle apart from Hangul that sat inside the
+ * address. The boundary is genuinely ambiguous, so the address is protected by
+ * refusing to link at all whenever the match looks cut short:
+ *
+ *   https://storix.kr/works/1에서   → particle, link the address
+ *   https://namu.wiki/w/전지적독자   → cut after "/", link nothing
+ *   https://example.com/?q=웹툰&p=2 → cut after "=", link nothing
+ */
+function isTruncatedByHangul(linkText: string, rest: string): boolean {
+  if (rest.length === 0 || !HANGUL.test(rest[0])) return false
+  if (DELIMITER_TAIL.test(linkText)) return true
+
+  let index = 0
+  while (index < rest.length && HANGUL.test(rest[index])) index += 1
+
+  // More address after the Hangul run means the run was part of the address.
+  return index < rest.length && URL_CONTINUATION.test(rest[index])
+}
+
 export function splitLinkSegments(value: string): LinkSegment[] {
   if (typeof value !== 'string' || value.length === 0) return []
 
@@ -81,6 +113,7 @@ export function splitLinkSegments(value: string): LinkSegment[] {
     const url = normalizeLinkUrl(linkText)
     // Unlinkable matches stay inside the surrounding plain-text segment.
     if (url == null) continue
+    if (isTruncatedByHangul(linkText, value.slice(start + linkText.length))) continue
 
     if (start > cursor) segments.push({ text: value.slice(cursor, start) })
     segments.push({ text: linkText, url })

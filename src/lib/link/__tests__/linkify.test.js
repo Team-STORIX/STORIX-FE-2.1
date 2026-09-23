@@ -31,6 +31,37 @@ test('a Korean particle written straight after a link is not swallowed', async (
   ])
 })
 
+test('a Korean path is never linked as a truncated prefix', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  // Linking the prefix here would open a different page than the one shared.
+  for (const value of [
+    'https://namu.wiki/w/전지적%20독자%20시점',
+    'https://namu.wiki/w/전지적독자시점',
+    'https://example.com/search?q=웹툰&page=2',
+  ]) {
+    assert.deepEqual(splitLinkSegments(value), [{ text: value }], value)
+  }
+})
+
+test('a particle after a path does not block the link', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  assert.deepEqual(splitLinkSegments('https://storix.kr/works/1에서 봤어요'), [
+    { text: 'https://storix.kr/works/1', url: 'https://storix.kr/works/1' },
+    { text: '에서 봤어요' },
+  ])
+})
+
+test('a question mark ending a Korean sentence is not read as a query', async () => {
+  const { splitLinkSegments } = await loadLinkify()
+
+  assert.deepEqual(splitLinkSegments('https://storix.kr에서요?'), [
+    { text: 'https://storix.kr', url: 'https://storix.kr' },
+    { text: '에서요?' },
+  ])
+})
+
 test('sentence punctuation after a link stays in the sentence', async () => {
   const { splitLinkSegments } = await loadLinkify()
 
