@@ -8,6 +8,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native'
+import { LinkedText } from '../common/LinkedText'
 import { C } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 
@@ -51,9 +52,9 @@ export function ReviewSpoilerBlock({
 
   if (!isSpoiler || revealed) {
     return (
-      <Text style={textStyle} numberOfLines={numberOfLines}>
+      <LinkedText style={textStyle} numberOfLines={numberOfLines}>
         {content}
-      </Text>
+      </LinkedText>
     )
   }
 

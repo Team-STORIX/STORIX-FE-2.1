@@ -14,6 +14,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
 import { useRouter } from "expo-router";
+import { LinkedText } from "../../../components/common/LinkedText";
 import { OfficialMark } from "../../../components/common/OfficialMark";
 import { AdultLockedPanel } from "../../../components/adult";
 import {
@@ -539,15 +540,16 @@ export function FeedPostCard({
                 </ScrollView>
               )}
               <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-                <Text
+                <LinkedText
                   style={[
                     styles.contentText,
                     useBirthdayPreviewLayout && styles.birthdayContentText,
                   ]}
                   numberOfLines={variant === "detail" ? undefined : 3}
+                  enabled={!isSpoilerHidden}
                 >
                   {content}
-                </Text>
+                </LinkedText>
               </View>
             </View>
 

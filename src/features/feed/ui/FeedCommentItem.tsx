@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'r
 import { Image } from 'expo-image'
 import type { ReplyItem } from '../api/feed/readerBoardDetail.api'
 import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
+import { LinkedText } from '../../../components/common/LinkedText'
 import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
@@ -159,7 +160,7 @@ export function FeedCommentItem(props: Props) {
         </View>
       </View>
 
-      <Text style={styles.commentText}>{item.reply.comment}</Text>
+      <LinkedText style={styles.commentText}>{item.reply.comment}</LinkedText>
 
       <View style={styles.actionRow}>
         <Pressable
