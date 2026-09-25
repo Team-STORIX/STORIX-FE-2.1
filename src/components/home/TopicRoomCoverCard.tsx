@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { TopicRoomItem } from '../../features/topicroom'
 import { formatTopicRoomSubtitle } from '../../features/topicroom'
-import { C, Gray, Magenta } from '../../theme/colors'
+import { useShouldMaskAdultContent } from '../../store/adultVerification.store'
+import { C, FontFamily, Gray, Magenta } from '../../theme'
 import { Typography } from '../../theme/typography'
 
 const fireIcon = require('../../../assets/icons/common/fire.svg')
@@ -25,6 +26,11 @@ export function TopicRoomCoverCard({
   loading = false,
   onPress,
 }: TopicRoomCoverCardProps) {
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: room?.isAdultOnly,
+    isBlinded: room?.isBlinded,
+  })
+
   if (loading || !room) {
     return (
       <View style={[styles.card, styles.placeholderCard]}>
@@ -51,7 +57,13 @@ export function TopicRoomCoverCard({
       accessibilityRole="button"
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      {room.thumbnailUrl ? (
+      {/* Adult cover (Figma 11581:51837) stands in for the thumbnail only; the
+          chips, title and enter button stay as they are on any other card. */}
+      {isAdultMasked ? (
+        <View style={[StyleSheet.absoluteFillObject, styles.adultCover]}>
+          <Text style={styles.adultText}>{'성인 인증 후\n열람 가능'}</Text>
+        </View>
+      ) : room.thumbnailUrl ? (
         <Image
           source={{ uri: room.thumbnailUrl }}
           style={StyleSheet.absoluteFillObject}
@@ -113,6 +125,19 @@ const styles = StyleSheet.create({
   },
   placeholderCard: {
     backgroundColor: Gray[100],
+  },
+  adultCover: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Magenta[50],
+  },
+  adultText: {
+    // SUIT Heavy in the design; ExtraBold is the heaviest weight bundled.
+    fontFamily: FontFamily.extrabold,
+    fontSize: 36,
+    lineHeight: 43,
+    color: Magenta[100],
+    textAlign: 'center',
   },
   fallbackBg: {
     backgroundColor: Gray[200],

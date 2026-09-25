@@ -11,6 +11,11 @@ type AdultThumbnailProps = {
   isBlinded?: boolean | null
   /** Size, radius and margins of the thumbnail slot; applied to both states. */
   style?: StyleProp<ViewStyle>
+  /**
+   * Draws the 19 chip on the placeholder. Off where the slot is too small or
+   * too busy for it, such as the popular topic room card.
+   */
+  showBadge?: boolean
   /** The regular thumbnail, rendered when the content is not masked. */
   children: ReactNode
 }
@@ -23,6 +28,7 @@ export function AdultThumbnail({
   isAdultOnly,
   isBlinded,
   style,
+  showBadge = true,
   children,
 }: AdultThumbnailProps) {
   const masked = useShouldMaskAdultContent({ isAdultOnly, isBlinded })
@@ -31,7 +37,7 @@ export function AdultThumbnail({
 
   return (
     <View style={[styles.placeholder, style]}>
-      <AdultBadge size={18} style={styles.badge} />
+      {showBadge ? <AdultBadge size={18} style={styles.badge} /> : null}
     </View>
   )
 }
