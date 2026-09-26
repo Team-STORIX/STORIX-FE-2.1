@@ -74,6 +74,70 @@ export function ProfileCardModal({
     }
   }
 
+  const cardContent = (
+    <>
+      <View style={styles.topRow}>
+        {/* 왼쪽 핑크 영역 */}
+        <View style={styles.pinkSection}>
+          <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
+
+          <View style={styles.nicknameBadge}>
+            <Text style={styles.nicknameText} numberOfLines={1}>
+              {nickname}
+            </Text>
+          </View>
+
+          {shouldShowTitleBadge ? (
+            <View style={styles.titleBadge}>
+              <Text style={styles.titleText} numberOfLines={1}>
+                {trimmedTitle}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* 오른쪽 검정 영역 */}
+        <View style={styles.blackSectionRight}>
+          {tintedTopGenreIconSvg ? (
+            <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
+          ) : (
+            <Image source={fallbackGenreLogo} style={styles.fallbackGenreLogo} contentFit="contain" />
+          )}
+        </View>
+      </View>
+
+      {/* 하단 검정 영역 */}
+      <View style={styles.blackSectionBottom}>
+        {/* 별점 평균 */}
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
+          <Text style={styles.statLabel}>별점 평균</Text>
+          <View style={styles.statIconWrap}>
+            <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
+          </View>
+        </View>
+
+        {/* 최애 장르 */}
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{topGenreLabel}</Text>
+          <Text style={styles.statLabel}>최애 장르</Text>
+          <View style={styles.statIconWrap}>
+            <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
+          </View>
+        </View>
+
+        {/* 리뷰 작품 */}
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{reviewCount}</Text>
+          <Text style={styles.statLabel}>리뷰 작품</Text>
+          <View style={styles.statIconWrap}>
+            <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
+          </View>
+        </View>
+      </View>
+    </>
+  )
+
   return (
     <Modal
       visible={visible}
@@ -93,65 +157,7 @@ export function ProfileCardModal({
         <ViewShot ref={viewShotRef} style={styles.captureCardWrapper} options={{ format: 'png', quality: 1.0 }}>
           <View style={styles.cardContainer}>
             {/* 상단 영역: 핑크 + 검정 */}
-            <View style={styles.topRow}>
-              {/* 왼쪽 핑크 영역 */}
-              <View style={styles.pinkSection}>
-                <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
-
-                <View style={styles.nicknameBadge}>
-                  <Text style={styles.nicknameText} numberOfLines={1}>
-                    {nickname}
-                  </Text>
-                </View>
-
-                {shouldShowTitleBadge ? (
-                  <View style={styles.titleBadge}>
-                    <Text style={styles.titleText} numberOfLines={1}>
-                      {trimmedTitle}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {/* 오른쪽 검정 영역 */}
-              <View style={styles.blackSectionRight}>
-                {tintedTopGenreIconSvg ? (
-                  <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
-                ) : (
-                  <Image source={fallbackGenreLogo} style={styles.fallbackGenreLogo} contentFit="contain" />
-                )}
-              </View>
-            </View>
-
-            {/* 하단 검정 영역 */}
-            <View style={styles.blackSectionBottom}>
-              {/* 별점 평균 */}
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>별점 평균</Text>
-                <View style={styles.statIconWrap}>
-                  <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
-                </View>
-              </View>
-
-              {/* 최애 장르 */}
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{topGenreLabel}</Text>
-                <Text style={styles.statLabel}>최애 장르</Text>
-                <View style={styles.statIconWrap}>
-                  <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
-                </View>
-              </View>
-
-              {/* 리뷰 작품 */}
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{reviewCount}</Text>
-                <Text style={styles.statLabel}>리뷰 작품</Text>
-                <View style={styles.statIconWrap}>
-                  <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
-                </View>
-              </View>
-            </View>
+            {cardContent}
           </View>
         </ViewShot>
 
@@ -164,66 +170,7 @@ export function ProfileCardModal({
             ]}
             onPress={(e) => e.stopPropagation()}
           >
-          {/* 상단 영역: 핑크 + 검정 */}
-          <View style={styles.topRow}>
-            {/* 왼쪽 핑크 영역 */}
-            <View style={styles.pinkSection}>
-              <Image source={idCardTitle} style={styles.idCardTitle} contentFit="contain" />
-
-              <View style={styles.nicknameBadge}>
-                <Text style={styles.nicknameText} numberOfLines={1}>
-                  {nickname}
-                </Text>
-              </View>
-
-              {shouldShowTitleBadge ? (
-                <View style={styles.titleBadge}>
-                  <Text style={styles.titleText} numberOfLines={1}>
-                    {trimmedTitle}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* 오른쪽 검정 영역 */}
-            <View style={styles.blackSectionRight}>
-              {tintedTopGenreIconSvg ? (
-                <SvgXml xml={tintedTopGenreIconSvg} width={142} height={142} />
-              ) : (
-                <Image source={fallbackGenreLogo} style={styles.fallbackGenreLogo} contentFit="contain" />
-              )}
-            </View>
-          </View>
-
-          {/* 하단 검정 영역 */}
-          <View style={styles.blackSectionBottom}>
-            {/* 별점 평균 */}
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>별점 평균</Text>
-              <View style={styles.statIconWrap}>
-                <Image source={reviewIcon} style={styles.statIcon} contentFit="contain" />
-              </View>
-            </View>
-
-            {/* 최애 장르 */}
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{topGenreLabel}</Text>
-              <Text style={styles.statLabel}>최애 장르</Text>
-              <View style={styles.statIconWrap}>
-                <Image source={likedIcon} style={styles.statIcon} contentFit="contain" />
-              </View>
-            </View>
-
-            {/* 리뷰 작품 */}
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>리뷰 작품</Text>
-              <View style={styles.statIconWrap}>
-                <Image source={libraryIcon} style={styles.statIcon} contentFit="contain" />
-              </View>
-            </View>
-          </View>
+            {cardContent}
           </Pressable>
         </View>
 
