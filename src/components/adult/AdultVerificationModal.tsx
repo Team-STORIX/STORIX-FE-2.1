@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   copy: {
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
   titleRow: {
     flexDirection: 'row',

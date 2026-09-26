@@ -42,6 +42,7 @@ export function HotTopicRoomCard({ item, rank, isJoining, onPress }: Props) {
           isAdultOnly={item.isAdultOnly}
           isBlinded={item.isBlinded}
           style={styles.thumb}
+          showBadge={false}
         >
           {item.thumbnailUrl ? (
             <Image

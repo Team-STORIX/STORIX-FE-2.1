@@ -15,6 +15,10 @@ import { WarningEmptyState } from "../../../components/common/WarningEmptyState"
 import { C, Gray, Magenta } from "../../../theme/colors";
 import { Radius } from "../../../theme/radius";
 import { Typography } from "../../../theme/typography";
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from "../../../store/adultVerification.store";
 import type { TopicRoomItem } from "../api/topicroom.schema";
 import { getTopicRoomDiscoveryRoute } from "../services/topicRoomNavigation";
 import { useMyTopicRoomsAll } from "../hooks/useMyTopicRoomsAll";
@@ -62,6 +66,12 @@ export function TopicRoomFeedSection() {
   };
 
   const handleEnter = async (item: TopicRoomItem) => {
+    // Join and chat history both answer 403 for an adult room; prompt here so
+    // the card that is already blinded never opens the preview.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt("topicroom");
+      return;
+    }
     router.push(await getTopicRoomDiscoveryRoute(item.topicRoomId, item));
   };
 
