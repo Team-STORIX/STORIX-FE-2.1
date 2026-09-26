@@ -4,8 +4,8 @@ import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { C, Gray, Typography } from "../../../theme";
 import { useProfileFavoriteWorksPreview } from "../hooks";
+import { ProfileFindWorksEmptyState } from "./ProfileFindWorksEmptyState";
 
-const findBooksButton = require("../../../../assets/icons/profile/find-books.svg");
 const nextArrowIcon = require("../../../../assets/icons/common/icon-arrow-gray.svg");
 
 const WORK_RENDER_LIMIT = 4;
@@ -86,21 +86,7 @@ export function ProfilePreferenceSection() {
             </View>
           </View>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 관심 작품이 없어요</Text>
-            <Pressable
-              onPress={() => router.push("/search")}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="작품 찾기"
-            >
-              <Image
-                source={findBooksButton}
-                style={styles.emptyButtonImage}
-                contentFit="contain"
-              />
-            </Pressable>
-          </View>
+          <ProfileFindWorksEmptyState message="아직 관심 작품이 없어요" />
         )}
       </View>
     </View>
@@ -177,21 +163,5 @@ const styles = StyleSheet.create({
   },
   emptyDotSmall: {
     marginTop: 3,
-  },
-  emptyState: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  emptyText: {
-    ...Typography.heading3,
-    color: Gray[500],
-  },
-  emptyButtonImage: {
-    width: 131,
-    height: 36,
-    marginTop: 20,
-  },
-  pressed: {
-    opacity: 0.8,
   },
 });
