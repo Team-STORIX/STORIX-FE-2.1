@@ -1,86 +1,19 @@
 ﻿import { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
+import { StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Magenta, Typography } from '../../../theme'
 import { useProfileRatings } from '../hooks'
-import type { RatingCountsMap } from '../types'
+import { getProfileRatingStats } from '../lib/ratingStats'
+import { ProfileFindWorksEmptyState } from './ProfileFindWorksEmptyState'
 
-const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
-
-const RATING_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const
 const MAX_HEIGHT = 120
 
-function parseCountsToStepMap(raw: RatingCountsMap): Record<number, number> {
-  const parsed: Record<number, number> = {}
-
-  for (const [key, value] of Object.entries(raw ?? {})) {
-    const normalized = key.trim().replace(/_/g, '.')
-    const match = normalized.match(/(\d+(\.\d+)?)/g)
-    const numericKey = match ? match[match.length - 1] : normalized
-    const rating = Number.parseFloat(numericKey)
-
-    if (!Number.isNaN(rating)) {
-      parsed[rating] =
-        (parsed[rating] ?? 0) + (Number.isFinite(value) ? Number(value) : 0)
-    }
-  }
-
-  const stepMap: Record<number, number> = {}
-  for (const step of RATING_STEPS) {
-    stepMap[step] = parsed[step] ?? 0
-  }
-
-  return stepMap
-}
-
 export function ProfileRatingSection() {
-  const router = useRouter()
   const ratingsQuery = useProfileRatings()
 
-  const stepCounts = useMemo(
-    () => parseCountsToStepMap(ratingsQuery.data ?? {}),
+  const { ratingData, maxCount, totalReviews, averageRating, mostGivenRating } = useMemo(
+    () => getProfileRatingStats(ratingsQuery.data),
     [ratingsQuery.data],
   )
-
-  const ratingData = useMemo(
-    () =>
-      RATING_STEPS.map((rating) => ({
-        rating,
-        count: stepCounts[rating] ?? 0,
-        key: String(rating),
-      })),
-    [stepCounts],
-  )
-
-  const maxCount = useMemo(() => {
-    const max = Math.max(...ratingData.map((item) => item.count))
-    return Number.isFinite(max) ? max : 0
-  }, [ratingData])
-
-  const totalReviews = useMemo(
-    () => ratingData.reduce((sum, item) => sum + item.count, 0),
-    [ratingData],
-  )
-
-  const averageRating = useMemo(() => {
-    if (totalReviews === 0) return 0
-    const total = ratingData.reduce(
-      (sum, item) => sum + item.rating * item.count,
-      0,
-    )
-
-    return Math.round((total / totalReviews) * 10) / 10
-  }, [ratingData, totalReviews])
-
-  const mostGivenRating = useMemo(() => {
-    if (totalReviews === 0 || maxCount <= 0) return 0
-    const candidates = ratingData
-      .filter((item) => item.count === maxCount)
-      .map((item) => item.rating)
-
-    return candidates.length > 0 ? Math.max(...candidates) : 0
-  }, [maxCount, ratingData, totalReviews])
 
   const getBarHeight = (count: number) => {
     if (count === 0 || maxCount <= 0) return 1
@@ -103,17 +36,7 @@ export function ProfileRatingSection() {
         ) : null}
 
         {totalReviews === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 별점 분포가 없어요</Text>
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="작품 찾기"
-            >
-              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
-            </Pressable>
-          </View>
+          <ProfileFindWorksEmptyState message="아직 별점 분포가 없어요" />
         ) : (
           <>
             <View style={styles.chartWrap}>
@@ -184,19 +107,6 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: Gray[500],
   },
-  emptyState: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...Typography.heading3,
-    color: Gray[500],
-  },
-  emptyButtonImage: {
-    width: 131,
-    height: 36,
-    marginTop: 20,
-  },
   chartWrap: {
     marginTop: 24,
     alignItems: 'center',
@@ -243,8 +153,5 @@ const styles = StyleSheet.create({
     ...Typography.body2Medium,
     lineHeight: 19.6,
     color: Gray[500],
-  },
-  pressed: {
-    opacity: 0.8,
   },
 })

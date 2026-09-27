@@ -1,14 +1,10 @@
 ﻿import { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
+import { StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Magenta, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
-
-const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
+import { ProfileFindWorksEmptyState } from './ProfileFindWorksEmptyState'
 
 export function ProfileHashtagSection() {
-  const router = useRouter()
   const hashtagsQuery = usePreferredHashtags()
 
   const ranks = useMemo(() => {
@@ -31,18 +27,7 @@ export function ProfileHashtagSection() {
       <Text style={styles.title}>선호 해시태그</Text>
 
       {!hasAnyRank ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>아직 선호 해시태그가 없어요</Text>
-
-          <Pressable
-            onPress={() => router.push('/search')}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="작품 찾기"
-          >
-            <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
-          </Pressable>
-        </View>
+        <ProfileFindWorksEmptyState message="아직 선호 해시태그가 없어요" centerText />
       ) : (
         <View style={styles.canvas}>
           <Text
@@ -82,20 +67,6 @@ const styles = StyleSheet.create({
     maxWidth: 361,
     height: 178,
     marginTop: 24,
-  },
-  emptyState: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...Typography.heading3,
-    color: Gray[500],
-    textAlign: 'center',
-  },
-  emptyButtonImage: {
-    width: 131,
-    height: 36,
-    marginTop: 20,
   },
   absolute: {
     position: 'absolute',
@@ -144,8 +115,5 @@ const styles = StyleSheet.create({
     lineHeight: 19.6,
     color: Gray[400],
     opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.8,
   },
 })
