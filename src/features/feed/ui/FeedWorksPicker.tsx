@@ -30,17 +30,9 @@ export function FeedWorksPicker({
 }: FeedWorksPickerProps) {
   const router = useRouter()
 
-  const hasFavorites = works.length > 0
-
   const items: PickerItem[] = [
     { id: 'all', name: '전체' },
-    ...(hasFavorites
-      ? works.map((w) => ({
-          id: String(w.worksId),
-          name: w.worksName,
-          thumbnailUrl: w.thumbnailUrl,
-        }))
-      : []),
+    ...works.map((w) => ({ id: String(w.worksId), name: w.worksName, thumbnailUrl: w.thumbnailUrl })),
     { id: ADD_ID, name: '작품 추가' },
   ]
 
@@ -135,7 +127,6 @@ const styles = StyleSheet.create({
   container: {
     height: 110,
     paddingLeft: 16,
-    paddingRight: 0,
     paddingBottom: 20,
     borderBottomWidth: 6,
     borderBottomColor: Gray[50],
@@ -197,7 +188,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     height: 90,
-    paddingTop: 0,
   },
   divider: {
     width: 1,
