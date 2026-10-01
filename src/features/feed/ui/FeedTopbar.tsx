@@ -8,6 +8,11 @@ const addTopicRoomIcon = require("../../../../assets/topicroom/icon-add-topicroo
 
 export type FeedTab = "works" | "writers";
 
+const TABS: { key: FeedTab; label: string }[] = [
+  { key: "works", label: "관심 피드" },
+  { key: "writers", label: "토픽룸" },
+];
+
 type FeedTopbarProps = {
   activeTab: FeedTab;
   onChange: (tab: FeedTab) => void;
@@ -23,79 +28,44 @@ export function FeedTopbar({
   onPressSearch,
   onPressAddTopicRoom,
 }: FeedTopbarProps) {
+  const actions = [
+    { icon: searchIcon, label: "토픽룸 검색", onPress: onPressSearch },
+    { icon: addTopicRoomIcon, label: "토픽룸 만들기", onPress: onPressAddTopicRoom },
+  ];
+
   return (
     <View style={styles.bar}>
       <View style={styles.tabs}>
-        <Pressable onPress={() => onChange("works")} hitSlop={8}>
-          <Text
-            style={[
-              styles.tab,
-              activeTab === "works" ? styles.tabActive : styles.tabInactive,
-            ]}
-          >
-            관심 피드
-          </Text>
-        </Pressable>
-        <Pressable onPress={() => onChange("writers")} hitSlop={8}>
-          <View style={styles.topicRoomTabLabel}>
-            <Text
-              style={[
-                styles.tab,
-                activeTab === "writers"
-                  ? styles.tabActive
-                  : styles.tabInactive,
-              ]}
-            >
-              토픽룸
-            </Text>
-            {hasUnreadTopicRooms ? (
-              <View
-                style={styles.unreadDot}
-                accessibilityLabel="읽지 않은 토픽룸 메시지 있음"
-              />
-            ) : null}
-          </View>
-        </Pressable>
+        {TABS.map(({ key, label }) => (
+          <Pressable key={key} onPress={() => onChange(key)} hitSlop={8}>
+            <View style={styles.tabLabel}>
+              <Text style={[styles.tab, activeTab === key ? styles.tabActive : styles.tabInactive]}>
+                {label}
+              </Text>
+              {key === "writers" && hasUnreadTopicRooms ? (
+                <View style={styles.unreadDot} accessibilityLabel="읽지 않은 토픽룸 메시지 있음" />
+              ) : null}
+            </View>
+          </Pressable>
+        ))}
       </View>
 
       {activeTab === "writers" ? (
         <View style={styles.actions}>
-          {onPressSearch ? (
-            <Pressable
-              onPress={onPressSearch}
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                pressed && styles.actionPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="토픽룸 검색"
-            >
-              <Image
-                source={searchIcon}
-                style={styles.actionIcon}
-                contentFit="contain"
-              />
-            </Pressable>
-          ) : null}
-          {onPressAddTopicRoom ? (
-            <Pressable
-              onPress={onPressAddTopicRoom}
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                pressed && styles.actionPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="토픽룸 만들기"
-            >
-              <Image
-                source={addTopicRoomIcon}
-                style={styles.actionIcon}
-                contentFit="contain"
-              />
-            </Pressable>
-          ) : null}
+          {actions.map(({ icon, label, onPress }) =>
+            onPress ? (
+              <Pressable
+                key={label}
+                onPress={onPress}
+                hitSlop={8}
+                style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+              >
+                <Image source={icon} style={styles.actionIcon} contentFit="contain" />
+              </Pressable>
+            ) : null,
+          )}
         </View>
       ) : null}
     </View>
@@ -116,6 +86,11 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 20,
   },
+  tabLabel: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+  },
   tab: {
     ...Typography.heading1,
   },
@@ -124,11 +99,6 @@ const styles = StyleSheet.create({
   },
   tabInactive: {
     color: Gray[200],
-  },
-  topicRoomTabLabel: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 4,
   },
   unreadDot: {
     width: 6,

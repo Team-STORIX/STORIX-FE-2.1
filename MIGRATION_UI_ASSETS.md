@@ -128,17 +128,13 @@ assets/
 | filename | type | likely usage | action | notes |
 |---|---|---|---|---|
 | add-favorites.svg | SVG | Add to favorites (board) | needs react-native-svg conversion | |
-| author-mark.svg | SVG | Author badge in feed | needs react-native-svg conversion | Duplicate of common |
 | comment-arrow.svg | SVG | Reply submit arrow | needs react-native-svg conversion | |
 | comment-black.svg | SVG | Reply/comment icon (dark) | needs react-native-svg conversion | |
-| feed-all-gray.svg | SVG | Feed filter — all, inactive | needs react-native-svg conversion | |
-| feed-all-pink.svg | SVG | Feed filter — all, active | needs react-native-svg conversion | |
 | icon-photo.svg | SVG | Photo attach in write flow | needs react-native-svg conversion | Plus write phase |
 | picker-gray.svg | SVG | Image picker — inactive | needs react-native-svg conversion | |
 | picker-pink.svg | SVG | Image picker — active | needs react-native-svg conversion | |
 | report-done.svg | SVG | Report completed illustration | copy as-is (Image) | 7.5 KB |
 | upload-comment.svg | SVG | Reply submit button | needs react-native-svg conversion | |
-| payPost-openchat.svg | SVG | Pay post open-chat button | needs react-native-svg conversion | Pay flow phase |
 
 **SKIPPED (pay flow manual images):**
 - pay-guide-1.png through pay-guide-7.png (143 KB – 1 MB each) — skip until pay flow phase
