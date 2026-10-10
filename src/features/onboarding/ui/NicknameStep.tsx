@@ -2,47 +2,28 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
 import { C, Gray, Radius, Typography } from '../../../theme'
-import type { Dispatch, SetStateAction } from 'react'
-import {
-  checkNicknameValid,
-  extractIsAvailableFromValidResponse,
-  extractIsDuplicatedFromValidResponse,
-  extractIsForbiddenFromValidResponse,
-} from '../../auth/api/nickname.api'
-import {
-  getNicknameFallbackErrorMessage,
-  getNicknameFormatErrorMessage,
-  NICKNAME_MESSAGES,
-} from '../../auth/lib/nickname-validation'
+import { checkOnboardingNickname, isNicknameCheckError } from '../../auth/lib/nickname-check'
+import type { NicknameState } from '../hooks/useOnboardingForm'
+import { OnboardingStepHeader } from './OnboardingStepHeader'
 
 const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
 const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
 const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
 
-type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden' | 'error'
-
-export function NicknameStep({
-  value,
-  onChange,
-  onVerifiedChange,
-  status,
-  onStatusChange,
-  message,
-  onMessageChange,
-  profileImageUri,
-  onProfileImageChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-  verified: boolean
-  onVerifiedChange: Dispatch<SetStateAction<boolean>>
-  status: Status
-  onStatusChange: Dispatch<SetStateAction<Status>>
-  message: string
-  onMessageChange: Dispatch<SetStateAction<string>>
+type NicknameStepProps = {
+  nickname: NicknameState
+  onNicknameChange: (patch: Partial<NicknameState>) => void
   profileImageUri?: string
   onProfileImageChange: (uri: string) => void
-}) {
+}
+
+export function NicknameStep({
+  nickname,
+  onNicknameChange,
+  profileImageUri,
+  onProfileImageChange,
+}: NicknameStepProps) {
+  const { value, status, message } = nickname
   const canCheckNickname = value.length > 0
 
   const handlePickImage = async () => {
@@ -61,49 +42,19 @@ export function NicknameStep({
     }
   }
 
-  const handleCheck = async () => {
-    const formatErrorMessage = getNicknameFormatErrorMessage(value)
-    if (formatErrorMessage) {
-      onVerifiedChange(false)
-      onStatusChange('invalid')
-      onMessageChange(formatErrorMessage)
-      return
-    }
+  const handleChangeText = (text: string) => {
+    onNicknameChange({ value: text, verified: false, status: 'idle', message: '' })
+  }
 
-    try {
-      const response = await checkNicknameValid(value)
-      if (extractIsAvailableFromValidResponse(response)) {
-        onVerifiedChange(true)
-        onStatusChange('ok')
-        onMessageChange(NICKNAME_MESSAGES.available)
-        return
-      }
-      if (extractIsDuplicatedFromValidResponse(response)) {
-        onVerifiedChange(false)
-        onStatusChange('taken')
-        onMessageChange(NICKNAME_MESSAGES.duplicated)
-        return
-      }
-      if (extractIsForbiddenFromValidResponse(response)) {
-        onVerifiedChange(false)
-        onStatusChange('forbidden')
-        onMessageChange(NICKNAME_MESSAGES.forbidden)
-        return
-      }
-      onVerifiedChange(false)
-      onStatusChange('error')
-      onMessageChange(getNicknameFallbackErrorMessage(response.message))
-    } catch {
-      onVerifiedChange(false)
-      onStatusChange('error')
-      onMessageChange(NICKNAME_MESSAGES.unknownError)
-    }
+  const handleCheck = async () => {
+    const result = await checkOnboardingNickname(value)
+    onNicknameChange({ ...result, verified: result.status === 'ok' })
   }
 
   const inputBorderColor =
     status === 'ok'
       ? C.activeDot
-      : status === 'taken' || status === 'invalid' || status === 'forbidden' || status === 'error'
+      : isNicknameCheckError(status)
         ? C.error
         : value.length > 0
           ? C.text
@@ -111,19 +62,13 @@ export function NicknameStep({
 
   return (
     <View>
-
-      <Text style={styles.title}>프로필을 설정해주세요</Text>
-      <Text style={styles.subtitle}>닉네임과 프로필 사진을 정해주세요</Text>
+      <OnboardingStepHeader title="프로필을 설정해주세요" subtitle="닉네임과 프로필 사진을 정해주세요" />
 
       {/* 프로필 사진 */}
       <View style={styles.profileWrap}>
         <View style={styles.profileImageWrap}>
           {profileImageUri ? (
-            <Image
-              source={{ uri: profileImageUri }}
-              style={styles.profileImage}
-              contentFit="cover"
-            />
+            <Image source={{ uri: profileImageUri }} style={styles.profileImage} contentFit="cover" />
           ) : (
             <View style={styles.profilePlaceholder} />
           )}
@@ -138,12 +83,7 @@ export function NicknameStep({
         <View style={styles.inputRow}>
           <TextInput
             value={value}
-            onChangeText={(text) => {
-              onChange(text)
-              onVerifiedChange(false)
-              onStatusChange('idle')
-              onMessageChange('')
-            }}
+            onChangeText={handleChangeText}
             placeholder="닉네임을 입력하세요"
             placeholderTextColor={Gray[300]}
             autoCapitalize="none"
@@ -175,15 +115,6 @@ export function NicknameStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    ...Typography.heading1,
-    color: C.text,
-  },
-  subtitle: {
-    marginTop: 5,
-    ...Typography.body1Medium,
-    color: Gray[500],
-  },
   profileWrap: {
     marginTop: 42,
     alignItems: 'center',

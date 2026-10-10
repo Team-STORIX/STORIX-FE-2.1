@@ -1,98 +1,49 @@
-import { BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { useFocusEffect } from '@react-navigation/native'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useSignup } from '../../auth/hooks/useSignup'
-import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
-import { getOnboardingWorks } from '../api/onboarding.api'
-import { getMyProfile, uploadAndSetProfileImage } from '../../profile/api/profile.api'
-import { ME_QUERY_KEY } from '../../profile/hooks/useMe'
-import { useProfileStore } from '../../profile/store/profile.store'
+import { useAndroidBackHandler } from '../../../lib/navigation/useAndroidBackHandler'
+import { useCompleteSignup } from '../hooks/useCompleteSignup'
+import { useOnboardingForm } from '../hooks/useOnboardingForm'
+import { useOnboardingWorks } from '../hooks/useOnboardingWorks'
+import { ONBOARDING_PROGRESS_STEPS, ONBOARDING_STEP } from '../lib/constants'
 import { NicknameStep } from './NicknameStep'
 import { BioStep } from './BioStep'
 import { GenreStep } from './GenreStep'
 import { FavoriteStep } from './FavoriteStep'
 import { FinalStep } from './FinalStep'
+import { FooterFadeGradient } from './FooterFadeGradient'
+import { OnboardingCtaButton } from './OnboardingCtaButton'
+import { OnboardingMissingScreen } from './OnboardingMissingScreen'
 import { OnboardingTopBar } from './OnboardingTopBar'
-import { C, Gray, Radius, Typography } from '../../../theme'
-
-const genreOptions = GenreKeySchema.options
-const ONBOARDING_PROGRESS_STEPS = 4
+import { C, Gray } from '../../../theme'
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const queryClient = useQueryClient()
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
   const serviceTermsAgree = useAuthStore((s) => s.serviceTermsAgree)
   const privacyPolicyAgree = useAuthStore((s) => s.privacyPolicyAgree)
   const ageOver14 = useAuthStore((s) => s.ageOver14)
-  const signupMutation = useSignup()
-  const setMe = useProfileStore((s) => s.setMe)
-  const onboardingWorksQuery = useQuery({
-    queryKey: ['onboarding', 'works'],
-    queryFn: getOnboardingWorks,
-    enabled: !!onboardingToken,
-    staleTime: 0,
-  })
-
-  const [step, setStep] = useState(1)
-  const [nickname, setNickname] = useState('')
-  const [nicknameVerified, setNicknameVerified] = useState(false)
-  const [nicknameStatus, setNicknameStatus] = useState<
-    'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden' | 'error'
-  >('idle')
-  const [nicknameMessage, setNicknameMessage] = useState('')
-  const [bio, setBio] = useState('')
-  const [genres, setGenres] = useState<GenreKey[]>([])
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
-  const [profileImageUri, setProfileImageUri] = useState<string | undefined>()
+  const form = useOnboardingForm()
+  const onboardingWorksQuery = useOnboardingWorks(!!onboardingToken)
+  const { completeSignup, isCompleting } = useCompleteSignup()
   const [error, setError] = useState('')
-  const [isCompleting, setIsCompleting] = useState(false)
   const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
+  const { step, isFirstStep, isFinalStep, canProceed, goBack, goNext } = form
+
   const handleBack = useCallback(() => {
-    if (step > 1) {
-      setStep((current) => current - 1)
-    } else {
+    if (isFirstStep) {
       router.replace('/(auth)/agreement')
+    } else {
+      goBack()
     }
     return true
-  }, [router, step])
+  }, [goBack, isFirstStep, router])
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return undefined
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', handleBack)
-      return () => subscription.remove()
-    }, [handleBack]),
-  )
-
-  const handleSkip = () => {
-    if (step < 5) setStep((current) => current + 1)
-  }
-
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        return nicknameVerified
-      case 2:
-        return true
-      case 3:
-        return genres.length >= 1
-      case 4:
-        return favoriteIds.length <= 18
-      case 5:
-        return true
-      default:
-        return false
-    }
-  }
+  useAndroidBackHandler(handleBack)
 
   const handleNext = async () => {
     if (isCompleting) return
@@ -104,75 +55,50 @@ export function OnboardingScreen() {
       return
     }
 
-    if (step === 1 && !nicknameVerified) {
+    if (step === ONBOARDING_STEP.NICKNAME && !form.nickname.verified) {
       setError('닉네임 중복 확인을 완료해 주세요.')
       return
     }
 
-    if (step === 3 && genres.length === 0) {
+    if (step === ONBOARDING_STEP.GENRE && form.genres.length === 0) {
       setError('장르를 하나 이상 선택해 주세요.')
       return
     }
 
-    if (step < 5) {
-      setStep((current) => current + 1)
+    if (!isFinalStep) {
+      goNext()
       return
     }
 
-    setIsCompleting(true)
-
     try {
-      await signupMutation.mutateAsync({
-        serviceTermsAgree,
-        privacyPolicyAgree,
-        ageOver14,
-        nickName: nickname.trim(),
-        profileDescription: bio,
-        favoriteGenreList: genres,
-        favoriteWorksIdList: favoriteIds,
+      await completeSignup({
+        request: {
+          serviceTermsAgree,
+          privacyPolicyAgree,
+          ageOver14,
+          nickName: form.nickname.value.trim(),
+          profileDescription: form.bio,
+          favoriteGenreList: form.genres,
+          favoriteWorksIdList: form.favoriteIds,
+        },
+        profileImageUri: form.profileImageUri,
       })
-      try {
-        if (profileImageUri) {
-          await uploadAndSetProfileImage(profileImageUri)
-        }
-
-        const meResponse = await getMyProfile()
-        if (meResponse.result) {
-          setMe(meResponse.result)
-          queryClient.setQueryData(ME_QUERY_KEY, meResponse.result)
-        }
-        await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
-      } catch (syncError) {
-        console.log('[OnboardingScreen] failed to sync profile after signup:', syncError)
-      }
-
       router.replace('/(auth)/manual')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
-    } finally {
-      setIsCompleting(false)
     }
   }
 
   if (!onboardingToken) {
-    return (
-      <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
-        <Text style={styles.missingTitle}>온보딩 정보가 없어요.</Text>
-        <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
-        <Pressable
-          onPress={() => router.replace('/(auth)/login')}
-          style={styles.resetButton}
-        >
-          <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
-        </Pressable>
-      </View>
-    )
+    return <OnboardingMissingScreen title="온보딩 정보가 없어요." />
   }
+
+  const isFavoriteStep = step === ONBOARDING_STEP.FAVORITE
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={undefined}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <OnboardingTopBar onBack={handleBack} onSkip={step === 4 ? handleSkip : undefined} />
+        <OnboardingTopBar onBack={handleBack} onSkip={isFavoriteStep ? goNext : undefined} />
 
         {step <= ONBOARDING_PROGRESS_STEPS ? (
           <View style={styles.progressWrap}>
@@ -190,79 +116,42 @@ export function OnboardingScreen() {
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: footerBottomPadding + 100 },
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: footerBottomPadding + 100 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {step === 1 ? (
+          {step === ONBOARDING_STEP.NICKNAME ? (
             <NicknameStep
-              value={nickname}
-              onChange={setNickname}
-              verified={nicknameVerified}
-              onVerifiedChange={setNicknameVerified}
-              status={nicknameStatus}
-              onStatusChange={setNicknameStatus}
-              message={nicknameMessage}
-              onMessageChange={setNicknameMessage}
-              profileImageUri={profileImageUri}
-              onProfileImageChange={setProfileImageUri}
+              nickname={form.nickname}
+              onNicknameChange={form.patchNickname}
+              profileImageUri={form.profileImageUri}
+              onProfileImageChange={form.setProfileImageUri}
             />
           ) : null}
-
-          {step === 2 ? <BioStep value={bio} onChange={setBio} /> : null}
-          {step === 3 ? <GenreStep value={genres} onChange={setGenres} /> : null}
-          {step === 4 ? (
+          {step === ONBOARDING_STEP.BIO ? <BioStep value={form.bio} onChange={form.setBio} /> : null}
+          {step === ONBOARDING_STEP.GENRE ? <GenreStep value={form.genres} onChange={form.setGenres} /> : null}
+          {isFavoriteStep ? (
             <FavoriteStep
               works={onboardingWorksQuery.data ?? []}
-              selectedIds={favoriteIds}
-              onToggle={(id) =>
-                setFavoriteIds((current) =>
-                  current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-                )
-              }
+              selectedIds={form.favoriteIds}
+              onToggle={form.toggleFavorite}
               loading={onboardingWorksQuery.isLoading}
             />
           ) : null}
-          {step === 5 ? <FinalStep /> : null}
+          {isFinalStep ? <FinalStep /> : null}
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
-        {step === 4 ? (
-          <View pointerEvents="none" style={[styles.footerGradient, { height: footerBottomPadding + 82 }]}>
-            <Svg width="100%" height="100%" preserveAspectRatio="none">
-              <Defs>
-                <SvgLinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={C.card} stopOpacity="0" />
-                  <Stop offset="0.4257" stopColor={C.card} stopOpacity="1" />
-                </SvgLinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#fade)" />
-            </Svg>
-          </View>
-        ) : null}
+        {isFavoriteStep ? <FooterFadeGradient height={footerBottomPadding + 82} gradientId="fade" /> : null}
 
         <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
-          <Pressable
+          <OnboardingCtaButton
+            label="다음으로"
+            active={canProceed}
+            disabled={!canProceed || isCompleting}
             onPress={() => void handleNext()}
-            disabled={!canProceed() || signupMutation.isPending || isCompleting}
-            style={[
-              styles.nextButton,
-              canProceed() ? styles.nextButtonActive : styles.nextButtonInactive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.nextButtonText,
-                canProceed() ? styles.nextButtonTextActive : styles.nextButtonTextInactive,
-              ]}
-            >
-              {'\ub2e4\uc74c\uc73c\ub85c'}
-            </Text>
-          </Pressable>
+          />
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -307,76 +196,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   },
-  footerGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  nextButton: {
-    width: '100%',
-    height: 50,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextButtonActive: {
-    backgroundColor: C.text,
-  },
-  nextButtonInactive: {
-    backgroundColor: Gray[200],
-  },
-  nextButtonText: {
-    ...Typography.body1Medium,
-  },
-  nextButtonTextActive: {
-    color: C.card,
-  },
-  nextButtonTextInactive: {
-    color: Gray[500],
-  },
   errorText: {
     marginTop: 16,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
     color: C.error,
-  },
-  missingScreen: {
-    flex: 1,
-    paddingHorizontal: 24,
-    backgroundColor: C.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  missingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: C.text,
-  },
-  missingBody: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: Gray[500],
-    textAlign: 'center',
-  },
-  resetButton: {
-    marginTop: 20,
-    width: 200,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
-    color: C.card,
   },
 })
