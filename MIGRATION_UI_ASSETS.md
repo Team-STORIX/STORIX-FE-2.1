@@ -36,11 +36,9 @@ assets/
 
 | 2.0 source path | 2.1 target path | type | likely usage | action | notes |
 |---|---|---|---|---|---|
-| public/common/icons/logo-black.svg | assets/logos/logo-black.svg | SVG | STORIX wordmark on light bg | needs react-native-svg conversion | Used in header, splash, auth screens |
 | public/common/icons/logo-pink.svg | assets/logos/logo-pink.svg | SVG | STORIX wordmark (brand pink) | needs react-native-svg conversion | Primary brand identity |
 | public/common/icons/logo-white.svg | assets/logos/logo-white.svg | SVG | STORIX wordmark on dark bg | needs react-native-svg conversion | Dark/overlay contexts |
 | public/common/icons/logo-word.svg | assets/logos/logo-word.svg | SVG | Full wordmark with tagline | needs react-native-svg conversion | Splash screen, login header |
-| public/common/pwa/favicon.svg | assets/logos/favicon.svg | SVG | App icon source | needs react-native-svg conversion | |
 
 ---
 
@@ -49,9 +47,7 @@ assets/
 | filename | type | likely usage | action | notes |
 |---|---|---|---|---|
 | arrow-down.svg | SVG | Dropdown expand / accordion | needs react-native-svg conversion | Simple path |
-| arrow-next.svg | SVG | List row chevron right | needs react-native-svg conversion | |
 | arrow-up.svg | SVG | Collapse / scroll to top | needs react-native-svg conversion | |
-| author-mark.svg | SVG | Author badge on profiles | needs react-native-svg conversion | |
 | back.svg | SVG | Header back button | needs react-native-svg conversion | |
 | cancel.svg | SVG | Clear / close / dismiss | needs react-native-svg conversion | |
 | check-gray.svg | SVG | Checkbox unchecked state | needs react-native-svg conversion | |
@@ -70,16 +66,13 @@ assets/
 | icon-topicroom-people.svg | SVG | Topic room participant count | needs react-native-svg conversion | |
 | littleStar.svg | SVG | Small star rating | needs react-native-svg conversion | |
 | menu-3dots.svg | SVG | Context/overflow menu button | needs react-native-svg conversion | Used in BoardCard |
-| middleStar.svg | SVG | Medium star rating | needs react-native-svg conversion | |
 | notification-gray.svg | SVG | Notification bell — inactive | needs react-native-svg conversion | |
 | notification.svg | SVG | Notification bell — active | needs react-native-svg conversion | |
 | ratingStar.svg | SVG | Rating input star | needs react-native-svg conversion | |
 | search.svg | SVG | Search icon | needs react-native-svg conversion | SearchBar component |
 | settings.svg | SVG | Settings / gear | needs react-native-svg conversion | Profile screen |
-| star.svg | SVG | Generic star / favorite | needs react-native-svg conversion | |
 | active.svg | SVG | Online status dot | needs react-native-svg conversion | |
 | deactive.svg | SVG | Offline status dot | needs react-native-svg conversion | |
-| topicRoomChatButton.svg | SVG | Enter topicroom button | needs react-native-svg conversion | |
 
 **SKIPPED (too large):**
 | public/common/icons/big-star-pink.svg | — | 454 KB — complex illustration | skip for now | Re-evaluate per screen |
@@ -112,11 +105,6 @@ assets/
 | login-naver.svg | SVG | Naver login button | needs react-native-svg conversion | Brand color: #03C75A |
 | login-apple.svg | SVG | Apple login button | needs react-native-svg conversion | Phase deferred |
 | login-twitter.svg | SVG | Twitter login button | copy as-is (Image) | 136 KB — render as Image |
-| saw-password.svg | SVG | Password visible state | needs react-native-svg conversion | |
-| see-password.svg | SVG | Password hidden state | needs react-native-svg conversion | |
-| terms-gray.svg | SVG | Terms checkbox unchecked | needs react-native-svg conversion | |
-| terms-pink.svg | SVG | Terms checkbox checked | needs react-native-svg conversion | |
-| writer-login.svg | SVG | Writer login route | needs react-native-svg conversion | |
 
 **SKIPPED:**
 | public/common/login/login-warning.svg | — | 276 KB — login error illustration | skip for now | Copy per-screen when needed |
@@ -161,9 +149,6 @@ assets/
 | likes-check.svg | SVG | Liked status indicator | needs react-native-svg conversion | |
 | likes-plus.svg | SVG | Add to likes | needs react-native-svg conversion | |
 | profile-change.svg | SVG | Edit profile photo | needs react-native-svg conversion | |
-| profile-default.svg | SVG | Default avatar fallback | copy as-is (Image) | 24 KB |
-| warning.svg | SVG | Profile warning state | needs react-native-svg conversion | 19 KB |
-| write-review.svg | SVG | Write review action | needs react-native-svg conversion | |
 
 ---
 
@@ -171,7 +156,6 @@ assets/
 
 | filename | type | likely usage | action | notes |
 |---|---|---|---|---|
-| profile-default.svg | SVG | Default user avatar | copy as-is (Image via expo-image) | Used wherever profileImageUrl is null |
 
 ---
 
@@ -190,19 +174,11 @@ assets/
 | thriller.svg | SVG | Genre: thriller | copy as-is (Image) | |
 | rofan.svg | SVG | Reader type: rofan | copy as-is (Image) | |
 | mofan.svg | SVG | Reader type: mofan | copy as-is (Image) | |
-| icon-men.svg | SVG | Gender selector: male | needs react-native-svg conversion | Simple colored path |
-| icon-women.svg | SVG | Gender selector: female | needs react-native-svg conversion | |
 | id-check-gray.svg | SVG | ID verify unchecked | copy as-is (Image) | |
 | id-check-pink.svg | SVG | ID verify checked | copy as-is (Image) | |
 | genre-select.svg | SVG | Genre selected indicator | needs react-native-svg conversion | |
-| next-gray.svg | SVG | Next button — inactive | needs react-native-svg conversion | |
-| next.svg | SVG | Next button — active | needs react-native-svg conversion | |
 | profilephoto.svg | SVG | Profile photo placeholder | copy as-is (Image) | |
 | star-gray.svg | SVG | Preference star — inactive | needs react-native-svg conversion | |
-| star-pink.svg | SVG | Preference star — active | needs react-native-svg conversion | |
-| progress-indicater-1.svg through progress-indicater-4.svg | SVG | Step progress dots | copy as-is (Image) | |
-| progress-indicater-gray.svg | SVG | Progress dot — inactive | copy as-is (Image) | |
-| progress-indicater-pink.svg | SVG | Progress dot — active | copy as-is (Image) | |
 
 ---
 
