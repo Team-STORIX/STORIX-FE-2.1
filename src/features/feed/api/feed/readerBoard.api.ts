@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { apiClient } from '../../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../../lib/api/types'
 
 export type FeedSort = 'LATEST'
 
@@ -46,14 +47,6 @@ export type PageResult<T> = {
   first: boolean
   last: boolean
   empty: boolean
-}
-
-export type ApiResponse<T> = {
-  isSuccess: boolean
-  code: string
-  message: string
-  result: T
-  timestamp: string
 }
 
 // GET /api/v1/feed/reader/board

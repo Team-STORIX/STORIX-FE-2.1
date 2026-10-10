@@ -14,20 +14,21 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAllBoards } from '../hooks/feed/useAllBoards'
-import { useBoardsByWorksId } from '../hooks/feed/useBoardsByWorksId'
-import { useFavoriteWorks } from '../hooks/feed/useFavoriteWorks'
-import { toggleBoardLike, reportBoard, deleteBoard } from '../api/feed/readerBoard.api'
-import type { FeedBoardItem } from '../api/feed/readerBoard.api'
+import { useAllBoards, useBoardsByWorksId, useFavoriteWorks } from '../hooks/feed'
+import {
+  deleteBoard,
+  reportBoard,
+  toggleBoardLike,
+  type FeedBoardItem,
+} from '../api/feed/readerBoard.api'
 import { useMe } from '../../profile'
-import { C, Gray, Magenta } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { TopicRoomFeedSection } from '../../topicroom/ui/TopicRoomFeedSection'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedTopbar, type FeedTab } from './FeedTopbar'
 import { FeedWorksPicker } from './FeedWorksPicker'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
-import { UserActionModal } from '../../../components/common/UserActionModal'
+import { useUserActionModals } from './UserActionModals'
 import { blockUser } from '../../users/api/users.api'
 import { subscribeFeedTabReselected } from '../../navigation/services/tabScrollEvents'
 import {
@@ -35,11 +36,18 @@ import {
   type PickedWorks,
   useTopicRoomUnreadStatus,
 } from '../../topicroom'
-import { updateTodayHomeFeedBoard } from '../../home'
 import { trackScreenView } from '../../../lib/analytics/events'
+import {
+  invalidateAfterBlock,
+  sortedImageUrls,
+  syncHomeBoardLike,
+  toggleLikeState,
+  type LikeState,
+} from '../lib/feedHelpers'
 
-type LikeOverride = { isLiked: boolean; likeCount: number }
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+
+const firstParam = (value?: string | string[]) => (Array.isArray(value) ? value[0] : value)
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets()
@@ -48,26 +56,18 @@ export function FeedScreen() {
   const listRef = useRef<FlatList<FeedBoardItem> | null>(null)
 
   // Home section arrows pin the landing tab explicitly.
-  const params = useLocalSearchParams<{
-    section?: string | string[]
-    landingKey?: string | string[]
-  }>()
-  const sectionParam = Array.isArray(params.section)
-    ? params.section[0]
-    : params.section
-  const landingKeyParam = Array.isArray(params.landingKey)
-    ? params.landingKey[0]
-    : params.landingKey
-
-  const sectionTab: FeedTab =
-    sectionParam === 'topicroom' ? 'writers' : 'works'
+  const params = useLocalSearchParams<{ section?: string | string[]; landingKey?: string | string[] }>()
+  const sectionParam = firstParam(params.section)
+  const landingKeyParam = firstParam(params.landingKey)
+  const sectionTab: FeedTab = sectionParam === 'topicroom' ? 'writers' : 'works'
 
   const [tab, setTab] = useState<FeedTab>(sectionTab)
-  const [pick, setPick] = useState<string>('all')
-  const {
-    data: topicRoomUnreadStatus,
-    refetch: refetchTopicRoomUnreadStatus,
-  } = useTopicRoomUnreadStatus()
+  const [pick, setPick] = useState('all')
+  const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
+  const [topicRoomPickerOpen, setTopicRoomPickerOpen] = useState(false)
+  const { openReport, openBlock, modals: userActionModals } = useUserActionModals()
+  const { data: topicRoomUnreadStatus, refetch: refetchTopicRoomUnreadStatus } =
+    useTopicRoomUnreadStatus()
 
   useFocusEffect(
     useCallback(() => {
@@ -87,32 +87,18 @@ export function FeedScreen() {
     setPick('all')
   }, [landingKeyParam, sectionParam, sectionTab])
 
-  useEffect(() => {
-    return subscribeFeedTabReselected(() => {
-      setTab('works')
-      listRef.current?.scrollToOffset({ offset: 0, animated: true })
-    })
-  }, [])
-  const [reportTarget, setReportTarget] = useState<{
-    profileImageUrl?: string | null
-    nickname: string
-    onConfirm: () => Promise<void | 'duplicate'>
-  } | null>(null)
+  useEffect(
+    () =>
+      subscribeFeedTabReselected(() => {
+        setTab('works')
+        listRef.current?.scrollToOffset({ offset: 0, animated: true })
+      }),
+    [],
+  )
 
-  const [blockTarget, setBlockTarget] = useState<{
-    profileImageUrl?: string | null
-    nickname: string
-    onConfirm: () => Promise<void>
-  } | null>(null)
-  const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null)
-  const [topicRoomPickerOpen, setTopicRoomPickerOpen] = useState(false)
-
-  const handlePressSearchTopicRoom = useCallback(() => {
-    router.push('/search?tab=topicroom' as never)
-  }, [router])
-
-  const handlePressAddTopicRoom = useCallback(() => {
-    setTopicRoomPickerOpen(true)
+  const changeTab = useCallback((next: FeedTab) => {
+    setTab(next)
+    setPick('all')
   }, [])
 
   const handlePickTopicRoomWork = useCallback(
@@ -133,7 +119,6 @@ export function FeedScreen() {
   )
 
   const worksId = pick !== 'all' ? Number(pick) : 0
-
   const allBoardsQuery = useAllBoards()
   const worksBoardsQuery = useBoardsByWorksId(worksId)
   const favoriteWorksQuery = useFavoriteWorks()
@@ -141,96 +126,51 @@ export function FeedScreen() {
   const currentUserId = me?.userId
 
   const activeQuery = pick === 'all' ? allBoardsQuery : worksBoardsQuery
-  const items: FeedBoardItem[] =
-    activeQuery.data?.pages.flatMap((p) => p.content) ?? []
+  const items = activeQuery.data?.pages.flatMap((page) => page.content) ?? []
 
   // ── Optimistic like state ────────────────────────────────────────────────────
-  const likeOverrides = useRef<Map<number, LikeOverride>>(new Map())
+  const likeOverrides = useRef<Map<number, LikeState>>(new Map())
   const [, forceUpdate] = useState(0)
 
   const handleToggleLike = useCallback(
-    async (boardId: number, currentIsLiked: boolean, currentCount: number) => {
-      const nextLiked = !currentIsLiked
-      const nextCount = Math.max(0, currentCount + (nextLiked ? 1 : -1))
-      likeOverrides.current.set(boardId, { isLiked: nextLiked, likeCount: nextCount })
-      updateTodayHomeFeedBoard(qc, boardId, (board) => ({
-        ...board,
-        isLiked: nextLiked,
-        likeCount: nextCount,
-      }))
-      forceUpdate((n) => n + 1)
+    async (boardId: number, current: LikeState) => {
+      const apply = (like: LikeState) => {
+        likeOverrides.current.set(boardId, like)
+        syncHomeBoardLike(qc, boardId, like)
+        forceUpdate((n) => n + 1)
+      }
+      apply(toggleLikeState(current))
       try {
         const result = await toggleBoardLike(boardId)
         if (result != null) {
-          likeOverrides.current.set(boardId, {
-            isLiked: result.isLiked,
-            likeCount: result.likeCount,
-          })
-          updateTodayHomeFeedBoard(qc, boardId, (board) => ({
-            ...board,
-            isLiked: result.isLiked,
-            likeCount: result.likeCount,
-          }))
-          forceUpdate((n) => n + 1)
+          apply(result)
           qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
         }
       } catch {
-        likeOverrides.current.set(boardId, {
-          isLiked: currentIsLiked,
-          likeCount: currentCount,
-        })
-        updateTodayHomeFeedBoard(qc, boardId, (board) => ({
-          ...board,
-          isLiked: currentIsLiked,
-          likeCount: currentCount,
-        }))
-        forceUpdate((n) => n + 1)
+        apply(current)
       }
     },
     [qc],
   )
 
-  // ── Report / Delete / Block ──────────────────────────────────────────────────
+  // ── Report / Block / Delete ──────────────────────────────────────────────────
   const handleReport = useCallback(
-    (boardId: number, writerUserId: number, reportedProfile: { profileImageUrl?: string | null; nickName: string }) => {
-      setReportTarget({
-        profileImageUrl: reportedProfile.profileImageUrl,
-        nickname: reportedProfile.nickName,
-        onConfirm: async () => {
-          const result = await reportBoard({ boardId, reportedUserId: writerUserId })
-          if (result.status === 'duplicated') {
-            return 'duplicate'
-          }
-        },
-      })
-    },
-    [],
+    ({ board, profile }: FeedBoardItem) =>
+      openReport(profile, async () => {
+        const result = await reportBoard({ boardId: board.boardId, reportedUserId: profile.userId })
+        if (result.status === 'duplicated') return 'duplicate'
+      }),
+    [openReport],
   )
 
   const handleBlock = useCallback(
-    (writerUserId: number, blockedProfile: { profileImageUrl?: string | null; nickName: string }) => {
-      setBlockTarget({
-        profileImageUrl: blockedProfile.profileImageUrl,
-        nickname: blockedProfile.nickName,
-        onConfirm: async () => {
-          await blockUser(writerUserId)
-          // 차단 후 모든 관련 쿼리 새로고침
-          qc.invalidateQueries({ queryKey: ['allBoards'] })
-          qc.invalidateQueries({ queryKey: ['boardsByWorksId'] })
-          qc.invalidateQueries({ queryKey: ['boardComments'] })
-          qc.invalidateQueries({ queryKey: ['topicroom'] })
-          qc.invalidateQueries({ queryKey: ['worksReviews'] })
-          // 즉시 피드 새로고침
-          await activeQuery.refetch()
-        },
-      })
-    },
-    [qc, activeQuery],
+    ({ profile }: FeedBoardItem) =>
+      openBlock(profile, async () => {
+        await blockUser(profile.userId)
+        await invalidateAfterBlock(qc)
+      }),
+    [openBlock, qc],
   )
-
-  const handleDelete = useCallback((boardId: number) => {
-    setDeleteBoardId(boardId)
-  }, [])
 
   const confirmDeleteBoard = useCallback(async () => {
     if (deleteBoardId == null) return
@@ -252,17 +192,14 @@ export function FeedScreen() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   const renderItem = useCallback(
-    ({ item, index }: { item: FeedBoardItem; index: number }) => {
-      const { board, profile, works, images } = item
-      const override = likeOverrides.current.get(board.boardId)
-      const isLiked = override?.isLiked ?? board.isLiked
-      const likeCount = override?.likeCount ?? board.likeCount
-
+    ({ item }: { item: FeedBoardItem }) => {
+      const { board, profile, works } = item
+      const like = likeOverrides.current.get(board.boardId) ?? {
+        isLiked: board.isLiked,
+        likeCount: board.likeCount,
+      }
       const worksIdForNav =
-        board.isWorksSelected && board.worksId != null && board.worksId > 0
-          ? board.worksId
-          : null
-
+        board.isWorksSelected && board.worksId != null && board.worksId > 0 ? board.worksId : null
       const isMine = currentUserId != null && profile.userId === currentUserId
 
       return (
@@ -274,147 +211,54 @@ export function FeedScreen() {
           profileImageUrl={profile.profileImageUrl}
           nickName={profile.nickName}
           role={profile.role}
-          createdAt={board.lastCreatedTime ?? undefined}
+          createdAt={board.lastCreatedTime}
           content={board.content}
-          images={(images ?? [])
-            .slice()
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map((x) => x.imageUrl)}
-          works={
-            works != null
-              ? {
-                  thumbnailUrl: works.thumbnailUrl,
-                  worksName: works.worksName,
-                  artistName: works.artistName,
-                  worksType: works.worksType,
-                  genre: works.genre,
-                  hashtags: works.hashtags ?? [],
-                  isAdultOnly: works.isAdultOnly,
-                }
-              : null
-          }
+          images={sortedImageUrls(item.images)}
+          works={works}
           isSpoiler={board.isSpoiler ?? false}
           isAdultOnly={board.isAdultOnly ?? false}
           isBlinded={board.isBlinded}
           spoilerScript={board.spoilerScript}
-          isLiked={isLiked}
-          likeCount={likeCount}
+          isLiked={like.isLiked}
+          likeCount={like.likeCount}
           replyCount={board.replyCount}
-          onToggleLike={() =>
-            handleToggleLike(board.boardId, isLiked, likeCount)
-          }
+          onToggleLike={() => handleToggleLike(board.boardId, like)}
           onClickWorksArrow={
-            worksIdForNav != null
-              ? () => router.push(`/works/${worksIdForNav}` as const)
-              : undefined
+            worksIdForNav != null ? () => router.push(`/works/${worksIdForNav}` as const) : undefined
           }
-          onOpenReport={
-            !isMine
-              ? () => handleReport(board.boardId, profile.userId, profile)
-              : undefined
-          }
-          onOpenBlock={
-            !isMine
-              ? () => handleBlock(profile.userId, profile)
-              : undefined
-          }
-          onOpenDelete={
-            isMine ? () => handleDelete(board.boardId) : undefined
-          }
+          onOpenReport={isMine ? undefined : () => handleReport(item)}
+          onOpenBlock={isMine ? undefined : () => handleBlock(item)}
+          onOpenDelete={isMine ? () => setDeleteBoardId(board.boardId) : undefined}
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
           birthdayTheme={board.theme === 'BIRTHDAY'}
         />
       )
     },
-    [
-      currentUserId,
-      handleDelete,
-      handleReport,
-      handleBlock,
-      handleToggleLike,
-      likeOverrides,
-      router,
-    ],
+    [currentUserId, handleBlock, handleReport, handleToggleLike, router],
   )
 
-  const favoriteWorks = favoriteWorksQuery.data ?? []
-
-  const listHeader = (
-    <View style={styles.listHeader}>
-      <FeedTopbar
-        activeTab={tab}
-        hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
-        onChange={(t) => {
-          setTab(t)
-          setPick('all')
-        }}
+  const modals = (
+    <>
+      {userActionModals}
+      <FeedDeleteConfirmModal
+        type="post"
+        visible={deleteBoardId != null}
+        onClose={() => setDeleteBoardId(null)}
+        onConfirm={confirmDeleteBoard}
       />
-      {tab === 'works' && (
-        <FeedWorksPicker
-          works={favoriteWorks}
-          selectedId={pick}
-          onSelect={setPick}
-        />
-      )}
-    </View>
-  )
-
-  const reportModal = (
-    <UserActionModal
-      type="report"
-      visible={reportTarget != null}
-      profileImageUrl={reportTarget?.profileImageUrl}
-      nickname={reportTarget?.nickname ?? ''}
-      onClose={() => setReportTarget(null)}
-      onConfirm={reportTarget?.onConfirm ?? (() => Promise.resolve())}
-    />
-  )
-
-  const blockModal = (
-    <UserActionModal
-      type="block"
-      visible={blockTarget != null}
-      profileImageUrl={blockTarget?.profileImageUrl}
-      nickname={blockTarget?.nickname ?? ''}
-      onClose={() => setBlockTarget(null)}
-      onConfirm={blockTarget?.onConfirm ?? (() => Promise.resolve())}
-    />
-  )
-
-  const deleteModal = (
-    <FeedDeleteConfirmModal
-      type="post"
-      visible={deleteBoardId != null}
-      onClose={() => setDeleteBoardId(null)}
-      onConfirm={confirmDeleteBoard}
-    />
-  )
-
-  const listFooter = (
-    <View style={[styles.listFooterSpacer, { height: insets.bottom + 120 }]}>
-      {activeQuery.isFetchingNextPage ? (
-        <ActivityIndicator
-          size="small"
-          color={Magenta[300]}
-          style={styles.footerLoader}
-        />
-      ) : null}
-    </View>
+    </>
   )
 
   if (tab === 'writers') {
     return (
       <>
-        <View style={[styles.topicroomScreen, { paddingTop: insets.top }]}>
+        <View style={[styles.screen, { paddingTop: insets.top }]}>
           <FeedTopbar
             activeTab={tab}
             hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
-            onChange={(t) => {
-              setTab(t)
-              setPick('all')
-            }}
-            onPressSearch={handlePressSearchTopicRoom}
-            onPressAddTopicRoom={handlePressAddTopicRoom}
+            onChange={changeTab}
+            onPressSearch={() => router.push('/search?tab=topicroom' as never)}
+            onPressAddTopicRoom={() => setTopicRoomPickerOpen(true)}
           />
           <ScrollView
             style={styles.topicroomScroll}
@@ -424,9 +268,7 @@ export function FeedScreen() {
             <TopicRoomFeedSection />
           </ScrollView>
         </View>
-        {reportModal}
-        {blockModal}
-        {deleteModal}
+        {modals}
         <TopicRoomWorksPickerBottomSheet
           visible={topicRoomPickerOpen}
           onClose={() => setTopicRoomPickerOpen(false)}
@@ -436,59 +278,70 @@ export function FeedScreen() {
     )
   }
 
+  const isEmpty = items.length === 0 && !activeQuery.isLoading && !activeQuery.isError
+
   return (
     <>
-    <FlatList
-      ref={listRef}
-      style={[styles.screen, { paddingTop: insets.top }]}
-      data={items}
-      keyExtractor={(item) => `board_${item.board.boardId}`}
-      renderItem={renderItem}
-      ListHeaderComponent={listHeader}
-      ListEmptyComponent={
-        activeQuery.isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={Magenta[300]} />
+      <FlatList
+        ref={listRef}
+        style={[styles.screen, { paddingTop: insets.top }]}
+        data={items}
+        keyExtractor={(item) => `board_${item.board.boardId}`}
+        renderItem={renderItem}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <FeedTopbar
+              activeTab={tab}
+              hasUnreadTopicRooms={topicRoomUnreadStatus?.hasUnread ?? false}
+              onChange={changeTab}
+            />
+            <FeedWorksPicker
+              works={favoriteWorksQuery.data ?? []}
+              selectedId={pick}
+              onSelect={setPick}
+            />
           </View>
-        ) : activeQuery.isError ? (
-          <View style={styles.center}>
-            <Text style={styles.errorText}>피드를 불러오지 못했어요.</Text>
-            <Pressable
-              onPress={() => activeQuery.refetch()}
-              style={styles.retryBtn}
-            >
-              <Text style={styles.retryText}>다시 시도</Text>
-            </Pressable>
+        }
+        ListEmptyComponent={
+          activeQuery.isLoading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={Magenta[300]} />
+            </View>
+          ) : activeQuery.isError ? (
+            <View style={styles.center}>
+              <Text style={styles.errorText}>피드를 불러오지 못했어요.</Text>
+              <Pressable onPress={() => activeQuery.refetch()} style={styles.retryBtn}>
+                <Text style={styles.retryText}>다시 시도</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Image source={warningIcon} style={styles.emptyIcon} contentFit="contain" />
+              <Text style={styles.emptyTitle}>아직 작성된 글이 없어요</Text>
+            </View>
+          )
+        }
+        ListFooterComponent={
+          <View style={[styles.listFooter, { height: insets.bottom + 120 }]}>
+            {activeQuery.isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={Magenta[300]} style={styles.footerLoader} />
+            ) : null}
           </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Image source={warningIcon} style={styles.emptyIcon} contentFit="contain" />
-            <Text style={styles.emptyTitle}>아직 작성된 글이 없어요</Text>
-          </View>
-        )
-      }
-      ListFooterComponent={listFooter}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.4}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={[
-        styles.content,
-        items.length === 0 && !activeQuery.isLoading && !activeQuery.isError
-          ? styles.emptyContent
-          : null,
-      ]}
-      refreshControl={
-        <RefreshControl
-          refreshing={activeQuery.isRefetching && !activeQuery.isFetchingNextPage}
-          onRefresh={() => activeQuery.refetch()}
-          tintColor={Magenta[300]}
-          colors={[Magenta[300]]}
-        />
-      }
-    />
-    {reportModal}
-    {blockModal}
-    {deleteModal}
+        }
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.4}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={isEmpty && styles.emptyContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={activeQuery.isRefetching && !activeQuery.isFetchingNextPage}
+            onRefresh={() => activeQuery.refetch()}
+            tintColor={Magenta[300]}
+            colors={[Magenta[300]]}
+          />
+        }
+      />
+      {modals}
     </>
   )
 }
@@ -498,16 +351,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.card,
   },
-  topicroomScreen: {
-    flex: 1,
-    backgroundColor: C.card,
-  },
   topicroomScroll: {
     flex: 1,
     backgroundColor: Gray[50],
   },
-  content: {
-    paddingBottom: 0,
+  topicroomContent: {
+    flexGrow: 1,
+    backgroundColor: Gray[50],
+    paddingBottom: 128,
   },
   emptyContent: {
     flexGrow: 1,
@@ -551,16 +402,11 @@ const styles = StyleSheet.create({
     color: Gray[900],
     textAlign: 'center',
   },
-  footerLoader: {
-    paddingVertical: 16,
-  },
-  listFooterSpacer: {
+  listFooter: {
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  topicroomContent: {
-    flexGrow: 1,
-    backgroundColor: Gray[50],
-    paddingBottom: 128,
+  footerLoader: {
+    paddingVertical: 16,
   },
 })
