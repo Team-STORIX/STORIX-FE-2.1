@@ -1,5 +1,1 @@
-export { C, Gray, Magenta } from './colors'
-export { Typography, FontWeight } from './typography'
-export { Spacing, S } from './spacing'
-export { Radius } from './radius'
-export { Shadow } from './shadows'
+export * from './global'

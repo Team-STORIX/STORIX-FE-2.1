@@ -1,8 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
-
-const PROFILE_TAB_ACTIVE = '#100F0F'
-const PROFILE_TAB_INACTIVE = '#A9A8A8'
+import { C, Gray } from '../../../theme'
 
 export type ProfilePreferenceTab = 'analysis' | 'activity'
 
@@ -43,7 +41,7 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
             currentTab === 'analysis' ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
-          痍⑦뼢 遺꾩꽍
+          취향 분석
         </Text>
         <View
           style={[
@@ -60,7 +58,7 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
             currentTab === 'activity' ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
-          ???쒕룞
+          내 활동
         </Text>
         <View
           style={[
@@ -76,8 +74,9 @@ export function ProfilePreferenceTabs({ activeTab, onChangeTab }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    paddingTop: 8,
+    paddingBottom: 0,
+    backgroundColor: C.card,
   },
   tab: {
     flex: 1,
@@ -90,19 +89,19 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tabLabelActive: {
-    color: PROFILE_TAB_ACTIVE,
+    color: C.text,
   },
   tabLabelInactive: {
-    color: PROFILE_TAB_INACTIVE,
+    color: Gray[400],
   },
   tabIndicator: {
-    width: '100%',
     height: 2,
+    alignSelf: 'stretch',
   },
   tabIndicatorActive: {
-    backgroundColor: PROFILE_TAB_ACTIVE,
+    backgroundColor: C.text,
   },
   tabIndicatorInactive: {
-    backgroundColor: PROFILE_TAB_INACTIVE,
+    backgroundColor: Gray[200],
   },
 })

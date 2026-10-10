@@ -30,6 +30,28 @@ export async function postBoardImagePresignedUrls(
   return BoardImagePresignResponseSchema.parse(data)
 }
 
+/** PUT a React Native local image URI to a presigned S3 URL. */
+export async function uploadToPresignedUrl(params: {
+  url: string
+  uri: string
+  contentType: string
+}) {
+  const image = await fetch(params.uri)
+  const blob = await image.blob()
+
+  const res = await fetch(params.url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': params.contentType,
+    },
+    body: blob,
+  })
+
+  if (!res.ok) {
+    throw new Error(`S3 upload failed: ${res.status}`)
+  }
+}
+
 /** GET /api/v1/plus/reader/works — [+] 작품 검색 */
 export async function getPlusWorksSearch(params: {
   keyword: string
@@ -50,7 +72,3 @@ export async function getPlusReviewDuplicate(worksId: number) {
   })
   return PlusReviewDuplicateResponseSchema.parse(res.data)
 }
-
-// NOTE: uploadToPresignedUrl from 2.0 used the browser File API.
-// In RN, image uploads use expo-image-picker + FormData.
-// Implement in a future phase when the write flow is built.

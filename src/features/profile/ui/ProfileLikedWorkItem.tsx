@@ -2,69 +2,113 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWork } from '../types'
-import { C, Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta } from '../../../theme'
+import { AdultThumbnail } from '../../../components/adult'
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from '../../../store/adultVerification.store'
 
-const favoriteOnIcon = require('../../../../assets/icons/profile/likes-check.svg')
-const favoriteOffIcon = require('../../../../assets/icons/profile/likes-plus.svg')
-const ratingStarIcon = require('../../../../assets/icons/common/star.svg')
+const favoriteCheckGrayIcon = require('../../../../assets/icons/common/check-gray.svg')
+const favoriteCheckPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 
 type Props = {
   item: FavoriteWork
   isFavorite: boolean
+  showFavoriteButton?: boolean
   onToggleFavorite: (worksId: number) => void
 }
 
-export function ProfileLikedWorkItem({ item, isFavorite, onToggleFavorite }: Props) {
+function getWorksTypeLabel(worksType: string) {
+  if (worksType === 'WEBTOON') return '웹툰'
+  if (worksType === 'WEBNOVEL') return '웹소설'
+  return worksType
+}
+
+export function ProfileLikedWorkItem({
+  item,
+  isFavorite,
+  showFavoriteButton = true,
+  onToggleFavorite,
+}: Props) {
   const router = useRouter()
+  const handlePress = () => {
+    if (showFavoriteButton) {
+      onToggleFavorite(item.worksId)
+      return
+    }
+
+    // The works detail API answers 403 for masked works.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('read')
+      return
+    }
+    router.push(`/works/${item.worksId}` as const)
+  }
+  const worksTypeLabel = getWorksTypeLabel(item.worksType)
 
   return (
     <Pressable
-      onPress={() => router.push(`/works/${item.worksId}` as const)}
+      onPress={handlePress}
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`${item.worksName} ${'\uc0c1\uc138\ub85c \uc774\ub3d9'}`}
+      accessibilityLabel={
+        showFavoriteButton
+          ? `${item.worksName} ${'\uc120\ud0dd'}`
+          : `${item.worksName} ${'\uc0c1\uc138\ub85c \uc774\ub3d9'}`
+      }
     >
       <View style={styles.thumbnailWrap}>
-        {item.thumbnailUrl ? (
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
-        ) : null}
+        <AdultThumbnail
+          isAdultOnly={item.isAdultOnly}
+          isBlinded={item.isBlinded}
+          style={styles.thumbnail}
+        >
+          {item.thumbnailUrl ? (
+            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
+          ) : null}
+        </AdultThumbnail>
       </View>
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>
           {item.worksName}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {item.artistName} {'\u00b7'} {item.worksType}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {item.artistName}
+          </Text>
+          <Text style={styles.metaDot}>{'\u00b7'}</Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {worksTypeLabel}
+          </Text>
+        </View>
 
         {item.isReviewed ? (
-          <View style={styles.reviewRow}>
-            <Text style={styles.reviewLabel}>{'\ud3c9\uac00\ud568'}</Text>
-            <Image source={ratingStarIcon} style={styles.starIcon} contentFit="contain" />
-            <Text style={styles.ratingText}>{item.rating ?? '-'}</Text>
-          </View>
+          <Text style={styles.reviewLabel}>{'\ud3c9\uac00\ud568'}</Text>
         ) : (
           <View style={styles.reviewSpacer} />
         )}
       </View>
 
-      <Pressable
-        onPress={(event) => {
-          event.stopPropagation()
-          onToggleFavorite(item.worksId)
-        }}
-        hitSlop={8}
-        style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={'\uad00\uc2ec \uc791\ud488 \ud1a0\uae00'}
-      >
-        <Image
-          source={isFavorite ? favoriteOnIcon : favoriteOffIcon}
-          style={styles.favoriteIcon}
-          contentFit="contain"
-        />
-      </Pressable>
+      {showFavoriteButton ? (
+        <Pressable
+          onPress={(event) => {
+            event.stopPropagation()
+            onToggleFavorite(item.worksId)
+          }}
+          hitSlop={8}
+          style={({ pressed }) => [styles.favoriteButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={'\uad00\uc2ec \uc791\ud488 \uc120\ud0dd'}
+        >
+          <Image
+            source={isFavorite ? favoriteCheckPinkIcon : favoriteCheckGrayIcon}
+            style={styles.favoriteIcon}
+            contentFit="contain"
+          />
+        </Pressable>
+      ) : null}
     </Pressable>
   )
 }
@@ -75,8 +119,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
+    alignItems: 'flex-start',
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
   },
@@ -97,42 +141,49 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   title: {
-    ...Typography.body1Medium,
-    color: C.text,
+    fontFamily: 'SUITSemiBold',
+    fontSize: 14,
+    fontStyle: 'normal',
+    fontWeight: '600',
+    lineHeight: 19.6,
+    color: '#000',
   },
-  meta: {
+  metaRow: {
     marginTop: 4,
-    ...Typography.body2Medium,
-    color: Gray[500],
-  },
-  reviewRow: {
-    marginTop: 4,
-    height: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 0,
+  },
+  meta: {
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 16.8,
+    color: Gray[500],
+    flexShrink: 1,
+  },
+  metaDot: {
+    marginHorizontal: 6,
+    fontFamily: 'SUIT',
+    fontSize: 12,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    lineHeight: 16.8,
+    color: Gray[500],
   },
   reviewLabel: {
-    fontFamily: 'SUIT-Medium',
+    marginTop: 4,
+    fontFamily: 'SUIT',
+    fontWeight: '500',
     fontSize: 12,
-    lineHeight: 14,
-    letterSpacing: 0.2,
-    color: Magenta[300],
-  },
-  starIcon: {
-    width: 9,
-    height: 10,
-    marginLeft: 6,
-  },
-  ratingText: {
-    marginLeft: 2,
-    fontFamily: 'SUIT-Medium',
-    fontSize: 10,
-    lineHeight: 14,
+    fontStyle: 'normal',
+    lineHeight: 16.8,
     color: Magenta[300],
   },
   reviewSpacer: {
     marginTop: 4,
-    height: 14,
+    height: 16.8,
   },
   favoriteButton: {
     width: 24,
@@ -142,8 +193,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   favoriteIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   pressed: {
     opacity: 0.7,

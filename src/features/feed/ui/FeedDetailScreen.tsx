@@ -1,23 +1,24 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Gray, Magenta } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 import { useMe } from '../../profile'
 import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
 import {
@@ -28,34 +29,67 @@ import {
   type ReplyItem,
 } from '../api/feed/readerBoardDetail.api'
 import { deleteBoard, reportBoard, toggleBoardLike } from '../api/feed/readerBoard.api'
-import { useBoardDetailInfinite } from '../hooks/feed/useBoardDetailInfinite'
-import { FeedCommentInput } from './FeedCommentInput'
+import { useBoardDetailInfinite } from '../hooks/feed'
+import { useLeaveOnAdultVerificationRequired } from '../../../lib/navigation/useLeaveOnAdultVerificationRequired'
+import { blockUser } from '../../users/api/users.api'
+import { FeedCommentInput, type FeedCommentInputHandle } from './FeedCommentInput'
 import { FeedCommentItem } from './FeedCommentItem'
 import { FeedPostCard } from './FeedPostCard'
+import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
+import { useUserActionModals } from './UserActionModals'
+import { trackCreateFeedComment } from '../../../lib/analytics/events'
+import {
+  invalidateAfterBlock,
+  sortedImageUrls,
+  syncHomeBoardLike,
+  syncHomeBoardReplyCount,
+  toggleLikeState,
+  type LikeState,
+} from '../lib/feedHelpers'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const warningIcon = require('../../../../assets/icons/profile/warning.svg')
 
-function parseBoardId(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  const numeric = Number(value)
+function parsePositiveInt(raw?: string | string[]) {
+  const numeric = Number(Array.isArray(raw) ? raw[0] : raw)
   return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined
 }
+
+const withLike = (item: ReplyItem, like?: LikeState) =>
+  like ? { ...item, reply: { ...item.reply, ...like } } : item
+
+const likeOf = ({ reply }: ReplyItem): LikeState => ({
+  isLiked: reply.isLiked,
+  likeCount: reply.likeCount,
+})
+
+const createdCommentId = (created: unknown) => {
+  const id = (created as any)?.replyId ?? (created as any)?.id
+  return typeof id === 'number' ? `comment_${id}` : 'comment_unknown'
+}
+
+type DeleteTarget = { type: 'post' | 'comment'; replyId?: number; parentReplyId?: number }
 
 export function FeedDetailScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ boardId?: string }>()
-  const boardId = parseBoardId(params.boardId)
+  const params = useLocalSearchParams<{ boardId?: string; commentId?: string; from?: string | string[] }>()
+  const boardId = parsePositiveInt(params.boardId)
+  const targetCommentId = parsePositiveInt(params.commentId)
+  const shouldBackToInterestFeed =
+    (Array.isArray(params.from) ? params.from[0] : params.from) === 'todayFeed'
   const scrollRef = useRef<ScrollView | null>(null)
+  const commentLayoutYRef = useRef<Record<number, number>>({})
+  const didScrollToCommentRef = useRef<number | null>(null)
+  const commentInputRef = useRef<FeedCommentInputHandle>(null)
 
   const { data: me } = useMe()
   const myUserId = me?.userId ?? null
   const detailQuery = useBoardDetailInfinite(boardId ?? 0)
+  const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(detailQuery.error)
 
-  const firstPage = detailQuery.data?.pages[0]
-  const boardItem = firstPage?.board
+  const boardItem = detailQuery.data?.pages[0]?.board
   const replies = useMemo(
     () => detailQuery.data?.pages.flatMap((page) => page.comment.content) ?? [],
     [detailQuery.data?.pages],
@@ -64,226 +98,274 @@ export function FeedDetailScreen() {
   const [commentText, setCommentText] = useState('')
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
   const [subRepliesMap, setSubRepliesMap] = useState<Record<number, ReplyItem[]>>({})
-  const [postLikeOverride, setPostLikeOverride] = useState<{
-    isLiked: boolean
-    likeCount: number
-  } | null>(null)
-  const [replyLikeOverrides, setReplyLikeOverrides] = useState<
-    Record<number, { isLiked: boolean; likeCount: number }>
-  >({})
-  const [subReplyLikeOverrides, setSubReplyLikeOverrides] = useState<
-    Record<number, Record<number, { isLiked: boolean; likeCount: number }>>
-  >({})
-  const [openReplyMenuId, setOpenReplyMenuId] = useState<number | null>(null)
-  const [openSubReplyMenuId, setOpenSubReplyMenuId] = useState<number | null>(null)
+  const [postLikeOverride, setPostLikeOverride] = useState<LikeState | null>(null)
+  const [replyLikeOverrides, setReplyLikeOverrides] = useState<Record<number, LikeState>>({})
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [replyCountDelta, setReplyCountDelta] = useState(0)
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const { openReport, openBlock, modals: userActionModals } = useUserActionModals()
+
+  const goInterestFeed = useCallback(() => {
+    router.replace(`/(tabs)/feed?section=works&landingKey=${Date.now()}` as never)
+  }, [router])
+
+  const handleBack = useCallback(() => {
+    if (!shouldBackToInterestFeed && router.canGoBack()) {
+      router.back()
+      return
+    }
+    goInterestFeed()
+  }, [goInterestFeed, router, shouldBackToInterestFeed])
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true))
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!shouldBackToInterestFeed) return undefined
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack()
+      return true
+    })
+    return () => subscription.remove()
+  }, [handleBack, shouldBackToInterestFeed])
+
+  useEffect(() => {
+    didScrollToCommentRef.current = null
+    commentLayoutYRef.current = {}
+  }, [boardId, targetCommentId])
 
   const board = boardItem?.board
   const profile = boardItem?.profile
-  const works = boardItem?.works
-  const images = (boardItem?.images ?? [])
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((item) => item.imageUrl)
-
   const effectivePostLike = postLikeOverride ?? {
     isLiked: board?.isLiked ?? false,
     likeCount: board?.likeCount ?? 0,
   }
 
+  // Deep link to a comment: load pages until it appears, then scroll to it once.
+  useEffect(() => {
+    if (!targetCommentId || didScrollToCommentRef.current === targetCommentId) return
+
+    const isLoaded = replies.some(
+      (item) =>
+        item.reply.replyId === targetCommentId ||
+        [...(item.childReplies ?? []), ...(subRepliesMap[item.reply.replyId] ?? [])].some(
+          (child) => child.reply.replyId === targetCommentId,
+        ),
+    )
+
+    if (!isLoaded) {
+      if (detailQuery.hasNextPage && !detailQuery.isFetchingNextPage) {
+        void detailQuery.fetchNextPage()
+      }
+      return
+    }
+
+    const y = commentLayoutYRef.current[targetCommentId]
+    if (typeof y !== 'number') return
+
+    didScrollToCommentRef.current = targetCommentId
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true })
+    })
+  }, [detailQuery, replies, subRepliesMap, targetCommentId])
+
+  // ── Likes ────────────────────────────────────────────────────────────────────
   const onTogglePostLike = useCallback(async () => {
     if (!boardId || !board) return
-    const optimistic = {
-      isLiked: !effectivePostLike.isLiked,
-      likeCount: Math.max(
-        0,
-        effectivePostLike.likeCount + (effectivePostLike.isLiked ? -1 : 1),
-      ),
+    const apply = (like: LikeState) => {
+      setPostLikeOverride(like)
+      syncHomeBoardLike(qc, boardId, like)
     }
-    setPostLikeOverride(optimistic)
+    apply(toggleLikeState(effectivePostLike))
     try {
-      const result = await toggleBoardLike(boardId)
-      setPostLikeOverride(result)
+      apply(await toggleBoardLike(boardId))
+      qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
     } catch {
-      setPostLikeOverride({ isLiked: board.isLiked, likeCount: board.likeCount })
+      apply({ isLiked: board.isLiked, likeCount: board.likeCount })
     }
-  }, [board, boardId, effectivePostLike])
+  }, [board, boardId, effectivePostLike, qc])
 
   const onToggleReplyLike = useCallback(
-    async (replyId: number, current: { isLiked: boolean; likeCount: number }) => {
-      const optimistic = {
-        isLiked: !current.isLiked,
-        likeCount: Math.max(0, current.likeCount + (current.isLiked ? -1 : 1)),
-      }
-      setReplyLikeOverrides((prev) => ({ ...prev, [replyId]: optimistic }))
+    async (replyId: number, current: LikeState) => {
+      const apply = (like: LikeState) =>
+        setReplyLikeOverrides((prev) => ({ ...prev, [replyId]: like }))
+      apply(toggleLikeState(current))
       try {
-        const result = await toggleReplyLike({ boardId: boardId as number, replyId })
-        setReplyLikeOverrides((prev) => ({ ...prev, [replyId]: result }))
+        apply(await toggleReplyLike({ boardId: boardId as number, replyId }))
       } catch {
-        setReplyLikeOverrides((prev) => ({ ...prev, [replyId]: current }))
+        apply(current)
       }
     },
     [boardId],
   )
 
-  const onToggleSubReplyLike = useCallback(
-    async (
-      parentReplyId: number,
-      replyId: number,
-      current: { isLiked: boolean; likeCount: number },
-    ) => {
-      const optimistic = {
-        isLiked: !current.isLiked,
-        likeCount: Math.max(0, current.likeCount + (current.isLiked ? -1 : 1)),
-      }
-      setSubReplyLikeOverrides((prev) => ({
-        ...prev,
-        [parentReplyId]: { ...(prev[parentReplyId] ?? {}), [replyId]: optimistic },
-      }))
-      try {
-        const result = await toggleReplyLike({ boardId: boardId as number, replyId })
-        setSubReplyLikeOverrides((prev) => ({
-          ...prev,
-          [parentReplyId]: { ...(prev[parentReplyId] ?? {}), [replyId]: result },
-        }))
-      } catch {
-        setSubReplyLikeOverrides((prev) => ({
-          ...prev,
-          [parentReplyId]: { ...(prev[parentReplyId] ?? {}), [replyId]: current },
-        }))
-      }
-    },
-    [boardId],
-  )
-
-  const onDeleteBoard = useCallback(() => {
-    if (!boardId) return
-    Alert.alert('삭제', '이 게시글을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteBoard(boardId)
-            await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
-            router.back()
-          } catch {
-            Alert.alert('오류', '삭제에 실패했어요.')
-          }
-        },
-      },
-    ])
-  }, [boardId, qc, router])
-
-  const onReportBoard = useCallback(async () => {
+  // ── Report / Block / Delete ──────────────────────────────────────────────────
+  const onReportBoard = useCallback(() => {
     if (!boardId || !profile) return
-    try {
+    openReport(profile, async () => {
       const result = await reportBoard({ boardId, reportedUserId: profile.userId })
-      if (result.status === 'duplicated') {
-        Alert.alert('알림', result.message)
-      } else {
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      }
-    } catch {
-      Alert.alert('오류', '신고에 실패했어요.')
-    }
-  }, [boardId, profile])
+      if (result.status === 'duplicated') return 'duplicate'
+    })
+  }, [boardId, openReport, profile])
 
-  const onDeleteReply = useCallback(
-    (replyId: number, parentReplyId?: number) => {
-      if (!boardId) return
-      Alert.alert('삭제', '이 댓글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteReply({ boardId, replyId })
-              if (parentReplyId != null) {
-                setSubRepliesMap((prev) => ({
-                  ...prev,
-                  [parentReplyId]: (prev[parentReplyId] ?? []).filter(
-                    (item) => item.reply.replyId !== replyId,
-                  ),
-                }))
-                return
-              }
-              await detailQuery.refetch()
-            } catch {
-              Alert.alert('오류', '삭제에 실패했어요.')
-            }
-          },
-        },
-      ])
-    },
-    [boardId, detailQuery],
-  )
+  const onBlockBoard = useCallback(() => {
+    if (!profile) return
+    openBlock(profile, async () => {
+      await blockUser(profile.userId)
+      void invalidateAfterBlock(qc)
+      handleBack()
+    })
+  }, [handleBack, openBlock, profile, qc])
 
   const onReportReply = useCallback(
-    async (replyId: number, reportedUserId: number) => {
+    (item: ReplyItem) => {
       if (!boardId) return
-      try {
-        await reportReply({ boardId, replyId, reportedUserId })
-        Alert.alert('신고 완료', '신고가 접수되었어요.')
-      } catch (error) {
-        if (isAlreadyReportedError(error)) {
-          Alert.alert('알림', '이미 신고한 댓글이에요.')
-          return
+      openReport(item.profile, async () => {
+        try {
+          await reportReply({ boardId, replyId: item.reply.replyId, reportedUserId: item.reply.userId })
+        } catch (error) {
+          if (isAlreadyReportedError(error)) return 'duplicate'
+          throw error
         }
-        Alert.alert('오류', '신고에 실패했어요.')
-      }
+      })
     },
-    [boardId],
+    [boardId, openReport],
   )
 
+  const onBlockReply = useCallback(
+    (item: ReplyItem) =>
+      openBlock(item.profile, async () => {
+        await blockUser(item.reply.userId)
+        void invalidateAfterBlock(qc)
+        await detailQuery.refetch()
+      }),
+    [detailQuery, openBlock, qc],
+  )
+
+  const confirmDeleteTarget = useCallback(async () => {
+    if (!boardId || !deleteTarget) return
+    try {
+      if (deleteTarget.type === 'post') {
+        await deleteBoard(boardId)
+        await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+        await qc.invalidateQueries({ queryKey: ['profile', 'activity'] })
+        handleBack()
+        return
+      }
+
+      const { replyId, parentReplyId } = deleteTarget
+      if (replyId == null) return
+      await deleteReply({ boardId, replyId })
+      setReplyCountDelta((prev) => Math.max(0, prev - 1))
+      syncHomeBoardReplyCount(qc, boardId, -1)
+      if (parentReplyId != null) {
+        setSubRepliesMap((prev) => ({
+          ...prev,
+          [parentReplyId]: (prev[parentReplyId] ?? []).filter((item) => item.reply.replyId !== replyId),
+        }))
+      }
+      await detailQuery.refetch()
+      setReplyCountDelta(0)
+      await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
+    } catch {
+      Alert.alert('오류', '삭제에 실패했어요.')
+    }
+  }, [boardId, deleteTarget, detailQuery, handleBack, qc])
+
+  // ── Comment submit ───────────────────────────────────────────────────────────
   const onSubmitComment = useCallback(async () => {
     const trimmed = commentText.trim()
     if (!trimmed || !boardId || submitting) return
     setSubmitting(true)
-    try {
-      if (replyTargetId != null) {
-        const result = await createSubReply({
-          boardId,
-          replyId: replyTargetId,
+
+    const track = (created: unknown) =>
+      void trackCreateFeedComment({
+        post_id: `post_${boardId}`,
+        comment_id: createdCommentId(created),
+        has_spoiler: false,
+      })
+    const scrollToEnd = () =>
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
+    const syncAfterCreate = async (afterRefetch?: () => void) => {
+      await detailQuery.refetch()
+      afterRefetch?.()
+      setReplyCountDelta(0)
+      await qc.invalidateQueries({ queryKey: ['feed', 'boards'] })
+      await qc.invalidateQueries({ queryKey: ['profile', 'activity', 'replies'] })
+    }
+
+    if (replyTargetId != null) {
+      // 대댓글: UI를 먼저 업데이트(true optimistic)하고 API 호출 → 실패 시 rollback
+      const targetId = replyTargetId
+      const tempId = Date.now()
+      const tempReply: ReplyItem = {
+        profile: {
+          userId: me?.userId ?? 0,
+          profileImageUrl: me?.profileImageUrl ?? null,
+          nickName: me?.nickName ?? '',
+          role: me?.role,
+        },
+        reply: {
+          replyId: tempId,
+          userId: me?.userId ?? 0,
           comment: trimmed,
-        })
-        const newSubReply: ReplyItem = {
-          profile: {
-            userId: result.profile.userId,
-            profileImageUrl: result.profile.profileImageUrl,
-            nickName: result.profile.nickName,
-          },
-          reply: {
-            replyId: result.content.replyId,
-            userId: result.profile.userId,
-            comment: result.content.content,
-            lastCreatedTime: '방금 전',
-            likeCount: result.content.likeCount,
-            isLiked: false,
-          },
-        }
+          lastCreatedTime: '방금 전',
+          likeCount: 0,
+          isLiked: false,
+        },
+      }
+      setSubRepliesMap((prev) => ({ ...prev, [targetId]: [...(prev[targetId] ?? []), tempReply] }))
+      setReplyCountDelta((prev) => prev + 1)
+      syncHomeBoardReplyCount(qc, boardId, 1)
+      setReplyTargetId(null)
+      setCommentText('')
+      scrollToEnd()
+      setSubmitting(false)
+
+      try {
+        track(await createSubReply({ boardId, replyId: targetId, comment: trimmed }))
+        await syncAfterCreate(() =>
+          setSubRepliesMap((prev) => {
+            const next = { ...prev }
+            delete next[targetId]
+            return next
+          }),
+        )
+      } catch {
         setSubRepliesMap((prev) => ({
           ...prev,
-          [replyTargetId]: [...(prev[replyTargetId] ?? []), newSubReply],
+          [targetId]: (prev[targetId] ?? []).filter((item) => item.reply.replyId !== tempId),
         }))
-        setReplyTargetId(null)
-      } else {
-        await createReply({ boardId, comment: trimmed })
-        await detailQuery.refetch()
+        setReplyCountDelta((prev) => Math.max(0, prev - 1))
+        syncHomeBoardReplyCount(qc, boardId, -1)
+        Alert.alert('오류', '대댓글 등록에 실패했어요. 다시 시도해 주세요.')
       }
+      return
+    }
+
+    try {
+      track(await createReply({ boardId, comment: trimmed }))
+      syncHomeBoardReplyCount(qc, boardId, 1)
+      await syncAfterCreate()
       setCommentText('')
-      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }))
+      scrollToEnd()
     } catch {
-      Alert.alert('오류', '등록에 실패했어요. 다시 시도해 주세요.')
+      Alert.alert('오류', '댓글 등록에 실패했어요. 다시 시도해 주세요.')
     } finally {
       setSubmitting(false)
     }
-  }, [boardId, commentText, detailQuery, replyTargetId, submitting])
+  }, [boardId, commentText, detailQuery, me, qc, replyTargetId, submitting])
 
   const onScroll = useCallback(
-    (event: any) => {
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (!detailQuery.hasNextPage || detailQuery.isFetchingNextPage) return
       const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent
       if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 200) {
@@ -292,6 +374,9 @@ export function FeedDetailScreen() {
     },
     [detailQuery],
   )
+
+  const toggleMenu = (replyId: number) =>
+    setOpenMenuId((prev) => (prev === replyId ? null : replyId))
 
   if (!boardId) {
     return (
@@ -302,177 +387,167 @@ export function FeedDetailScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-        keyboardVerticalOffset={insets.top}
-      >
-        <View style={[styles.topBar, { paddingTop: insets.top }]}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
-          </Pressable>
-          <Text style={styles.topBarTitle}>피드</Text>
-          <View style={styles.topBarSpacer} />
+      <View style={styles.topBar}>
+        <Pressable onPress={handleBack} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+        </Pressable>
+        <Text style={styles.topBarTitle}>피드</Text>
+        <View style={styles.topBarSpacer} />
+      </View>
+
+      {detailQuery.isLoading || isLeavingForAdultVerification ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="small" color={Magenta[300]} />
         </View>
-
-        {detailQuery.isLoading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator size="small" color={Magenta[300]} />
-          </View>
-        ) : detailQuery.isError || !boardItem || !board || !profile ? (
-          <View style={styles.centerState}>
-            <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
-            <Text style={styles.messageText}>피드를 불러오지 못했어요.</Text>
-            <Pressable onPress={() => detailQuery.refetch()} style={styles.retryButton}>
-              <Text style={styles.retryText}>다시 시도</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <ScrollView
-              ref={scrollRef}
-              style={styles.flex}
-              contentContainerStyle={styles.scrollContent}
-              onScroll={onScroll}
-              scrollEventThrottle={16}
-              refreshControl={
-                <RefreshControl
-                  refreshing={detailQuery.isRefetching && !detailQuery.isFetchingNextPage}
-                  onRefresh={() => detailQuery.refetch()}
-                  tintColor={Magenta[300]}
-                  colors={[Magenta[300]]}
-                />
-              }
-            >
-              <FeedPostCard
-                variant="detail"
-                boardId={board.boardId}
-                writerUserId={profile.userId}
-                currentUserId={myUserId ?? undefined}
-                profileImageUrl={profile.profileImageUrl}
-                nickName={profile.nickName}
-                createdAt={board.lastCreatedTime}
-                content={board.content}
-                images={images}
-                works={
-                  works
-                    ? {
-                        thumbnailUrl: works.thumbnailUrl,
-                        worksName: works.worksName,
-                        artistName: works.artistName,
-                        worksType: works.worksType,
-                        genre: works.genre,
-                        hashtags: works.hashtags ?? [],
-                      }
-                    : null
-                }
-                isSpoiler={board.isSpoiler ?? false}
-                isLiked={effectivePostLike.isLiked}
-                likeCount={effectivePostLike.likeCount}
-                replyCount={board.replyCount}
-                onToggleLike={onTogglePostLike}
-                onClickWorksArrow={
-                  board.isWorksSelected && board.worksId ? () => router.push(`/works/${board.worksId}` as const) : undefined
-                }
-                onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
-                onOpenDelete={profile.userId === myUserId ? onDeleteBoard : undefined}
+      ) : detailQuery.isError || !boardItem || !board || !profile ? (
+        <View style={styles.centerState}>
+          <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
+          <Text style={styles.messageText}>피드를 불러오지 못했어요.</Text>
+          <Pressable onPress={() => detailQuery.refetch()} style={styles.retryButton}>
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior="padding"
+          enabled={keyboardVisible}
+          keyboardVerticalOffset={0}
+        >
+          <ScrollView
+            ref={scrollRef}
+            style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={detailQuery.isRefetching && !detailQuery.isFetchingNextPage}
+                onRefresh={() => detailQuery.refetch()}
+                tintColor={Magenta[300]}
+                colors={[Magenta[300]]}
               />
+            }
+          >
+            <FeedPostCard
+              variant="detail"
+              boardId={board.boardId}
+              writerUserId={profile.userId}
+              currentUserId={myUserId ?? undefined}
+              profileImageUrl={profile.profileImageUrl}
+              nickName={profile.nickName}
+              role={profile.role}
+              createdAt={board.lastCreatedTime}
+              content={board.content}
+              images={sortedImageUrls(boardItem.images)}
+              works={boardItem.works}
+              isSpoiler={board.isSpoiler ?? false}
+              isAdultOnly={board.isAdultOnly ?? false}
+              isBlinded={board.isBlinded}
+              spoilerScript={board.spoilerScript}
+              isLiked={effectivePostLike.isLiked}
+              likeCount={effectivePostLike.likeCount}
+              replyCount={board.replyCount + replyCountDelta}
+              onToggleLike={onTogglePostLike}
+              onClickWorksArrow={
+                board.isWorksSelected && board.worksId
+                  ? () => router.push(`/works/${board.worksId}` as const)
+                  : undefined
+              }
+              onOpenReport={profile.userId !== myUserId ? onReportBoard : undefined}
+              onOpenBlock={profile.userId !== myUserId ? onBlockBoard : undefined}
+              onOpenDelete={profile.userId === myUserId ? () => setDeleteTarget({ type: 'post' }) : undefined}
+              birthdayTheme={board.theme === 'BIRTHDAY'}
+            />
 
-              {board.replyCount > 0 ? (
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentHeaderText}>댓글 {board.replyCount}</Text>
-                </View>
-              ) : null}
+            {replies.map((item) => {
+              const replyId = item.reply.replyId
+              const merged = withLike(item, replyLikeOverrides[replyId])
+              const subReplies = [...(item.childReplies ?? []), ...(subRepliesMap[replyId] ?? [])]
 
-              {replies.map((item) => {
-                const override = replyLikeOverrides[item.reply.replyId]
-                const merged = override ? { ...item, reply: { ...item.reply, ...override } } : item
+              return (
+                <View
+                  key={replyId}
+                  onLayout={(event) => {
+                    commentLayoutYRef.current[replyId] = event.nativeEvent.layout.y
+                  }}
+                >
+                  <FeedCommentItem
+                    variant="reply"
+                    myUserId={myUserId}
+                    writerUserId={profile.userId}
+                    item={merged}
+                    isReplyTarget={replyTargetId === replyId}
+                    subReplyCount={subReplies.length}
+                    isMenuOpen={openMenuId === replyId}
+                    onToggleMenu={() => toggleMenu(replyId)}
+                    onToggleLike={() => onToggleReplyLike(replyId, likeOf(merged))}
+                    onReplyTo={() => {
+                      const next = replyTargetId === replyId ? null : replyId
+                      setReplyTargetId(next)
+                      if (next != null) commentInputRef.current?.focus()
+                    }}
+                    onOpenDelete={() => setDeleteTarget({ type: 'comment', replyId })}
+                    onOpenReport={() => onReportReply(item)}
+                    onOpenBlock={() => onBlockReply(item)}
+                  />
 
-                return (
-                  <View key={item.reply.replyId}>
-                    <FeedCommentItem
-                      variant="reply"
-                      myUserId={myUserId}
-                      item={merged}
-                      subReplyCount={(subRepliesMap[item.reply.replyId] ?? []).length}
-                      isMenuOpen={openReplyMenuId === item.reply.replyId}
-                      onToggleMenu={() =>
-                        setOpenReplyMenuId((prev) =>
-                          prev === item.reply.replyId ? null : item.reply.replyId,
-                        )
-                      }
-                      onToggleLike={() =>
-                        onToggleReplyLike(item.reply.replyId, {
-                          isLiked: merged.reply.isLiked,
-                          likeCount: merged.reply.likeCount,
-                        })
-                      }
-                      onReplyTo={() =>
-                        setReplyTargetId((prev) =>
-                          prev === item.reply.replyId ? null : item.reply.replyId,
-                        )
-                      }
-                      onOpenDelete={() => onDeleteReply(item.reply.replyId)}
-                      onOpenReport={() => onReportReply(item.reply.replyId, item.reply.userId)}
-                    />
+                  {subReplies.map((subReply) => {
+                    const subReplyId = subReply.reply.replyId
+                    const mergedSub = withLike(subReply, replyLikeOverrides[subReplyId])
 
-                    {(subRepliesMap[item.reply.replyId] ?? []).map((subReply) => {
-                      const subOverride =
-                        subReplyLikeOverrides[item.reply.replyId]?.[subReply.reply.replyId]
-                      const mergedSub = subOverride
-                        ? { ...subReply, reply: { ...subReply.reply, ...subOverride } }
-                        : subReply
-
-                      return (
+                    return (
+                      <View
+                        key={subReplyId}
+                        onLayout={(event) => {
+                          commentLayoutYRef.current[subReplyId] = event.nativeEvent.layout.y
+                        }}
+                      >
                         <FeedCommentItem
-                          key={subReply.reply.replyId}
                           variant="subReply"
                           myUserId={myUserId}
+                          writerUserId={profile.userId}
                           item={mergedSub}
-                          isMenuOpen={openSubReplyMenuId === subReply.reply.replyId}
-                          onToggleMenu={() =>
-                            setOpenSubReplyMenuId((prev) =>
-                              prev === subReply.reply.replyId ? null : subReply.reply.replyId,
-                            )
-                          }
-                          onToggleLike={() =>
-                            onToggleSubReplyLike(item.reply.replyId, subReply.reply.replyId, {
-                              isLiked: mergedSub.reply.isLiked,
-                              likeCount: mergedSub.reply.likeCount,
-                            })
-                          }
+                          isMenuOpen={openMenuId === subReplyId}
+                          onToggleMenu={() => toggleMenu(subReplyId)}
+                          onToggleLike={() => onToggleReplyLike(subReplyId, likeOf(mergedSub))}
                           onOpenDelete={() =>
-                            onDeleteReply(subReply.reply.replyId, item.reply.replyId)
+                            setDeleteTarget({ type: 'comment', replyId: subReplyId, parentReplyId: replyId })
                           }
-                          onOpenReport={() =>
-                            onReportReply(subReply.reply.replyId, subReply.reply.userId)
-                          }
+                          onOpenReport={() => onReportReply(subReply)}
+                          onOpenBlock={() => onBlockReply(subReply)}
                         />
-                      )
-                    })}
-                  </View>
-                )
-              })}
+                      </View>
+                    )
+                  })}
+                </View>
+              )
+            })}
 
-              {detailQuery.isFetchingNextPage ? (
-                <ActivityIndicator size="small" color={Magenta[300]} style={styles.loader} />
-              ) : null}
-            </ScrollView>
+            {detailQuery.isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={Magenta[300]} style={styles.loader} />
+            ) : null}
+          </ScrollView>
 
-            <View style={{ paddingBottom: insets.bottom }}>
-              <FeedCommentInput
-                profileImageUrl={me?.profileImageUrl}
-                replyTargetActive={replyTargetId != null}
-                value={commentText}
-                onChangeText={setCommentText}
-                onSubmit={onSubmitComment}
-              />
-            </View>
-          </>
-        )}
-      </KeyboardAvoidingView>
+          <FeedCommentInput
+            ref={commentInputRef}
+            profileImageUrl={me?.profileImageUrl}
+            replyTargetActive={replyTargetId != null}
+            value={commentText}
+            onChangeText={setCommentText}
+            onSubmit={onSubmitComment}
+          />
+        </KeyboardAvoidingView>
+      )}
+      {userActionModals}
+      <FeedDeleteConfirmModal
+        type={deleteTarget?.type ?? 'post'}
+        visible={deleteTarget != null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteTarget}
+      />
     </View>
   )
 }
@@ -480,7 +555,7 @@ export function FeedDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   flex: {
     flex: 1,
@@ -491,7 +566,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   backButton: {
     width: 24,
@@ -514,15 +589,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-  commentHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-  },
-  commentHeaderText: {
-    ...Typography.body2Medium,
-    color: Gray[900],
-  },
   centerState: {
     flex: 1,
     alignItems: 'center',
@@ -535,7 +601,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   warningIcon: {
     width: 100,
@@ -554,7 +620,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...Typography.body2Medium,
-    color: '#ffffff',
+    color: C.card,
   },
   loader: {
     paddingVertical: 16,

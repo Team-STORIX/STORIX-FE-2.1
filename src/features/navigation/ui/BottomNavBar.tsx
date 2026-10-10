@@ -4,8 +4,9 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { C, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import { ReviewWriteBottomSheet } from '../../plus'
+import { emitFeedTabReselected } from '../services/tabScrollEvents'
 import { PlusActionButton } from './PlusActionButton'
 import { PlusActionMenu } from './PlusActionMenu'
 
@@ -26,7 +27,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { routeName: 'index', label: '홈' },
-  { routeName: 'feed', label: '피드' },
+  { routeName: 'feed', label: '소통' },
   { routeName: 'library', label: '서재' },
   { routeName: 'profile', label: '프로필' },
 ]
@@ -57,7 +58,10 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
   }, [state.index])
 
   const barHeight = 80 + insets.bottom
-  const plusBottom = 50 + insets.bottom
+  // plusNavBottom: navWrap 안에서 사용 — container의 paddingBottom이 이미 insets.bottom을 처리함
+  const plusNavBottom = 50
+  // plusModalBottom: 모달(전체화면) 안에서 사용 — 직접 device bottom 기준으로 offset 필요
+  const plusModalBottom = 50 + insets.bottom
   const menuBottom = 130 + insets.bottom
 
   const activeRouteName = state.routes[state.index]?.name
@@ -82,6 +86,10 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
     })
 
     if (!event.defaultPrevented) {
+      if (routeName === 'feed' && activeRouteName === 'feed') {
+        emitFeedTabReselected()
+        return
+      }
       navigation.navigate(route.name, route.params)
     }
   }
@@ -124,7 +132,12 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
   return (
     <>
       <View style={[styles.container, { height: barHeight, paddingBottom: insets.bottom }]}>
+        {insets.bottom > 0 ? (
+          <View style={[styles.safeAreaFill, { height: insets.bottom }]} />
+        ) : null}
         <View style={styles.navWrap}>
+          <Image source={navBackground} style={styles.background} contentFit="fill" />
+
           <View style={styles.navContent}>
             <View style={styles.sideGroup}>
               {mappedItems.slice(0, 2).map((item) => renderTabItem(item.routeName, item.label))}
@@ -137,17 +150,21 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
             </View>
           </View>
 
-          <Image source={navBackground} style={styles.background} contentFit="fill" />
-
           <PlusActionButton
             isOpen={isPlusOpen}
             onPress={() => setIsPlusOpen((prev) => !prev)}
-            bottom={plusBottom}
+            bottom={plusNavBottom}
           />
         </View>
       </View>
 
-      <Modal transparent animationType="none" visible={isPlusOpen} onRequestClose={() => setIsPlusOpen(false)}>
+      <Modal
+        transparent
+        animationType="none"
+        presentationStyle="overFullScreen"
+        visible={isPlusOpen}
+        onRequestClose={() => setIsPlusOpen(false)}
+      >
         <View style={styles.modalRoot}>
           <Pressable
             style={StyleSheet.absoluteFillObject}
@@ -168,7 +185,7 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
           <PlusActionButton
             isOpen={isPlusOpen}
             onPress={() => setIsPlusOpen(false)}
-            bottom={plusBottom}
+            bottom={plusModalBottom}
           />
         </View>
       </Modal>
@@ -180,11 +197,23 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  safeAreaFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: C.card,
   },
   navWrap: {
     flex: 1,
     justifyContent: 'flex-end',
+    overflow: 'visible',
   },
   navContent: {
     zIndex: 10,
@@ -226,7 +255,7 @@ const styles = StyleSheet.create({
     color: C.text,
   },
   tabLabelInactive: {
-    color: C.border,
+    color: Gray[300],
   },
   background: {
     position: 'absolute',

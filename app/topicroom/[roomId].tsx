@@ -1,135 +1,982 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
-} from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useProfileStore } from '../../src/features/profile'
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Toast } from "../../src/components/common/Toast";
+import {
+  NotificationPermissionGuideModal,
+  useNotificationSettings,
+  usePushPermissionStatus,
+} from "../../src/features/notification";
+import { useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
+  ChatDateSeparator,
   ChatInput,
-  ConnectionStatusPill,
+  LeaveConfirmModal,
+  TopicRoomDdayBar,
+  TopicRoomMenuDropdown,
+  TopicRoomTopBar,
+  TopicRoomUserActionDropdown,
+  TopicRoomUserActionModal,
+  TopicRoomUserConfirmModal,
+  formatTopicRoomSubtitle,
+  useBlockTopicRoomUser,
   useChatRoomMessagesInfinite,
   useLeaveTopicRoom,
+  useMyTopicRoomsAll,
+  useReportTopicRoomUser,
   useTopicRoomMembers,
+  useTopicRoomNotificationSetting,
+  useSyncTopicRoomReadState,
   useTopicRoomStomp,
+  useUpdateTopicRoomNotificationSetting,
+  type ConfirmVariant,
   type DisplayMsg,
-} from '../../src/features/topicroom'
-import { C } from '../../src/theme/colors'
+  getChatDateKey,
+  getTopicRoomPreviewRoute,
+  isTopicRoomNotMemberError,
+  type KebabAnchor,
+  type TopicRoomActionTarget,
+  type TopicRoomItem,
+} from "../../src/features/topicroom";
+import { C } from "../../src/theme/colors";
+import {
+  trackEnterTopicRoom,
+  trackExitTopicRoom,
+  trackScreenView,
+} from "../../src/lib/analytics/events";
+import { useLeaveOnAdultVerificationRequired } from "../../src/lib/navigation/useLeaveOnAdultVerificationRequired";
 
-const formatTime = (iso?: string | null): string => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return new Intl.DateTimeFormat('ko-KR', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(d)
+const checkboxActiveIcon = require("../../assets/topicroom/icon-checkbox-active.svg");
+
+// Scans the React Query caches that hold TopicRoomItem lists (popular / me /
+// today / search) for a room matching roomId, so the header can show real
+// metadata even when the caller did not pass it as a route param.
+function findCachedTopicRoom(
+  entries: [unknown, unknown][],
+  roomId: number,
+): TopicRoomItem | null {
+  for (const [, data] of entries) {
+    const candidates: any[] = Array.isArray(data)
+      ? data
+      : (data as any)?.pages
+        ? (data as any).pages.flatMap((p: any) => p?.content ?? [])
+        : Array.isArray((data as any)?.content)
+          ? (data as any).content
+          : [];
+    const hit = candidates.find(
+      (it) => it && typeof it === "object" && it.topicRoomId === roomId,
+    );
+    if (hit) return hit as TopicRoomItem;
+  }
+  return null;
 }
 
-export default function TopicRoomScreen() {
-  const { roomId: roomIdParam } = useLocalSearchParams<{ roomId: string }>()
-  const roomId = typeof roomIdParam === 'string' ? Number(roomIdParam) : 0
+// Success snackbar copy for the user-specific report / block flows
+// (Figma 9095:36505 / 9095:36642).
+const USER_ACTION_SNACK = {
+  report: "신고가 정상적으로 완료됐어요.",
+  block: "차단이 정상적으로 완료됐어요.",
+} as const;
 
-  const myUserId = useProfileStore((s) => s.me?.userId)
-  const router = useRouter()
-  const [inputText, setInputText] = useState('')
+const TOPICROOM_NOTIFICATION_SNACK = {
+  enabled: "토픽룸 알림이 켜졌습니다",
+  disabled: "토픽룸 알림이 꺼졌습니다",
+  error: "잠시 후에 다시 시도해주세요",
+} as const;
+
+const ANDROID_MODAL_SWITCH_DELAY_MS = 250;
+
+type NotificationGuide = "os" | "content";
+
+const formatTime = (iso?: string | null): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(d);
+};
+
+export default function TopicRoomScreen() {
+  const params = useLocalSearchParams<{
+    roomId: string;
+    topicRoomName?: string;
+    worksName?: string;
+    worksType?: string;
+    activeUserNumber?: string;
+    startDate?: string;
+    entrySource?: string;
+  }>();
+  // useLocalSearchParams can yield a string or a string[]; normalize either to a
+  // single number. Invalid values become NaN, which downstream guards (history
+  // query, STOMP canConnect, the leave guard) all treat as "no room".
+  const rawRoomId = params.roomId;
+  const roomId = Number(Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId);
+
+  const insets = useSafeAreaInsets();
+  const myUserId = useProfileStore((s) => s.me?.userId);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [inputText, setInputText] = useState("");
+  const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible());
+  const [liveMemberCount, setLiveMemberCount] = useState<number | null>(null);
+  const enteredAtRef = useRef(Date.now());
+  const didTrackEnterRef = useRef(false);
+  const didTrackExitRef = useRef(false);
+
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [headerMenuTopOffset, setHeaderMenuTopOffset] = useState<number | null>(
+    null,
+  );
+
+  // User-specific report / block flow. A single shared target drives both entry
+  // points (avatar modal + message kebab); only one overlay is visible at once.
+  const [actionTarget, setActionTarget] =
+    useState<TopicRoomActionTarget | null>(null);
+  const [profileActionVisible, setProfileActionVisible] = useState(false);
+  const [dropdownAnchor, setDropdownAnchor] = useState<KebabAnchor | null>(
+    null,
+  );
+  const [confirmVariant, setConfirmVariant] = useState<ConfirmVariant | null>(
+    null,
+  );
+  const [reportSource, setReportSource] = useState<
+    "profile" | "message" | null
+  >(null);
+  const confirmOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const blockMutation = useBlockTopicRoomUser();
+  const reportMutation = useReportTopicRoomUser();
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notificationGuide, setNotificationGuide] =
+    useState<NotificationGuide | null>(null);
+  const awaitingNotificationPrerequisiteRef = useRef<NotificationGuide | null>(
+    null,
+  );
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 2400);
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
 
   const {
     data: historyData,
     isLoading: historyLoading,
     isError: historyError,
+    error: historyErrorDetail,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useChatRoomMessagesInfinite({ roomId })
+  } = useChatRoomMessagesInfinite({ roomId });
 
-  const { status, messages: realtimeMsgs, sendMessage } = useTopicRoomStomp({ roomId })
-  const membersQuery = useTopicRoomMembers(roomId)
-  const memberCount = membersQuery.data?.length ?? 0
-  const leaveMutation = useLeaveTopicRoom()
+  const membersQuery = useTopicRoomMembers(roomId);
+  const myRoomsQuery = useMyTopicRoomsAll({
+    enabled: Number.isFinite(roomId) && roomId > 0,
+    size: 20,
+  });
+  const notificationSettingQuery = useTopicRoomNotificationSetting(roomId);
+  const notificationSettingMutation =
+    useUpdateTopicRoomNotificationSetting(roomId);
+  const notificationSettingsQuery = useNotificationSettings();
+  const { granted: pushGranted } = usePushPermissionStatus();
+  const syncTopicRoomReadState = useSyncTopicRoomReadState(roomId);
+  const members = membersQuery.data ?? [];
+  const memberCount = members.length;
+  const leaveMutation = useLeaveTopicRoom();
+
+  const handleMemberChange = useCallback(
+    (activeUserNumber?: number) => {
+      if (typeof activeUserNumber === "number" && activeUserNumber >= 0) {
+        setLiveMemberCount(activeUserNumber);
+      }
+      void queryClient.invalidateQueries({
+        queryKey: ["topicroom", "members", roomId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["topicroom"] });
+    },
+    [queryClient, roomId],
+  );
+
+  const handleActiveUserNumber = useCallback((activeUserNumber: number) => {
+    if (activeUserNumber >= 0) setLiveMemberCount(activeUserNumber);
+  }, []);
+
+  const {
+    status,
+    messages: realtimeMsgs,
+    sendMessage,
+  } = useTopicRoomStomp({
+    roomId,
+    enabled: isScreenFocused,
+    onMemberChange: handleMemberChange,
+    onActiveUserNumber: handleActiveUserNumber,
+    onReconnect: () => {
+      void queryClient.refetchQueries({
+        queryKey: ["chat", "room", "messages", roomId],
+        type: "active",
+      });
+    },
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsScreenFocused(true);
+      void trackScreenView("topic_room");
+      if (!didTrackEnterRef.current && Number.isFinite(roomId) && roomId > 0) {
+        didTrackEnterRef.current = true;
+        const rawEntrySource = Array.isArray(params.entrySource)
+          ? params.entrySource[0]
+          : params.entrySource;
+        const entrySource =
+          rawEntrySource === "home" || rawEntrySource === "search" || rawEntrySource === "feed"
+            ? rawEntrySource
+            : "feed";
+        void trackEnterTopicRoom({
+          topic_room_id: `topic_${roomId}`,
+          entry_source: entrySource,
+        });
+      }
+      if (Number.isFinite(roomId) && roomId > 0) {
+        void syncTopicRoomReadState();
+        void queryClient.invalidateQueries({
+          queryKey: ["chat", "room", "messages", roomId],
+        });
+      }
+
+      return () => {
+        setIsScreenFocused(false);
+        setHeaderMenuTopOffset(null);
+        if (!didTrackExitRef.current && Number.isFinite(roomId) && roomId > 0) {
+          didTrackExitRef.current = true;
+          void trackExitTopicRoom({
+            topic_room_id: `topic_${roomId}`,
+            stay_duration_sec: Math.max(
+              0,
+              Math.round((Date.now() - enteredAtRef.current) / 1000),
+            ),
+          });
+        }
+      };
+    }, [params.entrySource, queryClient, roomId, syncTopicRoomReadState]),
+  );
+
+  const memberAvatarById = useMemo(() => {
+    const map = new Map<number, string | null>();
+    for (const m of members) map.set(m.userId, m.profileImageUrl ?? null);
+    return map;
+  }, [members]);
+
+  const memberRoleById = useMemo(() => {
+    const map = new Map<number, string | null>();
+    for (const m of members) map.set(m.userId, m.role ?? null);
+    return map;
+  }, [members]);
+
+  const historyActiveUserNumber =
+    historyData?.pages?.find(
+      (page) => typeof page.activeUserNumber === "number",
+    )?.activeUserNumber ?? null;
+
+  useEffect(() => {
+    if (
+      typeof historyActiveUserNumber === "number" &&
+      historyActiveUserNumber >= 0
+    ) {
+      setLiveMemberCount(historyActiveUserNumber);
+    }
+  }, [historyActiveUserNumber]);
+
+  const handleBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)" as const);
+  }, [router]);
 
   const handleLeave = useCallback(() => {
-    Alert.alert(
-      '채팅방 나가기',
-      '정말 이 채팅방을 나가시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '나가기',
-          style: 'destructive',
-          onPress: () =>
-            leaveMutation.mutate(roomId, {
-              onSuccess: () => router.back(),
-            }),
-        },
-      ],
-    )
-  }, [leaveMutation, roomId, router])
+    if (leaveMutation.isPending) return;
+    setLeaveConfirmOpen(true);
+  }, [leaveMutation.isPending]);
+
+  const handleConfirmLeave = useCallback(async () => {
+    if (__DEV__) {
+      console.log("[TOPICROOM_LEAVE] confirm", {
+        rawRoomId,
+        normalizedRoomId: roomId,
+        isPending: leaveMutation.isPending,
+      });
+    }
+    // Block duplicate confirm taps while the request is in flight.
+    if (leaveMutation.isPending) return;
+
+    // Never issue /topic-rooms/NaN/leave — bail out with feedback instead.
+    if (!Number.isFinite(roomId) || roomId <= 0) {
+      setLeaveConfirmOpen(false);
+      showToast("채팅방 정보를 확인할 수 없어요.");
+      return;
+    }
+
+    try {
+      await leaveMutation.mutateAsync(roomId);
+      // Only after a confirmed success: tear down overlays and replace (not
+      // back/push) so direct-entry users can't return to the room they left.
+      setLeaveConfirmOpen(false);
+      router.replace("/(tabs)/feed?section=topicroom" as never);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.log("[TOPICROOM_LEAVE] error", {
+          roomId,
+          status: error?.response?.status,
+          code: error?.response?.data?.code,
+          message: error?.response?.data?.message,
+        });
+      }
+      // Stay in the room; restore button state and surface feedback.
+      setLeaveConfirmOpen(false);
+      showToast("채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  }, [rawRoomId, roomId, leaveMutation, router, showToast]);
 
   const historyDisplay: DisplayMsg[] = useMemo(() => {
-    if (!historyData?.pages) return []
+    if (!historyData?.pages) return [];
     return historyData.pages.flatMap((page) =>
       page.content.map((m) => ({
         key: `h_${m.id}`,
+        chatMessageId: m.id,
         text: m.message,
+        createdAt: m.createdAt,
+        senderId: m.senderId,
         senderName: m.senderName,
+        senderRole: m.senderRole || memberRoleById.get(m.senderId) || null,
+        profileImageUrl: memberAvatarById.get(m.senderId) ?? null,
         time: formatTime(m.createdAt),
         isMe: m.senderId === myUserId,
       })),
-    )
-  }, [historyData, myUserId])
+    );
+  }, [historyData, memberAvatarById, memberRoleById, myUserId]);
 
   const realtimeDisplay: DisplayMsg[] = useMemo(
     () =>
       realtimeMsgs.map((m) => ({
         key: `rt_${m.id}`,
+        chatMessageId: m.chatMessageId,
         text: m.text,
-        senderName: m.userName ?? '',
+        createdAt: m.createdAt,
+        senderId: m.senderId,
+        senderName: m.userName ?? "",
+        senderRole:
+          m.senderRole ??
+          (typeof m.senderId === "number"
+            ? (memberRoleById.get(m.senderId) ?? null)
+            : null),
+        profileImageUrl:
+          m.profileImageUrl ??
+          (typeof m.senderId === "number"
+            ? (memberAvatarById.get(m.senderId) ?? null)
+            : null),
         time: m.time,
-        isMe: m.type === 'me',
+        isMe: m.type === "me",
       })),
-    [realtimeMsgs],
-  )
+    [memberAvatarById, memberRoleById, realtimeMsgs],
+  );
 
-  const allMessages: DisplayMsg[] = useMemo(
-    () => [...realtimeDisplay.slice().reverse(), ...historyDisplay],
-    [realtimeDisplay, historyDisplay],
-  )
+  const allMessages: DisplayMsg[] = useMemo(() => {
+    const realtimeIds = new Set(
+      realtimeDisplay
+        .map((message) => message.chatMessageId)
+        .filter((id): id is number => typeof id === "number"),
+    );
+    const historyWithoutRealtimeDuplicates = historyDisplay.filter(
+      (message) =>
+        typeof message.chatMessageId !== "number" ||
+        !realtimeIds.has(message.chatMessageId),
+    );
+
+    return [
+      ...realtimeDisplay.slice().reverse(),
+      ...historyWithoutRealtimeDuplicates,
+    ];
+  }, [realtimeDisplay, historyDisplay]);
 
   const handleSend = useCallback(() => {
-    const sent = sendMessage(inputText.trim())
-    if (sent) setInputText('')
-  }, [sendMessage, inputText])
+    const sent = sendMessage(inputText.trim());
+    if (sent) {
+      setInputText("");
+      void queryClient.invalidateQueries({
+        queryKey: ["chat", "room", "messages", roomId],
+        refetchType: "none",
+      });
+    }
+  }, [inputText, queryClient, roomId, sendMessage]);
 
-  const canSend = status === 'open' && !!inputText.trim()
+  const canSend = status === "open" && !!inputText.trim();
 
-  const headerTitle =
-    memberCount > 0 ? `채팅방 #${roomId} · ${memberCount}명` : `채팅방 #${roomId}`
+  const joinedRoom = useMemo(
+    () =>
+      (myRoomsQuery.data ?? []).find((room) => room.topicRoomId === roomId) ??
+      null,
+    [myRoomsQuery.data, roomId],
+  );
+
+  const notificationEnabled =
+    notificationSettingQuery.data?.enabled ??
+    joinedRoom?.notificationEnabled ??
+    true;
+
+  const updateRoomNotification = useCallback(
+    (nextEnabled: boolean) => {
+      if (notificationSettingMutation.isPending) return;
+      notificationSettingMutation.mutate(nextEnabled, {
+        onSuccess: () => {
+          showToast(
+            nextEnabled
+              ? TOPICROOM_NOTIFICATION_SNACK.enabled
+              : TOPICROOM_NOTIFICATION_SNACK.disabled,
+          );
+        },
+        onError: () => {
+          showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+        },
+      });
+    },
+    [notificationSettingMutation, showToast],
+  );
+
+  const handleToggleNotification = useCallback(() => {
+    if (notificationSettingMutation.isPending) return;
+
+    if (notificationEnabled) {
+      updateRoomNotification(false);
+      return;
+    }
+
+    if (pushGranted == null || notificationSettingsQuery.isLoading) return;
+
+    if (!pushGranted) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      setNotificationGuide("os");
+      return;
+    }
+
+    if (notificationSettingsQuery.isError || !notificationSettingsQuery.data) {
+      showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      return;
+    }
+
+    if (!notificationSettingsQuery.data.contentCommunityEnabled) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      setNotificationGuide("content");
+      return;
+    }
+
+    updateRoomNotification(true);
+  }, [
+    notificationEnabled,
+    notificationSettingMutation.isPending,
+    notificationSettingsQuery.data,
+    notificationSettingsQuery.isError,
+    notificationSettingsQuery.isLoading,
+    pushGranted,
+    showToast,
+    updateRoomNotification,
+  ]);
+
+  const handleCancelNotificationGuide = useCallback(() => {
+    awaitingNotificationPrerequisiteRef.current = null;
+    setNotificationGuide(null);
+  }, []);
+
+  const handleConfirmNotificationGuide = useCallback(() => {
+    if (notificationGuide === "os") {
+      awaitingNotificationPrerequisiteRef.current = "os";
+      setNotificationGuide(null);
+      void Linking.openSettings().catch(() => {
+        awaitingNotificationPrerequisiteRef.current = null;
+        showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      });
+      return;
+    }
+
+    if (notificationGuide === "content") {
+      awaitingNotificationPrerequisiteRef.current = "content";
+      setNotificationGuide(null);
+      router.push("/notifications/settings" as never);
+    }
+  }, [notificationGuide, router, showToast]);
+
+  useEffect(() => {
+    const awaiting = awaitingNotificationPrerequisiteRef.current;
+    if (awaiting == null || notificationSettingMutation.isPending) return;
+
+    if (awaiting === "os") {
+      if (pushGranted !== true) return;
+
+      if (notificationSettingsQuery.data?.contentCommunityEnabled === false) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        setNotificationGuide("content");
+        return;
+      }
+      if (notificationSettingsQuery.data?.contentCommunityEnabled === true) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        updateRoomNotification(true);
+        return;
+      }
+      if (notificationSettingsQuery.isError) {
+        awaitingNotificationPrerequisiteRef.current = null;
+        showToast(TOPICROOM_NOTIFICATION_SNACK.error);
+      }
+      return;
+    }
+
+    if (
+      awaiting === "content" &&
+      pushGranted === true &&
+      notificationSettingsQuery.data?.contentCommunityEnabled === true
+    ) {
+      awaitingNotificationPrerequisiteRef.current = null;
+      updateRoomNotification(true);
+    }
+  }, [
+    notificationSettingMutation.isPending,
+    notificationSettingsQuery.data?.contentCommunityEnabled,
+    notificationSettingsQuery.isError,
+    pushGranted,
+    showToast,
+    updateRoomNotification,
+  ]);
+
+  const joinedRoomFromCache = queryClient.getQueryData<TopicRoomItem>([
+    "topicroom",
+    "room",
+    roomId,
+  ]);
+
+  // Header metadata priority: route params → joined-room query → cached list query → fallback.
+  const cachedRoom = useMemo(
+    () =>
+      joinedRoomFromCache ??
+      joinedRoom ??
+      findCachedTopicRoom(
+        queryClient.getQueriesData<unknown>({ queryKey: ["topicroom"] }),
+        roomId,
+      ),
+    [queryClient, roomId, members.length, joinedRoom, joinedRoomFromCache],
+  );
+
+  const worksName = params.worksName || cachedRoom?.worksName || "";
+  const worksType = params.worksType || cachedRoom?.worksType || "";
+  const topicRoomName = params.topicRoomName || cachedRoom?.topicRoomName || "";
+
+  const headerMemberCount =
+    liveMemberCount != null
+      ? liveMemberCount
+      : memberCount > 0
+        ? memberCount
+        : Number(params.activeUserNumber) ||
+          cachedRoom?.activeUserNumber ||
+          undefined;
+
+  // Not a participant (push, deep link, or a stale list after leaving): the
+  // room-scoped APIs answer 403 TOPIC_ROOM_ERROR_008, so hand over to the
+  // preview, where the user can join again.
+  const isLeavingForAdultVerification =
+    useLeaveOnAdultVerificationRequired(historyErrorDetail);
+  const isNotMember =
+    isTopicRoomNotMemberError(historyErrorDetail) ||
+    isTopicRoomNotMemberError(notificationSettingQuery.error);
+  const redirectedToPreviewRef = useRef(false);
+  useEffect(() => {
+    if (!isNotMember || redirectedToPreviewRef.current) return;
+    // Leaving makes these calls fail too; the leave flow navigates itself.
+    if (leaveMutation.isPending || leaveMutation.isSuccess) return;
+    redirectedToPreviewRef.current = true;
+    router.replace(
+      getTopicRoomPreviewRoute(roomId, {
+        topicRoomName,
+        worksName,
+        worksType,
+        activeUserNumber: headerMemberCount ?? null,
+      }),
+    );
+  }, [
+    headerMemberCount,
+    isNotMember,
+    leaveMutation.isPending,
+    leaveMutation.isSuccess,
+    roomId,
+    router,
+    topicRoomName,
+    worksName,
+    worksType,
+  ]);
+
+  // First line: "웹툰 <상수리나무 아래>" when a works name exists; otherwise the
+  // room name. Second line is the room name when the first line already shows
+  // the works.
+  const hasWorks = !!worksName;
+  const headerTitle = hasWorks
+    ? formatTopicRoomSubtitle(worksType, worksName)
+    : topicRoomName || "토픽룸";
+  const headerSubtitle = hasWorks ? topicRoomName || undefined : undefined;
+
+  // Room-age / D-Day source. The chat-history response now carries a display
+  // label (`joinedDays`, e.g. "3일") rather than the exact membership timestamp.
+  const joinedDays =
+    historyData?.pages?.find((page) => page.joinedDays != null)?.joinedDays ??
+    null;
+
+  const closeUserActions = useCallback(() => {
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+    setConfirmVariant(null);
+    setActionTarget(null);
+    setReportSource(null);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (confirmOpenTimerRef.current) {
+        clearTimeout(confirmOpenTimerRef.current);
+        confirmOpenTimerRef.current = null;
+      }
+    },
+    [],
+  );
+
+  // Build a target only for a valid other user — self / unknown senders get no
+  // report/block entry point (Part C).
+  const targetFromMsg = useCallback(
+    (
+      msg: DisplayMsg,
+      options?: { includeChatMessage?: boolean },
+    ): TopicRoomActionTarget | null => {
+      if (
+        typeof msg.senderId !== "number" ||
+        !Number.isFinite(msg.senderId) ||
+        msg.senderId <= 0
+      ) {
+        return null;
+      }
+      if (msg.senderId === myUserId) return null;
+      const chatMessageId =
+        typeof msg.chatMessageId === "number" &&
+        Number.isFinite(msg.chatMessageId) &&
+        msg.chatMessageId > 0
+          ? msg.chatMessageId
+          : undefined;
+      return {
+        userId: msg.senderId,
+        ...(options?.includeChatMessage && chatMessageId != null
+          ? { chatMessageId }
+          : {}),
+        nickname: msg.senderName,
+        profileImageUrl: msg.profileImageUrl,
+      };
+    },
+    [myUserId],
+  );
+
+  const handlePressAvatar = useCallback(
+    (msg: DisplayMsg) => {
+      const target = targetFromMsg(msg);
+      if (!target) return;
+      setConfirmVariant(null);
+      setDropdownAnchor(null);
+      setReportSource("profile");
+      setActionTarget(target);
+      setProfileActionVisible(true);
+    },
+    [targetFromMsg],
+  );
+
+  const handlePressKebab = useCallback(
+    (msg: DisplayMsg, anchor: KebabAnchor) => {
+      const target = targetFromMsg(msg, { includeChatMessage: true });
+      if (!target) return;
+      setConfirmVariant(null);
+      setProfileActionVisible(false);
+      setReportSource("message");
+      setActionTarget(target);
+      setDropdownAnchor(anchor);
+    },
+    [targetFromMsg],
+  );
+
+  // Siren / 신고하기 and block / 차단하기 both suspend the originating overlay
+  // and open the matching confirmation popup against the same target.
+  const handleOpenReportConfirm = useCallback(() => {
+    const isChatMessageReport =
+      reportSource === "message" && actionTarget?.chatMessageId != null;
+    const payloadKeys = isChatMessageReport
+      ? ["reportedUserId", "chatMessageId"]
+      : ["reportedUserId", "reason"];
+
+    if (__DEV__) {
+      console.log("[topicroom][report] open-confirm", {
+        roomId,
+        source: reportSource,
+        hasTarget: actionTarget != null,
+        reportedUserId: actionTarget?.userId ?? null,
+        chatMessageId: actionTarget?.chatMessageId ?? null,
+        reason: isChatMessageReport ? null : "DEFAULT",
+        reportType: isChatMessageReport ? "chat-message" : "user",
+        payloadKeys,
+      });
+    }
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+
+    const openConfirm = () => {
+      confirmOpenTimerRef.current = null;
+      setConfirmVariant("report");
+    };
+
+    if (Platform.OS === "android") {
+      confirmOpenTimerRef.current = setTimeout(
+        openConfirm,
+        ANDROID_MODAL_SWITCH_DELAY_MS,
+      );
+      return;
+    }
+
+    openConfirm();
+  }, [actionTarget, reportSource, roomId]);
+
+  const handleOpenBlockConfirm = useCallback(() => {
+    if (confirmOpenTimerRef.current) {
+      clearTimeout(confirmOpenTimerRef.current);
+      confirmOpenTimerRef.current = null;
+    }
+    setProfileActionVisible(false);
+    setDropdownAnchor(null);
+    const openConfirm = () => {
+      confirmOpenTimerRef.current = null;
+      setConfirmVariant("block");
+    };
+
+    if (Platform.OS === "android") {
+      confirmOpenTimerRef.current = setTimeout(
+        openConfirm,
+        ANDROID_MODAL_SWITCH_DELAY_MS,
+      );
+      return;
+    }
+
+    openConfirm();
+  }, []);
+
+  const handleCancelConfirm = useCallback(() => {
+    if (blockMutation.isPending || reportMutation.isPending) return;
+    setConfirmVariant(null);
+    setActionTarget(null);
+  }, [blockMutation.isPending, reportMutation.isPending]);
+
+  const handleConfirmAction = useCallback(() => {
+    if (!actionTarget || !confirmVariant) return;
+
+    if (confirmVariant === "report") {
+      if (reportMutation.isPending) return;
+      if (!Number.isFinite(roomId) || roomId <= 0) {
+        closeUserActions();
+        showToast("채팅방 정보를 확인할 수 없어요.");
+        return;
+      }
+
+      const isChatMessageReport =
+        reportSource === "message" && actionTarget.chatMessageId != null;
+      const reportPayload = {
+        roomId,
+        reportedUserId: actionTarget.userId,
+        ...(isChatMessageReport
+          ? { chatMessageId: actionTarget.chatMessageId }
+          : { reason: "DEFAULT" as const }),
+      };
+
+      if (__DEV__) {
+        console.log("[topicroom][report] confirm-submit", {
+          roomId,
+          source: reportSource,
+          reportedUserId: actionTarget.userId,
+          chatMessageId: actionTarget.chatMessageId ?? null,
+          reason: isChatMessageReport ? null : "DEFAULT",
+          reportType: isChatMessageReport ? "chat-message" : "user",
+          payloadKeys: Object.keys(reportPayload).filter(
+            (key) => key !== "roomId",
+          ),
+        });
+      }
+
+      reportMutation.mutate(reportPayload, {
+        onSuccess: () => {
+          closeUserActions();
+          showToast(USER_ACTION_SNACK.report);
+        },
+        onError: () => {
+          closeUserActions();
+          showToast("신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        },
+      });
+      return;
+    }
+
+    if (blockMutation.isPending) return;
+    blockMutation.mutate(
+      { roomId, targetUserId: actionTarget.userId },
+      {
+        onSuccess: () => {
+          closeUserActions();
+          showToast(USER_ACTION_SNACK.block);
+        },
+        onError: () => {
+          closeUserActions();
+          showToast("차단하지 못했어요. 잠시 후 다시 시도해 주세요.");
+        },
+      },
+    );
+  }, [
+    actionTarget,
+    confirmVariant,
+    blockMutation,
+    reportMutation,
+    roomId,
+    closeUserActions,
+    showToast,
+  ]);
+
+  const isNotificationToast =
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.error;
+
+  const isSuccessToast =
+    toastMessage === USER_ACTION_SNACK.report ||
+    toastMessage === USER_ACTION_SNACK.block ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.enabled ||
+    toastMessage === TOPICROOM_NOTIFICATION_SNACK.disabled;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior="padding"
+      enabled={keyboardVisible}
+      keyboardVerticalOffset={0}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <ConnectionStatusPill status={status} />
+      <View>
+        <TopicRoomTopBar
+          topInset={insets.top}
+          title={headerTitle}
+          subtitle={headerSubtitle}
+          memberCount={headerMemberCount}
+          onBack={handleBack}
+          onPressMenu={(dropdownTop) =>
+            setHeaderMenuTopOffset((current) =>
+              current == null ? dropdownTop : null,
+            )
+          }
+        />
+      </View>
+
+      <TopicRoomMenuDropdown
+        visible={headerMenuTopOffset != null}
+        topOffset={headerMenuTopOffset ?? insets.top + 60}
+        notificationEnabled={notificationEnabled}
+        notificationPending={
+          notificationSettingQuery.isLoading ||
+          notificationSettingMutation.isPending ||
+          pushGranted == null ||
+          notificationSettingsQuery.isLoading
+        }
+        onClose={() => setHeaderMenuTopOffset(null)}
+        onPressToggleNotification={handleToggleNotification}
+        onPressLeave={handleLeave}
+        leaveDisabled={leaveMutation.isPending}
+      />
+
+      <NotificationPermissionGuideModal
+        visible={notificationGuide != null}
+        message={
+          notificationGuide === "content"
+            ? "콘텐츠·커뮤니티 알림을 허용해주세요"
+            : "기기 설정에서 알림을 켜 주세요\n설정 화면에서 STORIX 알림을 허용해 주세요."
+        }
+        onCancel={handleCancelNotificationGuide}
+        onConfirm={handleConfirmNotificationGuide}
+      />
+
+      <TopicRoomDdayBar joinedDays={joinedDays} />
 
       {historyLoading && !historyData ? (
-        <ActivityIndicator style={styles.centeredLoader} size="large" color={C.primary} />
+        <ActivityIndicator
+          style={styles.centeredLoader}
+          size="large"
+          color={C.primary}
+        />
       ) : null}
 
-      {!historyLoading && historyError ? (
+      {!historyLoading &&
+      historyError &&
+      !isNotMember &&
+      !isLeavingForAdultVerification ? (
         <Text style={styles.errorText}>메시지 기록을 불러오지 못했습니다.</Text>
       ) : null}
 
@@ -138,23 +985,40 @@ export default function TopicRoomScreen() {
         data={allMessages}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => <ChatBubble msg={item} />}
+        renderItem={({ item, index }) => {
+          // The inverted list stores messages newest-first. A different next
+          // (older) date means this item starts a calendar-day group onscreen.
+          const itemDate = getChatDateKey(item.createdAt);
+          const olderItemDate = getChatDateKey(
+            allMessages[index + 1]?.createdAt,
+          );
+          const showDateSeparator =
+            itemDate != null && itemDate !== olderItemDate;
+
+          return (
+            <View>
+              {showDateSeparator ? (
+                <ChatDateSeparator createdAt={item.createdAt} />
+              ) : null}
+              <ChatBubble
+                msg={item}
+                onPressAvatar={handlePressAvatar}
+                onPressKebab={handlePressKebab}
+              />
+            </View>
+          );
+        }}
         onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
         ListFooterComponent={
           isFetchingNextPage ? (
-            <ActivityIndicator style={styles.paginationLoader} size="small" color={C.primary} />
-          ) : null
-        }
-        ListEmptyComponent={
-          !historyLoading && !historyError ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                아직 메시지가 없습니다. 첫 메시지를 보내보세요.
-              </Text>
-            </View>
+            <ActivityIndicator
+              style={styles.paginationLoader}
+              size="small"
+              color={C.primary}
+            />
           ) : null
         }
       />
@@ -165,41 +1029,73 @@ export default function TopicRoomScreen() {
         onSend={handleSend}
         canSend={canSend}
       />
+
+      <LeaveConfirmModal
+        visible={leaveConfirmOpen}
+        isPending={leaveMutation.isPending}
+        onClose={() => {
+          if (leaveMutation.isPending) return;
+          setLeaveConfirmOpen(false);
+        }}
+        onConfirm={handleConfirmLeave}
+      />
+
+      <TopicRoomUserActionModal
+        visible={profileActionVisible}
+        target={actionTarget}
+        onClose={closeUserActions}
+        onReport={handleOpenReportConfirm}
+        onBlock={handleOpenBlockConfirm}
+      />
+
+      <TopicRoomUserActionDropdown
+        visible={dropdownAnchor != null}
+        anchor={dropdownAnchor}
+        onClose={closeUserActions}
+        onReport={handleOpenReportConfirm}
+        onBlock={handleOpenBlockConfirm}
+      />
+
+      {confirmVariant ? (
+        <TopicRoomUserConfirmModal
+          visible
+          variant={confirmVariant}
+          target={actionTarget}
+          isPending={
+            confirmVariant === "report"
+              ? reportMutation.isPending
+              : blockMutation.isPending
+          }
+          onCancel={handleCancelConfirm}
+          onConfirm={handleConfirmAction}
+        />
+      ) : null}
+
+      <Toast
+        message={toastMessage}
+        variant={isNotificationToast ? "notification" : "default"}
+        bottomOffset={36}
+        leadingIconSource={isSuccessToast ? checkboxActiveIcon : undefined}
+        leadingIconSize={24}
+        onClose={() => setToastMessage(null)}
+      />
     </KeyboardAvoidingView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1, backgroundColor: C.card },
 
-  leaveBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  leaveBtnPressed: { opacity: 0.6 },
-  leaveBtnText: { fontSize: 14, color: C.error, fontWeight: '600' },
-
-  centeredLoader: { flex: 1, alignSelf: 'center', marginTop: 40 },
+  centeredLoader: { flex: 1, alignSelf: "center", marginTop: 40 },
   errorText: {
     color: C.error,
-    textAlign: 'center',
+    textAlign: "center",
     padding: 16,
-    fontSize: 13,
-  },
-
-  listContent: { paddingVertical: 8 },
-
-  paginationLoader: { paddingVertical: 10 },
-
-  emptyContainer: {
-    paddingVertical: 48,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: C.textMuted,
-    textAlign: 'center',
+    fontSize: 14,
     lineHeight: 20,
   },
-})
+
+  listContent: { paddingVertical: 12 },
+
+  paginationLoader: { paddingVertical: 10 },
+});

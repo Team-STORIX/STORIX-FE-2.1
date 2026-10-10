@@ -1,33 +1,138 @@
-import { Alert, StyleSheet, View, ActivityIndicator, Text, Pressable } from 'react-native'
-import { Image } from 'expo-image'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { developerLogin } from '../api'
-import { useNativeSocialLogin } from '../hooks'
-import { useAuthStore } from '../../../store/auth.store'
-import { C, Typography } from '../../../theme'
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuthStore } from "../../../store/auth.store";
+import { C, Typography } from "../../../theme";
+import { developerLogin } from "../api";
+import { useNativeSocialLogin, useXLogin } from "../hooks";
+import { openXAuthorizationPage, X_OAUTH_CONFIG } from "../lib/xOAuth";
 
-const logoWord = require('../../../../assets/logos/logo-word.svg')
-const kakaoButton = require('../../../../assets/icons/login/login-kakao.svg')
-const naverButton = require('../../../../assets/icons/login/login-naver.svg')
-const twitterButton = require('../../../../assets/icons/login/login-twitter.svg')
-const appleButton = require('../../../../assets/icons/login/login-apple.svg')
+// Dev-only login entry. Gated behind BOTH __DEV__ (stripped from release builds)
+// and an explicit opt-in env flag, so it can never surface in a production build.
+// EXPO_PUBLIC_* vars are inlined by Metro at build time.
+const DEV_LOGIN_ENABLED =
+  __DEV__ && process.env.EXPO_PUBLIC_ENABLE_DEV_LOGIN === "true";
+
+// pendingId handed to the backend dev-login endpoint; overridable for local QA.
+const DEV_LOGIN_PENDING_ID =
+  process.env.EXPO_PUBLIC_DEV_LOGIN_PENDING_ID ?? "It9znl2a";
+
+// Optional direct-token fallback for when the backend dev-login endpoint is
+// unavailable. Tokens are read from env (never hardcoded) and only used in
+// __DEV__ builds. Both must be EXPO_PUBLIC_* to be inlined by Metro.
+const DEV_LOGIN_ACCESS_TOKEN = process.env.EXPO_PUBLIC_DEV_ACCESS_TOKEN;
+const DEV_LOGIN_REFRESH_TOKEN = process.env.EXPO_PUBLIC_DEV_REFRESH_TOKEN;
+
+const logoWord = require("../../../../assets/logos/logo-word.svg");
+const kakaoButton = require("../../../../assets/icons/login/login-kakao.svg");
+const naverButton = require("../../../../assets/icons/login/login-naver.svg");
+const twitterButton = require("../../../../assets/icons/login/login-twitter.svg");
+const appleButton = require("../../../../assets/icons/login/login-apple.svg");
 
 export function LoginScreen() {
-  const insets = useSafeAreaInsets()
-  const mutation = useNativeSocialLogin()
-  const setLoginTokens = useAuthStore((s) => s.setLoginTokens)
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const mutation = useNativeSocialLogin();
+  const xLoginMutation = useXLogin();
+  const setLoginTokens = useAuthStore((s) => s.setLoginTokens);
+  const [devPending, setDevPending] = useState(false);
+  const [xLoginPending, setXLoginPending] = useState(false);
 
-  const pendingProvider = mutation.variables
-  const pending = mutation.isPending
+  const pendingProvider = mutation.variables;
+  const pending = mutation.isPending || devPending || xLoginPending || xLoginMutation.isPending;
+  const loginErrorMessage =
+    mutation.error instanceof Error
+      ? getLoginErrorMessage(mutation.error)
+      : "로그인에 실패했습니다. 다시 시도해주세요.";
 
   const handleDevLogin = async () => {
+    // Hard guard: never run in production, even if something bypasses the
+    // gating on the rendered button.
+    if (!__DEV__) return;
+
+    if (__DEV__) console.log("[dev-login] started");
+    setDevPending(true);
     try {
-      const res = await developerLogin('dev')
-      await setLoginTokens({ accessToken: res.result.accessToken })
-    } catch {
-      Alert.alert('오류', '개발자 로그인에 실패했어요.')
+      // Preferred path: env-provided access token (works when the backend
+      // dev-login endpoint is unreachable or rejecting the pendingId).
+      if (DEV_LOGIN_ACCESS_TOKEN) {
+        if (__DEV__) console.log("[dev-login] using env access token");
+        await setLoginTokens({
+          accessToken: DEV_LOGIN_ACCESS_TOKEN,
+          refreshToken: DEV_LOGIN_REFRESH_TOKEN || undefined,
+        });
+        if (__DEV__) console.log("[dev-login] success (env token)");
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // Fallback: backend dev-login endpoint.
+      const res = await developerLogin(DEV_LOGIN_PENDING_ID);
+      const accessToken = res?.result?.accessToken;
+      if (!accessToken) {
+        Alert.alert(
+          "개발자 로그인 실패",
+          "개발자 로그인 응답에 토큰이 없어요.",
+        );
+        return;
+      }
+      if (__DEV__) console.log("[dev-login] access token present");
+      // Stores accessToken in SecureStore, clears any onboardingToken, and flips
+      // isAuthenticated → AuthGate then routes out of (auth). We also navigate
+      // explicitly to match the social-login flow.
+      await setLoginTokens({ accessToken });
+      if (__DEV__) console.log("[dev-login] success (endpoint)");
+      router.replace("/(tabs)");
+    } catch (err) {
+      // Failure leaves existing auth state untouched (setLoginTokens never ran).
+      if (__DEV__) console.log("[dev-login] failed", err);
+      Alert.alert(
+        "개발자 로그인 실패",
+        "백엔드 dev-login이 거절했어요. EXPO_PUBLIC_DEV_ACCESS_TOKEN 환경변수를 설정해 보세요.",
+      );
+    } finally {
+      setDevPending(false);
     }
-  }
+  };
+
+  const handleXLogin = async () => {
+    setXLoginPending(true);
+    try {
+      const authorizationResult = await openXAuthorizationPage();
+
+      if (Platform.OS !== "ios") {
+        return;
+      }
+
+      if (!authorizationResult) {
+        Alert.alert(
+          "X 로그인 실패",
+          "X 인증이 완료되지 않았어요. 브라우저에서 로그인 완료 후 STORIX로 돌아와 주세요.",
+        );
+        return;
+      }
+
+      xLoginMutation.mutate({
+        code: authorizationResult.code,
+        redirectUri: X_OAUTH_CONFIG.redirectUri,
+        codeVerifier: authorizationResult.codeVerifier,
+      });
+    } catch (error) {
+      Alert.alert("오류", "X 로그인에 실패했어요.");
+    } finally {
+      setXLoginPending(false);
+    }
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -36,116 +141,164 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.buttonGroup}>
-        <LoginAssetButton
-          source={kakaoButton}
-          onPress={() => mutation.mutate('kakao')}
-          loading={pending && pendingProvider === 'kakao'}
-        />
-        <LoginAssetButton
-          source={naverButton}
-          onPress={() => mutation.mutate('naver')}
-          loading={pending && pendingProvider === 'naver'}
-        />
-        <LoginAssetButton
-          source={twitterButton}
-          onPress={() => Alert.alert('안내', '트위터 로그인은 아직 지원되지 않아요.')}
-        />
-        <LoginAssetButton
-          source={appleButton}
-          onPress={() => Alert.alert('안내', 'Apple 로그인은 아직 준비 중이에요.')}
-        />
-
-        {mutation.isError ? (
-          <Text style={styles.errorText}>
-            {pendingProvider === 'kakao'
-              ? '카카오 로그인에 실패했습니다. 다시 시도해 주세요.'
-              : '로그인에 실패했습니다. 다시 시도해 주세요.'}
-          </Text>
-        ) : null}
-
-        {__DEV__ ? (
-          <Pressable style={({ pressed }) => [styles.devButton, pressed && styles.pressed]} onPress={handleDevLogin}>
+        {DEV_LOGIN_ENABLED ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.devButton,
+              pending && styles.dimmed,
+              pressed && !pending && styles.pressed,
+            ]}
+            onPress={handleDevLogin}
+            disabled={pending}
+          >
             <Text style={styles.devButtonText}>개발자 로그인</Text>
           </Pressable>
         ) : null}
+        <LoginAssetButton
+          source={kakaoButton}
+          onPress={() => mutation.mutate("kakao")}
+          loading={pending && pendingProvider === "kakao"}
+          disabled={pending}
+        />
+        <LoginAssetButton
+          source={naverButton}
+          onPress={() => mutation.mutate("naver")}
+          loading={pending && pendingProvider === "naver"}
+          disabled={pending}
+        />
+        <LoginAssetButton
+          source={twitterButton}
+          onPress={handleXLogin}
+          loading={xLoginPending}
+          disabled={pending}
+        />
+        {Platform.OS === "ios" && (
+          <LoginAssetButton
+            source={appleButton}
+            onPress={() => mutation.mutate("apple")}
+            loading={pending && pendingProvider === "apple"}
+            disabled={pending}
+          />
+        )}
+
+        {mutation.isError ? (
+          <Text style={styles.errorText}>
+           {pendingProvider === "kakao"
+  ? `카카오 로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`
+  : pendingProvider === "apple"
+    ? `Apple 로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`
+    : `로그인에 실패했습니다.${loginErrorMessage ? ` ${loginErrorMessage}` : ""}`}
+          </Text>
+        ) : null}
+
       </View>
     </View>
-  )
+  );
+}
+
+function getLoginErrorMessage(error: Error) {
+  if (error.message.includes("카카오 로그인을 사용할 수 없는 앱 빌드")) {
+    return "앱을 다시 설치한 뒤 시도해 주세요.";
+  }
+
+  return error.message;
 }
 
 function LoginAssetButton({
   source,
   onPress,
   loading = false,
+  disabled = false,
 }: {
-  source: number
-  onPress: () => void
-  loading?: boolean
+  source: number;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
 }) {
+  // A non-loading button still gets disabled while a sibling provider is pending,
+  // so its visual feedback should make that clear without looking "broken":
+  // dim it slightly. Loading buttons keep full opacity so the spinner reads cleanly.
+  const dimmed = disabled && !loading;
   return (
-    <Pressable style={({ pressed }) => [styles.assetButton, pressed && styles.pressed]} onPress={onPress}>
-      <Image source={source} style={styles.assetButtonImage} contentFit="contain" />
+    <Pressable
+      style={({ pressed }) => [
+        styles.assetButton,
+        dimmed && styles.dimmed,
+        pressed && !disabled && styles.pressed,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      <Image
+        source={source}
+        style={styles.assetButtonImage}
+        contentFit="contain"
+      />
       {loading ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="small" color={C.text} />
         </View>
       ) : null}
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
+    backgroundColor: C.card,
+    alignItems: "center",
   },
   hero: {
     marginTop: 263,
-    alignItems: 'center',
+    alignItems: "center",
   },
   logoWord: {
     width: 120,
-    height: 40,
+    height: 120,
   },
   buttonGroup: {
     marginTop: 64,
-    gap: 8,
-    width: 360,
+    gap: 4,
+    alignSelf: "stretch",
+    paddingHorizontal: 16,
   },
   assetButton: {
-    width: 360,
+    width: "100%",
     height: 48,
   },
   assetButtonImage: {
-    width: 360,
+    width: "100%",
     height: 48,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   errorText: {
     ...Typography.caption1Medium,
     color: C.error,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   devButton: {
     marginTop: 8,
-    width: 360,
+    width: "100%",
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primary,
     borderRadius: 4,
   },
   devButtonText: {
     ...Typography.body2Bold,
-    color: '#ffffff',
+    color: C.card,
   },
   pressed: {
     opacity: 0.82,
   },
-})
+  dimmed: {
+    opacity: 0.45,
+  },
+});

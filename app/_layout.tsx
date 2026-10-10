@@ -10,8 +10,11 @@ if (typeof (global as any).TextEncoder === 'undefined') {
 }
 
 // ─── React / RN ───────────────────────────────────────────────────────────────
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { InteractionManager, StyleSheet, View } from 'react-native'
+import { Image } from 'expo-image'
+import Constants from 'expo-constants'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import 'react-native-reanimated'
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -26,12 +29,33 @@ import { QueryClientProvider } from '@tanstack/react-query'
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 import { useColorScheme } from '@/components/useColorScheme'
-import { useMe } from '../src/features/profile'
+import { C } from '../src/theme'
+import { AppEventPopupModal, useAppEventPopup } from '../src/features/app-event'
+import { getAppEventWebViewRoute } from '../src/features/app-event/lib/targetNavigation'
+import {
+  AdultVerificationRequiredModal,
+  useAdultVerificationBootstrap,
+  useMe,
+} from '../src/features/profile'
+import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
 import { queryClient } from '../src/lib/query/queryClient'
+import { refreshAuthTokens } from '../src/lib/auth/refresh-token'
+import { removeRefreshToken } from '../src/lib/storage/secure'
 import { useAuthStore } from '../src/store/auth.store'
 import { useLikesStore } from '../src/store/likes.store'
 import { useFavoritesStore } from '../src/store/favorites.store'
-import { C } from '../src/theme/colors'
+import { reconcilePushDevice } from '../src/features/notification/services/pushDeviceSync'
+import {
+  getFirebaseNativeUnavailableReason,
+  isFirebaseNativeAvailable,
+} from '../src/features/notification/services/firebaseNative'
+import {
+  AppVersionUpdateModal,
+  checkAppVersion,
+  getCurrentAppVersion,
+  getCurrentAppVersionPlatform,
+  type AppVersionCheckResult,
+} from '../src/features/app-version'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -44,49 +68,226 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 }
 
-// Keep the splash screen up until fonts AND auth hydration are both done.
-SplashScreen.preventAutoHideAsync()
+const STARTUP_HYDRATION_TIMEOUT_MS = 5000
+const MODAL_HANDOFF_DELAY_MS = 350
 
-export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
-  })
+// React StrictMode can mount the root layout twice in development. Share the
+// whole bootstrap promise so startup APIs run once per JS app session.
+let startupBootstrapPromise: Promise<{
+  appVersionResult: AppVersionCheckResult | null
+  canReconcilePushDevice: boolean
+}> | null = null
 
-  const [authReady, setAuthReady] = useState(false)
+// Keep the splash screen up until fonts and startup hydration have had a
+// chance to complete. Ignore duplicate/native timing failures so startup keeps
+// moving in release builds.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined)
 
-  // Surface font errors immediately so Expo Router's ErrorBoundary can catch them.
-  useEffect(() => {
-    if (fontError) throw fontError
-  }, [fontError])
+function waitForStartupHydration(): Promise<void> {
+  return new Promise((resolve) => {
+    let done = false
 
-  // Hydrate all local stores in parallel as early as possible.
-  // Promise.allSettled ensures a single failure never blocks app startup.
-  useEffect(() => {
+    const finish = () => {
+      if (done) return
+      done = true
+      clearTimeout(timeout)
+      resolve()
+    }
+
+    const timeout = setTimeout(() => {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn('[startup] hydration timed out; continuing app launch')
+      }
+      finish()
+    }, STARTUP_HYDRATION_TIMEOUT_MS)
+
     Promise.allSettled([
       useAuthStore.getState().hydrateAuth(),
       useLikesStore.getState().hydrateLikes(),
       useFavoritesStore.getState().hydrateFavorites(),
-    ]).then(() => setAuthReady(true))
+    ]).then(finish, finish)
+  })
+}
+
+async function checkStartupAppVersion(): Promise<AppVersionCheckResult | null> {
+  if (__DEV__) {
+    return null
+  }
+
+  const platform = getCurrentAppVersionPlatform()
+  const version = getCurrentAppVersion()
+
+  if (!platform) return null
+
+  try {
+    return await checkAppVersion({ platform, version })
+  } catch (error) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn('[startup] app version check failed; continuing launch', error)
+    }
+    return null
+  }
+}
+
+async function refreshStartupAuthTokens(): Promise<boolean> {
+  const refreshResult = await refreshAuthTokens()
+
+  if (refreshResult.ok || refreshResult.reason === 'no-refresh-token') {
+    return true
+  }
+
+  if (refreshResult.status === 401) {
+    // A stale refresh token must not erase a still-usable access token during
+    // launch. The normal API 401 flow will clear the full session if access
+    // token authentication is also no longer valid.
+    await removeRefreshToken()
+    return true
+  }
+
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.warn('[startup] token refresh failed; continuing launch', {
+      status: refreshResult.status,
+      errorName: refreshResult.errorName,
+    })
+  }
+  return false
+}
+
+function runStartupBootstrap() {
+  if (!startupBootstrapPromise) {
+    startupBootstrapPromise = (async () => {
+      await waitForStartupHydration()
+      const appVersionResult = await checkStartupAppVersion()
+      const canReconcilePushDevice = await refreshStartupAuthTokens()
+      if (canReconcilePushDevice) {
+        await reconcileStartupPushDevice()
+      }
+      return { appVersionResult, canReconcilePushDevice }
+    })()
+  }
+  return startupBootstrapPromise
+}
+
+async function reconcileStartupPushDevice(): Promise<void> {
+  if (!useAuthStore.getState().isAuthenticated) return
+
+  if (Constants.appOwnership === 'expo' || !isFirebaseNativeAvailable()) {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[startup] push-device sync skipped:',
+        Constants.appOwnership === 'expo'
+          ? 'Expo Go'
+          : getFirebaseNativeUnavailableReason() ?? 'unknown Firebase state',
+      )
+    }
+    return
+  }
+
+  await reconcilePushDevice()
+}
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme()
+  const [fontsLoaded, fontError] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SUIT: require('../assets/fonts/SUIT-Regular.ttf'),
+    SUITRegular:  require('../assets/fonts/SUIT-Regular.ttf'),
+    SUITMedium:   require('../assets/fonts/SUIT-Medium.ttf'),
+    SUITSemiBold: require('../assets/fonts/SUIT-SemiBold.ttf'),
+    SUITBold:     require('../assets/fonts/SUIT-Bold.ttf'),
+    SUITExtraBold:require('../assets/fonts/SUIT-ExtraBold.ttf'),
+    ...FontAwesome.font,
+  })
+
+  const [startupReady, setStartupReady] = useState(false)
+  const [nativeSplashHidden, setNativeSplashHidden] = useState(false)
+  const [appVersionResult, setAppVersionResult] =
+    useState<AppVersionCheckResult | null>(null)
+  const [appVersionDismissed, setAppVersionDismissed] = useState(false)
+  const fontsReady = fontsLoaded || Boolean(fontError)
+
+  // Font loading must not block app launch. Some Android release builds can
+  // reject a bundled font asset; fall back to system fonts so QA can continue.
+  useEffect(() => {
+    if (fontError) {
+      console.warn('[startup] font loading failed; continuing with system fonts', fontError)
+    }
+  }, [fontError])
+
+  // Keep the branded splash up while startup work runs in order:
+  // local hydration → app-version check → token refresh → push-device reconcile.
+  useEffect(() => {
+    let mounted = true
+
+    runStartupBootstrap()
+      .then(({ appVersionResult }) => {
+        if (appVersionResult && mounted) setAppVersionResult(appVersionResult)
+        if (mounted) setStartupReady(true)
+      })
+      .catch((error) => {
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn('[startup] bootstrap failed; continuing launch', error)
+        }
+        if (mounted) setStartupReady(true)
+      })
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  // Hide the splash screen only after both async gates pass.
+  // Hide the native splash once fonts are ready, with a short delay so
+  // BrandedSplash is already painted before the native splash disappears.
   useEffect(() => {
-    if (fontsLoaded && authReady) {
-      SplashScreen.hideAsync()
+    if (fontsReady) {
+      let mounted = true
+      const t = setTimeout(() => {
+        void SplashScreen.hideAsync()
+          .catch(() => undefined)
+          .finally(() => {
+            if (mounted) setNativeSplashHidden(true)
+          })
+      }, 1500)
+      return () => {
+        mounted = false
+        clearTimeout(t)
+      }
     }
-  }, [fontsLoaded, authReady])
+  }, [fontsReady])
 
-  // Show a branded screen while the native splash is visible (or as a JS-side
-  // fallback on Expo Go / warm starts where the native splash may not appear).
-  if (!fontsLoaded || !authReady) {
+  if (!fontsReady || !startupReady) {
     return <BrandedSplash />
   }
 
+  const appVersionStatus = appVersionResult?.status
+  const shouldGateForUpdate =
+    appVersionStatus === 'UPDATE_REQUIRED' ||
+    (appVersionStatus === 'UPDATE_AVAILABLE' && !appVersionDismissed)
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        {shouldGateForUpdate ? (
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
+            <BrandedSplash />
+            <AppVersionUpdateModal
+              visible
+              result={appVersionResult}
+              onClose={() => setAppVersionDismissed(true)}
+            />
+          </ThemeProvider>
+        ) : (
+          <RootLayoutNav appReady={nativeSplashHidden} />
+        )}
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   )
 }
 
@@ -116,14 +317,20 @@ function AuthGate() {
     const group = segmentList[0]
     const screen = segmentList[1]
     const inAuthGroup = group === '(auth)'
+    const inOAuthCallback = group === 'oauth'
     const hasOnboardingToken =
       typeof onboardingToken === 'string' && onboardingToken.trim().length > 0
     const isLoginRoute = inAuthGroup && screen === 'login'
     const isAgreementRoute = inAuthGroup && screen === 'agreement'
     const isOnboardingRoute = inAuthGroup && screen === 'onboarding'
-    const isMidSignupRoute = isAgreementRoute || isOnboardingRoute
+    const isManualRoute = inAuthGroup && screen === 'manual'
+    const isMidSignupRoute = isAgreementRoute || isOnboardingRoute || isManualRoute
 
-    if (isAuthenticated && inAuthGroup) {
+    if (inOAuthCallback) {
+      return
+    }
+
+    if (isAuthenticated && inAuthGroup && !isManualRoute) {
       router.replace('/(tabs)')
       return
     }
@@ -156,16 +363,12 @@ function AuthGate() {
 // pending. On a normal native launch the native splash covers this entirely;
 // it acts as a JS-side fallback for Expo Go, warm starts, or simulator runs.
 
+const logoWhite = require('../assets/logos/logo-white.png')
+
 function BrandedSplash() {
   return (
     <View style={splashStyles.container}>
-      <Text style={splashStyles.logo}>STORIX</Text>
-      <Text style={splashStyles.tagline}>웹툰과 웹소설의 이야기 공간</Text>
-      <ActivityIndicator
-        size="small"
-        color={C.primary}
-        style={splashStyles.spinner}
-      />
+      <Image source={logoWhite} style={splashStyles.logo} contentFit="contain" />
     </View>
   )
 }
@@ -173,51 +376,191 @@ function BrandedSplash() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.card,
+    backgroundColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
   },
   logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: C.primary,
-    letterSpacing: 4,
+    width: 120,
+    height: 120,
   },
-  tagline: {
-    fontSize: 14,
-    color: C.textMuted,
-    letterSpacing: 0.3,
-  },
-  spinner: { marginTop: 24 },
 })
 
 // ─── Root navigation ──────────────────────────────────────────────────────────
 
-function RootLayoutNav() {
+function RootLayoutNav({ appReady }: { appReady: boolean }) {
   const colorScheme = useColorScheme()
+  const [appEventModalBlocking, setAppEventModalBlocking] = useState(true)
+  const [titleModalVisible, setTitleModalVisible] = useState(false)
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ProfileBootstrap />
+      <PushNotificationBootstrap />
+      <AppEventPopupBootstrap
+        appReady={appReady}
+        blocked={titleModalVisible}
+        onBlockingChange={setAppEventModalBlocking}
+      />
+      <TitleAchievementDetector
+        blocked={appEventModalBlocking}
+        onVisibilityChange={setTitleModalVisible}
+      />
       <AuthGate />
+      <AdultVerificationRequiredModal />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="feed" options={{ headerShown: false }} />
-        <Stack.Screen name="library" options={{ headerShown: false }} />
-        <Stack.Screen name="review" options={{ headerShown: false }} />
-        <Stack.Screen name="search" options={{ headerShown: false }} />
-        <Stack.Screen name="topicroom" options={{ headerShown: false }} />
+        <Stack.Screen name="oauth/x" options={{ headerShown: false }} />
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
-        <Stack.Screen name="works" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
     </ThemeProvider>
   )
 }
 
+// Fetch the active app popup as soon as the authenticated app shell mounts.
+// The modal itself is gated to Home so auth and secondary screens are not
+// covered while the query is being resolved.
+type AppEventPopupBootstrapProps = {
+  appReady: boolean
+  blocked: boolean
+  onBlockingChange: (blocking: boolean) => void
+}
+
+function AppEventPopupBootstrap({
+  appReady,
+  blocked,
+  onBlockingChange,
+}: AppEventPopupBootstrapProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const segments = useSegments()
+  const router = useRouter()
+  const popupQuery = useAppEventPopup(isAuthenticated)
+  const popup = popupQuery.data
+  const [visible, setVisible] = useState(false)
+  const [isPopupDismissing, setIsPopupDismissing] = useState(false)
+  const [homeReady, setHomeReady] = useState(false)
+  const settledPopupIdRef = useRef<number | null>(null)
+  const modalHandoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const segmentList = segments as readonly string[]
+  const routeResolved = segmentList.length > 0
+  const isHomeRoute =
+    segmentList[0] === '(tabs)' &&
+    (segmentList.length === 1 || segmentList[1] === 'index')
+
+  useEffect(() => {
+    if (!appReady || !isHomeRoute) {
+      setHomeReady(false)
+      return
+    }
+
+    let cancelled = false
+    let frameId: number | null = null
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      frameId = requestAnimationFrame(() => {
+        if (!cancelled) setHomeReady(true)
+      })
+    })
+
+    return () => {
+      cancelled = true
+      interaction.cancel()
+      if (frameId != null) cancelAnimationFrame(frameId)
+    }
+  }, [appReady, isHomeRoute])
+
+  const hasPendingPopup =
+    popup != null && settledPopupIdRef.current !== popup.id
+  const shouldBlockTitle =
+    !routeResolved ||
+    (isAuthenticated &&
+      isHomeRoute &&
+      (!appReady ||
+        popupQuery.isFetching ||
+        hasPendingPopup ||
+        visible ||
+        isPopupDismissing))
+
+  useEffect(() => {
+    onBlockingChange(shouldBlockTitle)
+  }, [onBlockingChange, shouldBlockTitle])
+
+  useEffect(() => {
+    if (!isAuthenticated || !isHomeRoute || !homeReady || blocked || !popup) return
+    if (settledPopupIdRef.current === popup.id) return
+
+    setVisible(true)
+  }, [blocked, homeReady, isAuthenticated, isHomeRoute, popup])
+
+  useEffect(() => {
+    return () => {
+      if (modalHandoffTimerRef.current) {
+        clearTimeout(modalHandoffTimerRef.current)
+      }
+    }
+  }, [])
+
+  const settlePopup = () => {
+    if (popup) settledPopupIdRef.current = popup.id
+    setIsPopupDismissing(true)
+    setVisible(false)
+
+    if (modalHandoffTimerRef.current) {
+      clearTimeout(modalHandoffTimerRef.current)
+    }
+    modalHandoffTimerRef.current = setTimeout(() => {
+      modalHandoffTimerRef.current = null
+      setIsPopupDismissing(false)
+    }, MODAL_HANDOFF_DELAY_MS)
+  }
+
+  if (!popup) return null
+
+  return (
+    <AppEventPopupModal
+      visible={visible && appReady && isHomeRoute && !blocked}
+      popupId={popup.id}
+      title={popup.popupTitle}
+      imageUrl={popup.imageUrl}
+      content={popup.content}
+      ctaText={popup.ctaText}
+      exposurePolicy={popup.exposurePolicy}
+      onClose={settlePopup}
+      onAction={() => {
+        settlePopup()
+        const webViewRoute = getAppEventWebViewRoute(popup.targetId)
+        if (webViewRoute) {
+          router.push(webViewRoute as never)
+        }
+      }}
+    />
+  )
+}
+
 function ProfileBootstrap() {
   useMe()
+  useAdultVerificationBootstrap()
+  return null
+}
+
+// Mounted under the QueryClientProvider so the registration mutation has
+// access to React Query. The hook itself short-circuits until the auth
+// store reports an authenticated user, so this is safe to mount eagerly.
+let warnedExpoGoPushSkip = false
+
+function PushNotificationBootstrap() {
+  if (Constants.appOwnership === 'expo') {
+    if (__DEV__ && !warnedExpoGoPushSkip) {
+      warnedExpoGoPushSkip = true
+      // eslint-disable-next-line no-console
+      console.warn('[push] device sync skipped in Expo Go; use a dev/native build')
+    }
+    return null
+  }
+
+  const { usePushNotificationBootstrap } = require('../src/features/notification/hooks/usePushNotificationBootstrap') as typeof import('../src/features/notification/hooks/usePushNotificationBootstrap')
+  usePushNotificationBootstrap()
   return null
 }

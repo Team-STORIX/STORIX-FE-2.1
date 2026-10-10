@@ -1,14 +1,10 @@
-import { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useRouter } from 'expo-router'
-import { C, Gray, Magenta } from '../../../theme'
+﻿import { useMemo } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
-
-const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
+import { ProfileFindWorksEmptyState } from './ProfileFindWorksEmptyState'
 
 export function ProfileHashtagSection() {
-  const router = useRouter()
   const hashtagsQuery = usePreferredHashtags()
 
   const ranks = useMemo(() => {
@@ -30,30 +26,23 @@ export function ProfileHashtagSection() {
     <View style={styles.section}>
       <Text style={styles.title}>선호 해시태그</Text>
 
-      <View style={styles.canvas}>
-        {!hasAnyRank ? (
-          <View style={styles.emptyOverlay}>
-            <Text style={styles.emptyText}>아직 선호 해시태그가 없어요...</Text>
-
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="검색으로 이동"
-            >
-              <Image source={findBooksButton} style={styles.emptyButtonImage} contentFit="contain" />
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.rank4, styles.absolute]}>{ranks[4] || ''}</Text>
-            <Text style={[styles.rank3, styles.absolute]}>{ranks[3] || ''}</Text>
-            <Text style={[styles.rank1, styles.absolute]}>{ranks[1] || ''}</Text>
-            <Text style={[styles.rank2, styles.absolute]}>{ranks[2] || ''}</Text>
-            <Text style={[styles.rank5, styles.absolute]}>{ranks[5] || ''}</Text>
-          </>
-        )}
-      </View>
+      {!hasAnyRank ? (
+        <ProfileFindWorksEmptyState message="아직 선호 해시태그가 없어요" centerText />
+      ) : (
+        <View style={styles.canvas}>
+          <Text
+            style={[styles.rank4, styles.absolute]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {ranks[4] || ''}
+          </Text>
+          <Text style={[styles.rank3, styles.absolute]}>{ranks[3] || ''}</Text>
+          <Text style={[styles.rank1, styles.absolute]}>{ranks[1] || ''}</Text>
+          <Text style={[styles.rank2, styles.absolute]}>{ranks[2] || ''}</Text>
+          <Text style={[styles.rank5, styles.absolute]}>{ranks[5] || ''}</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -61,13 +50,14 @@ export function ProfileHashtagSection() {
 const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 16,
-    paddingVertical: 32,
+    paddingTop: 28,
+    paddingBottom: 100,
+    borderBottomWidth: 6,
+    borderBottomColor: C.bg,
     backgroundColor: C.card,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
     color: C.text,
   },
   canvas: {
@@ -76,70 +66,54 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 361,
     height: 178,
-    marginTop: 56,
-  },
-  emptyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    marginTop: 40,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
-    color: Gray[500],
-    textAlign: 'center',
-  },
-  emptyButtonImage: {
-    width: 131,
-    height: 36,
-    marginTop: 12,
+    marginTop: 24,
   },
   absolute: {
     position: 'absolute',
   },
   rank4: {
-    left: 205,
+    right: 104,
     top: 0,
+    maxWidth: 220,
+    overflow: 'hidden',
+    fontFamily: 'SUIT',
     fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    fontWeight: '700',
+    lineHeight: 22.4,
     color: Gray[500],
+    textAlign: 'right',
   },
   rank3: {
-    left: 90,
-    top: 22.4,
+    left: 52,
+    top: 25.4,
+    fontFamily: 'SUIT',
     fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 26,
+    fontWeight: '600',
+    lineHeight: 25.2,
     color: Magenta[200],
   },
   rank1: {
-    left: 138,
-    top: 47.6,
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: Magenta[300],
+    left: 0,
+    right: 0,
+    top: 53.6,
+    ...Typography.heading1,
+    lineHeight: 33.6,
+    color: Magenta[400],
+    textAlign: 'center',
   },
   rank2: {
-    left: 211,
-    top: 81.2,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 28,
+    right: 68,
+    top: 90.2,
+    ...Typography.heading2,
     color: Magenta[300],
+    textAlign: 'right',
   },
   rank5: {
-    left: 120,
-    top: 109.2,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    left: 114,
+    top: 121.2,
+    ...Typography.body2Medium,
+    lineHeight: 19.6,
     color: Gray[400],
-  },
-  pressed: {
-    opacity: 0.8,
+    opacity: 0.5,
   },
 })

@@ -33,8 +33,31 @@ export const TopicRoomItemSchema = z.object({
   worksName: z.string(),
   thumbnailUrl: z.string().nullish(),
   activeUserNumber: z.number().nullish(),
+  // Timestamp of the latest message in the room (last activity).
   lastChatTime: z.string().nullish(),
+  // Membership start date for the current user (GET /topic-rooms/me). Additive
+  // and forward-compatible: the backend does not expose this yet, so it is
+  // nullish and the joined list falls back to lastChatTime (labeled as recent
+  // activity). When BE starts returning it, the list will prefer it as the
+  // participation time with no further schema change. Do NOT conflate with
+  // lastChatTime (last activity, not join time).
+  joinedAt: z.string().nullish(),
   isJoined: z.boolean().nullish(),
+  // GET /topic-rooms/me only. Other topic-room list endpoints may omit them.
+  unreadCount: z.coerce.number().int().nonnegative().nullish(),
+  notificationEnabled: z.boolean().nullish(),
+  // Latest-message preview fields. GET /topic-rooms/popular populates these;
+  // today/me/search may omit them, so all are optional/nullish and the
+  // HotTopicRoomCard keeps an empty reserved preview line when absent (no fake
+  // text). Additive — does not change the request contract or break payloads
+  // that lack these fields.
+  lastMessage: z.string().nullish(),
+  lastMessageType: z.string().nullish(),
+  lastMessageSenderId: z.coerce.number().nullish(),
+  lastMessageSenderNickname: z.string().nullish(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export type TopicRoomItem = z.infer<typeof TopicRoomItemSchema>
@@ -45,16 +68,56 @@ export const TopicRoomIdSchema = z.preprocess((v) => {
   return Number.isFinite(n) ? n : v
 }, z.number())
 
-/** 토픽룸 검색: swagger가 result.result.content 로 내려오는 구조 */
-export const TopicRoomSearchWrappedSchema = z.object({
+/**
+ * 토픽룸 검색 응답: swagger 정의는 result.result.content 로 두 단계 래핑된 구조이지만,
+ * 백엔드 환경에 따라 result.content (단일 래핑) 로 내려오는 케이스가 있다.
+ * 두 형태 모두 받아 들여 { result: { content: [...] } } 로 정규화한다.
+ */
+export const TopicRoomSearchWrappedSchema = z.preprocess((input) => {
+  if (input && typeof input === 'object') {
+    const obj = input as Record<string, any>
+    if (obj.result && Array.isArray(obj.result.content)) {
+      // already shaped as { result: { content } }
+      return obj
+    }
+    if (Array.isArray(obj.content)) {
+      // single-wrap: outer envelope already unwrapped — promote to expected shape
+      return { result: { content: obj.content } }
+    }
+  }
+  return input
+}, z.object({
   result: z.object({
     content: z.array(TopicRoomItemSchema),
   }),
-})
+}))
 
 /** 참여 중인 토픽룸: result가 Page/Slice 형태 */
 export const MyTopicRoomSliceSchema = SliceSchema(TopicRoomItemSchema)
 export type MyTopicRoomSlice = z.infer<typeof MyTopicRoomSliceSchema>
+
+/** 참여 중인 토픽룸 전체의 미읽음 여부 */
+export const TopicRoomUnreadStatusSchema = z.object({
+  hasUnread: z.boolean(),
+})
+export type TopicRoomUnreadStatus = z.infer<
+  typeof TopicRoomUnreadStatusSchema
+>
+
+/** 토픽룸별 알림 설정 */
+export const TopicRoomNotificationSettingSchema = z.object({
+  enabled: z.boolean(),
+})
+export type TopicRoomNotificationSetting = z.infer<
+  typeof TopicRoomNotificationSettingSchema
+>
+
+export const UpdateTopicRoomNotificationRequestSchema = z.object({
+  enabled: z.boolean(),
+})
+export type UpdateTopicRoomNotificationRequest = z.infer<
+  typeof UpdateTopicRoomNotificationRequestSchema
+>
 
 /** 토픽룸 참여자 목록 */
 export const TopicRoomMemberSchema = z
@@ -62,20 +125,25 @@ export const TopicRoomMemberSchema = z
     userId: z.preprocess((v) => Number(v), z.number()),
     nickName: z.string().optional(),
     nickname: z.string().optional(),
+    role: z.string().nullable().optional(),
     profileImageUrl: z.string().nullable().optional(),
     profileImage: z.string().nullable().optional(),
   })
   .transform((m) => ({
     userId: m.userId,
     nickName: m.nickName ?? m.nickname ?? '',
+    role: m.role ?? null,
     profileImageUrl: m.profileImageUrl ?? m.profileImage ?? null,
   }))
 
-/** 토픽룸 사용자 신고 (POST /api/v1/topic-rooms/{roomId}/report) */
+/** 토픽룸 신고 (POST /api/v1/topic-rooms/{roomId}/report) */
 export const TopicRoomReportRequestSchema = z.object({
-  reportedUserId: z.number(),
-  reason: z.string(),
-  otherReason: z.string().nullish(),
+  reportedUserId: z.preprocess((v) => Number(v), z.number().int().positive()),
+  chatMessageId: z.union([
+    z.preprocess((v) => Number(v), z.number().int().positive()),
+    z.null().transform(() => undefined),
+  ]).optional(),
+  reason: z.literal('DEFAULT').optional(),
 })
 
 export type TopicRoomReportRequest = z.infer<
@@ -85,5 +153,11 @@ export type TopicRoomReportRequest = z.infer<
 export type TopicRoomMember = z.infer<typeof TopicRoomMemberSchema>
 export const TopicRoomSearchSliceSchema = SliceSchema(TopicRoomItemSchema)
 export type TopicRoomSearchSlice = z.infer<typeof TopicRoomSearchSliceSchema>
-export const TopicRoomReportResultSchema = z.string()
-export type TopicRoomReportResult = z.infer<typeof TopicRoomReportResultSchema>
+export const TopicRoomReportResponseSchema = z.object({
+  isSuccess: z.boolean(),
+  code: z.string().optional(),
+  message: z.string().optional(),
+  result: z.unknown().nullish(),
+  timestamp: z.string().optional(),
+})
+export type TopicRoomReportResponse = z.infer<typeof TopicRoomReportResponseSchema>

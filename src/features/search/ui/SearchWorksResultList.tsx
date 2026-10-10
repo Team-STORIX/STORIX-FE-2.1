@@ -1,35 +1,26 @@
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
+import { C, Gray } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 import type { WorksSearchItem } from '../api'
+import { SearchEmptyState } from './SearchEmptyState'
+import { AdultThumbnail } from '../../../components/adult'
 
 const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
 
 type Props = {
-  keyword: string
   data: WorksSearchItem[]
   isLoading: boolean
   isError: boolean
   isFetchingNextPage: boolean
   hasNextPage: boolean
   onEndReached: () => void
-  onPressItem: (item: WorksSearchItem) => void
-}
-
-function EmptyState({ keyword }: { keyword: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>검색 결과가 없어요.</Text>
-      <Text style={styles.emptyBody}>
-        "{keyword}"에 맞는 작품을 찾지 못했어요.
-      </Text>
-    </View>
-  )
+  onPressItem: (item: WorksSearchItem, index: number) => void
+  recommendationKeyword?: string | null
+  onPressRecommendation?: (keyword: string) => void
 }
 
 export function SearchWorksResultList({
-  keyword,
   data,
   isLoading,
   isError,
@@ -37,6 +28,8 @@ export function SearchWorksResultList({
   hasNextPage,
   onEndReached,
   onPressItem,
+  recommendationKeyword,
+  onPressRecommendation,
 }: Props) {
   if (isLoading) {
     return (
@@ -58,22 +51,28 @@ export function SearchWorksResultList({
     <FlatList
       data={data}
       keyExtractor={(item) => `works-search-${item.worksId}`}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <Pressable
           style={({ pressed }) => [styles.itemRow, pressed && styles.pressed]}
-          onPress={() => onPressItem(item)}
+          onPress={() => onPressItem(item, index)}
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>
-            {item.thumbnailUrl ? (
-              <Image
-                source={{ uri: item.thumbnailUrl }}
-                style={styles.thumbnail}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.thumbnail, styles.thumbnailFallback]} />
-            )}
+            <AdultThumbnail
+              isAdultOnly={item.isAdultOnly}
+              isBlinded={item.isBlinded}
+              style={styles.thumbnail}
+            >
+              {item.thumbnailUrl ? (
+                <Image
+                  source={{ uri: item.thumbnailUrl }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+              )}
+            </AdultThumbnail>
           </View>
 
           <View style={styles.body}>
@@ -103,7 +102,12 @@ export function SearchWorksResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={<EmptyState keyword={keyword} />}
+      ListEmptyComponent={
+        <SearchEmptyState
+          recommendationKeyword={recommendationKeyword}
+          onPressRecommendation={onPressRecommendation}
+        />
+      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -120,7 +124,7 @@ export function SearchWorksResultList({
 const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
     paddingHorizontal: 16,
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   title: {
     ...Typography.body2Medium,
@@ -151,13 +155,12 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
+    gap: 2,
   },
   star: {
     width: 9,
@@ -180,23 +183,6 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     flexGrow: 1,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 120,
-  },
-  emptyTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    marginBottom: 6,
-  },
-  emptyBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
   },
   footer: {
     paddingVertical: 20,

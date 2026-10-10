@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
@@ -19,6 +19,7 @@ export function ProfileEditTopBar({ canSubmit, isSaving, onBack, onSubmit }: Pro
         style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
         accessibilityRole="button"
         accessibilityLabel={'\ub4a4\ub85c\uac00\uae30'}
+        hitSlop={{ top: 12, bottom: 12, left: 16, right: 12 }}
       >
         <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
       </Pressable>
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   backButton: {
     width: 24,
@@ -69,8 +70,9 @@ const styles = StyleSheet.create({
   },
   title: {
     position: 'absolute',
-    left: '50%',
-    transform: [{ translateX: -44 }],
+    left: 0,
+    right: 0,
+    textAlign: 'center',
     ...Typography.body1Medium,
     color: Gray[900],
   },

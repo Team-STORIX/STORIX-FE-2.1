@@ -30,7 +30,9 @@ export const LibrarySearchWorkSchema = z.object({
   worksId: z.number(),
   worksName: z.string().optional(),
   artistName: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
+  // Null for a blinded adult work, same as the [+] tab search. See the note on
+  // PlusWorksSearchItemSchema: .optional() rejects null and takes the page with it.
+  thumbnailUrl: z.string().nullish(),
   worksType: z.string().optional(),
   genre: z.string().optional(),
   platform: z.string().optional(),
@@ -43,6 +45,10 @@ export const LibrarySearchWorkSchema = z.object({
     const n = Number(v)
     return Number.isFinite(n) ? n : undefined
   }, z.number().optional()),
+
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 /** 최근 검색어 */
@@ -63,6 +69,10 @@ export const LibraryReviewItemSchema = z.object({
   artistName: z.string().nullable().optional(),
   reviewId: z.number().optional(),
   rating: z.union([z.string(), z.number()]).nullable().optional(),
+  reviewCount: z.number().nullable().optional(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const LibraryReviewResultSchema = z.object({

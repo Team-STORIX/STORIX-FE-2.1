@@ -46,12 +46,15 @@ export const ReaderReviewCreateResponseSchema = createApiResponseSchema(
 )
 
 /**   게시글 등록 */
+export const BoardThemeSchema = z.enum(['BIRTHDAY'])
+
 export const ReaderBoardCreateRequestSchema = z.object({
   isWorksSelected: z.boolean(),
   worksId: z.number(),
   isSpoiler: z.boolean(),
   spoilerScript: z.string(),
   content: z.string(),
+  theme: BoardThemeSchema.optional(),
   files: z
     .array(
       z.object({
@@ -89,10 +92,18 @@ export const PlusWorksSearchItemSchema = z.object({
   worksId: z.number(),
   worksName: z.string().optional(),
   artistName: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
+  // A blinded adult work keeps its name and artist but comes back with a null
+  // thumbnail, and .optional() alone rejects null. One such row used to fail
+  // the whole page (content is a z.array), so an unverified user searching a
+  // keyword that matched any adult work got "검색에 실패했어요" and no results.
+  thumbnailUrl: z.string().nullish(),
   worksType: z.string().optional(),
   platform: z.string().optional(),
   genre: z.string().optional(),
+  hashtags: z.array(z.string()).optional(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const PlusWorksSearchResultSchema = SliceSchema(

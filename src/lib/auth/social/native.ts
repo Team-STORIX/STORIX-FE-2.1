@@ -5,10 +5,13 @@
 // Requires a Development Build (Expo Go will crash on import).
 // Run `npx expo run:ios` / `npx expo run:android` before testing.
 
+import { NativeModules, Platform } from 'react-native'
 import { login as kakaoLogin, logout as kakaoLogout } from '@react-native-seoul/kakao-login'
 import NaverLogin from '@react-native-seoul/naver-login'
+import { appleAuth } from '@invertase/react-native-apple-authentication'
 
 import type {
+  AppleNativeTokens,
   KakaoNativeTokens,
   NativeSocialAuthProvider,
   NaverNativeTokens,
@@ -20,12 +23,23 @@ import type {
 
 let naverInitialized = false
 
+const assertKakaoNativeModule = (): void => {
+  if (NativeModules.RNKakaoLogins) return
+
+  throw new Error(
+    '카카오 로그인을 사용할 수 없는 앱 빌드입니다. 앱을 다시 설치한 뒤 시도해 주세요.',
+  )
+}
+
 const ensureNaverInitialized = (): void => {
   if (naverInitialized) return
 
   const consumerKey = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID
   const consumerSecret = process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET
   const appName = process.env.EXPO_PUBLIC_NAVER_APP_NAME ?? 'STORIX'
+  // serviceUrlSchemeIOS MUST equal EXPO_PUBLIC_NAVER_URL_SCHEME, which is also
+  // passed to the @react-native-seoul/naver-login config plugin in app.config.ts.
+  // If they diverge, iOS callbacks will fail silently and login will hang.
   const serviceUrlSchemeIOS =
     process.env.EXPO_PUBLIC_NAVER_URL_SCHEME ?? 'storixfe21'
 
@@ -52,6 +66,8 @@ const ensureNaverInitialized = (): void => {
 export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
   // ── Kakao ──────────────────────────────────────────────────────────────────
   loginWithKakao: async (): Promise<KakaoNativeTokens> => {
+    assertKakaoNativeModule()
+
     if (!process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY) {
       throw new Error(
         '[KakaoLogin] Missing env var: EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY\n' +
@@ -66,21 +82,29 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
       throw new Error('[KakaoLogin] SDK returned an empty accessToken.')
     }
 
+    if (__DEV__) {
+      console.log('[KakaoLogin] SDK token received:', {
+        hasAccessToken: !!token.accessToken,
+        hasIdToken: !!token.idToken,
+      })
+    }
+
     return {
       accessToken: token.accessToken,
-      // idToken is typed as string by the SDK but will be '' when Kakao
-      // "OpenID Connect" is disabled. Normalise to undefined in that case so
-      // the backend endpoint (which accepts idToken as optional) stays clean.
-      idToken: token.idToken.length > 0 ? token.idToken : undefined,
+      idToken: token.idToken || undefined,
     }
   },
 
   logoutKakao: async (): Promise<void> => {
+    if (!NativeModules.RNKakaoLogins) return
+
     try {
       await kakaoLogout()
-    } catch {
-      // The SDK throws if no session exists — absorb silently.
-      // The local STORIX token is cleared by clearAuth() separately.
+    } catch (err) {
+      // Tolerated: the SDK throws if no session exists, and the local STORIX
+      // token is cleared by clearAuth() separately. Surface the failure as a
+      // warning rather than swallowing silently so it shows up in logs.
+      console.warn('[KakaoLogin] logout SDK error (non-fatal):', err)
     }
   },
 
@@ -102,13 +126,21 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
     }
 
     const accessToken = response.successResponse?.accessToken
+    const refreshToken = response.successResponse?.refreshToken
+
     if (!accessToken) {
       throw new Error(
         '[NaverLogin] isSuccess was true but successResponse.accessToken is missing.',
       )
     }
 
-    return { accessToken }
+    if (!refreshToken) {
+      throw new Error(
+        '[NaverLogin] isSuccess was true but successResponse.refreshToken is missing.',
+      )
+    }
+
+    return { accessToken, refreshToken }
   },
 
   logoutNaver: async (): Promise<void> => {
@@ -118,18 +150,36 @@ export const nativeSocialAuthProvider: NativeSocialAuthProvider = {
 
     try {
       await NaverLogin.logout()
-    } catch {
-      // Absorb SDK errors on logout — local tokens are cleared by clearAuth().
+    } catch (err) {
+      // Tolerated: local tokens are cleared by clearAuth() regardless. Surface
+      // the failure as a warning rather than swallowing silently.
+      console.warn('[NaverLogin] logout SDK error (non-fatal):', err)
+    }
+  },
+
+  // ── Apple ──────────────────────────────────────────────────────────────────
+  // Native Sign In with Apple via @invertase/react-native-apple-authentication.
+  // iOS-only: the SDK is not available on Android, so callers must gate the
+  // entry point on Platform.OS === 'ios'. The backend exchange endpoint is the
+  // same one 2.0 used (GET /api/v1/auth/oauth/apple/login?code=…) and accepts
+  // either authorizationCode (preferred) or identityToken as the `code` value.
+  loginWithApple: async (): Promise<AppleNativeTokens> => {
+    if (Platform.OS !== 'ios') {
+      throw new Error('[AppleLogin] Apple Sign In is only available on iOS.')
+    }
+
+    const response = await appleAuth.performRequest({
+      requestedOperation: appleAuth.Operation.LOGIN,
+      requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+    })
+
+    if (!response.identityToken) {
+      throw new Error('[AppleLogin] SDK returned no identityToken.')
+    }
+
+    return {
+      authorizationCode: response.authorizationCode,
+      identityToken: response.identityToken,
     }
   },
 }
-
-// ─── Apple Sign In ────────────────────────────────────────────────────────────
-// Apple login is NOT part of NativeSocialAuthProvider because:
-//   1. The interface currently only declares Kakao and Naver.
-//   2. Apple Sign In on Android uses a web flow, not a native SDK.
-//   3. The backend endpoint for Apple may differ from Kakao/Naver native.
-//
-// Implement Apple Sign In as a dedicated hook (e.g. useAppleLogin) that calls
-// @invertase/react-native-apple-authentication directly and posts the
-// identityToken to the backend, analogous to useKakaoLogin.

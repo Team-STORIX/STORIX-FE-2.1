@@ -1,0 +1,584 @@
+import { Image } from "expo-image";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, {
+  Defs,
+  Rect,
+  Stop,
+  LinearGradient as SvgLinearGradient,
+} from "react-native-svg";
+import {
+  isTopicRoomForbiddenWordError,
+  isTopicRoomParticipationLimitError,
+  TopicRoomLimitModal,
+  TopicRoomWorksPickerBottomSheet,
+  useCreateTopicRoom,
+  type PickedWorks,
+} from "../../src/features/topicroom";
+import { C, Gray, Magenta, Typography } from "../../src/theme";
+
+const backIcon = require("../../assets/icons/common/back.svg");
+const warningIcon = require("../../assets/icons/search/warning.png");
+const topicRoomGraphic = require("../../assets/topicroom/topicroom-graphic.png");
+
+const TOPIC_NAME_PATTERN = /^[0-9A-Za-z가-힣 ]{2,10}$/;
+const MAX_NAME_LENGTH = 10;
+const COUNTER_MAX = 10;
+
+type Params = {
+  worksId?: string;
+  worksName?: string;
+  thumbnailUrl?: string;
+  artistName?: string;
+  worksType?: string;
+};
+
+function pickParam(v: string | string[] | undefined): string | undefined {
+  if (Array.isArray(v)) return v[0];
+  return v;
+}
+
+export default function TopicRoomCreateScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<Params>();
+
+  const worksIdRaw = pickParam(params.worksId);
+  const paramWorksId = worksIdRaw ? Number(worksIdRaw) : NaN;
+  const paramWorksName = pickParam(params.worksName) ?? "";
+  const paramThumbnailUrl = pickParam(params.thumbnailUrl) ?? "";
+  const paramWorks = useMemo<PickedWorks | null>(() => {
+    if (
+      !Number.isFinite(paramWorksId) ||
+      paramWorksId <= 0 ||
+      !paramWorksName
+    ) {
+      return null;
+    }
+    return {
+      worksId: paramWorksId,
+      worksName: paramWorksName,
+      thumbnailUrl: paramThumbnailUrl,
+      artistName: pickParam(params.artistName) ?? "",
+      worksType: pickParam(params.worksType) ?? "",
+    };
+  }, [
+    paramThumbnailUrl,
+    paramWorksId,
+    paramWorksName,
+    params.artistName,
+    params.worksType,
+  ]);
+
+  const [name, setName] = useState("");
+  const [createdId, setCreatedId] = useState<number | null>(null);
+  const [limitModalVisible, setLimitModalVisible] = useState(false);
+  const [hasForbiddenWordError, setHasForbiddenWordError] = useState(false);
+  const [pickedWorks, setPickedWorks] = useState<PickedWorks | null>(
+    paramWorks,
+  );
+
+  const createMutation = useCreateTopicRoom();
+
+  useEffect(() => {
+    if (paramWorks) setPickedWorks(paramWorks);
+  }, [paramWorks]);
+
+  const trimmed = name.trim();
+  const helperOk = TOPIC_NAME_PATTERN.test(trimmed);
+  const canCreate = !!pickedWorks && helperOk && !createMutation.isPending;
+
+  const showHelperWarning = !helperOk || hasForbiddenWordError;
+  const helperMessage = hasForbiddenWordError
+    ? "토픽룸에 금칙어가 포함되어 있습니다."
+    : "한글,영문,숫자 2~10자까지 입력 가능해요";
+
+  const goToFeedTopicRoom = () =>
+    router.replace("/(tabs)/feed?section=topicroom" as never);
+
+  const handleBack = () => {
+    if (!paramWorks && pickedWorks) {
+      setPickedWorks(null);
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else goToFeedTopicRoom();
+  };
+
+  // Closing the works-picker sheet (X / backdrop) leaves the creation flow.
+  const handleSelectionClose = () => {
+    if (router.canGoBack()) router.back();
+    else goToFeedTopicRoom();
+  };
+
+  // On the completion step the room is already created, so going "back"
+  // must never return to the name-setting screen (which would invite a
+  // duplicate creation). Always route to the Feed TopicRoom tab instead.
+  const handleCompleteBack = () => {
+    goToFeedTopicRoom();
+  };
+
+  const handleCreate = () => {
+    if (!canCreate) return;
+    setHasForbiddenWordError(false);
+    createMutation.mutate(
+      { worksId: pickedWorks.worksId, topicRoomName: trimmed },
+      {
+        onSuccess: (topicRoomId) => {
+          setCreatedId(topicRoomId);
+        },
+        onError: (err) => {
+          if (isTopicRoomParticipationLimitError(err)) {
+            setLimitModalVisible(true);
+            return;
+          }
+          if (isTopicRoomForbiddenWordError(err)) {
+            setHasForbiddenWordError(true);
+          }
+        },
+      },
+    );
+  };
+
+  const handleEnterRoom = () => {
+    if (createdId == null) {
+      goToFeedTopicRoom();
+      return;
+    }
+    router.replace(`/topicroom/${createdId}` as const);
+  };
+
+  const initial = useMemo(
+    () => (pickedWorks?.worksName || "?").slice(0, 1).toUpperCase(),
+    [pickedWorks?.worksName],
+  );
+
+  if (createdId != null) {
+    return (
+      <View style={styles.screen}>
+        <Stack.Screen options={{ headerShown: false }} />
+
+        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            onPress={handleCompleteBack}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로가기"
+            hitSlop={8}
+          >
+            <Image
+              source={backIcon}
+              style={styles.icon24}
+              contentFit="contain"
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.completeIntro}>
+          <Text style={styles.completeTitle}>첫 토픽룸이 만들어졌어요!</Text>
+          <Text style={styles.completeSubtitle}>
+            이제 토픽룸에서 자유롭게 이야기해 보아요!
+          </Text>
+        </View>
+
+        <View style={styles.graphicWrap}>
+          <Image
+            source={topicRoomGraphic}
+            style={styles.graphic}
+            contentFit="contain"
+          />
+          <Svg
+            style={styles.graphicFade}
+            pointerEvents="none"
+            preserveAspectRatio="none"
+          >
+            <Defs>
+              <SvgLinearGradient id="graphicFade" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={C.card} stopOpacity={0} />
+                <Stop offset="1" stopColor={C.card} stopOpacity={1} />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              fill="url(#graphicFade)"
+            />
+          </Svg>
+        </View>
+
+        <Svg
+          style={styles.completeBottomFade}
+          pointerEvents="none"
+          preserveAspectRatio="none"
+        >
+          <Defs>
+            <SvgLinearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+              <Stop offset="1" stopColor="#FFFFFF" stopOpacity={1} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="url(#bottomFade)"
+          />
+        </Svg>
+
+        <View
+          style={[
+            styles.bottomBar,
+            styles.completeBottomBar,
+            { paddingBottom: insets.bottom + 12 },
+          ]}
+        >
+          <Pressable
+            onPress={handleEnterRoom}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              styles.primaryBtnActiveMagenta,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.primaryBtnText}>토픽룸으로 이동하기</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  if (!pickedWorks) {
+    return (
+      <View style={styles.screen}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <TopicRoomWorksPickerBottomSheet
+          visible
+          onClose={handleSelectionClose}
+          onPickWork={setPickedWorks}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={handleBack}
+          style={styles.iconBtn}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로가기"
+          hitSlop={8}
+        >
+          <Image source={backIcon} style={styles.icon24} contentFit="contain" />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.intro}>
+          <Text style={styles.introTitle}>토픽룸의 이름을 설정해주세요</Text>
+          <Text style={styles.introSubtitle}>아래 주의사항을 참고해주세요</Text>
+        </View>
+
+        <View style={styles.thumbWrap}>
+          {pickedWorks.thumbnailUrl ? (
+            <Image
+              source={{ uri: pickedWorks.thumbnailUrl }}
+              style={styles.thumb}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.thumb, styles.thumbFallback]}>
+              <Text style={styles.thumbFallbackText}>{initial}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.inputBlock}>
+          <TextInput
+            value={name}
+            onChangeText={(v) => {
+              setName(v.slice(0, MAX_NAME_LENGTH));
+              setHasForbiddenWordError(false);
+            }}
+            placeholder="토픽룸 제목을 입력하세요"
+            placeholderTextColor={Gray[300]}
+            style={[styles.input, !name.trim() && styles.inputEmpty]}
+            maxLength={MAX_NAME_LENGTH}
+          />
+          <View style={styles.inputMetaRow}>
+            {showHelperWarning && (
+              <Text style={styles.helperText}>{helperMessage}</Text>
+            )}
+            <Text style={styles.counterText}>
+              {trimmed.length}/{COUNTER_MAX}자
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.warningBlock}>
+          <View style={styles.warningHeaderRow}>
+            <Image
+              source={warningIcon}
+              style={styles.warningIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.warningTitle}>토픽룸 생성 주의 사항</Text>
+          </View>
+          <Text style={styles.warningBody}>
+            모두가 함께 사용하는 커뮤니티로, 아래와 같은 제목은 삼가해주세요.
+          </Text>
+          <View style={styles.warningBullets}>
+            <Text style={styles.warningBullet}>
+              {"•"} 특정 인물이나 집단을 비방하는 내용
+            </Text>
+            <Text style={styles.warningBullet}>
+              {"•"} 비속어, 혐오 표현이 포함된 내용
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <Pressable
+          onPress={handleCreate}
+          disabled={!canCreate}
+          style={({ pressed }) => [
+            styles.primaryBtn,
+            canCreate ? styles.primaryBtnActive : styles.primaryBtnDisabled,
+            pressed && canCreate && styles.pressed,
+          ]}
+          accessibilityRole="button"
+        >
+          {createMutation.isPending ? (
+            <ActivityIndicator size="small" color={C.card} />
+          ) : (
+            <Text
+              style={[
+                styles.primaryBtnText,
+                !canCreate && styles.primaryBtnTextDisabled,
+              ]}
+            >
+              토픽룸 생성하기
+            </Text>
+          )}
+        </Pressable>
+      </View>
+      <TopicRoomLimitModal
+        visible={limitModalVisible}
+        onClose={() => setLimitModalVisible(false)}
+      />
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: C.card },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    height: undefined,
+    backgroundColor: C.card,
+  },
+  iconBtn: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  icon24: { width: 24, height: 24 },
+
+  scrollContent: {
+    paddingBottom: 24,
+  },
+
+  completeIntro: {
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    gap: 5,
+  },
+  completeTitle: {
+    ...Typography.heading1,
+    color: Gray[900],
+  },
+  completeSubtitle: {
+    ...Typography.body1Medium,
+    color: Gray[500],
+  },
+  graphicWrap: {
+    flex: 1,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    transform: [{ translateY: 92 }],
+  },
+  graphic: {
+    width: 280,
+    height: "100%",
+  },
+  graphicFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 96,
+  },
+
+  intro: {
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    gap: 5,
+  },
+  introTitle: {
+    ...Typography.heading1,
+    color: Gray[900],
+  },
+  introSubtitle: {
+    ...Typography.body1Medium,
+    color: Gray[500],
+  },
+  thumbWrap: {
+    alignSelf: "center",
+    marginTop: 48,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: "hidden",
+    backgroundColor: Gray[100],
+  },
+  thumb: { width: 120, height: 120, borderRadius: 60 },
+  thumbFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.primaryLight,
+  },
+  thumbFallbackText: {
+    ...Typography.heading1,
+    color: C.primary,
+  },
+
+  inputBlock: {
+    marginTop: 36,
+    marginHorizontal: 16,
+  },
+  input: {
+    paddingLeft: 8,
+    paddingRight: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: Gray[900],
+    color: Gray[900],
+    ...Typography.body1Medium,
+  },
+  inputEmpty: {
+    borderBottomColor: Gray[300],
+  },
+  inputMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingLeft: 8,
+    paddingRight: 10,
+    marginTop: 8,
+  },
+  helperText: {
+    ...Typography.caption1Medium,
+    color: C.error,
+  },
+  counterText: {
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+    color: Magenta[300],
+    marginLeft: "auto",
+  },
+
+  warningBlock: {
+    marginTop: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: Gray[50],
+    gap: 8,
+  },
+  warningHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  warningIcon: {
+    width: 28,
+    height: 28,
+    flexShrink: 0,
+  },
+  warningTitle: {
+    ...Typography.body1Bold,
+    color: Gray[900],
+  },
+  warningBody: {
+    ...Typography.caption1Medium,
+    color: Gray[500],
+  },
+  warningBullets: {
+    marginTop: 4,
+    gap: 2,
+  },
+  warningBullet: {
+    ...Typography.caption1Medium,
+    color: Magenta[300],
+  },
+
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: C.card,
+  },
+  completeBottomBar: {
+    backgroundColor: "transparent",
+  },
+  completeBottomFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 165,
+  },
+  primaryBtn: {
+    height: 50,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryBtnActive: { backgroundColor: Gray[900] },
+  primaryBtnActiveMagenta: { backgroundColor: C.primary },
+  primaryBtnDisabled: { backgroundColor: Gray[200] },
+  primaryBtnText: { ...Typography.body1Medium, color: C.card },
+  primaryBtnTextDisabled: { color: Gray[500] },
+  pressed: { opacity: 0.85 },
+});

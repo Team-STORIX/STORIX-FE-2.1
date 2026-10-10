@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Gray, Magenta, Typography } from '../../../theme'
+import { C, Gray, Magenta, Typography } from '../../../theme'
 import { useMe } from '../hooks'
 import { ProfileActivityContent } from './ProfileActivityContent'
 import { ProfilePreferenceTabs } from './ProfilePreferenceTabs'
@@ -38,8 +38,8 @@ export function ProfileActivityScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.errorText}>?꾨줈?꾩쓣 遺덈윭?ㅼ? 紐삵뻽?댁슂.</Text>
-        <Text style={styles.errorHint}>?좎떆 ???ㅼ떆 ?쒕룄??二쇱꽭??</Text>
+        <Text style={styles.errorText}>프로필을 불러오지 못했습니다.</Text>
+        <Text style={styles.errorHint}>다시 한번 시도해주세요.</Text>
       </View>
     )
   }
@@ -49,6 +49,8 @@ export function ProfileActivityScreen() {
       activeTab={activeTab}
       onChangeTab={setActiveTab}
       currentUserId={me.userId}
+      currentUserProfileImageUrl={me.profileImageUrl}
+      currentUserNickName={me.nickName}
       bottomInset={insets.bottom}
       header={
         <>
@@ -70,7 +72,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   errorText: {
     ...Typography.body1Medium,

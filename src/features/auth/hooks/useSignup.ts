@@ -11,9 +11,13 @@ import { isAxiosError } from 'axios'
 import { signup } from '../api/signup.api'
 import { type SignupRequest } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
+import { setItem, getItem, removeItem } from '../../../lib/storage/async'
+import { trackSignupCompleted } from '../../../lib/analytics/events'
+import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useSignup = () => {
   const setLoginTokens = useAuthStore((s) => s.setLoginTokens)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
 
   return useMutation({
     mutationFn: async (data: SignupRequest) => {
@@ -24,23 +28,45 @@ export const useSignup = () => {
 
     onSuccess: async (response) => {
       const { accessToken, refreshToken } = response.result
-      // refreshToken may be absent if the signup endpoint has not yet been
-      // updated server-side. setLoginTokens handles the optional case.
+
+      // Retrieve the temporary provider from storage (stored during social login)
+      const tempProvider = await getItem<string>('tempSocialProvider').catch(() => null)
+
       await setLoginTokens({ accessToken, refreshToken })
+
+      await Promise.allSettled([
+        // Provider metadata must not turn a successful signup into an error.
+        tempProvider ? setItem(SOCIAL_PROVIDER_KEY, tempProvider) : Promise.resolve(),
+        removeItem('tempSocialProvider'),
+      ])
+      await trackSignupCompleted(tempProvider)
       // Navigation is left to the caller.
     },
 
     onError: (error) => {
       if (isAxiosError(error)) {
-        console.error('[useSignup] failed:', {
+        const code =
+          typeof error.response?.data === 'object' && error.response?.data
+            ? (error.response.data as { code?: unknown }).code
+            : undefined
+
+        console.log('[useSignup] failed:', {
           message: error.message,
           status: error.response?.status,
           data: error.response?.data,
         })
+        console.log(
+          '[useSignup] failed detail:',
+          JSON.stringify(error.response?.data, null, 2),
+        )
+
+        if (code === 'TOKEN_ERROR_001' || code === 'TOKEN_ERROR_002') {
+          void clearAuth()
+        }
         return
       }
 
-      console.error('[useSignup] failed:', error)
+      console.log('[useSignup] failed:', error)
     },
   })
 }

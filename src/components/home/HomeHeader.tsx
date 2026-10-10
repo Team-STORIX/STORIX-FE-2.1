@@ -1,19 +1,25 @@
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Image } from 'expo-image'
+import { C } from '../../theme'
 
 const logoBlack = require('../../../assets/icons/common/logo-black.svg')
 const searchIcon = require('../../../assets/icons/common/search.svg')
 const notificationIcon = require('../../../assets/icons/common/notification.svg')
+const notificationActiveIcon = require('../../../assets/notification/icon-notification-active.svg')
 
 type HomeHeaderProps = {
   onSearchPress?: () => void
   onNotificationPress?: () => void
+  /** Unread notification count — swaps to the active notification icon when > 0. */
+  unreadCount?: number
 }
 
 export function HomeHeader({
   onSearchPress,
   onNotificationPress,
+  unreadCount = 0,
 }: HomeHeaderProps) {
+  const hasUnread = unreadCount > 0
   return (
     <View style={styles.header}>
       <View style={styles.logoBox}>
@@ -39,7 +45,7 @@ export function HomeHeader({
           style={styles.iconBox}
         >
           <Image
-            source={notificationIcon}
+            source={hasUnread ? notificationActiveIcon : notificationIcon}
             style={styles.icon}
             contentFit="contain"
           />

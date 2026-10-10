@@ -1,16 +1,9 @@
 import { apiClient } from '../../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../../lib/api/types'
 import type { FeedBoardItem, FeedSort, PageResult } from './readerBoard.api'
 
-type ApiResponse<T> = {
-  isSuccess: boolean
-  code: string
-  message: string
-  result: T
-  timestamp: string
-}
-
 export type ReplyItem = {
-  profile: { userId: number; profileImageUrl: string | null; nickName: string }
+  profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
   reply: {
     replyId: number
     userId: number
@@ -18,7 +11,12 @@ export type ReplyItem = {
     lastCreatedTime: string
     likeCount: number
     isLiked: boolean
+    depth?: number
+    childReplyCount?: number
+    parentReplyId?: number
+    deleted?: boolean
   }
+  childReplies?: ReplyItem[]
 }
 
 export type BoardDetailResult = {
@@ -59,14 +57,14 @@ export const createReply = async (params: { boardId: number; comment: string }) 
   return data.result
 }
 
-// POST /api/v1/feed/reader/board/{boardId}/reply/{replyId}/sub-reply
+// POST /api/v1/feed/reader/board/{boardId}/reply/{replyId}/reply
 export const createSubReply = async (params: {
   boardId: number
   replyId: number
   comment: string
 }) => {
   const { data } = await apiClient.post(
-    `/api/v1/feed/reader/board/${params.boardId}/reply/${params.replyId}/sub-reply`,
+    `/api/v1/feed/reader/board/${params.boardId}/reply/${params.replyId}/reply`,
     { comment: params.comment },
   )
   return data.result

@@ -1,44 +1,61 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import type { WorksDetail } from '../../features/works/api/works.api'
-import { C } from '../../theme/colors'
-import { Radius } from '../../theme/radius'
-import { S } from '../../theme/spacing'
-import { Typography } from '../../theme/typography'
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet, Text, View } from "react-native";
+import type { WorksDetail } from "../../features/works/api/works.api";
+import { C } from "../../theme/colors";
+import { Radius } from "../../theme/radius";
+import { Typography } from "../../theme/typography";
 
-const authorMark = require('../../../assets/icons/common/author-mark.svg')
-const littleStar = require('../../../assets/icons/common/littleStar.svg')
+const littleStar = require("../../../assets/icons/common/littleStar.svg");
+
+const HERO_HEIGHT = 364;
 
 function worksTypeLabel(type?: string | null) {
-  if (type === 'WEBTOON') return '웹툰'
-  if (type === 'WEBNOVEL') return '웹소설'
-  return type ?? ''
+  if (type === "WEBTOON") return "웹툰";
+  if (type === "WEBNOVEL") return "웹소설";
+  return type ?? "";
 }
 
 function buildAuthorLine(works: WorksDetail) {
-  const items: string[] = []
-  if (works.author) items.push(`P. ${works.author}`)
-  if (works.illustrator) items.push(`I. ${works.illustrator}`)
-  if (!items.length && works.originalAuthor) items.push(`O. ${works.originalAuthor}`)
-  return items.join(' , ')
+  const items: string[] = [];
+  if (works.author) items.push(works.author);
+  if (works.illustrator) items.push(works.illustrator);
+  if (!items.length && works.originalAuthor) items.push(works.originalAuthor);
+  return items.join(" , ");
 }
 
 export function WorksCoverHeader({ works }: { works: WorksDetail }) {
-  const type = worksTypeLabel(works.worksType)
-  const authorLine = buildAuthorLine(works)
-  const metaLine = [type, works.genre].filter(Boolean).join(' · ')
-  const initial = (works.worksName ?? '?').slice(0, 1)
+  const type = worksTypeLabel(works.worksType);
+  const authorLine = buildAuthorLine(works);
+  const metaLine = [type, works.genre].filter(Boolean).join(" · ");
+  const initial = (works.worksName ?? "?").slice(0, 1);
 
   return (
     <View style={styles.wrapper}>
+      {/* Soft full-bleed background image spread across the entire hero. */}
       {works.thumbnailUrl ? (
         <Image
           source={{ uri: works.thumbnailUrl }}
-          style={StyleSheet.absoluteFillObject}
+          style={styles.heroBgImage}
           contentFit="cover"
         />
       ) : null}
-      <View style={styles.overlay} />
+      {/* Figma: white fade at the bottom. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(255,255,255,0)", "#FFFFFF"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      {/* Figma: gray-50 fade over the cover image. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#F9F6F7", "rgba(255,255,255,0)"]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       <View style={styles.content}>
         <View style={styles.coverCard}>
@@ -59,11 +76,6 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
 
         {authorLine ? (
           <View style={styles.authorRow}>
-            <Image
-              source={authorMark}
-              style={styles.authorMark}
-              contentFit="contain"
-            />
             <Text style={styles.authorLine}>{authorLine}</Text>
           </View>
         ) : null}
@@ -77,51 +89,56 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
                 style={styles.littleStar}
                 contentFit="contain"
               />
-              <Text style={styles.ratingValue}>{works.avgRating.toFixed(1)}</Text>
+              <Text style={styles.ratingValue}>
+                {works.avgRating.toFixed(1)}
+              </Text>
             </View>
           ) : null}
         </View>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    height: 460,
-    position: 'relative',
-    overflow: 'hidden',
+    height: HERO_HEIGHT,
+    position: "relative",
+    overflow: "hidden",
+    backgroundColor: "#F9F6F7",
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.84)',
+  heroBgImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0.3,
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: S.screenH,
+    zIndex: 2,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 20,
   },
   coverCard: {
     marginTop: 8,
     borderRadius: Radius.sm,
-    overflow: 'hidden',
-    shadowColor: '#131112',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    overflow: "hidden",
   },
   cover: {
-    width: 210,
-    height: 280,
+    width: 184,
+    height: 245,
     backgroundColor: C.divider,
   },
   coverFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: C.primaryLight,
   },
   coverFallbackText: {
@@ -132,12 +149,12 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.heading3,
     color: C.text,
-    textAlign: 'center',
-    marginTop: 16,
+    textAlign: "center",
+    marginTop: 12,
   },
   authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
     gap: 6,
   },
@@ -148,13 +165,13 @@ const styles = StyleSheet.create({
   authorLine: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 8,
   },
@@ -163,8 +180,8 @@ const styles = StyleSheet.create({
     color: C.primary,
   },
   ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   littleStar: {
     width: 9,
@@ -175,4 +192,4 @@ const styles = StyleSheet.create({
     ...Typography.caption1Medium,
     color: C.primary,
   },
-})
+});

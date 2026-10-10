@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createTopicRoom } from '../api/topicroom.api'
+import { assertCanCreateTopicRoom } from '../services/topicRoomLimit'
 
 type Vars = { worksId: number; topicRoomName: string }
 
@@ -9,7 +10,10 @@ export function useCreateTopicRoom() {
   const didInvalidateRef = useRef(false)
 
   const mutation = useMutation({
-    mutationFn: (vars: Vars) => createTopicRoom(vars),
+    mutationFn: async (vars: Vars) => {
+      await assertCanCreateTopicRoom()
+      return createTopicRoom(vars)
+    },
   })
 
   useEffect(() => {

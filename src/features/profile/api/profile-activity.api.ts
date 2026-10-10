@@ -24,6 +24,7 @@ export type ProfileActivityProfile = {
   userId: number
   profileImageUrl: string | null
   nickName: string
+  role?: string | null
 }
 
 export type ProfileActivityImage = {
@@ -40,6 +41,7 @@ export type ProfileActivityWorks = {
   worksType: string
   genre: string
   hashtags: string[]
+  isAdultOnly?: boolean
 }
 
 export type ProfileActivityBoard = {
@@ -51,8 +53,12 @@ export type ProfileActivityBoard = {
   content: string
   likeCount: number
   isSpoiler?: boolean
+  spoilerScript?: string
+  theme?: 'BIRTHDAY'
   replyCount: number
   isLiked: boolean
+  isAdultOnly?: boolean
+  isBlinded?: boolean
 }
 
 export type ProfileActivityBoardItem = {

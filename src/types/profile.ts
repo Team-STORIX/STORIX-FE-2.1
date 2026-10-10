@@ -1,11 +1,21 @@
-// Full profile shape returned by GET /api/v1/profile/me
-// Sourced from storix-fe/src/lib/api/profile/profile.api.ts in STORIX-FE-2.0.
+// Full profile shape returned by GET /api/v2/profile/me
+// V2 includes title system and genre progress
 export type MeProfileResult = {
   userId: number
   role: string
   profileImageUrl: string | null
   nickName: string
-  level: number
   point: number
-  profileDescription: string
+  profileDescription: string | null
+  oauthProvider: string
+  // V2 fields: title system
+  topGenre: string
+  title: string | null
+  stage: string
+  nextStage: string
+  topGenreScore: number
+  remainingScore: number
+  progressPercentage: number
+  // Legacy compatibility
+  level?: number
 }

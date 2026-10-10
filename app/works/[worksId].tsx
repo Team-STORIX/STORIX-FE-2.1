@@ -1,21 +1,25 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
-import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useFavoriteWork } from '../../src/features/favorite'
+import { useMe } from '../../src/features/profile'
 import {
-  PostCard,
+  MyReviewSection,
+  OtherReviewsSection,
   TopicRoomEntryButton,
   useLikeWorksReview,
   useWorksDetail,
+  useWorksMyReview,
   useWorksReviewsInfinite,
   WorksCoverHeader,
   WorksInfoSection,
@@ -24,66 +28,158 @@ import {
 } from '../../src/features/works'
 import {
   findTopicRoomIdByWorksName,
-  useJoinTopicRoom,
+  getTopicRoomDiscoveryRoute,
 } from '../../src/features/topicroom'
+import { Toast } from '../../src/components/common/Toast'
 import { C } from '../../src/theme/colors'
-import { Radius } from '../../src/theme/radius'
-import { S } from '../../src/theme/spacing'
 import { Typography } from '../../src/theme/typography'
+import { useLeaveOnAdultVerificationRequired } from '../../src/lib/navigation/useLeaveOnAdultVerificationRequired'
 
-type EntryPhase = 'idle' | 'searching' | 'joining' | 'error'
+type EntryPhase = 'idle' | 'searching'
 type TabKey = 'info' | 'review'
+type ActionToast = 'report' | 'block'
 
-const arrowForward = require('../../assets/icons/common/icon-arrow-forward.svg')
+function firstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function actionToastMessage(action?: string | null) {
+  if (action === 'report') return '신고가 정상적으로 완료됐어요'
+  if (action === 'block') return '차단이 정상적으로 완료됐어요'
+  return null
+}
 
 export default function WorksDetailScreen() {
-  const { worksId: worksIdParam } = useLocalSearchParams<{ worksId: string }>()
+  const {
+    worksId: worksIdParam,
+    tab: tabParam,
+    actionToast: actionToastParam,
+  } = useLocalSearchParams<{
+    worksId: string
+    tab?: string
+    actionToast?: ActionToast
+  }>()
   const worksId = typeof worksIdParam === 'string' ? Number(worksIdParam) : 0
+  const initialTab = firstParam(tabParam) === 'review' ? 'review' : 'info'
+  const actionToast = firstParam(actionToastParam)
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const [tab, setTab] = useState<TabKey>('info')
+  const [tab, setTab] = useState<TabKey>(initialTab)
 
   const worksQuery = useWorksDetail(worksId)
   const works = worksQuery.data
+  const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(
+    worksQuery.error,
+  )
+
+  const { data: meData } = useMe()
+  const myNickname = meData?.nickName
 
   const { isFavorite, isMutating, toggleFavorite, isLoading: favoriteLoading } =
     useFavoriteWork(worksId)
+
+  const myReviewQuery = useWorksMyReview(worksId)
+  const myReview = myReviewQuery.data ?? null
 
   const reviewsQuery = useWorksReviewsInfinite(worksId)
   const reviews: WorksReviewItem[] =
     reviewsQuery.data?.pages.flatMap((page) => page.content ?? []) ?? []
 
   const likeMutation = useLikeWorksReview({ worksId })
-  const joinMutation = useJoinTopicRoom()
-
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('idle')
-  const [entryError, setEntryError] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastVariant, setToastVariant] = useState<'default' | 'success'>('default')
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const shownActionToastRef = useRef<string | null>(null)
 
-  const isEntering = entryPhase === 'searching' || entryPhase === 'joining'
+  const isEntering = entryPhase === 'searching'
+
+  const showToast = useCallback(
+    (message: string, variant: 'default' | 'success' = 'default') => {
+      setToastMessage(message)
+      setToastVariant(variant)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => {
+        setToastMessage(null)
+        setToastVariant('default')
+        toastTimerRef.current = null
+      }, 2400)
+    },
+    [],
+  )
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (firstParam(tabParam) === 'review') setTab('review')
+  }, [tabParam])
+
+  useEffect(() => {
+    const message = actionToastMessage(actionToast)
+    if (!actionToast || !message || shownActionToastRef.current === actionToast) return
+
+    shownActionToastRef.current = actionToast
+    showToast(message, 'success')
+  }, [actionToast, showToast])
+
+  const navigateToRoom = useCallback(
+    async (roomId: number) => {
+      const route = await getTopicRoomDiscoveryRoute(roomId, {
+        keyword: works?.worksName,
+        worksName: works?.worksName,
+        worksType: works?.worksType,
+        thumbnailUrl: works?.thumbnailUrl,
+      })
+      setEntryPhase('idle')
+      router.push(route)
+    },
+    [router, works?.thumbnailUrl, works?.worksName, works?.worksType],
+  )
+
+  const navigateToCreateTopicRoom = useCallback(() => {
+    if (!works || !worksId) return
+    setEntryPhase('idle')
+    router.push({
+      pathname: '/topicroom/create',
+      params: {
+        worksId: String(worksId),
+        worksName: works.worksName,
+        thumbnailUrl: works.thumbnailUrl ?? '',
+        artistName: works.author ?? works.originalAuthor ?? works.illustrator ?? '',
+        worksType: works.worksType ?? '',
+      },
+    } as never)
+  }, [router, works, worksId])
 
   const enterTopicRoom = useCallback(async () => {
-    if (!works?.worksName) return
+    if (!works?.worksName || isEntering) return
 
     setEntryPhase('searching')
-    setEntryError(null)
 
     try {
       const roomId = await findTopicRoomIdByWorksName(works.worksName)
       if (!roomId) {
-        setEntryPhase('error')
-        setEntryError('이 작품의 토픽룸이 아직 없어요.')
+        navigateToCreateTopicRoom()
         return
       }
 
-      setEntryPhase('joining')
-      await joinMutation.mutateAsync(roomId)
-      router.push(`/topicroom/${roomId}` as const)
-      setEntryPhase('idle')
+      await navigateToRoom(roomId)
     } catch {
-      setEntryPhase('error')
-      setEntryError('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
+      setEntryPhase('idle')
+      showToast('토픽룸 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     }
-  }, [joinMutation, router, works?.worksName])
+  }, [
+    isEntering,
+    navigateToCreateTopicRoom,
+    navigateToRoom,
+    showToast,
+    works?.worksName,
+  ])
 
   const backToPrevious = useCallback(() => {
     if (router.canGoBack()) {
@@ -92,6 +188,48 @@ export default function WorksDetailScreen() {
     }
     router.replace('/(tabs)' as const)
   }, [router])
+
+  const goReviewWrite = useCallback(() => {
+    if (!worksId) return
+    router.push(`/review/write?worksId=${worksId}` as never)
+  }, [router, worksId])
+
+  const goReviewDetail = useCallback(
+    (reviewId: number) => {
+      router.push(`/works/review/${reviewId}` as never)
+    },
+    [router],
+  )
+
+  const handleLikeReview = useCallback(
+    (reviewId: number) => {
+      if (likeMutation.isPending) return
+      likeMutation.mutate(reviewId)
+    },
+    [likeMutation],
+  )
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (
+        tab !== 'review' ||
+        !reviewsQuery.hasNextPage ||
+        reviewsQuery.isFetchingNextPage ||
+        reviewsQuery.isLoading
+      ) {
+        return
+      }
+
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+      const distanceFromBottom =
+        contentSize.height - (contentOffset.y + layoutMeasurement.height)
+
+      if (distanceFromBottom < 240) {
+        void reviewsQuery.fetchNextPage()
+      }
+    },
+    [reviewsQuery, tab],
+  )
 
   const reviewTabLabel = useMemo(() => {
     const count = works?.reviewCount ?? reviews.length
@@ -110,7 +248,7 @@ export default function WorksDetailScreen() {
         onToggleFavorite={() => void toggleFavorite()}
       />
 
-      {worksQuery.isLoading ? (
+      {worksQuery.isLoading || isLeavingForAdultVerification ? (
         <CenteredState text="작품 정보를 불러오는 중이에요.">
           <ActivityIndicator size="large" color={C.primary} />
         </CenteredState>
@@ -122,6 +260,8 @@ export default function WorksDetailScreen() {
             style={styles.scroll}
             contentContainerStyle={{ paddingBottom: insets.bottom + 116 }}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           >
             <WorksCoverHeader works={works} />
 
@@ -138,79 +278,36 @@ export default function WorksDetailScreen() {
               />
             </View>
 
-            {entryPhase === 'error' && entryError ? (
-              <View style={styles.entryErrorBox}>
-                <Text style={styles.entryErrorText}>{entryError}</Text>
-                <Pressable onPress={() => setEntryPhase('idle')}>
-                  <Text style={styles.entryErrorDismiss}>닫기</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
             {tab === 'info' ? (
               <WorksInfoSection works={works} />
             ) : (
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewSectionTitle}>다른 유저들의 리뷰</Text>
+              <View>
+                <MyReviewSection
+                  myReview={myReview}
+                  userName={myNickname}
+                  onPressWrite={goReviewWrite}
+                  onPressDetail={goReviewDetail}
+                  onPressLike={handleLikeReview}
+                  isLiking={
+                    likeMutation.isPending &&
+                    myReview?.reviewId != null &&
+                    likeMutation.variables === myReview.reviewId
+                  }
+                />
 
-                {reviewsQuery.isLoading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={C.primary}
-                    style={styles.reviewLoader}
-                  />
-                ) : null}
-
-                {!reviewsQuery.isLoading && reviewsQuery.isError ? (
-                  <Text style={styles.messageText}>리뷰를 불러오지 못했어요.</Text>
-                ) : null}
-
-                {!reviewsQuery.isLoading &&
-                !reviewsQuery.isError &&
-                reviews.length === 0 ? (
-                  <View style={styles.emptyReviewCard}>
-                    <Text style={styles.emptyReviewTitle}>아직 리뷰가 없어요.</Text>
-                    <Text style={styles.emptyReviewBody}>
-                      첫 번째 감상을 남길 차례예요.
-                    </Text>
-                  </View>
-                ) : null}
-
-                {reviews.map((item) => (
-                  <PostCard
-                    key={String(item.reviewId)}
-                    item={item}
-                    onLike={(reviewId) => likeMutation.mutate(reviewId)}
-                    isLiking={
-                      likeMutation.isPending &&
-                      likeMutation.variables === item.reviewId
-                    }
-                  />
-                ))}
-
-                {reviewsQuery.hasNextPage ? (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.loadMoreButton,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => void reviewsQuery.fetchNextPage()}
-                    disabled={reviewsQuery.isFetchingNextPage}
-                  >
-                    {reviewsQuery.isFetchingNextPage ? (
-                      <ActivityIndicator size="small" color={C.primary} />
-                    ) : (
-                      <>
-                        <Text style={styles.loadMoreText}>리뷰 더보기</Text>
-                        <Image
-                          source={arrowForward}
-                          style={styles.loadMoreIcon}
-                          contentFit="contain"
-                        />
-                      </>
-                    )}
-                  </Pressable>
-                ) : null}
+                <OtherReviewsSection
+                  reviews={reviews}
+                  isLoading={reviewsQuery.isLoading}
+                  isError={reviewsQuery.isError}
+                  isFetchingNextPage={reviewsQuery.isFetchingNextPage}
+                  onPressDetail={goReviewDetail}
+                  onPressLike={handleLikeReview}
+                  likingReviewId={
+                    likeMutation.isPending && typeof likeMutation.variables === 'number'
+                      ? likeMutation.variables
+                      : null
+                  }
+                />
               </View>
             )}
           </ScrollView>
@@ -219,10 +316,27 @@ export default function WorksDetailScreen() {
             bottomInset={insets.bottom}
             hasTopicRoom={works.hasTopicRoom ?? false}
             isCheckingRoom={isEntering}
-            onPress={() => void enterTopicRoom()}
+            onPress={() => {
+              if (works.hasTopicRoom) {
+                void enterTopicRoom()
+                return
+              }
+              navigateToCreateTopicRoom()
+            }}
           />
         </>
       )}
+
+
+      <Toast
+        message={toastMessage}
+        variant={toastVariant}
+        bottomOffset={36}
+        onClose={() => {
+          setToastMessage(null)
+          setToastVariant('default')
+        }}
+      />
     </View>
   )
 }
@@ -287,8 +401,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: C.divider,
     backgroundColor: C.card,
   },
   tabButton: {
@@ -307,86 +419,10 @@ const styles = StyleSheet.create({
   tabUnderline: {
     width: '100%',
     height: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: C.border,
   },
   tabUnderlineActive: {
-    backgroundColor: C.primary,
-  },
-  entryErrorBox: {
-    marginHorizontal: S.screenH,
-    marginTop: 16,
-    borderRadius: Radius.md,
-    backgroundColor: '#FFF3F3',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  entryErrorText: {
-    ...Typography.body2Medium,
-    color: C.error,
-    flex: 1,
-  },
-  entryErrorDismiss: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginLeft: 12,
-  },
-  reviewSection: {
-    paddingHorizontal: S.screenH,
-    paddingTop: 24,
-  },
-  reviewSectionTitle: {
-    ...Typography.heading2,
-    color: C.text,
-    marginBottom: 8,
-  },
-  reviewLoader: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  messageText: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginTop: 12,
-  },
-  emptyReviewCard: {
-    borderRadius: Radius.md,
-    backgroundColor: C.bg,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  emptyReviewTitle: {
-    ...Typography.body1Semibold,
-    color: C.textSecondary,
-  },
-  emptyReviewBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-    marginTop: 4,
-  },
-  loadMoreButton: {
-    marginTop: 16,
-    marginBottom: 8,
-    minHeight: 48,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: C.divider,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  loadMoreText: {
-    ...Typography.body2Bold,
-    color: C.primary,
-  },
-  loadMoreIcon: {
-    width: 16,
-    height: 16,
-    tintColor: C.primary,
+    backgroundColor: C.text,
   },
   pressed: {
     opacity: 0.7,

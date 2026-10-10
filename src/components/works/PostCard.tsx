@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: Radius.sm,
     backgroundColor: C.card,
-    shadowColor: '#131112',
+    shadowColor: C.text,
     shadowOpacity: 0.14,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },

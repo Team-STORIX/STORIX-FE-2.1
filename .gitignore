@@ -11,8 +11,10 @@ expo-env.d.ts
 
 # Native
 .kotlin/
+.gradle/
 *.orig.*
 *.jks
+keystore.properties
 *.p8
 *.p12
 *.key
@@ -25,6 +27,7 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+firebase-debug.log
 
 # macOS
 .DS_Store
@@ -34,9 +37,18 @@ yarn-error.*
 .env
 .env*.local
 
+# Firebase Admin SDK service-account credentials (NEVER commit)
+firebase-service-account*.json
+service-account*.json
+storix-*-firebase-adminsdk-*.json
+google-application-credentials*.json
+google-services.json
+GoogleService-Info.plist
+
 # typescript
 *.tsbuildinfo
 
 # generated native folders
 /ios
 /android
+.storix-mcp.json

@@ -1,63 +1,94 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { OnboardingWork } from '../api/onboarding.api'
+import type { OnboardingWork } from '../api'
+import { C, Gray, Typography } from '../../../theme'
+import { FAVORITE_SKELETON_COUNT, MAX_FAVORITE_COUNT } from '../lib/constants'
+import { OnboardingStepHeader, stepHeaderStyles } from './OnboardingStepHeader'
 
-const checkPink = require('../../../../assets/icons/common/check-pink.svg')
+const checkPinkIcon = require('../../../../assets/icons/common/check-pink.svg')
 
-export function FavoriteStep({
-  works,
-  selectedIds,
-  onToggle,
-  loading,
-}: {
+const COLUMNS = 3
+const HORIZONTAL_PADDING = 16 // OnboardingScreen scrollContent paddingHorizontal
+const COLUMN_GAP = 8
+
+/** 로딩 중에는 썸네일/제목 없는 자리표시 카드를 그린다. */
+type GridItem = Pick<OnboardingWork, 'worksId'> & Partial<Omit<OnboardingWork, 'worksId'>>
+
+const skeletonItems: GridItem[] = Array.from({ length: FAVORITE_SKELETON_COUNT }, (_, index) => ({
+  worksId: index + 1,
+}))
+
+type FavoriteStepProps = {
   works: OnboardingWork[]
   selectedIds: number[]
   onToggle: (id: number) => void
   loading: boolean
-}) {
-  const gridItems = loading ? Array.from({ length: 18 }).map((_, idx) => ({ worksId: idx + 1 })) : works
+}
+
+export function FavoriteStep({ works, selectedIds, onToggle, loading }: FavoriteStepProps) {
+  const { width } = useWindowDimensions()
+  const cardWidth = Math.floor((width - HORIZONTAL_PADDING * 2 - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS)
+  const thumbHeight = Math.floor(cardWidth * (4 / 3))
+  const isFull = selectedIds.length >= MAX_FAVORITE_COUNT
+
+  const gridItems: GridItem[] = loading ? skeletonItems : works
 
   return (
     <View>
-      <Text style={styles.title}>관심있는 작품을 선택해 주세요</Text>
-      {selectedIds.length === 0 ? (
-        <Text style={styles.subtitle}>선택 작품을 기반으로 피드를 구성해드려요</Text>
-      ) : (
+      <OnboardingStepHeader
+        title="관심있는 작품을 선택해 주세요"
+        subtitle={selectedIds.length === 0 ? '선택 작품을 기반으로 피드를 구성해드려요' : undefined}
+      />
+      {selectedIds.length > 0 ? (
         <View style={styles.countRow}>
-          <Text style={styles.subtitle}>최대 18개 선택가능</Text>
-          <Text style={styles.count}>({selectedIds.length}/18)</Text>
+          <Text style={[stepHeaderStyles.subtitle, styles.subtitleInRow]}>최대 {MAX_FAVORITE_COUNT}개 선택가능</Text>
+          <Text style={styles.count}>({selectedIds.length}/{MAX_FAVORITE_COUNT})</Text>
         </View>
-      )}
+      ) : null}
 
       <View style={styles.grid}>
         {gridItems.map((item) => {
           const selected = selectedIds.includes(item.worksId)
-          const disabled = !selected && selectedIds.length >= 18
+          const disabled = !selected && isFull
           return (
             <Pressable
               key={item.worksId}
-              style={({ pressed }) => [styles.card, pressed && styles.pressed, disabled && styles.disabled]}
+              style={({ pressed }) => [
+                { width: cardWidth, height: thumbHeight + 48 },
+                pressed && styles.pressed,
+                disabled && styles.disabled,
+              ]}
               onPress={() => !loading && !disabled && onToggle(item.worksId)}
             >
-              <View style={[styles.thumbWrap, selected && styles.thumbWrapSelected]}>
-                {'thumbnailUrl' in item && item.thumbnailUrl ? (
-                  <Image source={{ uri: String(item.thumbnailUrl) }} style={styles.thumb} contentFit="cover" />
+              <View
+                style={[
+                  styles.thumbWrap,
+                  { width: cardWidth, height: thumbHeight },
+                  selected && styles.thumbWrapSelected,
+                ]}
+              >
+                {item.thumbnailUrl ? (
+                  <Image
+                    source={{ uri: item.thumbnailUrl }}
+                    style={{ width: cardWidth, height: thumbHeight }}
+                    contentFit="cover"
+                  />
                 ) : (
-                  <View style={styles.thumbSkeleton} />
+                  <View style={{ width: cardWidth, height: thumbHeight, backgroundColor: C.divider }} />
                 )}
                 {selected ? (
                   <>
                     <View style={styles.thumbOverlay} />
-                    <Image source={checkPink} style={styles.checkIcon} contentFit="contain" />
+                    <Image source={checkPinkIcon} style={styles.checkIcon} contentFit="contain" />
                   </>
                 ) : null}
               </View>
-              <View style={styles.metaWrap}>
+              <View style={[styles.metaWrap, { width: cardWidth }]}>
                 <Text style={styles.workName} numberOfLines={1}>
-                  {'worksName' in item ? String(item.worksName ?? '') : ''}
+                  {item.worksName ?? ''}
                 </Text>
                 <Text style={styles.workAuthor} numberOfLines={1}>
-                  {'artistName' in item ? String(item.artistName ?? '') : ''}
+                  {item.artistName ?? ''}
                 </Text>
               </View>
             </Pressable>
@@ -69,64 +100,37 @@ export function FavoriteStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
-  },
-  subtitle: {
-    marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
-  },
   countRow: {
     marginTop: 5,
     flexDirection: 'row',
     alignItems: 'center',
   },
+  subtitleInRow: {
+    marginTop: 0,
+  },
   count: {
     marginLeft: 4,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#FF4093',
+    ...Typography.body1Medium,
+    color: C.primary,
   },
   grid: {
     marginTop: 64,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: 8,
+    columnGap: COLUMN_GAP,
     rowGap: 16,
     paddingBottom: 80,
   },
-  card: {
-    width: 108,
-    height: 192,
-  },
   thumbWrap: {
-    width: 108,
-    height: 144,
     borderRadius: 8,
-    backgroundColor: '#F2EDEF',
+    backgroundColor: C.divider,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   thumbWrapSelected: {
-    borderColor: '#FF4093',
-  },
-  thumb: {
-    width: 108,
-    height: 144,
-  },
-  thumbSkeleton: {
-    width: 108,
-    height: 144,
-    backgroundColor: '#F2EDEF',
+    borderColor: C.primary,
   },
   thumbOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -136,26 +140,25 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 8,
     top: 8,
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   metaWrap: {
     marginTop: 8,
-    width: 100,
     paddingHorizontal: 4,
   },
   workName: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-    color: '#000000',
+    color: C.text,
   },
   workAuthor: {
     marginTop: 3,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#B0A5AA',
+    color: Gray[400],
   },
   disabled: {
     opacity: 0.4,

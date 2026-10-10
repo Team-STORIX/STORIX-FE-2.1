@@ -16,6 +16,8 @@ import {
   type KakaoLoginResponse,
 } from '../api/auth.schema'
 import { useAuthStore } from '../../../store/auth.store'
+import { setItem } from '../../../lib/storage/async'
+import { SOCIAL_PROVIDER_KEY } from '../../profile/hooks/useSocialProvider'
 
 export const useKakaoLogin = () => {
   const router = useRouter()
@@ -31,14 +33,20 @@ export const useKakaoLogin = () => {
 
       // Existing user — store tokens and go to the main app.
       if (isRegistered && loginTokens) {
-        await setLoginTokens(loginTokens)
+        await Promise.all([
+          setLoginTokens(loginTokens),
+          setItem(SOCIAL_PROVIDER_KEY, 'kakao'),
+        ])
         router.replace('/(tabs)')
         return
       }
 
       // New user — store the onboarding token and start the signup flow.
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
-        await setOnboardingToken(readerPreLoginResponse.onboardingToken)
+        await Promise.all([
+          setOnboardingToken(readerPreLoginResponse.onboardingToken),
+          setItem('tempSocialProvider', 'kakao'),
+        ])
         router.replace('/(auth)/agreement')
         return
       }
@@ -51,7 +59,9 @@ export const useKakaoLogin = () => {
 
     onError: (_error: AxiosError) => {
       Alert.alert('로그인 실패', '로그인에 실패했습니다. 다시 시도해주세요.')
-      // TODO(Phase auth screens): router.replace('/(auth)/login') once login screen exists.
+      // Return the user to the login screen so they can retry. The login route
+      // exists at app/(auth)/login.tsx and is registered in the typed-routes union.
+      router.replace('/(auth)/login')
     },
   })
 }

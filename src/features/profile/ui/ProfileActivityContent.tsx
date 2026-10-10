@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { Gray, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 import type {
   ProfileActivityBoardItem,
   ProfileActivityReplyItem,
@@ -24,6 +24,9 @@ type Props = {
   activeTab: ProfileActivityTab
   onChangeTab: (tab: ProfileActivityTab) => void
   currentUserId: number
+  currentUserProfileImageUrl?: string | null
+  currentUserNickName?: string
+  currentUserRole?: string | null
   header?: ReactElement | null
   bottomInset?: number
 }
@@ -32,6 +35,9 @@ export function ProfileActivityContent({
   activeTab,
   onChangeTab,
   currentUserId,
+  currentUserProfileImageUrl,
+  currentUserNickName,
+  currentUserRole,
   header = null,
   bottomInset = 0,
 }: Props) {
@@ -69,10 +75,10 @@ export function ProfileActivityContent({
     return (
       <View style={styles.footer}>
         {query.isFetchingNextPage ? (
-          <Text style={styles.footerText}>遺덈윭?ㅻ뒗 以?..</Text>
+          <Text style={styles.footerText}>불러오는 중...</Text>
         ) : (
           <Pressable onPress={() => void query.fetchNextPage()}>
-            <Text style={styles.footerText}>??蹂닿린</Text>
+            <Text style={styles.footerText}>더 보기</Text>
           </Pressable>
         )}
       </View>
@@ -91,7 +97,7 @@ export function ProfileActivityContent({
       data={items}
       key={activeTab}
       style={styles.list}
-      contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+      contentContainerStyle={{ paddingBottom: bottomInset + 100 }}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={renderHeader}
       ListFooterComponent={renderFooter}
@@ -106,15 +112,18 @@ export function ProfileActivityContent({
           activeTab,
           info,
           currentUserId,
+          currentUserProfileImageUrl,
+          currentUserNickName,
+          currentUserRole,
           openCommentMenuId,
           setOpenCommentMenuId,
         )
       }
       ListEmptyComponent={
         query.isLoading ? (
-          <ProfileActivityEmptyState message="遺덈윭?ㅻ뒗 以?.." />
+          <ProfileActivityEmptyState message="불러오는 중..." />
         ) : query.isError ? (
-          <ProfileActivityEmptyState message="?쒕룞 ?댁뿭??遺덈윭?ㅼ? 紐삵뻽?댁슂." />
+          <ProfileActivityEmptyState message="활동 내역을 불러오지 못했습니다." />
         ) : (
           <ProfileActivityEmptyState message={getEmptyMessage(activeTab)} />
         )
@@ -127,6 +136,9 @@ function renderActivityItem(
   activeTab: ProfileActivityTab,
   info: ListRenderItemInfo<ProfileActivityBoardItem | ProfileActivityReplyItem>,
   userId: number,
+  currentUserProfileImageUrl: string | null | undefined,
+  currentUserNickName: string | undefined,
+  currentUserRole: string | null | undefined,
   openCommentMenuId: number | null,
   setOpenCommentMenuId: (value: number | null) => void,
 ) {
@@ -136,6 +148,9 @@ function renderActivityItem(
       <ProfileActivityCommentItem
         item={item}
         currentUserId={userId}
+        currentUserProfileImageUrl={currentUserProfileImageUrl}
+        currentUserNickName={currentUserNickName}
+        currentUserRole={currentUserRole}
         isMenuOpen={openCommentMenuId === item.reply.replyId}
         onToggleMenu={() =>
           setOpenCommentMenuId(
@@ -165,20 +180,20 @@ function renderActivityItem(
 function getEmptyMessage(tab: ProfileActivityTab) {
   switch (tab) {
     case 'posts':
-      return '?꾩쭅 ?묒꽦??湲???놁뼱??'
+      return '아직 작성한 글이 없어요'
     case 'comments':
-      return '?꾩쭅 ?묒꽦???볤????놁뼱??'
+      return '아직 작성한 댓글이 없어요'
     case 'likes':
-      return '?꾩쭅 醫뗭븘?뷀븳 湲???놁뼱??'
+      return '아직 좋아요한 글이 없어요'
     default:
-      return '?쒕룞 ?댁뿭???놁뼱??'
+      return '활동 내역이 없어요.'
   }
 }
 
 const styles = StyleSheet.create({
   list: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   footer: {
     paddingHorizontal: 16,

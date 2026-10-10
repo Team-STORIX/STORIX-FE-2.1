@@ -1,64 +1,150 @@
-import { StyleSheet, Text, View } from 'react-native'
-import { C } from '../../../theme/colors'
+import { Image } from "expo-image";
+import { useRef } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C, Gray } from "../../../theme/colors";
+import { Typography } from "../../../theme/typography";
+import { LinkedText } from "../../../components/common/LinkedText";
+import { OfficialMark } from "../../../components/common/OfficialMark";
+
+const profileDefault = require("../../../../assets/placeholders/profile-default.png");
+const kebabIcon = require("../../../../assets/icons/common/menu-3dots.svg");
+
+/** Top-right anchor point (screen coords) of a tapped kebab. */
+export type KebabAnchor = { x: number; y: number };
 
 export type DisplayMsg = {
-  key: string
-  text: string
-  senderName: string
-  time: string
-  isMe: boolean
-}
+  key: string;
+  chatMessageId?: number;
+  text: string;
+  createdAt?: string | null;
+  senderId?: number;
+  senderName: string;
+  senderRole?: string | null;
+  profileImageUrl?: string | null;
+  time: string;
+  isMe: boolean;
+};
 
-type Props = { msg: DisplayMsg }
+type Props = {
+  msg: DisplayMsg;
+  /** Tapping another user's avatar opens the profile action modal. */
+  onPressAvatar?: (msg: DisplayMsg) => void;
+  /** Tapping the kebab opens the action dropdown anchored at its top-right. */
+  onPressKebab?: (msg: DisplayMsg, anchor: KebabAnchor) => void;
+};
 
-export function ChatBubble({ msg }: Props) {
-  const initial = (msg.senderName || '?')[0].toUpperCase()
+export function ChatBubble({ msg, onPressAvatar, onPressKebab }: Props) {
+  const kebabRef = useRef<View>(null);
 
   if (msg.isMe) {
     return (
       <View style={styles.rowMe}>
-        <Text style={styles.timeMe}>{msg.time}</Text>
-        <View style={[styles.bubble, styles.bubbleMe]}>
-          <Text style={styles.textMe}>{msg.text}</Text>
+        <Text style={styles.timeMe} numberOfLines={1}>
+          {msg.time}
+        </Text>
+        <View style={[styles.bubble, styles.bubbleMe, styles.bubbleMeWidth]}>
+          <LinkedText style={styles.textMe} linkStyle={styles.linkOnMe}>
+            {msg.text}
+          </LinkedText>
         </View>
       </View>
-    )
+    );
   }
+
+  // Self-action guard: avatar / kebab affordances only exist for valid other
+  // users (a missing or invalid senderId yields no report/block entry point).
+  const hasValidSender = typeof msg.senderId === "number";
+
+  const handleAvatar =
+    onPressAvatar && hasValidSender ? () => onPressAvatar(msg) : undefined;
+
+  const handleKebab =
+    onPressKebab && hasValidSender
+      ? () => {
+          kebabRef.current?.measureInWindow((x, y, w, h) => {
+            onPressKebab(msg, { x: x + w, y: y + h });
+          });
+        }
+      : undefined;
 
   return (
     <View style={styles.rowOther}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarInitial}>{initial}</Text>
-      </View>
+      <Pressable
+        onPress={handleAvatar}
+        disabled={!handleAvatar}
+        style={({ pressed }) => [
+          styles.avatar,
+          pressed && handleAvatar ? styles.pressed : null,
+        ]}
+        accessibilityRole={handleAvatar ? "button" : undefined}
+        accessibilityLabel={handleAvatar ? "프로필 보기" : undefined}
+      >
+        <Image
+          source={
+            msg.profileImageUrl ? { uri: msg.profileImageUrl } : profileDefault
+          }
+          style={styles.avatarImage}
+          contentFit={msg.profileImageUrl ? "cover" : "contain"}
+        />
+      </Pressable>
       <View style={styles.otherBody}>
-        <Text style={styles.senderName}>{msg.senderName}</Text>
+        <View style={styles.senderNameRow}>
+          <Text style={styles.senderName} numberOfLines={1}>{msg.senderName || "익명"}</Text>
+          <OfficialMark role={msg.senderRole} />
+        </View>
         <View style={styles.otherBubbleRow}>
-          <View style={[styles.bubble, styles.bubbleOther]}>
-            <Text style={styles.textOther}>{msg.text}</Text>
+          <View
+            style={[styles.bubble, styles.bubbleOther, styles.bubbleOtherWidth]}
+          >
+            <LinkedText style={styles.textOther}>{msg.text}</LinkedText>
           </View>
-          <Text style={styles.timeOther}>{msg.time}</Text>
+          <Text style={styles.timeOther} numberOfLines={1}>
+            {msg.time}
+          </Text>
+          {handleKebab ? (
+            <Pressable
+              ref={kebabRef}
+              onPress={handleKebab}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.kebab,
+                pressed ? styles.pressed : null,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="메시지 메뉴 열기"
+            >
+              <Image
+                source={kebabIcon}
+                style={styles.kebabIcon}
+                contentFit="contain"
+                tintColor={Gray[400]}
+              />
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </View>
-  )
+  );
 }
 
-const AVATAR_SIZE = 32
-const BUBBLE_RADIUS = 16
-
+const AVATAR_SIZE = 36;
+const BUBBLE_ME_MAX_WIDTH = 244;
+const BUBBLE_OTHER_MAX_WIDTH = 220;
+const TIME_LINE_HEIGHT = Typography.caption1Medium.lineHeight;
+const TIME_META_OFFSET_Y = 2;
 const styles = StyleSheet.create({
   rowMe: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   rowOther: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: 6,
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 
   avatar: {
@@ -66,51 +152,99 @@ const styles = StyleSheet.create({
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     backgroundColor: C.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: "hidden",
     marginRight: 8,
     flexShrink: 0,
   },
-  avatarInitial: { fontSize: 13, fontWeight: '700', color: C.primary },
+  avatarImage: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+  },
 
-  otherBody: { flexShrink: 1 },
+  otherBody: { flexShrink: 1, minWidth: 0 },
+  senderNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
+    marginBottom: 4,
+  },
   senderName: {
-    fontSize: 11,
-    color: C.textMuted,
-    marginBottom: 3,
+    ...Typography.body2Medium,
+    color: Gray[800],
+    flexShrink: 1,
   },
   otherBubbleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
   },
 
   bubble: {
-    maxWidth: 240,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: BUBBLE_RADIUS,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  bubbleMeWidth: {
+    maxWidth: BUBBLE_ME_MAX_WIDTH,
+    flexShrink: 1,
+  },
+  bubbleOtherWidth: {
+    maxWidth: BUBBLE_OTHER_MAX_WIDTH,
+    flexShrink: 1,
   },
   bubbleMe: {
     backgroundColor: C.primary,
-    borderBottomRightRadius: 4,
-    marginLeft: 6,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   bubbleOther: {
-    backgroundColor: C.card,
+    backgroundColor: Gray[50],
     borderWidth: 1,
-    borderColor: C.border,
-    borderBottomLeftRadius: 4,
+    borderColor: Gray[100],
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 
-  textMe: { fontSize: 14, color: '#fff', lineHeight: 20 },
-  textOther: { fontSize: 14, color: C.text, lineHeight: 20 },
+  textMe: { ...Typography.body1Semibold, color: C.card },
+  // The outgoing bubble is magenta, so the link colour has no contrast
+  // there; the underline carries the affordance instead.
+  linkOnMe: { color: C.card, textDecorationLine: "underline" },
+  textOther: { ...Typography.body1Medium, color: Gray[800] },
 
-  timeMe: { fontSize: 10, color: C.textMuted, marginRight: 4, marginBottom: 2 },
-  timeOther: {
-    fontSize: 10,
-    color: C.textMuted,
-    marginLeft: 4,
-    marginBottom: 2,
+  timeMe: {
+    ...Typography.caption1Medium,
+    color: Gray[400],
+    minWidth: 0,
+    textAlign: "right",
+    marginRight: 4,
     flexShrink: 0,
   },
-})
+  timeOther: {
+    ...Typography.caption1Medium,
+    color: Gray[400],
+    minWidth: 0,
+    marginLeft: 4,
+    flexShrink: 0,
+    transform: [{ translateY: TIME_META_OFFSET_Y }],
+  },
+
+  kebab: {
+    width: 24,
+    height: TIME_LINE_HEIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 2,
+    alignSelf: "flex-end",
+    flexShrink: 0,
+    transform: [{ translateY: TIME_META_OFFSET_Y }],
+  },
+  kebabIcon: {
+    width: 16,
+    height: 16,
+  },
+});

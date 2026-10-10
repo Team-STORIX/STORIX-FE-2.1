@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
   },

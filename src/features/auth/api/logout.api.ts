@@ -1,14 +1,18 @@
 import { apiClient } from '../../../lib/api/axios-instance'
+import { getRefreshToken } from '../../../lib/storage/secure'
+import { getOrCreateInstallationId } from '../../notification/services/deviceInstallation'
 import type { ApiResponse } from '../../../lib/api/types'
 
-/**
- * Signs the current user out server-side.
- * The access token is attached automatically by the request interceptor.
- * No withCredentials — the server invalidates the token by its value, not by cookie.
- */
 export const logoutUser = async (): Promise<
   ApiResponse<Record<string, never>>
 > => {
-  const res = await apiClient.post('/api/v1/auth/user/logout', {})
+  const [installationId, refreshToken] = await Promise.all([
+    getOrCreateInstallationId(),
+    getRefreshToken(),
+  ])
+  const res = await apiClient.post('/api/v2/auth/user/logout', {
+    installationId,
+    refreshToken: refreshToken ?? '',
+  })
   return res.data as ApiResponse<Record<string, never>>
 }

@@ -68,6 +68,9 @@ export const WorksSearchItemSchema = z.object({
   avgRating: z.coerce.number().default(0),
   thumbnailUrl: z.string().nullable().optional(),
   worksType: z.string().default(''),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const TopicRoomSearchItemSchema = z.object({
@@ -79,6 +82,9 @@ export const TopicRoomSearchItemSchema = z.object({
   activeUserNumber: z.coerce.number().nullish(),
   lastChatTime: z.string().nullish(),
   isJoined: z.boolean().nullish(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const TrendingKeywordSchema = z.object({
