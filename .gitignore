@@ -51,4 +51,6 @@ GoogleService-Info.plist
 # generated native folders
 /ios
 /android
+
+#Storix MCP
 .storix-mcp.json
