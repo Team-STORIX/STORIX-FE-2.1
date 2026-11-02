@@ -1,10 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../theme/colors'
+import { C, Gray, Magenta } from '../../theme'
 import { Typography } from '../../theme/typography'
 
-const emptyStar = require('../../../assets/icons/common/ratingStar.svg')
-const filledStar = require('../../../assets/icons/common/middleStar.svg')
+const ratingStar = require('../../../assets/icons/common/ratingStar.svg')
 
 type StarRatingProps = {
   value?: number | null
@@ -27,9 +26,10 @@ export function StarRating({
           return (
             <View key={index} style={{ width: size, height: size }}>
               <Image
-                source={emptyStar}
+                source={ratingStar}
                 style={{ width: size, height: size }}
                 contentFit="contain"
+                tintColor={Gray[200]}
               />
               <View
                 style={[
@@ -38,9 +38,10 @@ export function StarRating({
                 ]}
               >
                 <Image
-                  source={filledStar}
+                  source={ratingStar}
                   style={{ width: size, height: size }}
                   contentFit="contain"
+                  tintColor={Magenta[300]}
                 />
               </View>
             </View>

@@ -1,6 +1,12 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import type { TodayFeedItem } from '../../features/home'
-import { Gray } from '../../theme/colors'
+import { C, Gray } from '../../theme/colors'
 import { Typography } from '../../theme/typography'
 import { HotFeedCard } from './HotFeedCard'
 
@@ -11,7 +17,7 @@ const SKELETON_COUNT = 5
 type HotFeedSliderProps = {
   data?: TodayFeedItem[]
   isLoading?: boolean
-  onPressItem: (item: TodayFeedItem) => void
+  onPressItem: (item: TodayFeedItem, index: number) => void
 }
 
 export function HotFeedSlider({
@@ -19,6 +25,9 @@ export function HotFeedSlider({
   isLoading = false,
   onPressItem,
 }: HotFeedSliderProps) {
+  const { width } = useWindowDimensions()
+  const cardWidth = Math.max(0, width - HOME_PAD * 2)
+
   if (!isLoading && (!data || data.length === 0)) {
     return (
       <View style={styles.messageCard}>
@@ -40,7 +49,7 @@ export function HotFeedSlider({
               key={`skeleton-${i}`}
               style={i === 0 ? undefined : styles.gap}
             >
-              <HotFeedCard loading />
+              <HotFeedCard loading width={cardWidth} />
             </View>
           ))
         : (data ?? []).map((item, i) => (
@@ -48,7 +57,11 @@ export function HotFeedSlider({
               key={`feed-${item.board.boardId}`}
               style={i === 0 ? undefined : styles.gap}
             >
-              <HotFeedCard item={item} onPress={() => onPressItem(item)} />
+              <HotFeedCard
+                item={item}
+                width={cardWidth}
+                onPress={() => onPressItem(item, i)}
+              />
             </View>
           ))}
     </ScrollView>
@@ -60,7 +73,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -HOME_PAD,
   },
   content: {
-    paddingHorizontal: HOME_PAD,
+    paddingLeft: HOME_PAD,
+    paddingRight: HOME_PAD + 8,
   },
   gap: {
     marginLeft: ITEM_GAP,
@@ -69,7 +83,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     paddingHorizontal: 16,
     paddingVertical: 18,
   },

@@ -33,7 +33,7 @@ export function ProfileEditBioField({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   inputWrap: {
-    width: 360,
+    width: '100%',
     paddingTop: 12,
     paddingRight: 10,
     paddingBottom: 12,
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   counterRow: {
-    width: 360,
+    width: '100%',
     marginTop: 8,
     paddingRight: 8,
     alignItems: 'flex-end',

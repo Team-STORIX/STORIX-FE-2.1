@@ -1,94 +1,150 @@
-import { useState } from 'react'
+import { Image } from "expo-image";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { formatCreatedAtLabel } from "../../../lib/utils/formatCreatedAtLabel";
+import { LinkedText } from "../../../components/common/LinkedText";
+import { OfficialMark } from "../../../components/common/OfficialMark";
+import { AdultLockedPanel } from "../../../components/adult";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
-import { Image } from 'expo-image'
-import { Gray, Magenta } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+  useAdultVerificationStore,
+  useShouldMaskAdultContent,
+} from "../../../store/adultVerification.store";
+import { C, Gray, Magenta } from "../../../theme/colors";
+import { FontFamily, Typography } from "../../../theme/typography";
+import { FeedImageLightbox } from "./FeedImageLightbox";
+import { FeedMenuDropdown } from "./FeedMenuDropdown";
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
-const likeIcon        = require('../../../../assets/icons/common/icon-like.svg')
-const likePinkIcon    = require('../../../../assets/icons/common/icon-like-pink.svg')
-const commentIcon     = require('../../../../assets/icons/common/icon-comment.svg')
-const menuIcon        = require('../../../../assets/icons/common/menu-3dots.svg')
-const arrowSmallIcon  = require('../../../../assets/icons/common/icon-arrow-forward-small.svg')
-const commentDropdown = require('../../../../assets/icons/common/comment-dropdown.svg')
-const deleteDropdown  = require('../../../../assets/icons/common/delete-dropdown.svg')
+const likeIcon = require("../../../../assets/icons/common/icon-like.svg");
+const likePinkIcon = require("../../../../assets/icons/common/icon-like-pink.svg");
+const commentIcon = require("../../../../assets/icons/common/icon-comment.svg");
+const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
+const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
+const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
+const birthdayThemeUp = require("../../../../assets/common/birthday/brithdaytheme-up.svg");
+const birthdayThemeDown = require("../../../../assets/common/birthday/brithdaytheme-down.svg");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type PostCardWorks = {
-  thumbnailUrl: string
-  worksName: string
-  artistName: string
-  worksType: string
-  genre: string
-  hashtags: string[]
-}
-
-type FeedPostCardVariant = 'list' | 'detail'
+  thumbnailUrl: string;
+  worksName: string;
+  artistName: string;
+  worksType: string;
+  genre: string;
+  hashtags: string[];
+  isAdultOnly?: boolean;
+};
 
 type FeedPostCardProps = {
-  variant?: FeedPostCardVariant
-  boardId: number
-  writerUserId: number
-  currentUserId?: number
-  profileImageUrl?: string | null
-  nickName: string
-  createdAt?: string | null
-  content: string
-  images?: string[]
-  works?: PostCardWorks | null
-  isSpoiler?: boolean
-  isLiked: boolean
-  likeCount: number
-  replyCount: number
-  onToggleLike: () => void
-  onClickWorksArrow?: () => void
-  onOpenReport?: () => void
-  onOpenDelete?: () => void
-  onPressCard?: () => void
-}
+  variant?: "list" | "detail";
+  boardId: number;
+  writerUserId: number;
+  currentUserId?: number;
+  profileImageUrl?: string | null;
+  nickName: string;
+  role?: string | null;
+  createdAt?: string | null;
+  content: string;
+  images?: string[];
+  works?: PostCardWorks | null;
+  isSpoiler?: boolean;
+  spoilerScript?: string;
+  isLiked: boolean;
+  likeCount: number;
+  replyCount: number;
+  onToggleLike: () => void;
+  onClickWorksArrow?: () => void;
+  onOpenReport?: () => void;
+  onOpenDelete?: () => void;
+  onOpenBlock?: () => void;
+  onPressCard?: () => void;
+  birthdayTheme?: boolean;
+  birthdayPreview?: boolean;
+  disableSpoilerMask?: boolean;
+  /** The post or its linked work is adult-only. */
+  isAdultOnly?: boolean;
+  /** Server flag: this post is adult content hidden from the current user. */
+  isBlinded?: boolean;
+};
 
 // ─── HashtagRow ───────────────────────────────────────────────────────────────
+// Renders every chip invisibly first, then cuts the row at the first chip that
+// overflows the container so partial chips never show.
 
 function HashtagRow({ tags }: { tags: string[] }) {
-  if (!tags.length) return null
+  const containerWidthRef = useRef(0);
+  const chipRights = useRef<number[]>([]);
+  const [cutIndex, setCutIndex] = useState(tags.length);
+  const [measured, setMeasured] = useState(false);
+
+  useEffect(() => {
+    setCutIndex(tags.length);
+    setMeasured(false);
+    chipRights.current = [];
+  }, [tags]);
+
+  if (!tags.length) return null;
+
+  const recalculate = () => {
+    const cw = containerWidthRef.current;
+    if (cw === 0) return;
+    let cut = tags.length;
+    for (let i = 0; i < tags.length; i++) {
+      const right = chipRights.current[i];
+      if (right === undefined) return;
+      if (right > cw) {
+        cut = i;
+        break;
+      }
+    }
+    setMeasured(true);
+    setCutIndex(cut);
+  };
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.hashtagScroll}
-      contentContainerStyle={styles.hashtagContent}
+    <View
+      style={[styles.hashtagRow, !measured && styles.hashtagRowMeasuring]}
+      onLayout={(e) => {
+        containerWidthRef.current = e.nativeEvent.layout.width;
+        recalculate();
+      }}
     >
-      {tags.map((tag, i) => (
-        <View key={`${tag}-${i}`} style={styles.hashtagChip}>
-          <Text style={styles.hashtagText}>{tag.startsWith('#') ? tag : `#${tag}`}</Text>
+      {tags.slice(0, measured ? cutIndex : tags.length).map((tag, i) => (
+        <View
+          key={`${tag}-${i}`}
+          style={styles.hashtagChip}
+          onLayout={(e) => {
+            if (measured) return;
+            chipRights.current[i] = e.nativeEvent.layout.x + e.nativeEvent.layout.width;
+            recalculate();
+          }}
+        >
+          <Text style={styles.hashtagText}>{tag.startsWith("#") ? tag : `#${tag}`}</Text>
         </View>
       ))}
-    </ScrollView>
-  )
+    </View>
+  );
 }
 
 // ─── FeedPostCard ─────────────────────────────────────────────────────────────
 
 export function FeedPostCard({
-  variant = 'list',
+  variant = "list",
   boardId,
   writerUserId,
   currentUserId,
   profileImageUrl,
   nickName,
+  role,
   createdAt,
   content,
   images = [],
   works,
   isSpoiler = false,
+  spoilerScript,
   isLiked,
   likeCount,
   replyCount,
@@ -96,226 +152,268 @@ export function FeedPostCard({
   onClickWorksArrow,
   onOpenReport,
   onOpenDelete,
+  onOpenBlock,
   onPressCard,
+  birthdayTheme = false,
+  birthdayPreview = false,
+  disableSpoilerMask = false,
+  isAdultOnly = false,
+  isBlinded,
 }: FeedPostCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [spoilerRevealed, setSpoilerRevealed] = useState(false)
+  const router = useRouter();
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: isAdultOnly || works?.isAdultOnly === true,
+    isBlinded,
+  });
+  const showAdultPrompt = useAdultVerificationStore((state) => state.showPrompt);
+  const menuBtnRef = useRef<View>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTop, setMenuTop] = useState(0);
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const isMine = currentUserId != null && writerUserId === currentUserId
-  const isSpoilerHidden = isSpoiler && !spoilerRevealed
+  const isMine = currentUserId != null && writerUserId === currentUserId;
+  const isSpoilerHidden = isSpoiler && !spoilerRevealed && !disableSpoilerMask;
+  const displayCreatedAt = formatCreatedAtLabel(createdAt);
+  const birthdayLayout = birthdayPreview || birthdayTheme;
+  const visibleImages = images.slice(0, 3);
+  const visibleWorks =
+    !isAdultMasked && works?.thumbnailUrl && works.worksName && works.artistName ? works : null;
 
-  const showWorks =
-    works != null &&
-    !!works.thumbnailUrl &&
-    !!works.worksName &&
-    !!works.artistName
+  const handleMenuPress = () => {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    menuBtnRef.current?.measure((_x, _y, _w, h, _px, py) => {
+      setMenuTop(py + h + 4);
+      setMenuOpen(true);
+    });
+  };
 
   const cardBody = (
-    <View style={styles.card}>
-      {/* ── Profile row ───────────────────────────────────────── */}
-      <Pressable
-        style={styles.profileRow}
-        onPress={() => setMenuOpen(false)}
-      >
-        <View style={styles.avatarWrap}>
-          {profileImageUrl ? (
+    <View style={[styles.card, birthdayLayout && styles.birthdayCard]}>
+      {birthdayTheme && (
+        <>
+          <View pointerEvents="none" style={styles.birthdayThemeTop}>
+            <Image source={birthdayThemeUp} style={styles.birthdayThemeImg} contentFit="fill" />
+          </View>
+          <View pointerEvents="none" style={styles.birthdayThemeBottom}>
+            <Image source={birthdayThemeDown} style={styles.birthdayThemeImg} contentFit="fill" />
+          </View>
+        </>
+      )}
+
+      <View style={styles.cardContent}>
+        {/* ── Profile row ───────────────────────────────────────── */}
+        <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
+          <View style={styles.avatarWrap}>
             <Image
-              source={{ uri: profileImageUrl }}
+              source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
               style={styles.avatar}
               contentFit="cover"
             />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarInitial}>
-                {(nickName || '?')[0].toUpperCase()}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.authorMeta}>
-          <Text style={styles.authorName}>{nickName}</Text>
-          {!!createdAt && (
-            <Text style={styles.timestamp}>{createdAt}</Text>
-          )}
-        </View>
-
-        {/* Menu button */}
-        <Pressable
-          hitSlop={8}
-          onPress={() => setMenuOpen((v) => !v)}
-          style={styles.menuBtn}
-          accessibilityLabel="메뉴"
-        >
-          <Image
-            source={menuIcon}
-            style={styles.menuIcon}
-            contentFit="contain"
-          />
-        </Pressable>
-      </Pressable>
-
-      {/* ── Menu dropdown ─────────────────────────────────────── */}
-      {menuOpen && (
-        <Pressable
-          style={styles.menuDropdown}
-          onPress={() => {
-            setMenuOpen(false)
-            if (isMine) onOpenDelete?.()
-            else onOpenReport?.()
-          }}
-        >
-          <Image
-            source={isMine ? deleteDropdown : commentDropdown}
-            style={styles.menuDropdownImg}
-            contentFit="contain"
-          />
-        </Pressable>
-      )}
-
-      {/* ── Works card ────────────────────────────────────────── */}
-      {showWorks && (
-        <View style={styles.worksSection}>
-          <View style={styles.worksCard}>
-            <View style={styles.worksThumbnailBox}>
-              <Image
-                source={{ uri: works!.thumbnailUrl }}
-                style={styles.worksThumbnail}
-                contentFit="cover"
-              />
-            </View>
-
-            <View style={styles.worksInfo}>
-              <Text style={styles.worksName} numberOfLines={1}>
-                {works!.worksName}
-              </Text>
-              <Text style={styles.worksMeta} numberOfLines={1}>
-                {[works!.artistName, works!.worksType, works!.genre]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-              <HashtagRow tags={works!.hashtags ?? []} />
-            </View>
-
-            {onClickWorksArrow && (
-              <Pressable
-                onPress={onClickWorksArrow}
-                hitSlop={8}
-                style={styles.worksArrowBtn}
-                accessibilityLabel="작품 상세 보기"
-              >
-                <Image
-                  source={arrowSmallIcon}
-                  style={styles.arrowSmall}
-                  contentFit="contain"
-                />
-              </Pressable>
-            )}
           </View>
-        </View>
-      )}
 
-      {/* ── Body: images + text ──────────────────────────────── */}
-      <View style={styles.bodySection}>
-        {/* Images */}
-        {images.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.imageScroll}
-            contentContainerStyle={styles.imageContent}
+          <View style={styles.authorMeta}>
+            <View style={styles.authorNameRow}>
+              <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
+              <OfficialMark role={role} />
+            </View>
+            {!!displayCreatedAt && <Text style={styles.timestamp}>{displayCreatedAt}</Text>}
+          </View>
+
+          <Pressable
+            ref={menuBtnRef}
+            hitSlop={8}
+            onPress={handleMenuPress}
+            style={styles.menuBtn}
+            accessibilityLabel="메뉴"
           >
-            {images.slice(0, 3).map((src, idx) => (
-              <View
-                key={`${boardId}-img-${idx}`}
-                style={[
-                  styles.imageBox,
-                  isSpoilerHidden && styles.imageSpoilerHidden,
-                ]}
-              >
+            <Image source={menuIcon} style={styles.menuIcon} contentFit="contain" />
+          </Pressable>
+        </Pressable>
+
+        <FeedMenuDropdown
+          visible={menuOpen}
+          position={{ top: menuTop, right: isMine ? 16 : 8 }}
+          isMine={isMine}
+          onClose={() => setMenuOpen(false)}
+          onDelete={onOpenDelete}
+          onReport={onOpenReport}
+          onBlock={onOpenBlock}
+        />
+
+        {lightboxIndex !== null && (
+          <FeedImageLightbox
+            images={images}
+            initialIndex={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+          />
+        )}
+
+        {/* ── Works card ────────────────────────────────────────── */}
+        {visibleWorks && (
+          <View style={styles.worksSection}>
+            <View style={styles.worksCard}>
+              <View style={styles.worksThumbnailBox}>
                 <Image
-                  source={{ uri: src }}
-                  style={styles.imageFill}
+                  source={{ uri: visibleWorks.thumbnailUrl }}
+                  style={styles.worksThumbnail}
                   contentFit="cover"
                 />
               </View>
-            ))}
-          </ScrollView>
+
+              <View style={styles.worksInfo}>
+                <View>
+                  <Text
+                    style={[styles.worksName, birthdayLayout && styles.birthdayWorksName]}
+                    numberOfLines={1}
+                  >
+                    {visibleWorks.worksName}
+                  </Text>
+                  <Text
+                    style={[styles.worksMeta, birthdayLayout && styles.birthdayWorksMeta]}
+                    numberOfLines={1}
+                  >
+                    {[visibleWorks.artistName, visibleWorks.worksType, visibleWorks.genre]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                </View>
+                <HashtagRow tags={visibleWorks.hashtags ?? []} />
+              </View>
+
+              {onClickWorksArrow && (
+                <Pressable onPress={onClickWorksArrow} style={styles.worksArrowBtn} hitSlop={8}>
+                  <Image source={arrowSmallIcon} style={styles.arrowSmall} contentFit="contain" />
+                </Pressable>
+              )}
+            </View>
+          </View>
         )}
 
-        {/* Text */}
-        <View style={[styles.textPad, images.length > 0 && styles.textPadAfterImage]}>
-          <Text
+        {/* ── Body: images + text ──────────────────────────────── */}
+        <View style={[styles.spoilerContainer, isAdultMasked && styles.adultMaskedContainer]}>
+          {isAdultMasked ? (
+            <AdultLockedPanel
+              onPressVerify={() => router.push("/profile/adult-verification" as never)}
+            />
+          ) : (
+            <View style={styles.bodySection}>
+              <View style={isSpoilerHidden ? styles.spoilerBlur : undefined}>
+                {visibleImages.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.imageContent}
+                  >
+                    {visibleImages.map((src, idx) => (
+                      <Pressable
+                        key={`${boardId}-img-${idx}`}
+                        style={[styles.imageBox, birthdayLayout && styles.birthdayImageBox]}
+                        onPress={() => setLightboxIndex(idx)}
+                      >
+                        <Image source={{ uri: src }} style={styles.imageFill} contentFit="cover" />
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )}
+                <View style={[styles.textPad, visibleImages.length > 0 && styles.textPadAfterImage]}>
+                  <LinkedText
+                    style={[styles.contentText, birthdayLayout && styles.birthdayContentText]}
+                    numberOfLines={variant === "detail" ? undefined : 3}
+                    enabled={!isSpoilerHidden}
+                  >
+                    {content}
+                  </LinkedText>
+                </View>
+              </View>
+
+              {isSpoilerHidden && (
+                <Pressable
+                  style={styles.spoilerOverlay}
+                  onPress={() => setSpoilerRevealed(true)}
+                  accessibilityLabel="스포일러가 포함된 피드글 보기"
+                >
+                  <Text style={styles.spoilerRevealText}>
+                    {spoilerScript ?? "스포일러가 포함된 피드글 보기"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {/* ── Reactions row ────────────────────────────────────── */}
+          <View
             style={[
-              styles.contentText,
-              isSpoilerHidden && styles.contentSpoilerHidden,
+              styles.reactionRow,
+              birthdayLayout && styles.birthdayReactionRow,
+              isAdultMasked && styles.adultMaskedReactionRow,
             ]}
-            numberOfLines={isSpoilerHidden || variant === 'detail' ? undefined : 3}
           >
-            {content}
-          </Text>
-        </View>
+            <Pressable
+              onPress={onToggleLike}
+              style={styles.reactionItem}
+              accessibilityLabel="좋아요"
+              hitSlop={8}
+            >
+              <Image
+                source={isLiked ? likePinkIcon : likeIcon}
+                style={styles.reactionIcon}
+                contentFit="contain"
+              />
+              {likeCount > 0 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isLiked && styles.reactionCountLiked,
+                    birthdayLayout && styles.birthdayReactionCount,
+                  ]}
+                >
+                  {likeCount}
+                </Text>
+              )}
+            </Pressable>
 
-        {/* Spoiler reveal button */}
-        {isSpoilerHidden && (
-          <Pressable
-            style={styles.spoilerReveal}
-            onPress={() => setSpoilerRevealed(true)}
-            accessibilityLabel="스포일러가 포함된 피드글 보기"
-          >
-            <Text style={styles.spoilerRevealText}>
-              스포일러가 포함된 피드글 보기
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* ── Reactions row ────────────────────────────────────── */}
-      <View style={styles.reactionRow}>
-        <Pressable
-          onPress={onToggleLike}
-          style={styles.reactionItem}
-          accessibilityLabel="좋아요"
-          hitSlop={8}
-        >
-          <Image
-            source={isLiked ? likePinkIcon : likeIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {likeCount > 0 && (
-            <Text style={styles.reactionCount}>{likeCount}</Text>
-          )}
-        </Pressable>
-
-        <View style={[styles.reactionItem, styles.commentItem]}>
-          <Image
-            source={commentIcon}
-            style={styles.reactionIcon}
-            contentFit="contain"
-          />
-          {replyCount > 0 && (
-            <Text style={styles.reactionCount}>{replyCount}</Text>
-          )}
+            <View
+              style={[
+                styles.reactionItem,
+                styles.commentItem,
+                birthdayLayout && styles.birthdayCommentItem,
+              ]}
+            >
+              <Image source={commentIcon} style={styles.reactionIcon} contentFit="contain" />
+              {replyCount > 0 && <Text style={styles.reactionCount}>{replyCount}</Text>}
+            </View>
+          </View>
         </View>
       </View>
+
+      {birthdayTheme && (
+        <View
+          pointerEvents="none"
+          style={variant === "list" ? styles.birthdayCardSeparator : styles.birthdayDetailSeparator}
+        />
+      )}
     </View>
-  )
+  );
 
-  if (variant === 'list' && onPressCard) {
+  if (variant === "list" && onPressCard) {
     return (
       <Pressable
-        onPress={onPressCard}
+        // A masked post would answer 403 on the detail screen.
+        onPress={isAdultMasked ? () => showAdultPrompt("read") : onPressCard}
         style={({ pressed }) => pressed && styles.cardPressed}
         accessibilityRole="button"
         accessibilityLabel={`${nickName}의 피드`}
       >
         {cardBody}
       </Pressable>
-    )
+    );
   }
 
-  return cardBody
+  return cardBody;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -329,14 +427,59 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Gray[100],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
+    position: "relative",
+    overflow: "hidden",
+  },
+  birthdayCard: {
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 0,
+    borderRadius: 12,
+  },
+  birthdayThemeTop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  birthdayThemeBottom: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  birthdayThemeImg: {
+    width: 393,
+    height: 70,
+  },
+  birthdayCardSeparator: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Gray[100],
+    zIndex: 2,
+  },
+  birthdayDetailSeparator: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: Gray[50],
+    zIndex: 2,
+  },
+  cardContent: {
+    zIndex: 1,
   },
 
   // Profile row
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     height: 41,
     paddingHorizontal: 16,
   },
@@ -344,66 +487,49 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 9999,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     marginRight: 12,
-  },
-  avatarFallback: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Gray[200],
   },
   avatar: {
     width: 40,
     height: 40,
   },
-  avatarInitial: {
-    ...Typography.body2Medium,
-    color: Gray[600],
-  },
   authorMeta: {
     flex: 1,
+    minWidth: 0,
+  },
+  authorNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minWidth: 0,
   },
   authorName: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
+    fontFamily: "SUITMedium",
+    fontSize: 14,
+    fontStyle: "normal",
+    fontWeight: "500",
+    lineHeight: 19.6,
     color: Gray[900],
+    flexShrink: 1,
   },
   timestamp: {
     marginTop: 2,
+    fontFamily: "SUIT",
     fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    color: Gray[300],
+    fontWeight: "500",
+    lineHeight: 16.8,
+    color: Gray[400],
   },
   menuBtn: {
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   menuIcon: {
     width: 24,
     height: 24,
-  },
-
-  // Menu dropdown
-  menuDropdown: {
-    position: 'absolute',
-    right: 16,
-    top: 52,
-    zIndex: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
-  },
-  menuDropdownImg: {
-    width: 96,
-    height: 36,
   },
 
   // Works section
@@ -413,19 +539,20 @@ const styles = StyleSheet.create({
   },
   worksCard: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderColor: Gray[200],
+    backgroundColor: C.bg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
   worksThumbnailBox: {
     width: 62,
     height: 83,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
@@ -435,83 +562,107 @@ const styles = StyleSheet.create({
   },
   worksInfo: {
     flex: 1,
+    height: 83,
     minWidth: 0,
-    gap: 4,
+    overflow: "hidden",
+    justifyContent: "space-between",
   },
   worksName: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#000000',
+    ...Typography.body2Bold,
+    color: Gray[800],
+    marginBottom: 4,
+  },
+  birthdayWorksName: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12.86,
+    lineHeight: 18.004,
+    marginBottom: 0,
   },
   worksMeta: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    ...Typography.caption1Medium,
     color: Gray[500],
+  },
+  birthdayWorksMeta: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11.023,
+    lineHeight: 15.432,
   },
   worksArrowBtn: {
     paddingLeft: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
     flexShrink: 0,
   },
   arrowSmall: {
     width: 24,
     height: 24,
+    tintColor: Gray[400],
   },
 
   // Hashtag
-  hashtagScroll: {
-    marginTop: 2,
-  },
-  hashtagContent: {
+  hashtagRow: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
     gap: 4,
+    overflow: "hidden",
+  },
+  hashtagRowMeasuring: {
+    opacity: 0,
   },
   hashtagChip: {
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: Gray[100],
-    backgroundColor: Gray[50],
+    borderColor: C.border,
+    backgroundColor: C.divider,
   },
   hashtagText: {
-    fontSize: 10,
-    fontWeight: '500',
-    lineHeight: 14,
-    letterSpacing: 0.2,
-    color: Gray[800],
+    ...Typography.caption2Medium,
+    color: Gray[500],
   },
 
   // Body
-  bodySection: {
+  spoilerContainer: {
     marginTop: 20,
-    position: 'relative',
+    position: "relative",
   },
-  imageScroll: {
-    paddingHorizontal: 0,
+  bodySection: {
+    overflow: "hidden",
+  },
+  spoilerBlur: {
+    filter: "blur(17px)",
+    overflow: "hidden",
+  } as any,
+  // Figma 11290:50053: the panel sits right under the profile row and the
+  // reactions follow 12px below it.
+  adultMaskedContainer: {
+    marginTop: 0,
+  },
+  adultMaskedReactionRow: {
+    marginTop: 12,
   },
   imageContent: {
     paddingHorizontal: 16,
     gap: 12,
   },
   imageBox: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Gray[100],
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Gray[200],
     flexShrink: 0,
   },
-  imageSpoilerHidden: {
-    opacity: 0.1,
+  birthdayImageBox: {
+    borderRadius: 8,
   },
   imageFill: {
-    width: 236,
-    height: 236,
+    width: 200,
+    height: 200,
   },
   textPad: {
     paddingHorizontal: 16,
@@ -521,41 +672,51 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   contentText: {
+    fontFamily: FontFamily.medium,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
     color: Gray[800],
   },
-  contentSpoilerHidden: {
-    opacity: 0.1,
+  birthdayContentText: {
+    color: Gray[900],
   },
-  spoilerReveal: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    top: 12,
-    zIndex: 10,
+  spoilerOverlay: {
+    position: "absolute",
+    top: -4,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    paddingHorizontal: 16,
+    paddingTop: 0,
   },
   spoilerRevealText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     lineHeight: 20,
     color: Magenta[300],
   },
 
   // Reactions
   reactionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 20,
     paddingHorizontal: 16,
   },
+  birthdayReactionRow: {
+    marginTop: 12,
+  },
   reactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   commentItem: {
     marginLeft: 16,
+  },
+  birthdayCommentItem: {
+    marginLeft: 12,
   },
   reactionIcon: {
     width: 24,
@@ -563,9 +724,17 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     marginLeft: 4,
+    fontFamily: FontFamily.medium,
     fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
+    fontWeight: "500",
+    lineHeight: 19.6,
     color: Gray[500],
   },
-})
+  reactionCountLiked: {
+    color: Magenta[300],
+  },
+  // Birthday cards keep the like count gray even when liked (existing look).
+  birthdayReactionCount: {
+    color: Gray[500],
+  },
+});

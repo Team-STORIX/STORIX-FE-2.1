@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C } from '../../../theme/colors'
 import {
@@ -22,16 +22,26 @@ import {
   useTrendingKeywords,
   useWorksSearchInfinite,
 } from '../hooks'
-import { useJoinTopicRoom } from '../../topicroom'
+import { getTopicRoomDiscoveryRoute } from '../../topicroom'
+import { useRecommendedHashtags } from '../../feed/hooks/hashtag'
 import { SearchFilterChip } from './SearchFilterChip'
 import { SearchFloatingButton } from './SearchFloatingButton'
 import { SearchHeader } from './SearchHeader'
 import { SearchOptionSheet } from './SearchOptionSheet'
+import {
+  shouldMaskAdultContent,
+  useAdultVerificationStore,
+} from '../../../store/adultVerification.store'
 import { SearchRecentKeywordsSection } from './SearchRecentKeywordsSection'
 import { SearchResultTabs, type SearchTab } from './SearchResultTabs'
 import { SearchTopicRoomResultList } from './SearchTopicRoomResultList'
 import { SearchTrendingKeywordsSection } from './SearchTrendingKeywordsSection'
 import { SearchWorksResultList } from './SearchWorksResultList'
+import {
+  trackScreenView,
+  trackSearch,
+  trackUseSearchFilter,
+} from '../../../lib/analytics/events'
 
 const WORKS_SORT_LABELS: Record<WorksSort, string> = {
   NAME: '기본순',
@@ -69,7 +79,7 @@ const GENRE_LABELS: Record<SearchGenre, string> = {
 
 function normalizeKeyword(raw?: string | string[]) {
   const value = Array.isArray(raw) ? raw[0] : raw
-  return (value ?? '').replace(/^#/, '').trim()
+  return (value ?? '').trim()
 }
 
 function summarizeSelected(
@@ -80,11 +90,12 @@ function summarizeSelected(
   if (values.length === 0) return fallback
   const first = labels[values[0]] ?? values[0]
   if (values.length === 1) return first
-  return `${first} +${values.length - 1}`
+  return `${first} 외 ${values.length - 1}`
 }
 
-function buildSearchHref(keyword: string) {
-  return `/search?keyword=${encodeURIComponent(keyword)}`
+function buildSearchHref(keyword: string, tab: SearchTab = 'works') {
+  const query = `keyword=${encodeURIComponent(keyword)}`
+  return tab === 'topicroom' ? `/search?${query}&tab=topicroom` : `/search?${query}`
 }
 
 export function SearchScreen() {
@@ -102,9 +113,11 @@ export function SearchScreen() {
   const [selectedTypes, setSelectedTypes] = useState<SearchWorksType[]>([])
   const [selectedGenres, setSelectedGenres] = useState<SearchGenre[]>([])
   const [activeSheet, setActiveSheet] = useState<'sort' | 'type' | 'genre' | null>(null)
+  const loggedSearchKeyRef = useRef<string | null>(null)
 
   const recentKeywordsQuery = useRecentKeywords()
   const trendingKeywordsQuery = useTrendingKeywords()
+  const recommendedHashtagsQuery = useRecommendedHashtags()
   const deleteRecentKeywordMutation = useDeleteRecentKeyword()
   const deleteAllRecentKeywordsMutation = useDeleteAllRecentKeywords()
 
@@ -120,19 +133,50 @@ export function SearchScreen() {
     selectedTypes,
     selectedGenres,
   )
-  const joinTopicRoomMutation = useJoinTopicRoom()
+
+  useFocusEffect(
+    useCallback(() => {
+      void trackScreenView('search')
+    }, []),
+  )
 
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
 
   useEffect(() => {
+    setActiveTab(params.tab === 'topicroom' ? 'topicroom' : 'works')
+  }, [params.tab])
+
+  useEffect(() => {
     setSelectedTypes([])
     setSelectedGenres([])
   }, [submittedKeyword])
 
+  useEffect(() => {
+    const activeQuerySucceeded =
+      activeTab === 'works' ? worksQuery.isSuccess : topicRoomQuery.isSuccess
+    if (!submittedKeyword || !activeQuerySucceeded) return
+
+    const searchKey = submittedKeyword
+    if (loggedSearchKeyRef.current !== searchKey) {
+      loggedSearchKeyRef.current = searchKey
+      void trackSearch(submittedKeyword)
+    }
+    void recentKeywordsQuery.refetch()
+  }, [
+    activeTab,
+    submittedKeyword,
+    worksQuery.isSuccess,
+    topicRoomQuery.isSuccess,
+    recentKeywordsQuery.refetch,
+  ])
+
   const recentKeywords = recentKeywordsQuery.data?.result.recentKeywords ?? []
   const trendingKeywords = trendingKeywordsQuery.data?.result.trendingKeywords ?? []
+  const recommendationKeyword =
+    recommendedHashtagsQuery.data?.find((item) => item.name.trim().length > 0)
+      ?.name ?? trendingKeywords.find((item) => item.keyword.trim().length > 0)?.keyword ?? null
 
   const sortLabel =
     activeTab === 'works'
@@ -140,6 +184,14 @@ export function SearchScreen() {
       : TOPIC_ROOM_SORT_LABELS[topicRoomSort]
   const typeLabel = summarizeSelected(selectedTypes, '작품유형', WORKS_TYPE_LABELS)
   const genreLabel = summarizeSelected(selectedGenres, '장르', GENRE_LABELS)
+  const isActiveResultLoading =
+    activeTab === 'works' ? worksQuery.isLoading : topicRoomQuery.isLoading
+  const isActiveResultEmpty =
+    activeTab === 'works'
+      ? worksQuery.isError || (!worksQuery.isLoading && worksQuery.items.length === 0)
+      : topicRoomQuery.isError ||
+        (!topicRoomQuery.isLoading && topicRoomQuery.items.length === 0)
+  const showFilters = !isActiveResultLoading && !isActiveResultEmpty
 
   const worksSortOptions = useMemo(
     () =>
@@ -179,31 +231,45 @@ export function SearchScreen() {
 
   const submitKeyword = (raw: string) => {
     const keyword = normalizeKeyword(raw)
+    const nextTab = activeTab
     Keyboard.dismiss()
 
     if (!keyword) {
-      setActiveTab('works')
-      router.replace('/search' as never)
+      setInputValue('')
+      router.replace((nextTab === 'topicroom' ? '/search?tab=topicroom' : '/search') as never)
       void recentKeywordsQuery.refetch()
       return
     }
 
-    setActiveTab('works')
-    router.replace(buildSearchHref(keyword) as never)
+    setActiveTab(nextTab)
+    setInputValue(keyword)
+    router.replace(buildSearchHref(keyword, nextTab) as never)
   }
 
-  const handlePressWorks = (item: WorksSearchItem) => {
+  const handlePressWorks = (item: WorksSearchItem, _index: number) => {
+    // The detail API answers 403 for masked works; prompt before navigating.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('read')
+      return
+    }
     router.push(`/works/${item.worksId}` as const)
   }
 
   const handlePressTopicRoom = async (item: TopicRoomSearchItem) => {
-    if (joinTopicRoomMutation.isPending) return
-
-    if (!item.isJoined) {
-      await joinTopicRoomMutation.mutateAsync(item.topicRoomId)
+    // Join and chat history both answer 403 for an adult room; prompt here so
+    // the card that is already blinded never opens the preview.
+    if (shouldMaskAdultContent(item)) {
+      useAdultVerificationStore.getState().showPrompt('topicroom')
+      return
     }
-
-    router.push(`/topicroom/${item.topicRoomId}` as const)
+    // Joined rooms open immediately; only a user's first entry goes through
+    // the preview screen, which handles joining before opening the chat.
+    router.push(
+      await getTopicRoomDiscoveryRoute(item.topicRoomId, {
+        ...item,
+        keyword: submittedKeyword,
+      }),
+    )
   }
 
   return (
@@ -213,14 +279,10 @@ export function SearchScreen() {
         onChangeText={setInputValue}
         onSubmit={() => submitKeyword(inputValue)}
         onBackPress={() => router.back()}
-        onClearPress={() => {
-          setInputValue('')
-          if (submittedKeyword) {
-            setActiveTab('works')
-            router.replace('/search' as never)
-            void recentKeywordsQuery.refetch()
-          }
-        }}
+        autoFocus={!submittedKeyword}
+        showCancelIcon={
+          submittedKeyword.length > 0 && normalizeKeyword(inputValue) === submittedKeyword
+        }
       />
 
       {submittedKeyword ? (
@@ -232,33 +294,34 @@ export function SearchScreen() {
             }}
           />
 
-          <View style={styles.filtersWrap}>
-            <SearchFilterChip
-              label={sortLabel}
-              selected={
-                activeTab === 'works'
-                  ? worksSort !== 'NAME'
-                  : topicRoomSort !== 'DEFAULT'
-              }
-              onPress={() => setActiveSheet('sort')}
-            />
-            <SearchFilterChip
-              label={typeLabel}
-              selected={selectedTypes.length > 0}
-              onPress={() => setActiveSheet('type')}
-            />
-            <SearchFilterChip
-              label={genreLabel}
-              selected={selectedGenres.length > 0}
-              onPress={() => setActiveSheet('genre')}
-            />
-          </View>
+          {showFilters ? (
+            <View style={styles.filtersWrap}>
+              <SearchFilterChip
+                label={sortLabel}
+                selected={
+                  activeTab === 'works'
+                    ? worksSort !== 'NAME'
+                    : topicRoomSort !== 'DEFAULT'
+                }
+                onPress={() => setActiveSheet('sort')}
+              />
+              <SearchFilterChip
+                label={typeLabel}
+                selected={selectedTypes.length > 0}
+                onPress={() => setActiveSheet('type')}
+              />
+              <SearchFilterChip
+                label={genreLabel}
+                selected={selectedGenres.length > 0}
+                onPress={() => setActiveSheet('genre')}
+              />
+            </View>
+          ) : null}
 
           <View style={styles.listWrap}>
             {activeTab === 'works' ? (
               <>
                 <SearchWorksResultList
-                  keyword={submittedKeyword}
                   data={worksQuery.items}
                   isLoading={worksQuery.isLoading}
                   isError={worksQuery.isError}
@@ -270,6 +333,8 @@ export function SearchScreen() {
                     }
                   }}
                   onPressItem={handlePressWorks}
+                  recommendationKeyword={recommendationKeyword}
+                  onPressRecommendation={submitKeyword}
                 />
                 {!worksQuery.isLoading && !worksQuery.isError ? (
                   <SearchFloatingButton />
@@ -277,11 +342,10 @@ export function SearchScreen() {
               </>
             ) : (
               <SearchTopicRoomResultList
-                keyword={submittedKeyword}
                 data={topicRoomQuery.items}
                 isLoading={topicRoomQuery.isLoading}
                 isError={topicRoomQuery.isError}
-                isJoining={joinTopicRoomMutation.isPending}
+                isJoining={false}
                 isFetchingNextPage={topicRoomQuery.isFetchingNextPage}
                 hasNextPage={!!topicRoomQuery.hasNextPage}
                 onEndReached={() => {
@@ -290,6 +354,8 @@ export function SearchScreen() {
                   }
                 }}
                 onPressItem={handlePressTopicRoom}
+                recommendationKeyword={recommendationKeyword}
+                onPressRecommendation={submitKeyword}
               />
             )}
           </View>
@@ -329,11 +395,25 @@ export function SearchScreen() {
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
           if (activeTab === 'works') {
-            setWorksSort((value[0] as WorksSort | undefined) ?? 'NAME')
+            const nextSort = (value[0] as WorksSort | undefined) ?? 'NAME'
+            setWorksSort(nextSort)
+            if (nextSort !== 'NAME') {
+              void trackUseSearchFilter({
+                filter_type: 'sort',
+                filter_value: nextSort.toLowerCase(),
+              })
+            }
             return
           }
 
-          setTopicRoomSort((value[0] as TopicRoomSort | undefined) ?? 'DEFAULT')
+          const nextSort = (value[0] as TopicRoomSort | undefined) ?? 'DEFAULT'
+          setTopicRoomSort(nextSort)
+          if (nextSort !== 'DEFAULT') {
+            void trackUseSearchFilter({
+              filter_type: 'sort',
+              filter_value: nextSort.toLowerCase(),
+            })
+          }
         }}
       />
 
@@ -345,7 +425,14 @@ export function SearchScreen() {
         multiple
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
-          setSelectedTypes(value as SearchWorksType[])
+          const nextTypes = value as SearchWorksType[]
+          setSelectedTypes(nextTypes)
+          nextTypes.forEach((type) => {
+            void trackUseSearchFilter({
+              filter_type: 'content_type',
+              filter_value: type.toLowerCase(),
+            })
+          })
         }}
       />
 
@@ -357,7 +444,14 @@ export function SearchScreen() {
         multiple
         onClose={() => setActiveSheet(null)}
         onApply={(value) => {
-          setSelectedGenres(value as SearchGenre[])
+          const nextGenres = value as SearchGenre[]
+          setSelectedGenres(nextGenres)
+          nextGenres.forEach((genre) => {
+            void trackUseSearchFilter({
+              filter_type: 'genre',
+              filter_value: genre.toLowerCase(),
+            })
+          })
         }}
       />
     </View>

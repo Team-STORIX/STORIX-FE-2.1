@@ -195,3 +195,56 @@ SUIT-ExtraBold.ttf → register as 'SUIT_800ExtraBold'
 ```
 
 And update `FontFamily` and `Typography` accordingly.
+
+## Phase 10A-lite — Native auth config safety (2026-05-04)
+
+Hardening pass on native auth configuration. Behavior is unchanged for the
+happy path; the goal is to fail loudly during prebuild if env is misconfigured
+and to surface SDK errors that were previously swallowed.
+
+### app.config.ts
+- Plugins from `app.json` (`expo-router`, `expo-secure-store`) are now appended
+  to via `...(config.plugins ?? [])` rather than overwritten. This was a silent
+  config bug — the previous array fully replaced the base.
+- Added `requireEnv(name)` helper. `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY` and
+  `EXPO_PUBLIC_NAVER_URL_SCHEME` are now required at config-evaluation time.
+  Missing values throw a clear error during prebuild/export. Values themselves
+  are never printed.
+- Comment block in `app.config.ts` documents the three places the Naver URL
+  scheme must agree (`app.json scheme`, plugin config, `NaverLogin.initialize`).
+
+### src/lib/auth/social/native.ts
+- Empty `catch {}` blocks in `logoutKakao` and `logoutNaver` replaced with
+  `console.warn(...)` so SDK errors show up in logs. Logout still succeeds:
+  the local STORIX token is wiped by `clearAuth()` regardless of SDK outcome.
+- Added a comment cross-referencing `EXPO_PUBLIC_NAVER_URL_SCHEME` in
+  `ensureNaverInitialized()` to flag the contract with `app.config.ts`.
+
+### src/features/auth/hooks/useKakaoLogin.ts
+- Resolved the TODO: on error the user is now sent back to `/(auth)/login`
+  via `router.replace(...)`. The login route exists and is in the typed-routes
+  union, so the call is type-safe.
+
+### src/features/auth/ui/LoginScreen.tsx
+- All provider buttons (Kakao, Naver, Twitter, Apple) and the dev-login button
+  now pass `disabled={pending}` while any social mutation is in flight. The
+  per-provider spinner still indicates which provider triggered the call; the
+  remaining buttons dim to `opacity: 0.45` so it's visually clear they're
+  inert. Prevents a double-submit where a user could fire Kakao + Naver
+  back-to-back and end up with two overlapping mutations.
+
+### src/features/auth/api/auth.schema.ts (refreshToken legacy note)
+- `ReaderLoginResponseSchema` (the 2.0 cookie-based shape) now carries a comment
+  explaining that on RN this path means no silent refresh: the refresh token
+  lived in an httpOnly cookie that RN cannot read. Server-side, any endpoint
+  serving RN should prefer `regularLoginResponse`, which carries both tokens
+  in the body.
+- No schema/behavior change — the legacy fallback in `extractLoginTokens` is
+  preserved for backward compatibility.
+
+### Out of scope (still open)
+- Kakao Android **key hash** registration in the Kakao developer console — the
+  hash for the dev/release keystores must be added there before Kakao login
+  will succeed on a physical Android device. Pure ops/config work; no code change.
+- Apple Sign In implementation (entitlement is wired in `app.config.ts`, but
+  no `useAppleLogin` hook yet).

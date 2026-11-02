@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { FavoriteWorkItem } from '../api/feed/readerFavoriteWorks.api'
-import { Gray, Magenta } from '../../../theme/colors'
+import { C, Gray, Magenta } from '../../../theme/colors'
 import { Typography } from '../../../theme/typography'
 
 const pickerPinkIcon = require('../../../../assets/icons/feed/picker-pink.svg')
@@ -30,17 +30,9 @@ export function FeedWorksPicker({
 }: FeedWorksPickerProps) {
   const router = useRouter()
 
-  const hasFavorites = works.length > 0
-
   const items: PickerItem[] = [
     { id: 'all', name: '전체' },
-    ...(hasFavorites
-      ? works.map((w) => ({
-          id: String(w.worksId),
-          name: w.worksName,
-          thumbnailUrl: w.thumbnailUrl,
-        }))
-      : []),
+    ...works.map((w) => ({ id: String(w.worksId), name: w.worksName, thumbnailUrl: w.thumbnailUrl })),
     { id: ADD_ID, name: '작품 추가' },
   ]
 
@@ -68,7 +60,7 @@ export function FeedWorksPicker({
             <View key={item.id} style={styles.itemWrapper}>
               <Pressable
                 onPress={() => handlePress(item)}
-                style={[styles.itemBtn, !isActive && styles.itemInactive]}
+                style={[styles.itemBtn, !isActive && !isAdd && styles.itemInactive]}
                 accessibilityRole="button"
                 aria-pressed={isActive}
               >
@@ -135,11 +127,10 @@ const styles = StyleSheet.create({
   container: {
     height: 110,
     paddingLeft: 16,
-    paddingRight: 16,
     paddingBottom: 20,
     borderBottomWidth: 6,
     borderBottomColor: Gray[50],
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     justifyContent: 'center',
   },
   scrollContent: {
@@ -197,7 +188,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     height: 90,
-    paddingTop: 0,
   },
   divider: {
     width: 1,

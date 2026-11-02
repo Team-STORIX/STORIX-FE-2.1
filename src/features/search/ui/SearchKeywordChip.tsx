@@ -1,16 +1,16 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Gray } from '../../../theme/colors'
-import { Radius } from '../../../theme/radius'
-import { Typography } from '../../../theme/typography'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text } from "react-native";
+import { C, Gray } from "../../../theme/colors";
+import { Radius } from "../../../theme/radius";
+import { Typography } from "../../../theme/typography";
 
-const cancelIcon = require('../../../../assets/icons/common/cancel.svg')
+const cancelIcon = require("../../../../assets/icons/common/cancel.svg");
 
 type Props = {
-  label: string
-  onPress: () => void
-  onRemove?: () => void
-}
+  label: string;
+  onPress: () => void;
+  onRemove?: () => void;
+};
 
 export function SearchKeywordChip({ label, onPress, onRemove }: Props) {
   return (
@@ -22,10 +22,14 @@ export function SearchKeywordChip({ label, onPress, onRemove }: Props) {
       <Text style={styles.label}>{label}</Text>
       {onRemove ? (
         <Pressable
-          style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.removeButton,
+            pressed && styles.pressed,
+          ]}
+          hitSlop={4}
           onPress={(event) => {
-            event.stopPropagation()
-            onRemove()
+            event.stopPropagation();
+            onRemove();
           }}
           accessibilityRole="button"
           accessibilityLabel={`${label} 삭제`}
@@ -34,13 +38,13 @@ export function SearchKeywordChip({ label, onPress, onRemove }: Props) {
         </Pressable>
       ) : null}
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: Radius.xs,
     borderWidth: 1,
     borderColor: C.border,
@@ -56,8 +60,8 @@ const styles = StyleSheet.create({
   removeButton: {
     width: 16,
     height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 4,
   },
   icon: {
@@ -67,4 +71,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
-})
+});

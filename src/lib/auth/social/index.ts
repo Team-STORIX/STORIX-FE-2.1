@@ -8,6 +8,7 @@ export type {
   SocialProviderId,
   KakaoNativeTokens,
   NaverNativeTokens,
+  AppleNativeTokens,
   NativeSocialAuthProvider,
   WebSocialAuthProvider,
 } from './types'

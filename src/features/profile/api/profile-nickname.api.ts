@@ -25,7 +25,7 @@ export const checkProfileNicknameValid = async (nickname: string) => {
     '/api/v1/profile/reader/nickname/valid',
     {
       params: { nickname },
-      validateStatus: () => true,
+      validateStatus: (status) => status !== 401 && status >= 200 && status < 500,
     },
   )
 

@@ -14,8 +14,10 @@ import {
   postWorksReviewLike,
   postWorksReviewReport,
   type UpdateMyReviewPayload,
+  type WorksReviewReportPayload,
 } from '../api/worksReview.api'
 import { useLikesStore } from '../../../store/likes.store'
+import { PROFILE_RATINGS_QUERY_KEY } from '../../profile/hooks/useProfileRatings'
 
 export const useWorksMyReview = (worksId: number) =>
   useQuery({
@@ -62,6 +64,7 @@ export const useLikeWorksReview = (params: { worksId: number }) => {
     onSettled: () => {
       // Invalidate on both success and error so the list re-fetches server state.
       qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
+      qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
       qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
     },
   })
@@ -69,7 +72,7 @@ export const useLikeWorksReview = (params: { worksId: number }) => {
 
 export const useReportWorksReview = () =>
   useMutation({
-    mutationFn: (p: { reviewId: number; payload?: unknown }) =>
+    mutationFn: (p: { reviewId: number; payload: WorksReviewReportPayload }) =>
       postWorksReviewReport(p),
   })
 
@@ -84,19 +87,25 @@ export const useUpdateMyReview = (params: { worksId: number }) => {
     qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
     qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
     qc.invalidateQueries({ queryKey: ['works', 'review', 'detail'] })
+    qc.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY })
   }, [m.isSuccess, qc, params.worksId])
   return m
 }
 
 export const useDeleteMyReview = (params: { worksId: number }) => {
   const qc = useQueryClient()
-  const m = useMutation({
+  return useMutation({
     mutationFn: (reviewId: number) => deleteMyReview(reviewId),
+    onSuccess: async (_, reviewId) => {
+      // Run invalidations inside the mutation's promise chain so they finish
+      // before the caller navigates away after `await mutateAsync(...)`.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'detail', params.worksId] }),
+        qc.invalidateQueries({ queryKey: ['works', 'review', 'detail', reviewId] }),
+        qc.invalidateQueries({ queryKey: PROFILE_RATINGS_QUERY_KEY }),
+      ])
+    },
   })
-  useEffect(() => {
-    if (!m.isSuccess) return
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'me', params.worksId] })
-    qc.invalidateQueries({ queryKey: ['works', 'review', 'list', params.worksId] })
-  }, [m.isSuccess, qc, params.worksId])
-  return m
 }

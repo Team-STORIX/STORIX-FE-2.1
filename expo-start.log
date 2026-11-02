@@ -1,0 +1,24 @@
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL KAKAO_CLIENT_ID KAKAO_REDIRECT_URI NAVER_CLIENT_ID NAVER_REDIRECT_URI EXPO_PUBLIC_NAVER_CLIENT_ID EXPO_PUBLIC_KAKAO_CLIENT_ID EXPO_PUBLIC_KAKAO_REDIRECT_URI EXPO_PUBLIC_NAVER_REDIRECT_URI EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY EXPO_PUBLIC_NAVER_CLIENT_SECRET EXPO_PUBLIC_NAVER_APP_NAME EXPO_PUBLIC_NAVER_URL_SCHEME EXPO_PUBLIC_GA_ID
+Starting project at C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1
+Starting Metro Bundler
+Error while reading cache, falling back to a full crawl:
+ Error: Unable to deserialize cloned data.
+    at deserialize (node:v8:436:14)
+    at DiskCacheManager.read (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro-file-map\src\cache\DiskCacheManager.js:60:33)
+    at FileMap.read (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro-file-map\src\index.js:284:14)
+    at C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro-file-map\src\index.js:202:25
+    at DependencyGraph.ready (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro\src\node-haste\DependencyGraph.js:88:5)
+    at Bundler.ready (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro\src\Bundler.js:62:5)
+    at IncrementalBundler.ready (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro\src\IncrementalBundler.js:302:5)
+    at Server.ready (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\metro\src\Server.js:1305:5)
+TypeError: Body is unusable: Body has already been read
+TypeError: Body is unusable: Body has already been read
+    at consumeBody (node:internal/deps/undici/undici:5712:15)
+    at _Response.json (node:internal/deps/undici/undici:5665:18)
+    at getNativeModuleVersionsAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\api\getNativeModuleVersions.ts:47:31)
+    at getVersionedNativeModulesAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\start\doctor\dependencies\bundledNativeModules.ts:33:14)
+    at getCombinedKnownVersionsAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\start\doctor\dependencies\getVersionedPackages.ts:58:7)
+    at getVersionedDependenciesAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\start\doctor\dependencies\validateDependenciesVersions.ts:100:33)
+    at validateDependenciesVersionsAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\start\doctor\dependencies\validateDependenciesVersions.ts:49:25)
+    at startAsync (C:\Users\chaet\anaconda3\FE\STORIX\STORIX-FE-2.1\node_modules\expo\node_modules\@expo\cli\src\start\startAsync.ts:110:5)

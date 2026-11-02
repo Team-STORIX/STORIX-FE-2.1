@@ -1,23 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
+import {
+  extractIsAvailableFromValidResponse,
+  extractIsDuplicatedFromValidResponse,
+  extractIsForbiddenFromValidResponse,
+} from '../../auth/api/nickname.api'
+import {
+  getNicknameFallbackErrorMessage,
+  getNicknameFormatErrorMessage,
+  NICKNAME_MESSAGES,
+} from '../../auth/lib/nickname-validation'
 import { checkProfileNicknameValid } from '../api/profile-nickname.api'
 import { C, Gray, Typography } from '../../../theme'
 
 const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
 const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
 
-type Status =
-  | 'idle'
-  | 'invalid_chars'
-  | 'length'
-  | 'spaces_only'
-  | 'jamo_only'
-  | 'same'
-  | 'checking'
-  | 'ok'
-  | 'taken'
-  | 'error'
+type Status = 'idle' | 'invalid' | 'same' | 'checking' | 'ok' | 'taken' | 'forbidden' | 'error'
 
 type Props = {
   currentNickname: string
@@ -26,17 +26,7 @@ type Props = {
   onVerifiedChange: (verified: boolean) => void
 }
 
-const MIN = 2
-const MAX = 10
-const MSG_LEN = '\ud55c\uae00,\uc601\ubb38,\uc22b\uc790 2~10\uc790\uae4c\uc9c0 \uc785\ub825 \uac00\ub2a5\ud574\uc694'
-const MSG_CHARS = '\ub2c9\ub124\uc784\uc740 \ud55c\uae00/\uc601\ubb38/\uc22b\uc790\ub9cc \uac00\ub2a5\ud574\uc694'
-const MSG_SPACES = '\uacf5\ubc31\ub9cc\uc73c\ub85c\ub294 \ub2c9\ub124\uc784\uc744 \uc124\uc815\ud560 \uc218 \uc5c6\uc5b4\uc694'
-const MSG_JAMO_ONLY = '\uc790\uc74c \ubaa8\uc74c\ub9cc\uc73c\ub85c\ub294 \ub2c9\ub124\uc784\uc744 \uc124\uc815\ud560 \uc218 \uc5c6\uc5b4\uc694'
-const MSG_OK = '\uc0ac\uc6a9 \uac00\ub2a5\ud55c \ub2c9\ub124\uc784\uc774\uc5d0\uc694'
 const MSG_SAME = '\ud604\uc7ac \ub2c9\ub124\uc784\uc774\uc5d0\uc694'
-const MSG_TAKEN = '\uc774\ubbf8 \uc0ac\uc6a9 \uc911\uc778 \ub2c9\ub124\uc784\uc774\uc5d0\uc694'
-const MSG_ERROR =
-  '\ub2c9\ub124\uc784 \ud655\uc778 \uc911 \uc624\ub958\uac00 \ubc1c\uc0dd\ud588\uc5b4\uc694. \ub2e4\uc2dc \uc2dc\ub3c4\ud574\uc8fc\uc138\uc694.'
 
 export function ProfileEditNicknameField({
   currentNickname,
@@ -44,7 +34,6 @@ export function ProfileEditNicknameField({
   onChange,
   onVerifiedChange,
 }: Props) {
-  const [isFocused, setIsFocused] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
   const initRef = useRef(false)
@@ -57,7 +46,7 @@ export function ProfileEditNicknameField({
       initRef.current = true
       const initialStatus = normalizedValue === normalizedCurrentNickname ? 'same' : 'idle'
       setStatus(initialStatus)
-      setMessage(initialStatus === 'same' ? MSG_SAME : '')
+      setMessage('')
       onVerifiedChange(initialStatus === 'same')
     }
   }, [normalizedCurrentNickname, normalizedValue, onVerifiedChange])
@@ -66,28 +55,22 @@ export function ProfileEditNicknameField({
 
   const validate = (raw: string): { nextStatus: Status; nextMessage: string } => {
     if (!raw.length) return { nextStatus: 'idle', nextMessage: '' }
-    if (raw.trim().length === 0) return { nextStatus: 'spaces_only', nextMessage: MSG_SPACES }
-    if (raw.trim() === normalizedCurrentNickname) {
+    const formatErrorMessage = getNicknameFormatErrorMessage(raw)
+    if (formatErrorMessage) {
+      return { nextStatus: 'invalid', nextMessage: formatErrorMessage }
+    }
+    if (raw === normalizedCurrentNickname) {
       return { nextStatus: 'same', nextMessage: MSG_SAME }
-    }
-    if (raw.trim().length < MIN || raw.trim().length > MAX) {
-      return { nextStatus: 'length', nextMessage: MSG_LEN }
-    }
-    if (!/^[가-힣a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ]+$/.test(raw.trim())) {
-      return { nextStatus: 'invalid_chars', nextMessage: MSG_CHARS }
-    }
-    if (/^[ㄱ-ㅎㅏ-ㅣ]+$/.test(raw.trim())) {
-      return { nextStatus: 'jamo_only', nextMessage: MSG_JAMO_ONLY }
     }
     return { nextStatus: 'idle', nextMessage: '' }
   }
 
   const handleChangeText = (next: string) => {
-    const limited = next.length > MAX ? next.slice(0, MAX) : next
-    onChange(limited)
-    setStatus('idle')
+    onChange(next)
+    const isSameNickname = next.trim() === normalizedCurrentNickname
+    setStatus(isSameNickname ? 'same' : 'idle')
     setMessage('')
-    onVerifiedChange(false)
+    onVerifiedChange(isSameNickname)
   }
 
   const handleCheck = async () => {
@@ -107,52 +90,59 @@ export function ProfileEditNicknameField({
     try {
       const result = await checkProfileNicknameValid(normalizedValue)
 
-      if (result.httpStatus >= 400) {
-        if (result.httpStatus === 409) {
-          setStatus('taken')
-          setMessage(MSG_TAKEN)
-          onVerifiedChange(false)
-          return
-        }
-
-        setStatus('error')
-        setMessage(MSG_ERROR)
+      if (extractIsDuplicatedFromValidResponse(result.raw) || result.httpStatus === 409) {
+        setStatus('taken')
+        setMessage(NICKNAME_MESSAGES.duplicated)
         onVerifiedChange(false)
         return
       }
 
-      if (result.available === true || result.raw.code === 'PROFILE_SUCCESS_002') {
+      if (extractIsForbiddenFromValidResponse(result.raw) || result.httpStatus === 403) {
+        setStatus('forbidden')
+        setMessage(NICKNAME_MESSAGES.forbidden)
+        onVerifiedChange(false)
+        return
+      }
+
+      if (result.httpStatus >= 400) {
+        setStatus('error')
+        setMessage(getNicknameFallbackErrorMessage(result.raw.message))
+        onVerifiedChange(false)
+        return
+      }
+
+      if (result.available === true || extractIsAvailableFromValidResponse(result.raw)) {
         setStatus('ok')
-        setMessage(MSG_OK)
+        setMessage(NICKNAME_MESSAGES.available)
         onVerifiedChange(true)
         return
       }
 
-      setStatus('taken')
-      setMessage(MSG_TAKEN)
+      if (result.available === false) {
+        setStatus('taken')
+        setMessage(NICKNAME_MESSAGES.duplicated)
+        onVerifiedChange(false)
+        return
+      }
+
+      setStatus('error')
+      setMessage(getNicknameFallbackErrorMessage(result.raw.message))
       onVerifiedChange(false)
     } catch {
       setStatus('error')
-      setMessage(MSG_ERROR)
+      setMessage(NICKNAME_MESSAGES.unknownError)
       onVerifiedChange(false)
     }
   }
 
   const underlineColor = useMemo(() => {
     if (status === 'ok' || status === 'same') return C.activeDot
-    if (
-      status === 'invalid_chars' ||
-      status === 'length' ||
-      status === 'spaces_only' ||
-      status === 'jamo_only' ||
-      status === 'taken' ||
-      status === 'error'
-    ) {
+    if (status === 'invalid' || status === 'taken' || status === 'forbidden' || status === 'error') {
       return C.error
     }
-    if (isFocused) return Gray[900]
+    if (normalizedValue.length > 0 && status === 'idle') return Gray[900]
     return Gray[300]
-  }, [isFocused, status])
+  }, [normalizedValue, status])
 
   const messageColor = status === 'ok' || status === 'same' ? C.activeDot : C.error
 
@@ -162,8 +152,6 @@ export function ProfileEditNicknameField({
         <TextInput
           value={value}
           onChangeText={handleChangeText}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           placeholder={'\ub2c9\ub124\uc784\uc744 \uc785\ub825\ud558\uc138\uc694'}
           placeholderTextColor={Gray[300]}
           autoCorrect={false}
@@ -196,14 +184,15 @@ export function ProfileEditNicknameField({
 
 const styles = StyleSheet.create({
   row: {
-    width: 361,
+    width: '100%',
     height: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   input: {
-    width: 254,
+    flex: 1,
+    marginRight: 8,
     paddingHorizontal: 8,
     paddingVertical: 10,
     borderBottomWidth: 2,
@@ -217,6 +206,7 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 6,
     marginLeft: 8,
+    fontFamily: 'SUIT',
     ...Typography.caption1Medium,
   },
   pressed: {

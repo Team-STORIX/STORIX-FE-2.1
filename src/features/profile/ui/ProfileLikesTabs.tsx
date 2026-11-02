@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Gray, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
 
 export type ProfileLikesTab = 'works' | 'writers'
 
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   tab: {
     flex: 1,

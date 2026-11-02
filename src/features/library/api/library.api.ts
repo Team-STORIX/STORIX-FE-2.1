@@ -27,7 +27,21 @@ export const getLibrarySearchWorks = async (params: {
 }
 
 // GET /api/v1/library/search/recent
-const LibraryRecentResponseSchema = ApiEnvelopeSchema(LibraryRecentKeywordsSchema)
+const LibraryRecentResponseSchema = z.preprocess(
+  (raw) => {
+    const response = raw as {
+      result?: { result?: unknown } | unknown
+    } | null
+    const result = response?.result
+
+    if (result && typeof result === 'object' && 'result' in result) {
+      return { ...response, result: result.result }
+    }
+
+    return raw
+  },
+  ApiEnvelopeSchema(LibraryRecentKeywordsSchema),
+)
 
 export const getLibraryRecentKeywords = async () => {
   const res = await apiClient.get('/api/v1/library/search/recent')
@@ -38,7 +52,9 @@ export const getLibraryRecentKeywords = async () => {
 export const deleteLibraryRecentKeyword = async (params: {
   keyword: string
 }) => {
-  const res = await apiClient.delete('/api/v1/library/search/recent', { params })
+  const res = await apiClient.delete('/api/v1/library/search/recent', {
+    params: { keyword: params.keyword.trim() },
+  })
   return ApiEnvelopeSchema(z.any()).parse(res.data).result
 }
 

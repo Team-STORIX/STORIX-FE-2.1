@@ -1,4 +1,7 @@
 export * from './api'
 export * from './hooks'
 export * from './ui'
+export * from './services/topicRoomLimit'
+export * from './services/topicRoomNavigation'
+export * from './services/topicRoomMembership'
 export * from './stomp'

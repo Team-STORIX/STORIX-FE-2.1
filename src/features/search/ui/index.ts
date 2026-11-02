@@ -1,5 +1,6 @@
 export * from './SearchFilterChip'
 export * from './SearchFloatingButton'
+export * from './SearchEmptyState'
 export * from './SearchHeader'
 export * from './SearchKeywordChip'
 export * from './SearchOptionSheet'

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { TopicRoomItem } from '../api/topicroom.schema'
 import { formatTopicRoomSubtitle } from '../api/formatTopicRoomSubtitle'
@@ -70,11 +70,7 @@ export function TopicRoomCard({
       </View>
 
       <View style={styles.entryButton}>
-        {isJoining ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Image source={arrowIcon} style={styles.entryIcon} contentFit="contain" />
-        )}
+        <Image source={arrowIcon} style={styles.entryIcon} contentFit="contain" />
       </View>
     </Pressable>
   )
@@ -171,6 +167,7 @@ const styles = StyleSheet.create({
   entryIcon: {
     width: 18,
     height: 18,
+    tintColor: C.card,
   },
   pressed: {
     opacity: 0.88,

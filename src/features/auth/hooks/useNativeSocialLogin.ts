@@ -7,79 +7,117 @@
 // RN SDKs (@react-native-kakao, @react-native-seoul/naver-login) are installed.
 // See src/lib/auth/social/native.ts for setup instructions.
 
-import { useMutation } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { AxiosError } from 'axios'
+import { useMutation } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import { useRouter } from "expo-router";
 
-import { kakaoNativeLogin } from '../api/kakao.api'
-import { naverNativeLogin } from '../api/naver.api'
+import { nativeSocialAuthProvider } from "../../../lib/auth/social/native";
+import type { SocialProviderId } from "../../../lib/auth/social/types";
+import { setItem } from "../../../lib/storage/async";
+import { useAuthStore } from "../../../store/auth.store";
+import { SOCIAL_PROVIDER_KEY } from "../../profile/hooks/useSocialProvider";
+import { appleLogin } from "../api/apple.api";
 import {
   extractLoginTokens,
   type SocialLoginResponse,
-} from '../api/auth.schema'
-import {
-  nativeSocialAuthProvider,
-  type SocialProviderId,
-} from '../../../lib/auth/social'
-import { useAuthStore } from '../../../store/auth.store'
+} from "../api/auth.schema";
+import { kakaoNativeLogin } from "../api/kakao.api";
+import { naverNativeLogin } from "../api/naver.api";
 
 // ─── internal helper ──────────────────────────────────────────────────────────
 
 const callBackend = async (
   provider: SocialProviderId,
 ): Promise<SocialLoginResponse> => {
-  if (provider === 'kakao') {
+  if (provider === "kakao") {
     // idToken is optional — only present when OpenID Connect is enabled in
     // the Kakao developer console.
     const { accessToken, idToken } =
-      await nativeSocialAuthProvider.loginWithKakao()
-    return kakaoNativeLogin({ accessToken, idToken })
+      await nativeSocialAuthProvider.loginWithKakao();
+    if (__DEV__) {
+      console.log("[useNativeSocialLogin] Kakao SDK result:", {
+        hasAccessToken: !!accessToken,
+        hasIdToken: !!idToken,
+      });
+    }
+    return kakaoNativeLogin({ accessToken, idToken });
   }
-  const { accessToken } = await nativeSocialAuthProvider.loginWithNaver()
-  return naverNativeLogin({ accessToken })
-}
+  if (provider === "apple") {
+    // The 2.0 backend contract takes a single `code` param — authorizationCode
+    // is preferred; fall back to identityToken when Apple omits the code.
+    const { authorizationCode, identityToken } =
+      await nativeSocialAuthProvider.loginWithApple();
+    const code = authorizationCode ?? identityToken;
+    return appleLogin(code);
+  }
+  const { accessToken, refreshToken } =
+    await nativeSocialAuthProvider.loginWithNaver();
+  return naverNativeLogin({ accessToken, refreshToken });
+};
 
 // ─── hook ─────────────────────────────────────────────────────────────────────
 
 export const useNativeSocialLogin = () => {
-  const router = useRouter()
-  const setLoginTokens = useAuthStore((s) => s.setLoginTokens)
-  const setOnboardingToken = useAuthStore((s) => s.setOnboardingToken)
+  const router = useRouter();
+  const setLoginTokens = useAuthStore((s) => s.setLoginTokens);
+  const setOnboardingToken = useAuthStore((s) => s.setOnboardingToken);
 
   return useMutation({
     mutationFn: (provider: SocialProviderId) => callBackend(provider),
 
-    onSuccess: async (data: SocialLoginResponse) => {
-      const { isRegistered, readerPreLoginResponse } = data.result
-      const loginTokens = extractLoginTokens(data.result)
+    onSuccess: async (
+      data: SocialLoginResponse,
+      provider: SocialProviderId,
+    ) => {
+      const { isRegistered, readerPreLoginResponse } = data.result;
+      const loginTokens = extractLoginTokens(data.result);
+      if (__DEV__) {
+        console.log("[useNativeSocialLogin] backend result:", {
+          provider,
+          isRegistered,
+          hasLoginTokens: !!loginTokens,
+          hasOnboardingToken: !!readerPreLoginResponse?.onboardingToken,
+        });
+      }
 
       // Existing user — store tokens and go to the main app.
       if (isRegistered && loginTokens) {
-        await setLoginTokens(loginTokens)
-        router.replace('/(tabs)')
-        return
+        await Promise.all([
+          setLoginTokens(loginTokens),
+          setItem(SOCIAL_PROVIDER_KEY, provider),
+        ]);
+        router.replace("/(tabs)");
+        return;
       }
 
       // New user — store the onboarding token and start the signup flow.
       if (!isRegistered && readerPreLoginResponse?.onboardingToken) {
-        await setOnboardingToken(readerPreLoginResponse.onboardingToken)
-        router.replace('/(auth)/agreement')
-        return
+        await Promise.all([
+          setOnboardingToken(readerPreLoginResponse.onboardingToken),
+          setItem('tempSocialProvider', provider),
+        ]);
+        router.replace("/(auth)/agreement");
+        return;
       }
 
-      // Neither branch matched — log for debugging.
-      console.error('[useNativeSocialLogin] unexpected response shape:', data)
+      // Neither branch matched — log for debugging without surfacing LogBox.
+      if (__DEV__) {
+        console.warn("[useNativeSocialLogin] unexpected response shape:", data);
+      }
+      throw new Error("[SocialLogin] Unexpected backend response shape.");
     },
 
-    onError: (error: AxiosError) => {
+    onError: (error: unknown) => {
       // Do NOT use Alert.alert here — on iOS, calling alert() immediately after
       // a WKWebView / SafariViewController dismissal can cause a crash.
       // The calling screen should observe mutation.isError and render its own UI.
-      console.error('[useNativeSocialLogin] failed:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      })
+      if (__DEV__) {
+        console.warn("[useNativeSocialLogin] failed:", {
+          message: error instanceof Error ? error.message : String(error),
+          status: isAxiosError(error) ? error.response?.status : undefined,
+          data: isAxiosError(error) ? error.response?.data : undefined,
+        });
+      }
     },
-  })
-}
+  });
+};

@@ -1,28 +1,31 @@
 {
   "expo": {
-    "name": "STORIX-FE-2.1",
-    "slug": "STORIX-FE-2.1",
-    "version": "1.0.0",
+    "name": "STORIX",
+    "slug": "STORIX-FE-21",
+    "version": "1.3.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app-logo.png",
     "scheme": "storixfe21",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/icons/common/logo-white.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "buildNumber": "47",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ko",
+        "CFBundleLocalizations": ["ko"]
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
+      "versionCode": 20,
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
@@ -31,10 +34,39 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@react-native-seoul/kakao-login",
+        {
+          "kakaoAppKey": "344d3d813aee8e9a15d97762d2da1001",
+          "kotlinVersion": "2.1.20"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icons/common/logo-white.png",
+          "imageWidth": 120,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000",
+          "dark": {
+            "image": "./assets/icons/common/logo-white.png",
+            "imageWidth": 120,
+            "resizeMode": "contain",
+            "backgroundColor": "#000000"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0f0e53f8-987b-48b6-bc8a-a463c57b236e"
+      }
+    },
+    "owner": "storix-dev"
   }
 }

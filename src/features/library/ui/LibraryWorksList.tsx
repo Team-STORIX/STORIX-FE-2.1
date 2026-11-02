@@ -7,13 +7,14 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { C, Typography } from '../../../theme'
+import { C, Gray, Typography } from '../../../theme'
+import { LibraryRatingBadge } from './LibraryRatingBadge'
 import type { LibraryUiWork } from './types'
-
-const littleStarIcon = require('../../../../assets/icons/common/littleStar.svg')
+import { AdultThumbnail } from '../../../components/adult'
 
 type Props = {
   data: LibraryUiWork[]
+  bottomInset?: number
   isFetchingNextPage?: boolean
   onEndReached?: () => void
   onPressItem: (item: LibraryUiWork) => void
@@ -21,6 +22,7 @@ type Props = {
 
 export function LibraryWorksList({
   data,
+  bottomInset = 128,
   isFetchingNextPage = false,
   onEndReached,
   onPressItem,
@@ -36,15 +38,21 @@ export function LibraryWorksList({
           accessibilityRole="button"
         >
           <View style={styles.thumbnailWrap}>
-            {item.thumb ? (
-              <Image
-                source={{ uri: item.thumb }}
-                style={styles.thumbnail}
-                contentFit="cover"
-              />
-            ) : (
-              <View style={[styles.thumbnail, styles.thumbnailFallback]} />
-            )}
+            <AdultThumbnail
+              isAdultOnly={item.isAdultOnly}
+              isBlinded={item.isBlinded}
+              style={styles.thumbnail}
+            >
+              {item.thumb ? (
+                <Image
+                  source={{ uri: item.thumb }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+              )}
+            </AdultThumbnail>
           </View>
 
           <View style={styles.body}>
@@ -55,10 +63,7 @@ export function LibraryWorksList({
               {item.meta}
             </Text>
 
-            <View style={styles.ratingRow}>
-              <Image source={littleStarIcon} style={styles.star} contentFit="contain" />
-              <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
-            </View>
+            <LibraryRatingBadge value={item.rating} />
           </View>
         </Pressable>
       )}
@@ -66,13 +71,14 @@ export function LibraryWorksList({
       onEndReachedThreshold={0.3}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.listContent}
       ListFooterComponent={
         isFetchingNextPage ? (
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: bottomInset }]}>
             <ActivityIndicator size="small" color={C.primary} />
           </View>
         ) : (
-          <View style={styles.footerSpacer} />
+          <View style={{ height: bottomInset }} />
         )
       }
     />
@@ -80,11 +86,14 @@ export function LibraryWorksList({
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingBottom: 100,
+  },
   itemRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: C.divider,
+    borderBottomColor: Gray[100],
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -105,34 +114,18 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     gap: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   title: {
-    ...Typography.body1Medium,
-    color: C.text,
+    ...Typography.body2Medium,
+    color: Gray[900],
   },
   meta: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  star: {
-    width: 9,
-    height: 10,
-  },
-  rating: {
-    ...Typography.caption1Extrabold,
-    color: C.primary,
+    ...Typography.caption1Medium,
+    color: Gray[500],
   },
   footer: {
-    paddingVertical: 16,
-  },
-  footerSpacer: {
-    height: 32,
+    paddingTop: 16,
   },
   pressed: {
     opacity: 0.78,

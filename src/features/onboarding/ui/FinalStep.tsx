@@ -1,18 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { C, Gray, Typography } from '../../../theme'
 
-const bigStarPink = require('../../../../assets/icons/common/big-star-pink.svg')
+const finishStar = require('../../../../assets/preference/finishStar.webp')
 
 export function FinalStep() {
   return (
     <View style={styles.container}>
       <View style={styles.textWrap}>
         <Text style={styles.title}>준비완료!</Text>
-        <Text style={styles.subtitle}>이제 여행을 시작해볼까요?</Text>
+        <Text style={styles.subtitle}>이제 탐험을 시작해볼까요?</Text>
       </View>
 
       <View style={styles.imageWrap}>
-        <Image source={bigStarPink} style={styles.image} contentFit="contain" />
+        <Image source={finishStar} style={styles.image} contentFit="contain" />
       </View>
     </View>
   )
@@ -28,21 +29,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
+    ...Typography.heading1,
+    color: C.text,
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
+    ...Typography.body1Medium,
+    color: Gray[500],
     textAlign: 'center',
   },
   imageWrap: {
     marginTop: 125,
+    width: 180,
+    height: 180,
   },
   image: {
     width: 180,

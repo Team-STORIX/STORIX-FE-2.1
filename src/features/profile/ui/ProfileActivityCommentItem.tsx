@@ -1,16 +1,19 @@
+import { useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { deleteReply, toggleReplyLike } from '../../feed/api/feed/readerBoardDetail.api'
-import {
-  isAlreadyReportedError,
-  reportReply,
-} from '../../feed/api/feed/readerReply.api'
+import { reportReply } from '../../feed/api/feed/readerReply.api'
 import type { ProfileActivityReplyItem } from '../api/profile-activity.api'
-import { C, Gray, Radius, Typography } from '../../../theme'
+import { ReportModal } from '../../feed/ui/ReportModal'
+import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
+import { formatCreatedAtLabel } from '../../../lib/utils/formatCreatedAtLabel'
+import { LinkedText } from '../../../components/common/LinkedText'
+import { OfficialMark } from '../../../components/common/OfficialMark'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 const likeIcon = require('../../../../assets/icons/common/icon-like.svg')
 const likePinkIcon = require('../../../../assets/icons/common/icon-like-pink.svg')
 const menuIcon = require('../../../../assets/icons/common/menu-3dots.svg')
@@ -20,12 +23,18 @@ const deleteDropdown = require('../../../../assets/icons/common/delete-dropdown.
 export function ProfileActivityCommentItem({
   item,
   currentUserId,
+  currentUserProfileImageUrl,
+  currentUserNickName,
+  currentUserRole,
   isMenuOpen,
   onToggleMenu,
   queryKey,
 }: {
   item: ProfileActivityReplyItem
   currentUserId?: number
+  currentUserProfileImageUrl?: string | null
+  currentUserNickName?: string
+  currentUserRole?: string | null
   isMenuOpen: boolean
   onToggleMenu: () => void
   queryKey: readonly string[]
@@ -33,6 +42,16 @@ export function ProfileActivityCommentItem({
   const router = useRouter()
   const qc = useQueryClient()
   const isMine = currentUserId != null && item.reply.userId === currentUserId
+  const [reportModalVisible, setReportModalVisible] = useState(false)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const displayCreatedAt = formatCreatedAtLabel(item.reply.lastCreatedTime)
+  const profileImageUrl = isMine
+    ? currentUserProfileImageUrl
+    : item.profile.profileImageUrl
+  const nickName = isMine && currentUserNickName
+    ? currentUserNickName
+    : item.profile.nickName
+  const role = isMine && currentUserRole ? currentUserRole : item.profile.role
 
   const syncReplyItem = (
     replyId: number,
@@ -89,44 +108,27 @@ export function ProfileActivityCommentItem({
   }
 
   const handleDelete = () => {
-    Alert.alert('삭제', '이 댓글을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteReply({
-              boardId: item.reply.boardId,
-              replyId: item.reply.replyId,
-            })
-            syncReplyItem(item.reply.replyId, () => null)
-          } catch {
-            Alert.alert('오류', '댓글 삭제에 실패했어요.')
-          }
-        },
-      },
-    ])
+    setDeleteModalVisible(true)
   }
 
-  const handleReport = async () => {
+  const confirmDelete = async () => {
     try {
-      await reportReply({
+      await deleteReply({
         boardId: item.reply.boardId,
         replyId: item.reply.replyId,
-        reportedUserId: item.reply.userId,
       })
-      Alert.alert('알림', '신고가 접수되었어요.')
-    } catch (error) {
-      if (isAlreadyReportedError(error)) {
-        Alert.alert('알림', '이미 신고한 댓글이에요.')
-        return
-      }
-      Alert.alert('오류', '신고에 실패했어요.')
+      syncReplyItem(item.reply.replyId, () => null)
+    } catch {
+      Alert.alert('오류', '댓글 삭제에 실패했어요.')
     }
   }
 
+  const handleReport = () => {
+    setReportModalVisible(true)
+  }
+
   return (
+    <>
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={() => router.push(`/feed/${item.reply.boardId}` as const)}
@@ -134,21 +136,22 @@ export function ProfileActivityCommentItem({
       <View style={styles.header}>
         <View style={styles.authorRow}>
           <View style={styles.avatarWrap}>
-            {item.profile.profileImageUrl ? (
+            {profileImageUrl ? (
               <Image
-                source={{ uri: item.profile.profileImageUrl }}
+                source={{ uri: profileImageUrl }}
                 style={styles.avatar}
                 contentFit="cover"
               />
             ) : (
-              <Image source={warningIcon} style={styles.avatar} contentFit="cover" />
+              <Image source={defaultProfileImage} style={styles.avatar} contentFit="cover" />
             )}
           </View>
 
           <View style={styles.metaRow}>
-            <Text style={styles.name}>{item.profile.nickName}</Text>
-            <Text style={styles.dot}>쨌</Text>
-            <Text style={styles.time}>{item.reply.lastCreatedTime}</Text>
+            <Text style={styles.name}>{nickName}</Text>
+            <OfficialMark role={role} />
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.time}>{displayCreatedAt}</Text>
           </View>
         </View>
 
@@ -164,26 +167,28 @@ export function ProfileActivityCommentItem({
           </Pressable>
 
           {isMenuOpen ? (
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation()
-                onToggleMenu()
-                if (isMine) handleDelete()
-                else void handleReport()
-              }}
-              style={styles.dropdownButton}
-            >
-              <Image
-                source={isMine ? deleteDropdown : commentDropdown}
-                style={styles.dropdownImage}
-                contentFit="contain"
-              />
-            </Pressable>
+            <View style={styles.dropdownButton}>
+              <View style={styles.menuTextWrapper}>
+                <Pressable
+                  style={styles.menuTextItem}
+                  onPress={(event) => {
+                    event.stopPropagation()
+                    onToggleMenu()
+                    if (isMine) handleDelete()
+                    else void handleReport()
+                  }}
+                >
+                  <Text style={styles.menuTextItemText}>
+                    {isMine ? '삭제하기' : '신고하기'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
         </View>
       </View>
 
-      <Text style={styles.commentText}>{item.reply.comment}</Text>
+      <LinkedText style={styles.commentText}>{item.reply.comment}</LinkedText>
 
       <View style={styles.actionRow}>
         <Pressable
@@ -200,9 +205,33 @@ export function ProfileActivityCommentItem({
           />
         </Pressable>
 
-        {item.reply.likeCount > 0 ? <Text style={styles.count}>{item.reply.likeCount}</Text> : null}
+        {item.reply.likeCount > 0 ? (
+          <Text style={[styles.count, item.reply.isLiked ? styles.countLiked : null]}>
+            {item.reply.likeCount}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
+    <ReportModal
+      visible={reportModalVisible}
+      profileImageUrl={profileImageUrl}
+      nickname={nickName}
+      onClose={() => setReportModalVisible(false)}
+      onConfirm={async () => {
+        await reportReply({
+          boardId: item.reply.boardId,
+          replyId: item.reply.replyId,
+          reportedUserId: item.reply.userId,
+        })
+      }}
+    />
+    <FeedDeleteConfirmModal
+      type="comment"
+      visible={deleteModalVisible}
+      onClose={() => setDeleteModalVisible(false)}
+      onConfirm={confirmDelete}
+    />
+    </>
   )
 }
 
@@ -245,6 +274,7 @@ const styles = StyleSheet.create({
   name: {
     ...Typography.body2Medium,
     color: Gray[900],
+    flexShrink: 1,
   },
   dot: {
     marginHorizontal: 4,
@@ -270,18 +300,29 @@ const styles = StyleSheet.create({
     right: 0,
     top: 28,
     zIndex: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
+    borderRadius: 4,
+    backgroundColor: C.card,
+    shadowColor: C.text,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  dropdownImage: {
+  menuTextWrapper: {
     width: 96,
-    height: 36,
+    padding: 8,
+  },
+  menuTextItem: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  menuTextItemText: {
+    ...Typography.body2Medium,
+    color: Gray[500],
   },
   commentText: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: Gray[900],
   },
   actionRow: {
@@ -300,6 +341,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     ...Typography.body2Bold,
     color: Gray[500],
+  },
+  countLiked: {
+    color: Magenta[300],
   },
   pressed: {
     opacity: 0.9,

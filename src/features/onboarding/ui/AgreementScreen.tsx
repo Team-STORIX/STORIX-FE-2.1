@@ -1,118 +1,107 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useAuthStore } from '../../../store/auth.store'
-import { C } from '../../../theme/colors'
-import { Typography } from '../../../theme/typography'
+import { useAndroidBackHandler } from '../../../lib/navigation/useAndroidBackHandler'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
+import { OnboardingCtaButton } from './OnboardingCtaButton'
+import { OnboardingMissingScreen } from './OnboardingMissingScreen'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
-const termsPink = require('../../../../assets/icons/login/terms-pink.svg')
-const termsGray = require('../../../../assets/icons/login/terms-gray.svg')
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 const checkGray = require('../../../../assets/icons/common/check-gray.svg')
-const nextPink = require('../../../../assets/onboarding/next.svg')
-const nextGray = require('../../../../assets/onboarding/next-gray.svg')
+
+const SERVICE_TERMS_URL =
+  'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link'
+const PRIVACY_POLICY_URL = 'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a'
 
 export function AgreementScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const setMarketingAgree = useAuthStore((s) => s.setMarketingAgree)
+  const setMandatoryConsents = useAuthStore((s) => s.setMandatoryConsents)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
-  const [agreement1, setAgreement1] = useState(false)
-  const [agreement2, setAgreement2] = useState(false)
-  const [agreement3, setAgreement3] = useState(false)
+  const [serviceTermsAgree, setServiceTermsAgree] = useState(false)
+  const [privacyPolicyAgree, setPrivacyPolicyAgree] = useState(false)
+  const [ageOver14, setAgeOver14] = useState(false)
 
-  const allAgreed = agreement1 && agreement2 && agreement3
+  const allAgreed = serviceTermsAgree && privacyPolicyAgree && ageOver14
+  const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
   const handleAllAgree = () => {
     const next = !allAgreed
-    setAgreement1(next)
-    setAgreement2(next)
-    setAgreement3(next)
+    setServiceTermsAgree(next)
+    setPrivacyPolicyAgree(next)
+    setAgeOver14(next)
   }
 
   const handleNext = async () => {
     if (!allAgreed || !onboardingToken) return
-    await setMarketingAgree(true)
+    await setMandatoryConsents({ serviceTermsAgree, privacyPolicyAgree, ageOver14 })
     router.replace('/(auth)/onboarding')
   }
 
+  const handleBack = useCallback(() => {
+    void clearAuth()
+    router.replace('/(auth)/login')
+    return true
+  }, [clearAuth, router])
+
+  useAndroidBackHandler(handleBack)
+
   if (!onboardingToken) {
-    return (
-      <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
-        <Text style={styles.missingTitle}>회원가입 정보가 없어요.</Text>
-        <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
-        <Pressable
-          onPress={() => router.replace('/(auth)/login')}
-          style={styles.resetButton}
-        >
-          <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
-        </Pressable>
-      </View>
-    )
+    return <OnboardingMissingScreen title="회원가입 정보가 없어요." />
   }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Header */}
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={handleBack} style={styles.iconWrap}>
           <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
         </Pressable>
         <Text style={styles.topBarTitle}>약관동의</Text>
-        <View style={styles.backButton} />
+        <View style={styles.iconWrap} />
       </View>
 
+      {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.heading}>
-          스토릭스 이용을 위해{'\n'}필수 약관에 동의해 주세요.
-        </Text>
+        <Text style={styles.heading}>{'스토릭스 이용을 위해\n필수 약관에 동의해주세요.'}</Text>
 
-        <Pressable onPress={handleAllAgree} style={styles.allAgreeButton}>
-          <Image
-            source={allAgreed ? termsPink : termsGray}
-            style={styles.allAgreeImage}
-            contentFit="contain"
-          />
+        {/* 전체동의 카드 */}
+        <Pressable
+          onPress={handleAllAgree}
+          style={[styles.allAgreeCard, allAgreed ? styles.allAgreeCardActive : styles.allAgreeCardInactive]}
+        >
+          <Image source={allAgreed ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
+          <Text style={[styles.allAgreeText, allAgreed ? styles.allAgreeTextActive : styles.allAgreeTextInactive]}>
+            전체동의
+          </Text>
         </Pressable>
 
+        {/* 개별 약관 목록 */}
         <View style={styles.termsBlock}>
           <AgreementRow
-            checked={agreement1}
+            checked={serviceTermsAgree}
             label="(필수) 서비스 이용약관 동의"
-            onPress={() => setAgreement1((v) => !v)}
-            onOpenLink={() =>
-              void Linking.openURL(
-                'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link',
-              )
-            }
+            onToggle={() => setServiceTermsAgree((v) => !v)}
+            onOpenLink={() => void Linking.openURL(SERVICE_TERMS_URL)}
           />
           <AgreementRow
-            checked={agreement2}
+            checked={privacyPolicyAgree}
             label="(필수) 개인정보 수집·이용 동의"
-            onPress={() => setAgreement2((v) => !v)}
-            onOpenLink={() =>
-              void Linking.openURL(
-                'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a',
-              )
-            }
+            onToggle={() => setPrivacyPolicyAgree((v) => !v)}
+            onOpenLink={() => void Linking.openURL(PRIVACY_POLICY_URL)}
           />
-          <AgreementAgeRow
-            checked={agreement3}
-            onPress={() => setAgreement3((v) => !v)}
-          />
+          <AgreementAgeRow checked={ageOver14} onToggle={() => setAgeOver14((v) => !v)} />
         </View>
       </View>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
-        <Pressable onPress={handleNext} disabled={!allAgreed}>
-          <Image
-            source={allAgreed ? nextPink : nextGray}
-            style={styles.nextButtonImage}
-            contentFit="contain"
-          />
-        </Pressable>
+      {/* Footer CTA */}
+      <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
+        <OnboardingCtaButton label="다음으로" active={allAgreed} disabled={!allAgreed} onPress={() => void handleNext()} />
       </View>
     </View>
   )
@@ -121,83 +110,41 @@ export function AgreementScreen() {
 function AgreementRow({
   checked,
   label,
-  onPress,
+  onToggle,
   onOpenLink,
 }: {
   checked: boolean
   label: string
-  onPress: () => void
+  onToggle: () => void
   onOpenLink: () => void
 }) {
   return (
     <View style={styles.termRow}>
-      <Pressable onPress={onPress} style={styles.checkboxWrap}>
-        <Image source={checked ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
+      <Pressable onPress={onToggle} hitSlop={8}>
+        <Image source={checked ? checkPink : checkGray} style={styles.termCheckIcon} contentFit="contain" />
       </Pressable>
-      <Pressable onPress={onOpenLink}>
-        <Text style={[styles.termLink, checked && styles.termLinkActive]}>{label}</Text>
+      <Pressable onPress={onOpenLink} style={styles.termTextWrap}>
+        <Text style={[styles.termLinkText, checked ? styles.termTextActive : styles.termTextInactive]}>{label}</Text>
       </Pressable>
     </View>
   )
 }
 
-function AgreementAgeRow({
-  checked,
-  onPress,
-}: {
-  checked: boolean
-  onPress: () => void
-}) {
+function AgreementAgeRow({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
-    <View style={styles.termRow}>
-      <Pressable onPress={onPress} style={styles.checkboxWrap}>
-        <Image source={checked ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
-      </Pressable>
-      <Text style={[styles.termAgeText, checked && styles.termLinkActive]}>(필수) 14세 이상입니다.</Text>
-    </View>
+    <Pressable onPress={onToggle} style={styles.termRow}>
+      <Image source={checked ? checkPink : checkGray} style={styles.termCheckIcon} contentFit="contain" />
+      <Text style={[styles.termPlainText, checked ? styles.termTextActive : styles.termTextInactive]}>
+        (필수) 14세 이상입니다.
+      </Text>
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  missingScreen: {
-    flex: 1,
-    paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  missingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
-  },
-  missingBody: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
-    textAlign: 'center',
-  },
-  resetButton: {
-    marginTop: 20,
-    width: 200,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: '#FF4093',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
-    color: '#ffffff',
+    backgroundColor: C.card,
   },
   topBar: {
     height: 56,
@@ -205,8 +152,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: C.card,
   },
-  backButton: {
+  iconWrap: {
     width: 24,
     height: 24,
     alignItems: 'center',
@@ -217,10 +165,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   topBarTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#100F0F',
+    ...Typography.body1Medium,
+    color: C.text,
   },
   content: {
     flex: 1,
@@ -228,57 +174,73 @@ const styles = StyleSheet.create({
   },
   heading: {
     marginTop: 40,
-    fontSize: 24,
-    fontWeight: '700',
+    ...Typography.heading1,
     lineHeight: 34,
-    color: '#000000',
+    color: C.text,
   },
-  allAgreeButton: {
+  allAgreeCard: {
     marginTop: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  allAgreeImage: {
-    width: 361,
-    height: 56,
+  allAgreeCardInactive: {
+    borderColor: Gray[300],
+    backgroundColor: C.bg,
+  },
+  allAgreeCardActive: {
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
+  },
+  checkIcon: {
+    width: 24,
+    height: 24,
+  },
+  allAgreeText: {
+    ...Typography.body2Bold,
+  },
+  allAgreeTextInactive: {
+    color: Gray[500],
+  },
+  allAgreeTextActive: {
+    color: Magenta[300],
   },
   termsBlock: {
-    marginTop: 20,
+    marginTop: 8,
   },
   termRow: {
-    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+    paddingVertical: 16,
+    gap: 6,
   },
-  checkboxWrap: {
-    marginRight: 6,
+  termTextWrap: {
+    flex: 1,
   },
-  checkIcon: {
+  termCheckIcon: {
     width: 20,
     height: 20,
   },
-  termLink: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    color: '#888787',
+  termLinkText: {
+    ...Typography.body2Medium,
     textDecorationLine: 'underline',
   },
-  termAgeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    color: '#888787',
+  termPlainText: {
+    ...Typography.body2Medium,
   },
-  termLinkActive: {
-    color: '#FF4093',
+  termTextInactive: {
+    color: Gray[500],
+  },
+  termTextActive: {
+    color: Magenta[300],
   },
   footer: {
-    height: 84,
     paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  nextButtonImage: {
-    width: 361,
-    height: 50,
+    paddingTop: 12,
   },
 })

@@ -1,7 +1,10 @@
-import { Pressable, StyleSheet } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Pressable, StyleSheet, useWindowDimensions } from 'react-native'
 import { Image } from 'expo-image'
 
 const plusIcon = require('../../../../assets/icons/navbar/plus.svg')
+
+const BUTTON_SIZE = 56
 
 type Props = {
   isOpen: boolean
@@ -10,11 +13,28 @@ type Props = {
 }
 
 export function PlusActionButton({ isOpen, onPress, bottom }: Props) {
+  const { width } = useWindowDimensions()
+  const left = Math.round(width / 2 - BUTTON_SIZE / 2)
+  const rotateAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.timing(rotateAnim, {
+      toValue: isOpen ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start()
+  }, [isOpen, rotateAnim])
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg'],
+  })
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
-        { bottom, transform: [{ rotate: isOpen ? '90deg' : '0deg' }] },
+        { bottom, left },
         pressed && styles.pressed,
       ]}
       onPress={onPress}
@@ -22,7 +42,9 @@ export function PlusActionButton({ isOpen, onPress, bottom }: Props) {
       accessibilityLabel="추가"
       accessibilityState={{ expanded: isOpen }}
     >
-      <Image source={plusIcon} style={styles.icon} contentFit="contain" />
+      <Animated.View style={{ width: BUTTON_SIZE, height: BUTTON_SIZE, transform: [{ rotate }] }}>
+        <Image source={plusIcon} style={styles.icon} contentFit="contain" />
+      </Animated.View>
     </Pressable>
   )
 }
@@ -30,15 +52,14 @@ export function PlusActionButton({ isOpen, onPress, bottom }: Props) {
 const styles = StyleSheet.create({
   button: {
     position: 'absolute',
-    left: '50%',
-    marginLeft: -28,
-    width: 56,
-    height: 56,
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
     zIndex: 60,
+    elevation: 6,
   },
   icon: {
-    width: 56,
-    height: 56,
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
   },
   pressed: {
     opacity: 0.84,

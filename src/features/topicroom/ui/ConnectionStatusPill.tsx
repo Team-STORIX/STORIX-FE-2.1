@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { C } from '../../../theme/colors'
+import { Typography } from '../../../theme/typography'
 
 type Status = 'idle' | 'connecting' | 'open' | 'closed' | 'error'
 
@@ -36,7 +37,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: C.card,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: C.border,
     paddingHorizontal: 12,
@@ -49,5 +50,5 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
   },
-  label: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
+  label: { ...Typography.caption1Medium, color: C.textSecondary },
 })

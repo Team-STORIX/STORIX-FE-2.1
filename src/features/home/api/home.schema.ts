@@ -15,6 +15,7 @@ export const FeedProfileSchema = z.object({
   userId: z.number(),
   profileImageUrl: z.string().nullish(),
   nickName: z.string(),
+  role: z.string().nullish().optional(),
 })
 
 export const FeedBoardSchema = z.object({
@@ -29,7 +30,11 @@ export const FeedBoardSchema = z.object({
   likeCount: z.number(),
   replyCount: z.number(),
   isSpoiler: z.boolean(),
+  spoilerScript: z.string().nullish(),
   isLiked: z.boolean(),
+  // Adult-only / blinded flags added with the adult-verification rollout.
+  isAdultOnly: z.boolean().nullish(),
+  isBlinded: z.boolean().nullish(),
 })
 
 export const TodayFeedItemSchema = z.object({

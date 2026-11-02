@@ -19,14 +19,18 @@ export const naverLogin = async (args: {
 }
 
 /**
- * Naver native login — iOS/Android SDK supplies the accessToken directly.
+ * Naver native login — iOS/Android SDK supplies the accessToken and refreshToken directly.
  */
 export const naverNativeLogin = async (args: {
   accessToken: string
+  refreshToken: string
 }): Promise<SocialLoginResponse> => {
   const response = await apiClient.post(
     '/api/v1/auth/oauth/naver-native/login',
-    { accessToken: args.accessToken },
+    {
+      accessToken: args.accessToken,
+      refreshToken: args.refreshToken,
+    },
   )
   return SocialLoginResponseSchema.parse(response.data)
 }

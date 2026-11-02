@@ -1,18 +1,22 @@
-import { useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import {
-  NativeSyntheticEvent,
+  Keyboard,
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
-  TextInputContentSizeChangeEventData,
+  type TextInputContentSizeChangeEventData,
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { Gray, Radius, Typography } from '../../../theme'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { C, Gray, Radius, Typography } from '../../../theme'
 
 const commentBlackIcon = require('../../../../assets/icons/feed/comment-black.svg')
 const commentDisabledIcon = require('../../../../assets/icons/feed/upload-comment.svg')
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
+
+const MAX_LENGTH = 300
 
 type Props = {
   profileImageUrl?: string | null
@@ -22,66 +26,94 @@ type Props = {
   onSubmit: () => void
 }
 
-export function FeedCommentInput({
-  profileImageUrl,
-  replyTargetActive,
-  value,
-  onChangeText,
-  onSubmit,
-}: Props) {
-  const [inputHeight, setInputHeight] = useState(20)
-  const canSubmit = value.trim().length > 0
-
-  const handleContentSizeChange = (
-    event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>,
-  ) => {
-    const next = Math.min(39.2, Math.max(20, event.nativeEvent.contentSize.height))
-    setInputHeight(next)
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.avatarWrap}>
-        {profileImageUrl ? (
-          <Image source={{ uri: profileImageUrl }} style={styles.avatar} contentFit="cover" />
-        ) : (
-          <Image source={warningIcon} style={styles.avatar} contentFit="cover" />
-        )}
-      </View>
-
-      <View style={styles.inputWrap}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          multiline
-          maxLength={300}
-          onContentSizeChange={handleContentSizeChange}
-          style={[styles.input, { height: inputHeight }]}
-          placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
-          placeholderTextColor={Gray[300]}
-        />
-      </View>
-
-      <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>
-        <Image
-          source={canSubmit ? commentBlackIcon : commentDisabledIcon}
-          style={styles.submitIcon}
-          contentFit="contain"
-        />
-      </Pressable>
-    </View>
-  )
+export type FeedCommentInputHandle = {
+  focus: () => void
 }
+
+export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
+  function FeedCommentInput({ profileImageUrl, replyTargetActive, value, onChangeText, onSubmit }, ref) {
+    const { bottom } = useSafeAreaInsets()
+    const [navBarHeight, setNavBarHeight] = useState(0)
+    const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
+    const [contentHeight, setContentHeight] = useState(0)
+    const [autoFocusKey, setAutoFocusKey] = useState(0)
+    const canSubmit = value.trim().length > 0
+    const isMultiLine = contentHeight > 20
+
+    // Remounting with autoFocus is the reliable way to focus a multiline input here.
+    useImperativeHandle(ref, () => ({ focus: () => setAutoFocusKey((k) => k + 1) }))
+
+    useEffect(() => {
+      if (bottom > 0) setNavBarHeight(bottom)
+    }, [bottom])
+
+    useEffect(() => {
+      const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true))
+      const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false))
+      return () => {
+        show.remove()
+        hide.remove()
+      }
+    }, [])
+
+    return (
+      <View>
+        <View style={styles.container}>
+          <View style={styles.avatarWrap}>
+            <Image
+              source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+              style={styles.avatar}
+              contentFit="cover"
+            />
+          </View>
+
+          <View style={[styles.inputWrap, isMultiLine && styles.inputWrapExpanded]}>
+            <TextInput
+              key={autoFocusKey}
+              autoFocus={autoFocusKey > 0}
+              value={value}
+              onChangeText={(text) => onChangeText(text.slice(0, MAX_LENGTH))}
+              multiline
+              maxLength={MAX_LENGTH}
+              style={[styles.input, value.length > 0 && styles.inputWithCounter]}
+              placeholder={replyTargetActive ? '대댓글을 입력하세요' : '댓글을 입력하세요'}
+              placeholderTextColor={Gray[300]}
+              textAlignVertical="top"
+              scrollEnabled={false}
+              onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
+            />
+            {value.length > 0 && (
+              <View style={[styles.counterWrap, isMultiLine ? styles.counterWrapMulti : styles.counterWrapSingle]}>
+                <Text style={styles.counter}>{value.length}/{MAX_LENGTH}</Text>
+              </View>
+            )}
+          </View>
+
+          <Pressable onPress={onSubmit} disabled={!canSubmit} style={styles.submitButton}>
+            <Image
+              source={canSubmit ? commentBlackIcon : commentDisabledIcon}
+              style={styles.submitIcon}
+              contentFit="contain"
+            />
+          </Pressable>
+        </View>
+        {!keyboardVisible ? (
+          <View style={{ height: navBarHeight, backgroundColor: C.card }} />
+        ) : null}
+      </View>
+    )
+  },
+)
 
 const styles = StyleSheet.create({
   container: {
-    height: 68,
+    minHeight: 68,
     paddingHorizontal: 16,
     paddingVertical: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
     borderTopWidth: 1,
     borderTopColor: Gray[100],
   },
@@ -99,19 +131,49 @@ const styles = StyleSheet.create({
   inputWrap: {
     flex: 1,
     minHeight: 36,
-    borderRadius: 30,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: Gray[200],
-    backgroundColor: Gray[50],
+    backgroundColor: C.bg,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 8,
     justifyContent: 'center',
+    position: 'relative',
+  },
+  inputWrapExpanded: {
+    justifyContent: 'flex-start',
   },
   input: {
     ...Typography.body2Medium,
+    fontFamily: undefined,
     color: Gray[800],
-    paddingVertical: 0,
-    textAlignVertical: 'center',
+    padding: 0,
+    margin: 0,
+    includeFontPadding: false,
+  },
+  inputWithCounter: {
+    paddingRight: 48,
+  },
+  counterWrap: {
+    position: 'absolute',
+    right: 16,
+    width: 44,
+  },
+  counterWrapSingle: {
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  counterWrapMulti: {
+    bottom: 8,
+  },
+  counter: {
+    fontSize: 10,
+    fontWeight: '500',
+    lineHeight: 14,
+    color: Gray[300],
+    textAlign: 'right',
   },
   submitButton: {
     width: 36,

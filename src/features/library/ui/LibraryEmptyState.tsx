@@ -1,15 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
-import { C, Radius, Typography } from '../../../theme'
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { C, Magenta, Radius, Typography } from "../../../theme";
 
-const warningIcon = require('../../../../assets/icons/profile/warning.svg')
+const warningIcon = require("../../../../assets/icons/search/warning.png");
 
 type Props = {
-  title: string
-  description?: string
-  buttonText?: string
-  onPressButton?: () => void
-}
+  title: string;
+  description?: string;
+  buttonText?: string;
+  onPressButton?: () => void;
+};
 
 export function LibraryEmptyState({
   title,
@@ -23,7 +23,9 @@ export function LibraryEmptyState({
 
       <View style={styles.textWrap}>
         <Text style={styles.title}>{title}</Text>
-        {description ? <Text style={styles.description}>{description}</Text> : null}
+        {description ? (
+          <Text style={styles.description}>{description}</Text>
+        ) : null}
       </View>
 
       {buttonText && onPressButton ? (
@@ -36,49 +38,52 @@ export function LibraryEmptyState({
         </Pressable>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingTop: 120,
-    gap: 12,
+    gap: 20,
   },
   icon: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
   },
   textWrap: {
-    alignItems: 'center',
-    gap: 4,
+    alignItems: "center",
+    gap: 12,
   },
   title: {
     ...Typography.heading2,
     color: C.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     ...Typography.body2Medium,
     color: C.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
   },
   button: {
-    marginTop: 6,
-    borderRadius: Radius.sm,
+    marginTop: -8,
+    height: 36,
+    borderRadius: Radius.xs,
     borderWidth: 1,
-    borderColor: C.primaryMid,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 8,
+    borderColor: Magenta[100],
+    backgroundColor: Magenta[20],
+    paddingHorizontal: 12,
     paddingVertical: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    ...Typography.body2Medium,
-    color: C.primary,
+    ...Typography.caption1Semibold,
+    color: Magenta[300],
   },
   pressed: {
     opacity: 0.75,
   },
-})
+});

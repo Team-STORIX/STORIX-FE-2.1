@@ -43,6 +43,8 @@ export type FavoriteWork = {
   worksType: string
   isReviewed: boolean
   rating?: string
+  isAdultOnly?: boolean
+  isBlinded?: boolean
 }
 
 export type FavoriteArtist = {

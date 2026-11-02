@@ -6,9 +6,11 @@ import {
 
 type Params = { sort?: LibraryReviewSort }
 
+export const LIBRARY_REVIEW_QUERY_KEY = ['libraryReview'] as const
+
 export const useLibraryReviewInfinite = ({ sort = 'LATEST' }: Params = {}) =>
   useInfiniteQuery({
-    queryKey: ['libraryReview', sort],
+    queryKey: [...LIBRARY_REVIEW_QUERY_KEY, sort],
     queryFn: ({ pageParam }) =>
       getLibraryReview({ sort, page: Number(pageParam) }),
     initialPageParam: 0,

@@ -2,14 +2,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import type { MeProfileResult } from '../../../types/profile'
-import { C, Gray, Magenta, Radius } from '../../../theme'
+import { OfficialMark } from '../../../components/common/OfficialMark'
+import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
-const defaultProfileImage = require('../../../../assets/placeholders/profile-default.svg')
-const nextArrowIcon = require('../../../../assets/icons/common/arrow-next.svg')
+const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
+const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
 export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
   const router = useRouter()
-  const hasBio = me.profileDescription.trim().length > 0
+  const hasBio = (me.profileDescription ?? '').trim().length > 0
 
   return (
     <View style={styles.container}>
@@ -23,12 +24,17 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         </View>
 
         <View style={styles.textWrap}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>Lv.{me.level}</Text>
-          </View>
+          {me.title ? (
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{me.title}</Text>
+            </View>
+          ) : null}
 
-          <Text style={styles.nickname}>{me.nickName}</Text>
-          <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]}>
+          <View style={styles.nicknameRow}>
+            <Text style={styles.nickname} numberOfLines={1}>{me.nickName}</Text>
+            <OfficialMark role={me.role} />
+          </View>
+          <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>
             {hasBio ? me.profileDescription : '한줄소개를 입력해보세요 !'}
           </Text>
         </View>
@@ -38,9 +44,9 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
         onPress={() => router.push('/profile/fix')}
         style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={'\ud504\ub85c\ud544 \uc218\uc815'}
+        accessibilityLabel={'프로필 수정'}
       >
-        <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" />
+        <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
       </Pressable>
     </View>
   )
@@ -48,76 +54,75 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 28,
     backgroundColor: C.card,
   },
   contentRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 20,
+    alignItems: 'center',
+    gap: 16,
   },
   avatarWrap: {
     width: 80,
     height: 80,
     borderRadius: Radius.full,
     overflow: 'hidden',
-    flexShrink: 0,
   },
   avatar: {
     width: 80,
     height: 80,
   },
   textWrap: {
+    width: 200,
     alignItems: 'flex-start',
-    flexShrink: 1,
-    paddingRight: 24,
+    gap: 6,
   },
   levelBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 50,
-    backgroundColor: Magenta[200],
+    alignSelf: 'flex-start',
+    backgroundColor: Magenta[50],
   },
   levelBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    lineHeight: 14,
+    ...Typography.caption2Extrabold,
     letterSpacing: 0.2,
-    color: C.text,
+    color: Magenta[300],
+  },
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: '100%',
   },
   nickname: {
-    marginTop: 7,
-    fontSize: 18,
-    fontWeight: '600',
-    lineHeight: 25,
+    ...Typography.heading3,
+    flexShrink: 1,
+    textAlign: 'left',
     color: C.text,
   },
   bio: {
-    marginTop: 7,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
+    ...Typography.caption1Medium,
+    width: '100%',
+    textAlign: 'left',
+    maxWidth: 200,
     color: Gray[600],
   },
   bioPlaceholder: {
     color: Gray[400],
   },
   editButton: {
-    position: 'absolute',
-    right: 20,
-    top: 55,
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   editIcon: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
   },
   pressed: {
     opacity: 0.7,

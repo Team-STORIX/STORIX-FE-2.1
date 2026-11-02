@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Gray } from '../../../theme/colors'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { C, Gray } from '../../../theme/colors'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 
@@ -8,14 +8,18 @@ export function OnboardingTopBar({
   onBack,
   onSkip,
 }: {
-  onBack: () => void
+  onBack?: () => void
   onSkip?: () => void
 }) {
   return (
     <View style={styles.container}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
-      </Pressable>
+      {onBack ? (
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} contentFit="contain" />
+        </Pressable>
+      ) : (
+        <View style={styles.backButton} />
+      )}
 
       {onSkip ? (
         <Pressable onPress={onSkip}>
@@ -36,7 +40,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   backButton: {
     width: 24,
@@ -49,9 +53,11 @@ const styles = StyleSheet.create({
     height: 24,
   },
   skipText: {
-    fontSize: 14,
+    fontFamily: 'SUIT',
+    fontSize: 16,
     fontWeight: '500',
+    lineHeight: 22.4,
     color: Gray[500],
-    lineHeight: 20,
+    textAlign: 'center',
   },
 })

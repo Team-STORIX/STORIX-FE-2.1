@@ -7,11 +7,13 @@ import {
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
-import { C } from '../../../theme/colors'
+import { C, Gray } from '../../../theme/colors'
 import { Radius } from '../../../theme/radius'
 import { Typography } from '../../../theme/typography'
 import { formatTimeAgo } from '../../../lib/utils/formatTimeAgo'
 import type { TopicRoomSearchItem } from '../api'
+import { SearchEmptyState } from './SearchEmptyState'
+import { AdultThumbnail } from '../../../components/adult'
 
 function formatTopicRoomSubtitle(
   worksType?: string | null,
@@ -29,7 +31,6 @@ function formatTopicRoomSubtitle(
 }
 
 type Props = {
-  keyword: string
   data: TopicRoomSearchItem[]
   isLoading: boolean
   isError: boolean
@@ -37,22 +38,12 @@ type Props = {
   isFetchingNextPage: boolean
   hasNextPage: boolean
   onEndReached: () => void
-  onPressItem: (item: TopicRoomSearchItem) => void
-}
-
-function EmptyState({ keyword }: { keyword: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Text style={styles.emptyTitle}>검색 결과가 없어요.</Text>
-      <Text style={styles.emptyBody}>
-        "{keyword}"에 맞는 토픽룸을 찾지 못했어요.
-      </Text>
-    </View>
-  )
+  onPressItem: (item: TopicRoomSearchItem, index: number) => void
+  recommendationKeyword?: string | null
+  onPressRecommendation?: (keyword: string) => void
 }
 
 export function SearchTopicRoomResultList({
-  keyword,
   data,
   isLoading,
   isError,
@@ -61,6 +52,8 @@ export function SearchTopicRoomResultList({
   hasNextPage,
   onEndReached,
   onPressItem,
+  recommendationKeyword,
+  onPressRecommendation,
 }: Props) {
   if (isLoading) {
     return (
@@ -72,9 +65,10 @@ export function SearchTopicRoomResultList({
 
   if (isError) {
     return (
-      <View style={styles.centerWrap}>
-        <Text style={styles.message}>토픽룸 검색 결과를 불러오지 못했어요.</Text>
-      </View>
+      <SearchEmptyState
+        recommendationKeyword={recommendationKeyword}
+        onPressRecommendation={onPressRecommendation}
+      />
     )
   }
 
@@ -82,8 +76,11 @@ export function SearchTopicRoomResultList({
     <FlatList
       data={data}
       keyExtractor={(item) => `topicroom-search-${item.topicRoomId}`}
-      contentContainerStyle={data.length === 0 ? styles.emptyContent : styles.content}
-      renderItem={({ item }) => {
+      contentContainerStyle={[
+        styles.content,
+        data.length === 0 ? styles.emptyContent : null,
+      ]}
+      renderItem={({ item, index }) => {
         const subtitle = formatTopicRoomSubtitle(item.worksType, item.worksName)
         const timeAgo = formatTimeAgo(item.lastChatTime)
         const rightText = timeAgo
@@ -96,22 +93,29 @@ export function SearchTopicRoomResultList({
         return (
           <Pressable
             style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-            onPress={() => onPressItem(item)}
+            onPress={() => onPressItem(item, index)}
             disabled={isJoining}
             accessibilityRole="button"
           >
             <View style={styles.thumbnailWrap}>
-              {item.thumbnailUrl ? (
-                <Image
-                  source={{ uri: item.thumbnailUrl }}
-                  style={styles.thumbnail}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[styles.thumbnail, styles.thumbnailFallback]}>
-                  <Text style={styles.thumbnailFallbackText}>{initial}</Text>
-                </View>
-              )}
+              {/* Interim: no topic room design yet, so the work placeholder is reused. */}
+              <AdultThumbnail
+                isAdultOnly={item.isAdultOnly}
+                isBlinded={item.isBlinded}
+                style={styles.thumbnail}
+              >
+                {item.thumbnailUrl ? (
+                  <Image
+                    source={{ uri: item.thumbnailUrl }}
+                    style={styles.thumbnail}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.thumbnail, styles.thumbnailFallback]}>
+                    <Text style={styles.thumbnailFallbackText}>{initial}</Text>
+                  </View>
+                )}
+              </AdultThumbnail>
             </View>
 
             <View style={styles.body}>
@@ -138,7 +142,12 @@ export function SearchTopicRoomResultList({
       onEndReachedThreshold={0.4}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListEmptyComponent={<EmptyState keyword={keyword} />}
+      ListEmptyComponent={
+        <SearchEmptyState
+          recommendationKeyword={recommendationKeyword}
+          onPressRecommendation={onPressRecommendation}
+        />
+      }
       ListFooterComponent={
         isFetchingNextPage ? (
           <View style={styles.footer}>
@@ -156,6 +165,11 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  emptyContent: {
+    flexGrow: 1,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   row: {
     flexDirection: 'row',
@@ -195,16 +209,16 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.body2Medium,
-    color: C.text,
+    color: Gray[900],
     flex: 1,
   },
   rightText: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   title: {
     ...Typography.caption1Medium,
-    color: C.textMuted,
+    color: Gray[500],
   },
   separator: {
     height: 16,
@@ -217,27 +231,7 @@ const styles = StyleSheet.create({
   },
   message: {
     ...Typography.body2Medium,
-    color: C.textMuted,
-    textAlign: 'center',
-  },
-  emptyContent: {
-    flexGrow: 1,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 120,
-  },
-  emptyTitle: {
-    ...Typography.body1Semibold,
-    color: C.text,
-    marginBottom: 6,
-  },
-  emptyBody: {
-    ...Typography.body2Medium,
-    color: C.textMuted,
+    color: Gray[500],
     textAlign: 'center',
   },
   footer: {

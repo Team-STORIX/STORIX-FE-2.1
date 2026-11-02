@@ -1,24 +1,29 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { C, Gray, Typography } from '../../../theme'
+import { BIO_MAX_LENGTH } from '../lib/constants'
+import { OnboardingStepHeader } from './OnboardingStepHeader'
 
-export function BioStep({
-  value,
-  onChange,
-}: {
+type BioStepProps = {
   value: string
   onChange: (value: string) => void
-}) {
+  /** 프로필 수정 화면에서는 제목 없이 입력만 재사용한다. */
+  showHeader?: boolean
+}
+
+export function BioStep({ value, onChange, showHeader = true }: BioStepProps) {
   return (
     <View>
-      <Text style={styles.title}>한 줄 소개를 작성해 주세요</Text>
-      <Text style={styles.subtitle}>내 취향과 마음을 표현해보세요</Text>
+      {showHeader && (
+        <OnboardingStepHeader title="한 줄 소개를 작성해 주세요" subtitle="내 취향을 마음껏 표현해보세요" />
+      )}
 
-      <View style={styles.inputBlock}>
-        <View style={styles.inputUnderline}>
+      <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
+        <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: C.text }]}>
           <TextInput
             value={value}
-            onChangeText={(next) => onChange(next.slice(0, 30))}
-            placeholder="자기소개를 입력해보세요 !"
-            placeholderTextColor="#B0A5AA"
+            onChangeText={(next) => onChange(next.slice(0, BIO_MAX_LENGTH))}
+            placeholder="나를 소개하는 글을 적어보세요"
+            placeholderTextColor={Gray[300]}
             style={styles.input}
             autoCorrect={false}
             autoCapitalize="none"
@@ -26,7 +31,7 @@ export function BioStep({
         </View>
 
         <View style={styles.counterWrap}>
-          <Text style={styles.counter}>{value.length}/30자</Text>
+          <Text style={styles.counter}>{value.length}/{BIO_MAX_LENGTH}자</Text>
         </View>
       </View>
     </View>
@@ -34,46 +39,35 @@ export function BioStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
-  },
-  subtitle: {
-    marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
-  },
   inputBlock: {
     marginTop: 84,
-    width: 361,
+    width: '100%',
+  },
+  inputBlockEdit: {
+    marginTop: 0,
+    width: '100%',
   },
   inputUnderline: {
+    height: 42,
     borderBottomWidth: 2,
-    borderBottomColor: '#CDC4C8',
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingRight: 10,
-    paddingLeft: 8,
+    borderBottomColor: Gray[300],
   },
   input: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#131112',
+    height: 42,
+    paddingTop: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingLeft: 8,
+    ...Typography.body1Medium,
+    color: C.text,
   },
   counterWrap: {
-    marginTop: 8,
+    marginTop: 6,
     alignItems: 'flex-end',
     paddingRight: 8,
   },
   counter: {
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-    color: '#FF4093',
+    ...Typography.caption1Medium,
+    color: C.primary,
   },
 })

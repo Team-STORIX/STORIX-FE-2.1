@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { apiClient } from '../../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../../lib/api/types'
 
 export type FeedSort = 'LATEST'
 
@@ -13,10 +14,11 @@ export type FeedWorks = {
   worksType: string
   genre: string
   hashtags: string[]
+  isAdultOnly?: boolean
 }
 
 export type FeedBoardItem = {
-  profile: { userId: number; profileImageUrl: string | null; nickName: string }
+  profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
   board: {
     userId: number
     boardId: number
@@ -27,7 +29,11 @@ export type FeedBoardItem = {
     likeCount: number
     replyCount: number
     isSpoiler?: boolean
+    spoilerScript?: string
+    theme?: 'BIRTHDAY'
     isLiked: boolean
+    isAdultOnly?: boolean
+    isBlinded?: boolean
   }
   images: FeedBoardImage[]
   works: FeedWorks | null
@@ -41,14 +47,6 @@ export type PageResult<T> = {
   first: boolean
   last: boolean
   empty: boolean
-}
-
-export type ApiResponse<T> = {
-  isSuccess: boolean
-  code: string
-  message: string
-  result: T
-  timestamp: string
 }
 
 // GET /api/v1/feed/reader/board

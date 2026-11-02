@@ -1,118 +1,104 @@
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Image } from 'expo-image'
-import type { Dispatch, SetStateAction } from 'react'
-import {
-  checkNicknameValid,
-  extractIsAvailableFromValidResponse,
-  extractIsDuplicatedFromValidResponse,
-  extractIsForbiddenFromValidResponse,
-} from '../../auth/api/nickname.api'
+import * as ImagePicker from 'expo-image-picker'
+import { C, Gray, Radius, Typography } from '../../../theme'
+import { checkOnboardingNickname, isNicknameCheckError } from '../../auth/lib/nickname-check'
+import type { NicknameState } from '../hooks/useOnboardingForm'
+import { OnboardingStepHeader } from './OnboardingStepHeader'
 
-const profilePhoto = require('../../../../assets/onboarding/profilephoto.svg')
-const profileChange = require('../../../../assets/icons/profile/profile-change.svg')
-const idCheckPink = require('../../../../assets/onboarding/id-check-pink.svg')
-const idCheckGray = require('../../../../assets/onboarding/id-check-gray.svg')
+const profileChangeIcon = require('../../../../assets/icons/profile/profile-change.svg')
+const nicknameCheckActive = require('../../../../assets/onboarding/id-check-pink.svg')
+const nicknameCheckInactive = require('../../../../assets/onboarding/id-check-gray.svg')
 
-type Status = 'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'
+type NicknameStepProps = {
+  nickname: NicknameState
+  onNicknameChange: (patch: Partial<NicknameState>) => void
+  profileImageUri?: string
+  onProfileImageChange: (uri: string) => void
+}
 
 export function NicknameStep({
-  value,
-  onChange,
-  verified,
-  onVerifiedChange,
-  status,
-  onStatusChange,
-  message,
-  onMessageChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-  verified: boolean
-  onVerifiedChange: Dispatch<SetStateAction<boolean>>
-  status: Status
-  onStatusChange: Dispatch<SetStateAction<Status>>
-  message: string
-  onMessageChange: Dispatch<SetStateAction<string>>
-}) {
-  const normalized = value.trim()
+  nickname,
+  onNicknameChange,
+  profileImageUri,
+  onProfileImageChange,
+}: NicknameStepProps) {
+  const { value, status, message } = nickname
+  const canCheckNickname = value.length > 0
 
-  const handleCheck = async () => {
-    if (normalized.length < 2 || normalized.length > 10) {
-      onVerifiedChange(false)
-      onStatusChange('invalid')
-      onMessageChange('한글, 영문, 숫자, 밑줄(_) 2~10자까지 입력 가능해요')
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요해요. 설정에서 허용해 주세요.')
       return
     }
-
-    try {
-      const response = await checkNicknameValid(normalized)
-      if (extractIsAvailableFromValidResponse(response)) {
-        onVerifiedChange(true)
-        onStatusChange('ok')
-        onMessageChange('사용 가능한 닉네임이에요')
-        return
-      }
-      if (extractIsDuplicatedFromValidResponse(response)) {
-        onVerifiedChange(false)
-        onStatusChange('taken')
-        onMessageChange('이미 사용 중인 닉네임이에요')
-        return
-      }
-      if (extractIsForbiddenFromValidResponse(response)) {
-        onVerifiedChange(false)
-        onStatusChange('forbidden')
-        onMessageChange('사용할 수 없는 닉네임이에요')
-        return
-      }
-      onVerifiedChange(false)
-      onStatusChange('taken')
-      onMessageChange(response.message || '닉네임 확인에 실패했어요')
-    } catch {
-      onVerifiedChange(false)
-      onStatusChange('taken')
-      onMessageChange('닉네임 확인 중 오류가 발생했어요')
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      onProfileImageChange(result.assets[0].uri)
     }
   }
 
+  const handleChangeText = (text: string) => {
+    onNicknameChange({ value: text, verified: false, status: 'idle', message: '' })
+  }
+
+  const handleCheck = async () => {
+    const result = await checkOnboardingNickname(value)
+    onNicknameChange({ ...result, verified: result.status === 'ok' })
+  }
+
+  const inputBorderColor =
+    status === 'ok'
+      ? C.activeDot
+      : isNicknameCheckError(status)
+        ? C.error
+        : value.length > 0
+          ? C.text
+          : Gray[300]
+
   return (
     <View>
-      <Text style={styles.title}>닉네임을 입력해 주세요</Text>
-      <Text style={styles.subtitle}>닉네임과 프로필 사진을 설정해 주세요</Text>
+      <OnboardingStepHeader title="프로필을 설정해주세요" subtitle="닉네임과 프로필 사진을 정해주세요" />
 
+      {/* 프로필 사진 */}
       <View style={styles.profileWrap}>
         <View style={styles.profileImageWrap}>
-          <Image source={profilePhoto} style={styles.profileImage} contentFit="cover" />
-          <Pressable
-            style={styles.profileChangeButton}
-            onPress={() => Alert.alert('안내', '프로필 이미지 업로드는 아직 준비 중이에요.')}
-          >
-            <Image source={profileChange} style={styles.profileChangeIcon} contentFit="contain" />
+          {profileImageUri ? (
+            <Image source={{ uri: profileImageUri }} style={styles.profileImage} contentFit="cover" />
+          ) : (
+            <View style={styles.profilePlaceholder} />
+          )}
+          <Pressable style={styles.cameraButton} onPress={() => void handlePickImage()}>
+            <Image source={profileChangeIcon} style={styles.cameraIcon} contentFit="contain" />
           </Pressable>
         </View>
       </View>
 
+      {/* 닉네임 입력 */}
       <View style={styles.inputSection}>
         <View style={styles.inputRow}>
           <TextInput
             value={value}
-            onChangeText={(text) => {
-              onChange(text)
-              onVerifiedChange(false)
-              onStatusChange('idle')
-              onMessageChange('')
-            }}
-            placeholder="프로필을 설정해 주세요"
-            placeholderTextColor="#B0A5AA"
+            onChangeText={handleChangeText}
+            placeholder="닉네임을 입력하세요"
+            placeholderTextColor={Gray[300]}
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={10}
-            style={styles.input}
+            style={[styles.input, { borderBottomColor: inputBorderColor }]}
           />
 
-          <Pressable onPress={handleCheck} style={styles.checkButton}>
+          <Pressable
+            onPress={() => void handleCheck()}
+            disabled={!canCheckNickname}
+            style={({ pressed }) => [pressed && canCheckNickname && styles.pressed]}
+          >
             <Image
-              source={normalized ? idCheckPink : idCheckGray}
-              style={styles.checkImage}
+              source={canCheckNickname ? nicknameCheckActive : nicknameCheckInactive}
+              style={styles.checkButton}
               contentFit="contain"
             />
           </Pressable>
@@ -129,19 +115,6 @@ export function NicknameStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
-  },
-  subtitle: {
-    marginTop: 5,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
-  },
   profileWrap: {
     marginTop: 42,
     alignItems: 'center',
@@ -153,59 +126,60 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: Radius.full,
   },
-  profileChangeButton: {
+  profilePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: Radius.full,
+    backgroundColor: Gray[200],
+  },
+  cameraButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
     width: 32,
     height: 32,
   },
-  profileChangeIcon: {
+  cameraIcon: {
     width: 32,
     height: 32,
   },
   inputSection: {
     marginTop: 36,
-    width: 361,
+    width: '100%',
   },
   inputRow: {
-    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 5,
   },
   input: {
-    width: 254,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    flex: 1,
+    paddingTop: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingLeft: 8,
     borderBottomWidth: 2,
-    borderBottomColor: '#CDC4C8',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#131112',
+    ...Typography.body1Medium,
+    color: C.text,
   },
   checkButton: {
     width: 102,
     height: 38,
   },
-  checkImage: {
-    width: 102,
-    height: 38,
-  },
   message: {
     marginTop: 6,
-    marginLeft: 8,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
+    paddingHorizontal: 8,
+    ...Typography.caption1Medium,
   },
   messageOk: {
-    color: '#009126',
+    color: C.activeDot,
   },
   messageError: {
-    color: '#EF433E',
+    color: C.error,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 })

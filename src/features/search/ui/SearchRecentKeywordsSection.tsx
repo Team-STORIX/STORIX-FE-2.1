@@ -32,9 +32,9 @@ export function SearchRecentKeywordsSection({
 
       {items.length > 0 ? (
         <View style={styles.chips}>
-          {items.map((keyword) => (
+          {items.map((keyword, index) => (
             <SearchKeywordChip
-              key={keyword}
+              key={`${keyword}-${index}`}
               label={keyword}
               onPress={() => onPressKeyword(keyword)}
               onRemove={() => onRemoveKeyword(keyword)}

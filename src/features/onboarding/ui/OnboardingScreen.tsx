@@ -1,80 +1,53 @@
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Image } from 'expo-image'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { useSignup } from '../../auth/hooks/useSignup'
-import { GenreKeySchema, type GenreKey } from '../../auth/api/auth.schema'
+import { useCallback, useState } from 'react'
 import { useAuthStore } from '../../../store/auth.store'
-import { getOnboardingWorks } from '../api/onboarding.api'
+import { useAndroidBackHandler } from '../../../lib/navigation/useAndroidBackHandler'
+import { useCompleteSignup } from '../hooks/useCompleteSignup'
+import { useOnboardingForm } from '../hooks/useOnboardingForm'
+import { useOnboardingWorks } from '../hooks/useOnboardingWorks'
+import { ONBOARDING_PROGRESS_STEPS, ONBOARDING_STEP } from '../lib/constants'
 import { NicknameStep } from './NicknameStep'
 import { BioStep } from './BioStep'
 import { GenreStep } from './GenreStep'
 import { FavoriteStep } from './FavoriteStep'
 import { FinalStep } from './FinalStep'
+import { FooterFadeGradient } from './FooterFadeGradient'
+import { OnboardingCtaButton } from './OnboardingCtaButton'
+import { OnboardingMissingScreen } from './OnboardingMissingScreen'
 import { OnboardingTopBar } from './OnboardingTopBar'
-
-const progress1 = require('../../../../assets/onboarding/progress-indicater-1.svg')
-const progress2 = require('../../../../assets/onboarding/progress-indicater-2.svg')
-const progress3 = require('../../../../assets/onboarding/progress-indicater-3.svg')
-const progress4 = require('../../../../assets/onboarding/progress-indicater-4.svg')
-const nextPink = require('../../../../assets/onboarding/next.svg')
-const nextGray = require('../../../../assets/onboarding/next-gray.svg')
-
-const progressAssets = [progress1, progress2, progress3, progress4] as const
-const genreOptions = GenreKeySchema.options
+import { C, Gray } from '../../../theme'
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const onboardingToken = useAuthStore((s) => s.onboardingToken)
-  const marketingAgree = useAuthStore((s) => s.marketingAgree)
-  const signupMutation = useSignup()
-  const onboardingWorksQuery = useQuery({
-    queryKey: ['onboarding', 'works'],
-    queryFn: getOnboardingWorks,
-    enabled: !!onboardingToken,
-    staleTime: 0,
-  })
-
-  const [step, setStep] = useState(1)
-  const [nickname, setNickname] = useState('')
-  const [nicknameVerified, setNicknameVerified] = useState(false)
-  const [nicknameStatus, setNicknameStatus] = useState<'idle' | 'ok' | 'taken' | 'invalid' | 'forbidden'>('idle')
-  const [nicknameMessage, setNicknameMessage] = useState('')
-  const [bio, setBio] = useState('')
-  const [genres, setGenres] = useState<GenreKey[]>([])
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
+  const serviceTermsAgree = useAuthStore((s) => s.serviceTermsAgree)
+  const privacyPolicyAgree = useAuthStore((s) => s.privacyPolicyAgree)
+  const ageOver14 = useAuthStore((s) => s.ageOver14)
+  const form = useOnboardingForm()
+  const onboardingWorksQuery = useOnboardingWorks(!!onboardingToken)
+  const { completeSignup, isCompleting } = useCompleteSignup()
   const [error, setError] = useState('')
+  const footerBottomPadding = Platform.OS === 'android' ? insets.bottom + 24 : 24
 
-  const handleBack = () => {
-    if (step > 1) setStep((current) => current - 1)
-    else router.push('/(auth)/agreement')
-  }
+  const { step, isFirstStep, isFinalStep, canProceed, goBack, goNext } = form
 
-  const handleSkip = () => {
-    if (step < 5) setStep((current) => current + 1)
-  }
-
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        return nicknameVerified
-      case 2:
-        return true
-      case 3:
-        return genres.length >= 1
-      case 4:
-        return favoriteIds.length <= 18
-      case 5:
-        return true
-      default:
-        return false
+  const handleBack = useCallback(() => {
+    if (isFirstStep) {
+      router.replace('/(auth)/agreement')
+    } else {
+      goBack()
     }
-  }
+    return true
+  }, [goBack, isFirstStep, router])
+
+  useAndroidBackHandler(handleBack)
 
   const handleNext = async () => {
+    if (isCompleting) return
+
     setError('')
 
     if (!onboardingToken) {
@@ -82,113 +55,103 @@ export function OnboardingScreen() {
       return
     }
 
-    if (step === 1 && !nicknameVerified) {
+    if (step === ONBOARDING_STEP.NICKNAME && !form.nickname.verified) {
       setError('닉네임 중복 확인을 완료해 주세요.')
       return
     }
 
-    if (step === 3 && genres.length === 0) {
+    if (step === ONBOARDING_STEP.GENRE && form.genres.length === 0) {
       setError('장르를 하나 이상 선택해 주세요.')
       return
     }
 
-    if (step < 5) {
-      setStep((current) => current + 1)
+    if (!isFinalStep) {
+      goNext()
       return
     }
 
     try {
-      await signupMutation.mutateAsync({
-        marketingAgree,
-        nickName: nickname.trim(),
-        favoriteGenreList: genres,
-        favoriteWorksIdList: favoriteIds,
-        profileDescription: bio,
+      await completeSignup({
+        request: {
+          serviceTermsAgree,
+          privacyPolicyAgree,
+          ageOver14,
+          nickName: form.nickname.value.trim(),
+          profileDescription: form.bio,
+          favoriteGenreList: form.genres,
+          favoriteWorksIdList: form.favoriteIds,
+        },
+        profileImageUri: form.profileImageUri,
       })
-      router.replace('/(tabs)')
+      router.replace('/(auth)/manual')
     } catch {
       setError('회원가입에 실패했어요. 다시 시도해 주세요.')
     }
   }
 
   if (!onboardingToken) {
-    return (
-      <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
-        <Text style={styles.missingTitle}>온보딩 정보가 없어요.</Text>
-        <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
-        <Pressable
-          onPress={() => router.replace('/(auth)/login')}
-          style={styles.resetButton}
-        >
-          <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
-        </Pressable>
-      </View>
-    )
+    return <OnboardingMissingScreen title="온보딩 정보가 없어요." />
   }
 
-  return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <OnboardingTopBar onBack={handleBack} onSkip={step < 5 ? handleSkip : undefined} />
+  const isFavoriteStep = step === ONBOARDING_STEP.FAVORITE
 
-        {step <= 4 ? (
+  return (
+    <KeyboardAvoidingView style={styles.screen} behavior={undefined}>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <OnboardingTopBar onBack={handleBack} onSkip={isFavoriteStep ? goNext : undefined} />
+
+        {step <= ONBOARDING_PROGRESS_STEPS ? (
           <View style={styles.progressWrap}>
-            <Image source={progressAssets[step - 1]} style={styles.progressImage} contentFit="contain" />
+            {Array.from({ length: ONBOARDING_PROGRESS_STEPS }).map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  index === step - 1 ? styles.progressDotActive : styles.progressDotInactive,
+                ]}
+              />
+            ))}
           </View>
         ) : null}
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: 134 },
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: footerBottomPadding + 100 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {step === 1 ? (
+          {step === ONBOARDING_STEP.NICKNAME ? (
             <NicknameStep
-              value={nickname}
-              onChange={setNickname}
-              verified={nicknameVerified}
-              onVerifiedChange={setNicknameVerified}
-              status={nicknameStatus}
-              onStatusChange={setNicknameStatus}
-              message={nicknameMessage}
-              onMessageChange={setNicknameMessage}
+              nickname={form.nickname}
+              onNicknameChange={form.patchNickname}
+              profileImageUri={form.profileImageUri}
+              onProfileImageChange={form.setProfileImageUri}
             />
           ) : null}
-
-          {step === 2 ? <BioStep value={bio} onChange={setBio} /> : null}
-          {step === 3 ? <GenreStep value={genres} onChange={setGenres} /> : null}
-          {step === 4 ? (
+          {step === ONBOARDING_STEP.BIO ? <BioStep value={form.bio} onChange={form.setBio} /> : null}
+          {step === ONBOARDING_STEP.GENRE ? <GenreStep value={form.genres} onChange={form.setGenres} /> : null}
+          {isFavoriteStep ? (
             <FavoriteStep
               works={onboardingWorksQuery.data ?? []}
-              selectedIds={favoriteIds}
-              onToggle={(id) =>
-                setFavoriteIds((current) =>
-                  current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-                )
-              }
+              selectedIds={form.favoriteIds}
+              onToggle={form.toggleFavorite}
               loading={onboardingWorksQuery.isLoading}
             />
           ) : null}
-          {step === 5 ? <FinalStep /> : null}
+          {isFinalStep ? <FinalStep /> : null}
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 34 }]}>
-          <Pressable
+        {isFavoriteStep ? <FooterFadeGradient height={footerBottomPadding + 82} gradientId="fade" /> : null}
+
+        <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
+          <OnboardingCtaButton
+            label="다음으로"
+            active={canProceed}
+            disabled={!canProceed || isCompleting}
             onPress={() => void handleNext()}
-            disabled={!canProceed() || signupMutation.isPending}
-          >
-            <Image
-              source={canProceed() ? nextPink : nextGray}
-              style={styles.nextImage}
-              contentFit="contain"
-            />
-          </Pressable>
+          />
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -198,22 +161,32 @@ export function OnboardingScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  progressWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  progressImage: {
-    height: 8,
-    width: 361,
+    backgroundColor: C.card,
   },
   scroll: {
     flex: 1,
   },
+  progressWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  progressDot: {
+    height: 8,
+    borderRadius: 2,
+  },
+  progressDotActive: {
+    width: 24,
+    backgroundColor: C.primary,
+  },
+  progressDotInactive: {
+    width: 8,
+    backgroundColor: Gray[200],
+  },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingTop: 0,
   },
   footer: {
     position: 'absolute',
@@ -221,52 +194,13 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     alignItems: 'center',
-  },
-  nextImage: {
-    width: 361,
-    height: 50,
+    zIndex: 2,
   },
   errorText: {
     marginTop: 16,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
-    color: '#EF433E',
-  },
-  missingScreen: {
-    flex: 1,
-    paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  missingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 34,
-    color: '#000000',
-  },
-  missingBody: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    color: '#847B7F',
-    textAlign: 'center',
-  },
-  resetButton: {
-    marginTop: 20,
-    width: 200,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: '#FF4093',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
-    color: '#ffffff',
+    color: C.error,
   },
 })

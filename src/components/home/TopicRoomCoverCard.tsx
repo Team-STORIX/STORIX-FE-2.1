@@ -1,13 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { Ionicons } from '@expo/vector-icons'
 import type { TopicRoomItem } from '../../features/topicroom'
 import { formatTopicRoomSubtitle } from '../../features/topicroom'
-import { Gray, Magenta } from '../../theme/colors'
+import { useShouldMaskAdultContent } from '../../store/adultVerification.store'
+import { C, FontFamily, Gray, Magenta } from '../../theme'
 import { Typography } from '../../theme/typography'
 
 const fireIcon = require('../../../assets/icons/common/fire.svg')
 const peopleIcon = require('../../../assets/icons/common/icon-topicroom-people.svg')
+const enterIcon = require('../../../assets/topicroom/icon-topicroom-enter.svg')
 
 export const TOPICROOM_CARD_W = 266
 export const TOPICROOM_CARD_H = 354
@@ -25,6 +26,11 @@ export function TopicRoomCoverCard({
   loading = false,
   onPress,
 }: TopicRoomCoverCardProps) {
+  const isAdultMasked = useShouldMaskAdultContent({
+    isAdultOnly: room?.isAdultOnly,
+    isBlinded: room?.isBlinded,
+  })
+
   if (loading || !room) {
     return (
       <View style={[styles.card, styles.placeholderCard]}>
@@ -51,7 +57,13 @@ export function TopicRoomCoverCard({
       accessibilityRole="button"
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      {room.thumbnailUrl ? (
+      {/* Adult cover (Figma 11581:51837) stands in for the thumbnail only; the
+          chips, title and enter button stay as they are on any other card. */}
+      {isAdultMasked ? (
+        <View style={[StyleSheet.absoluteFillObject, styles.adultCover]}>
+          <Text style={styles.adultText}>{'성인 인증 후\n열람 가능'}</Text>
+        </View>
+      ) : room.thumbnailUrl ? (
         <Image
           source={{ uri: room.thumbnailUrl }}
           style={StyleSheet.absoluteFillObject}
@@ -94,7 +106,7 @@ export function TopicRoomCoverCard({
       </View>
 
       <View style={styles.enterButton}>
-        <Ionicons name="enter-outline" size={22} color="#ffffff" />
+        <Image source={enterIcon} style={styles.enterIcon} contentFit="contain" />
       </View>
     </Pressable>
   )
@@ -113,6 +125,19 @@ const styles = StyleSheet.create({
   },
   placeholderCard: {
     backgroundColor: Gray[100],
+  },
+  adultCover: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Magenta[50],
+  },
+  adultText: {
+    // SUIT Heavy in the design; ExtraBold is the heaviest weight bundled.
+    fontFamily: FontFamily.extrabold,
+    fontSize: 36,
+    lineHeight: 43,
+    color: Magenta[100],
+    textAlign: 'center',
   },
   fallbackBg: {
     backgroundColor: Gray[200],
@@ -142,10 +167,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   hotChip: {
-    backgroundColor: Magenta[500],
+    backgroundColor: Magenta[300],
   },
   peopleChip: {
-    backgroundColor: '#ffffff',
+    backgroundColor: C.card,
   },
   fireIcon: {
     width: 12,
@@ -157,7 +182,7 @@ const styles = StyleSheet.create({
   },
   hotChipText: {
     ...Typography.caption2Extrabold,
-    color: '#ffffff',
+    color: C.card,
     marginLeft: 2,
   },
   peopleChipText: {
@@ -170,11 +195,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.heading2,
-    color: '#ffffff',
+    color: C.card,
   },
   title: {
     ...Typography.body1Medium,
-    color: '#ffffff',
+    color: C.card,
     marginTop: 2,
   },
   enterButton: {
@@ -184,14 +209,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 9999,
-    backgroundColor: Magenta[500],
+    backgroundColor: Magenta[300],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
+    shadowColor: C.black,
     shadowOpacity: 0.25,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
+  },
+  enterIcon: {
+    width: 24,
+    height: 24,
   },
   placeholderChip: {
     width: 40,

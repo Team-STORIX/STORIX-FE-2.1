@@ -1,4 +1,5 @@
 import { apiClient } from '../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../lib/api/types'
 
 export type OnboardingWork = {
   worksId: number
@@ -7,18 +8,8 @@ export type OnboardingWork = {
   artistName: string
 }
 
-type ApiResponse<T> = {
-  isSuccess: boolean
-  code: string
-  message: string
-  result: T
-  timestamp: string
-}
-
+/** GET /api/v1/onboarding/works — 관심 작품 선택 후보 */
 export const getOnboardingWorks = async (): Promise<OnboardingWork[]> => {
-  const response = await apiClient.get<ApiResponse<OnboardingWork[]>>(
-    '/api/v1/onboarding/works',
-  )
-
+  const response = await apiClient.get<ApiResponse<OnboardingWork[]>>('/api/v1/onboarding/works')
   return response.data.result ?? []
 }
