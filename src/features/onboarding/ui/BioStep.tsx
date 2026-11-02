@@ -1,29 +1,27 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 import { C, Gray, Typography } from '../../../theme'
+import { BIO_MAX_LENGTH } from '../lib/constants'
+import { OnboardingStepHeader } from './OnboardingStepHeader'
 
-export function BioStep({
-  value,
-  onChange,
-  showHeader = true,
-}: {
+type BioStepProps = {
   value: string
   onChange: (value: string) => void
+  /** 프로필 수정 화면에서는 제목 없이 입력만 재사용한다. */
   showHeader?: boolean
-}) {
+}
+
+export function BioStep({ value, onChange, showHeader = true }: BioStepProps) {
   return (
     <View>
       {showHeader && (
-        <>
-          <Text style={styles.title}>한 줄 소개를 작성해 주세요</Text>
-          <Text style={styles.subtitle}>내 취향을 마음껏 표현해보세요</Text>
-        </>
+        <OnboardingStepHeader title="한 줄 소개를 작성해 주세요" subtitle="내 취향을 마음껏 표현해보세요" />
       )}
 
       <View style={[styles.inputBlock, !showHeader && styles.inputBlockEdit]}>
         <View style={[styles.inputUnderline, value.length > 0 && { borderBottomColor: C.text }]}>
           <TextInput
             value={value}
-            onChangeText={(next) => onChange(next.slice(0, 30))}
+            onChangeText={(next) => onChange(next.slice(0, BIO_MAX_LENGTH))}
             placeholder="나를 소개하는 글을 적어보세요"
             placeholderTextColor={Gray[300]}
             style={styles.input}
@@ -33,7 +31,7 @@ export function BioStep({
         </View>
 
         <View style={styles.counterWrap}>
-          <Text style={styles.counter}>{value.length}/30자</Text>
+          <Text style={styles.counter}>{value.length}/{BIO_MAX_LENGTH}자</Text>
         </View>
       </View>
     </View>
@@ -41,15 +39,6 @@ export function BioStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    ...Typography.heading1,
-    color: C.text,
-  },
-  subtitle: {
-    marginTop: 5,
-    ...Typography.body1Medium,
-    color: Gray[500],
-  },
   inputBlock: {
     marginTop: 84,
     width: '100%',

@@ -1,15 +1,21 @@
-import { BackHandler, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { useFocusEffect } from '@react-navigation/native'
 import { useAuthStore } from '../../../store/auth.store'
+import { useAndroidBackHandler } from '../../../lib/navigation/useAndroidBackHandler'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
+import { OnboardingCtaButton } from './OnboardingCtaButton'
+import { OnboardingMissingScreen } from './OnboardingMissingScreen'
 
 const backIcon = require('../../../../assets/icons/common/back.svg')
 const checkPink = require('../../../../assets/icons/common/check-pink.svg')
 const checkGray = require('../../../../assets/icons/common/check-gray.svg')
+
+const SERVICE_TERMS_URL =
+  'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link'
+const PRIVACY_POLICY_URL = 'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a'
 
 export function AgreementScreen() {
   const insets = useSafeAreaInsets()
@@ -43,25 +49,10 @@ export function AgreementScreen() {
     return true
   }, [clearAuth, router])
 
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return undefined
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', handleBack)
-      return () => subscription.remove()
-    }, [handleBack]),
-  )
+  useAndroidBackHandler(handleBack)
 
   if (!onboardingToken) {
-    return (
-      <View style={[styles.missingScreen, { paddingTop: insets.top + 32 }]}>
-        <Text style={styles.missingTitle}>회원가입 정보가 없어요.</Text>
-        <Text style={styles.missingBody}>로그인 화면으로 돌아가 다시 진행해 주세요.</Text>
-        <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.resetButton}>
-          <Text style={styles.resetButtonText}>로그인으로 돌아가기</Text>
-        </Pressable>
-      </View>
-    )
+    return <OnboardingMissingScreen title="회원가입 정보가 없어요." />
   }
 
   return (
@@ -77,20 +68,14 @@ export function AgreementScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.heading}>
-          {'스토릭스 이용을 위해\n필수 약관에 동의해주세요.'}
-        </Text>
+        <Text style={styles.heading}>{'스토릭스 이용을 위해\n필수 약관에 동의해주세요.'}</Text>
 
         {/* 전체동의 카드 */}
         <Pressable
           onPress={handleAllAgree}
           style={[styles.allAgreeCard, allAgreed ? styles.allAgreeCardActive : styles.allAgreeCardInactive]}
         >
-          <Image
-            source={allAgreed ? checkPink : checkGray}
-            style={styles.checkIcon}
-            contentFit="contain"
-          />
+          <Image source={allAgreed ? checkPink : checkGray} style={styles.checkIcon} contentFit="contain" />
           <Text style={[styles.allAgreeText, allAgreed ? styles.allAgreeTextActive : styles.allAgreeTextInactive]}>
             전체동의
           </Text>
@@ -102,21 +87,13 @@ export function AgreementScreen() {
             checked={serviceTermsAgree}
             label="(필수) 서비스 이용약관 동의"
             onToggle={() => setServiceTermsAgree((v) => !v)}
-            onOpenLink={() =>
-              void Linking.openURL(
-                'https://truth-gopher-09e.notion.site/STORIX-2cae81f7094880c889bfd8300787572a?source=copy_link',
-              )
-            }
+            onOpenLink={() => void Linking.openURL(SERVICE_TERMS_URL)}
           />
           <AgreementRow
             checked={privacyPolicyAgree}
             label="(필수) 개인정보 수집·이용 동의"
             onToggle={() => setPrivacyPolicyAgree((v) => !v)}
-            onOpenLink={() =>
-              void Linking.openURL(
-                'https://truth-gopher-09e.notion.site/STORIX-2cae81f709488090a7a3ff51191afd9a',
-              )
-            }
+            onOpenLink={() => void Linking.openURL(PRIVACY_POLICY_URL)}
           />
           <AgreementAgeRow checked={ageOver14} onToggle={() => setAgeOver14((v) => !v)} />
         </View>
@@ -124,15 +101,7 @@ export function AgreementScreen() {
 
       {/* Footer CTA */}
       <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
-        <Pressable
-          onPress={handleNext}
-          disabled={!allAgreed}
-          style={[styles.ctaButton, allAgreed ? styles.ctaActive : styles.ctaDisabled]}
-        >
-          <Text style={[styles.ctaText, allAgreed ? styles.ctaTextActive : styles.ctaTextDisabled]}>
-            다음으로
-          </Text>
-        </Pressable>
+        <OnboardingCtaButton label="다음으로" active={allAgreed} disabled={!allAgreed} onPress={() => void handleNext()} />
       </View>
     </View>
   )
@@ -152,35 +121,19 @@ function AgreementRow({
   return (
     <View style={styles.termRow}>
       <Pressable onPress={onToggle} hitSlop={8}>
-        <Image
-          source={checked ? checkPink : checkGray}
-          style={styles.termCheckIcon}
-          contentFit="contain"
-        />
+        <Image source={checked ? checkPink : checkGray} style={styles.termCheckIcon} contentFit="contain" />
       </Pressable>
       <Pressable onPress={onOpenLink} style={styles.termTextWrap}>
-        <Text style={[styles.termLinkText, checked ? styles.termTextActive : styles.termTextInactive]}>
-          {label}
-        </Text>
+        <Text style={[styles.termLinkText, checked ? styles.termTextActive : styles.termTextInactive]}>{label}</Text>
       </Pressable>
     </View>
   )
 }
 
-function AgreementAgeRow({
-  checked,
-  onToggle,
-}: {
-  checked: boolean
-  onToggle: () => void
-}) {
+function AgreementAgeRow({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   return (
     <Pressable onPress={onToggle} style={styles.termRow}>
-      <Image
-        source={checked ? checkPink : checkGray}
-        style={styles.termCheckIcon}
-        contentFit="contain"
-      />
+      <Image source={checked ? checkPink : checkGray} style={styles.termCheckIcon} contentFit="contain" />
       <Text style={[styles.termPlainText, checked ? styles.termTextActive : styles.termTextInactive]}>
         (필수) 14세 이상입니다.
       </Text>
@@ -192,36 +145,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: C.card,
-  },
-  missingScreen: {
-    flex: 1,
-    paddingHorizontal: 24,
-    backgroundColor: C.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  missingTitle: {
-    ...Typography.heading1,
-    color: C.text,
-  },
-  missingBody: {
-    marginTop: 8,
-    ...Typography.body1Medium,
-    color: Gray[500],
-    textAlign: 'center',
-  },
-  resetButton: {
-    marginTop: 20,
-    width: 200,
-    height: 44,
-    borderRadius: Radius.sm,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButtonText: {
-    ...Typography.body1Bold,
-    color: C.card,
   },
   topBar: {
     height: 56,
@@ -319,26 +242,5 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingTop: 12,
-  },
-  ctaButton: {
-    height: 50,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaActive: {
-    backgroundColor: C.text,
-  },
-  ctaDisabled: {
-    backgroundColor: Gray[200],
-  },
-  ctaText: {
-    ...Typography.body1Medium,
-  },
-  ctaTextActive: {
-    color: C.card,
-  },
-  ctaTextDisabled: {
-    color: Gray[500],
   },
 })

@@ -2,6 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import type { GenreKey } from '../../auth'
 import { C, Gray, Typography } from '../../../theme'
+import { MAX_GENRE_COUNT } from '../lib/constants'
+import { OnboardingStepHeader, stepHeaderStyles } from './OnboardingStepHeader'
 
 const genreAssets: Record<GenreKey, any> = {
   ROMANCE: require('../../../../assets/onboarding/romance.svg'),
@@ -29,6 +31,7 @@ const labels: Record<GenreKey, string> = {
   HISTORICAL: '사극',
 }
 
+/** 화면에 노출하는 장르와 순서 (HISTORICAL 은 온보딩에서 제외) */
 const order: GenreKey[] = [
   'FANTASY',
   'ACTION',
@@ -41,59 +44,51 @@ const order: GenreKey[] = [
   'DRAMA',
 ]
 
-export function GenreStep({
-  value,
-  onChange,
-}: {
+type GenreStepProps = {
   value: GenreKey[]
   onChange: (value: GenreKey[]) => void
-}) {
+}
+
+export function GenreStep({ value, onChange }: GenreStepProps) {
+  const isFull = value.length >= MAX_GENRE_COUNT
+
   const toggle = (genre: GenreKey) => {
     if (value.includes(genre)) {
       onChange(value.filter((item) => item !== genre))
       return
     }
-    if (value.length < 3) onChange([...value, genre])
+    if (!isFull) onChange([...value, genre])
   }
 
   return (
     <View>
-      <Text style={styles.title}>즐겨보는 장르를 선택해 주세요</Text>
-      {value.length > 0 ? (
-        <Text style={styles.subtitle}>
-          {'최소 1개~최대 3개 선택가능 '}
-          <Text style={styles.count}>({value.length}/3)</Text>
-        </Text>
-      ) : (
-        <Text style={styles.subtitle}>선택을 기반으로 웹툰/웹소설을 추천드려요</Text>
-      )}
+      <OnboardingStepHeader
+        title="즐겨보는 장르를 선택해 주세요"
+        subtitle={
+          value.length > 0 ? (
+            <>
+              {`최소 1개~최대 ${MAX_GENRE_COUNT}개 선택가능 `}
+              <Text style={stepHeaderStyles.count}>({value.length}/{MAX_GENRE_COUNT})</Text>
+            </>
+          ) : (
+            '선택을 기반으로 웹툰/웹소설을 추천드려요'
+          )
+        }
+      />
 
       <View style={styles.grid}>
         {order.map((genre) => {
           const selected = value.includes(genre)
-          const disabled = !selected && value.length >= 3
+          const disabled = !selected && isFull
+          const color = disabled ? Gray[400] : selected ? C.primary : C.text
           return (
             <Pressable
               key={genre}
               onPress={() => !disabled && toggle(genre)}
               style={({ pressed }) => [styles.genreButton, pressed && !disabled && styles.pressed]}
             >
-              <Image
-                source={genreAssets[genre]}
-                style={[
-                  styles.genreIcon,
-                  { tintColor: disabled ? Gray[400] : selected ? C.primary : C.text },
-                ]}
-                contentFit="contain"
-              />
-              <Text
-                style={[
-                  styles.genreLabel,
-                  { color: disabled ? Gray[400] : selected ? C.primary : C.text },
-                ]}
-              >
-                {labels[genre]}
-              </Text>
+              <Image source={genreAssets[genre]} style={[styles.genreIcon, { tintColor: color }]} contentFit="contain" />
+              <Text style={[styles.genreLabel, { color }]}>{labels[genre]}</Text>
             </Pressable>
           )
         })}
@@ -103,19 +98,6 @@ export function GenreStep({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    ...Typography.heading1,
-    color: C.text,
-  },
-  subtitle: {
-    marginTop: 5,
-    ...Typography.body1Medium,
-    color: Gray[500],
-  },
-  count: {
-    ...Typography.body1Medium,
-    color: C.primary,
-  },
   grid: {
     marginTop: 80,
     flexDirection: 'row',

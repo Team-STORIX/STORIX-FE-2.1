@@ -1,4 +1,4 @@
-import { ManualScreen } from '../../src/features/onboarding/ui/ManualScreen'
+import { ManualScreen } from '../../src/features/onboarding'
 
 export default function ManualPage() {
   return <ManualScreen />

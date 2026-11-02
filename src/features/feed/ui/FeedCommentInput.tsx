@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import {
   Keyboard,
   Pressable,
@@ -36,32 +36,23 @@ export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
     const [navBarHeight, setNavBarHeight] = useState(0)
     const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
     const [contentHeight, setContentHeight] = useState(0)
-    const inputRef = useRef<TextInput>(null)
     const [autoFocusKey, setAutoFocusKey] = useState(0)
     const canSubmit = value.trim().length > 0
     const isMultiLine = contentHeight > 20
 
-    useImperativeHandle(ref, () => ({
-      focus: () => {
-        setAutoFocusKey((k) => k + 1)
-      },
-    }))
+    // Remounting with autoFocus is the reliable way to focus a multiline input here.
+    useImperativeHandle(ref, () => ({ focus: () => setAutoFocusKey((k) => k + 1) }))
 
     useEffect(() => {
       if (bottom > 0) setNavBarHeight(bottom)
     }, [bottom])
 
     useEffect(() => {
-      const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-        setKeyboardVisible(true)
-      })
-      const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
-        setKeyboardVisible(false)
-      })
-
+      const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true))
+      const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false))
       return () => {
-        showSubscription.remove()
-        hideSubscription.remove()
+        show.remove()
+        hide.remove()
       }
     }, [])
 
@@ -79,7 +70,6 @@ export const FeedCommentInput = forwardRef<FeedCommentInputHandle, Props>(
           <View style={[styles.inputWrap, isMultiLine && styles.inputWrapExpanded]}>
             <TextInput
               key={autoFocusKey}
-              ref={inputRef}
               autoFocus={autoFocusKey > 0}
               value={value}
               onChangeText={(text) => onChangeText(text.slice(0, MAX_LENGTH))}

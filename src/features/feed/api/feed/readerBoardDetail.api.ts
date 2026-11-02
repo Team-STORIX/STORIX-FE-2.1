@@ -1,13 +1,6 @@
 import { apiClient } from '../../../../lib/api/axios-instance'
+import type { ApiResponse } from '../../../../lib/api/types'
 import type { FeedBoardItem, FeedSort, PageResult } from './readerBoard.api'
-
-type ApiResponse<T> = {
-  isSuccess: boolean
-  code: string
-  message: string
-  result: T
-  timestamp: string
-}
 
 export type ReplyItem = {
   profile: { userId: number; profileImageUrl: string | null; nickName: string; role?: string | null }
