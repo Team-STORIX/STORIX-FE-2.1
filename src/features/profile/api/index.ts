@@ -1,6 +1,7 @@
 export * from './profile.api'
 export * from './profile-nickname.api'
 export * from './profile-content.api'
+export * from './profile-other-user.api'
 export * from './profile-activity.api'
 export * from './adultVerification.api'
 export * from './adultVerification.schema'
