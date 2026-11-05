@@ -11,6 +11,15 @@ export function toggleLikeState(current: LikeState): LikeState {
   }
 }
 
+export type BookmarkState = { isBookmarked: boolean; bookmarkCount: number }
+
+export function toggleBookmarkState(current: BookmarkState): BookmarkState {
+  return {
+    isBookmarked: !current.isBookmarked,
+    bookmarkCount: Math.max(0, current.bookmarkCount + (current.isBookmarked ? -1 : 1)),
+  }
+}
+
 /** Image URLs of a board in display order. */
 export function sortedImageUrls(images?: FeedBoardImage[] | null) {
   return (images ?? [])

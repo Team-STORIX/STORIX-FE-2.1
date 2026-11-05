@@ -20,6 +20,7 @@ import { FeedMenuDropdown } from "./FeedMenuDropdown";
 const likeIcon = require("../../../../assets/icons/common/icon-like.svg");
 const likePinkIcon = require("../../../../assets/icons/common/icon-like-pink.svg");
 const commentIcon = require("../../../../assets/icons/common/icon-comment.svg");
+const bookmarkIcon = require("../../../../assets/icons/common/icon-bookmark.svg");
 const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
 const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
@@ -56,6 +57,9 @@ type FeedPostCardProps = {
   likeCount: number;
   replyCount: number;
   onToggleLike: () => void;
+  isBookmarked?: boolean;
+  bookmarkCount?: number;
+  onToggleBookmark?: () => void;
   onClickWorksArrow?: () => void;
   onOpenReport?: () => void;
   onOpenDelete?: () => void;
@@ -149,6 +153,9 @@ export function FeedPostCard({
   likeCount,
   replyCount,
   onToggleLike,
+  isBookmarked = false,
+  bookmarkCount = 0,
+  onToggleBookmark,
   onClickWorksArrow,
   onOpenReport,
   onOpenDelete,
@@ -386,6 +393,33 @@ export function FeedPostCard({
               <Image source={commentIcon} style={styles.reactionIcon} contentFit="contain" />
               {replyCount > 0 && <Text style={styles.reactionCount}>{replyCount}</Text>}
             </View>
+
+            <Pressable
+              onPress={onToggleBookmark}
+              disabled={!onToggleBookmark}
+              style={[styles.reactionItem, styles.bookmarkItem]}
+              accessibilityLabel="북마크"
+              accessibilityState={{ selected: isBookmarked }}
+              hitSlop={8}
+            >
+              {/* TODO: swap tintColor for the pink bookmark asset once it lands. */}
+              <Image
+                source={bookmarkIcon}
+                style={[styles.reactionIcon, isBookmarked && styles.bookmarkIconActive]}
+                contentFit="contain"
+              />
+              {bookmarkCount > 0 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isBookmarked && styles.reactionCountLiked,
+                    birthdayLayout && styles.birthdayReactionCount,
+                  ]}
+                >
+                  {bookmarkCount}
+                </Text>
+              )}
+            </Pressable>
           </View>
         </View>
       </View>
@@ -717,6 +751,13 @@ const styles = StyleSheet.create({
   },
   birthdayCommentItem: {
     marginLeft: 12,
+  },
+  // Pinned to the right edge of the row, inside the 16px padding.
+  bookmarkItem: {
+    marginLeft: "auto",
+  },
+  bookmarkIconActive: {
+    tintColor: Magenta[300],
   },
   reactionIcon: {
     width: 24,

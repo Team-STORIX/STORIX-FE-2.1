@@ -10,7 +10,7 @@ import { ProfileTopBar } from './ProfileTopBar'
 import { ProfileUserSummary } from './ProfileUserSummary'
 import { type ProfileActivityTab } from './ProfileActivityTabs'
 
-const TAB_VALUES: ProfileActivityTab[] = ['posts', 'comments', 'likes']
+const TAB_VALUES: ProfileActivityTab[] = ['posts', 'comments', 'likes', 'bookmarks']
 
 const isActivityTab = (value: string | string[] | undefined): value is ProfileActivityTab =>
   typeof value === 'string' && TAB_VALUES.includes(value as ProfileActivityTab)

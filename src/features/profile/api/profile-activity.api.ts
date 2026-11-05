@@ -57,6 +57,8 @@ export type ProfileActivityBoard = {
   theme?: 'BIRTHDAY'
   replyCount: number
   isLiked: boolean
+  isBookmarked?: boolean
+  bookmarkCount?: number
   isAdultOnly?: boolean
   isBlinded?: boolean
 }
@@ -104,6 +106,20 @@ export async function getProfileActivityLikes(params?: {
   const { data } = await apiClient.get<
     ApiEnvelope<ProfileActivityPageResult<ProfileActivityBoardItem>>
   >('/api/v1/profile/reader/activity/like', {
+    params: { page, sort },
+  })
+
+  return data.result
+}
+
+export async function getProfileActivityBookmarks(params?: {
+  page?: number
+  sort?: ProfileActivitySort
+}) {
+  const { page = 0, sort = 'LATEST' } = params ?? {}
+  const { data } = await apiClient.get<
+    ApiEnvelope<ProfileActivityPageResult<ProfileActivityBoardItem>>
+  >('/api/v1/profile/reader/activity/bookmark', {
     params: { page, sort },
   })
 

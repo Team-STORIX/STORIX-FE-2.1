@@ -18,6 +18,7 @@ import { useAllBoards, useBoardsByWorksId, useFavoriteWorks } from '../hooks/fee
 import {
   deleteBoard,
   reportBoard,
+  setBoardBookmark,
   toggleBoardLike,
   type FeedBoardItem,
 } from '../api/feed/readerBoard.api'
@@ -41,7 +42,9 @@ import {
   invalidateAfterBlock,
   sortedImageUrls,
   syncHomeBoardLike,
+  toggleBookmarkState,
   toggleLikeState,
+  type BookmarkState,
   type LikeState,
 } from '../lib/feedHelpers'
 
@@ -153,6 +156,29 @@ export function FeedScreen() {
     [qc],
   )
 
+  // ── Optimistic bookmark state ────────────────────────────────────────────────
+  const bookmarkOverrides = useRef<Map<number, BookmarkState>>(new Map())
+
+  const handleToggleBookmark = useCallback(
+    async (boardId: number, current: BookmarkState) => {
+      const apply = (bookmark: BookmarkState) => {
+        bookmarkOverrides.current.set(boardId, bookmark)
+        forceUpdate((n) => n + 1)
+      }
+      apply(toggleBookmarkState(current))
+      try {
+        const result = await setBoardBookmark(boardId, !current.isBookmarked)
+        if (result != null) {
+          apply(result)
+          qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
+        }
+      } catch {
+        apply(current)
+      }
+    },
+    [qc],
+  )
+
   // ── Report / Block / Delete ──────────────────────────────────────────────────
   const handleReport = useCallback(
     ({ board, profile }: FeedBoardItem) =>
@@ -198,6 +224,10 @@ export function FeedScreen() {
         isLiked: board.isLiked,
         likeCount: board.likeCount,
       }
+      const bookmark = bookmarkOverrides.current.get(board.boardId) ?? {
+        isBookmarked: board.isBookmarked ?? false,
+        bookmarkCount: board.bookmarkCount ?? 0,
+      }
       const worksIdForNav =
         board.isWorksSelected && board.worksId != null && board.worksId > 0 ? board.worksId : null
       const isMine = currentUserId != null && profile.userId === currentUserId
@@ -223,6 +253,9 @@ export function FeedScreen() {
           likeCount={like.likeCount}
           replyCount={board.replyCount}
           onToggleLike={() => handleToggleLike(board.boardId, like)}
+          isBookmarked={bookmark.isBookmarked}
+          bookmarkCount={bookmark.bookmarkCount}
+          onToggleBookmark={() => handleToggleBookmark(board.boardId, bookmark)}
           onClickWorksArrow={
             worksIdForNav != null ? () => router.push(`/works/${worksIdForNav}` as const) : undefined
           }
@@ -234,7 +267,7 @@ export function FeedScreen() {
         />
       )
     },
-    [currentUserId, handleBlock, handleReport, handleToggleLike, router],
+    [currentUserId, handleBlock, handleReport, handleToggleBookmark, handleToggleLike, router],
   )
 
   const modals = (
