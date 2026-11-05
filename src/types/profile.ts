@@ -16,6 +16,8 @@ export type MeProfileResult = {
   topGenreScore: number
   remainingScore: number
   progressPercentage: number
+  /** 서재 공개 여부. PUT /api/v1/profile/library/visibility 로 바꾼다. */
+  isLibraryPublic?: boolean
   // Legacy compatibility
   level?: number
 }

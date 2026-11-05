@@ -65,6 +65,14 @@ export const updateProfileDescription = async (
   return res.data as ApiResponse<string>
 }
 
+// PUT /api/v1/profile/library/visibility — 타 사용자에게 내 서재를 보여줄지.
+export const updateLibraryVisibility = async (
+  isPublic: boolean,
+): Promise<ApiResponse<boolean>> => {
+  const res = await apiClient.put('/api/v1/profile/library/visibility', { isPublic })
+  return res.data as ApiResponse<boolean>
+}
+
 export const updateProfileImage = async (
   objectKey: string,
 ): Promise<ApiResponse<string>> => {
