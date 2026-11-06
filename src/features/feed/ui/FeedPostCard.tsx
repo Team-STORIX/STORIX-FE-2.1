@@ -21,6 +21,7 @@ const likeIcon = require("../../../../assets/icons/common/icon-like.svg");
 const likePinkIcon = require("../../../../assets/icons/common/icon-like-pink.svg");
 const commentIcon = require("../../../../assets/icons/common/icon-comment.svg");
 const bookmarkIcon = require("../../../../assets/icons/common/icon-bookmark.svg");
+const bookmarkPinkIcon = require("../../../../assets/icons/common/icon-bookmark-pink.svg");
 const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
 const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
@@ -402,10 +403,9 @@ export function FeedPostCard({
               accessibilityState={{ selected: isBookmarked }}
               hitSlop={8}
             >
-              {/* TODO: swap tintColor for the pink bookmark asset once it lands. */}
               <Image
-                source={bookmarkIcon}
-                style={[styles.reactionIcon, isBookmarked && styles.bookmarkIconActive]}
+                source={isBookmarked ? bookmarkPinkIcon : bookmarkIcon}
+                style={styles.reactionIcon}
                 contentFit="contain"
               />
               {bookmarkCount > 0 && (
@@ -755,9 +755,6 @@ const styles = StyleSheet.create({
   // Pinned to the right edge of the row, inside the 16px padding.
   bookmarkItem: {
     marginLeft: "auto",
-  },
-  bookmarkIconActive: {
-    tintColor: Magenta[300],
   },
   reactionIcon: {
     width: 24,
