@@ -13,6 +13,7 @@ type Props = {
   onBackPress: () => void;
   onClearPress: () => void;
   autoFocus?: boolean;
+  placeholder?: string;
 };
 
 export function LibrarySearchHeader({
@@ -22,6 +23,7 @@ export function LibrarySearchHeader({
   onBackPress,
   onClearPress,
   autoFocus = true,
+  placeholder = "내 서재 내 작품/작가를 검색해보세요",
 }: Props) {
   const hasValue = value.trim().length > 0;
 
@@ -44,7 +46,7 @@ export function LibrarySearchHeader({
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          placeholder="내 서재 내 작품/작가를 검색해보세요"
+          placeholder={placeholder}
           placeholderTextColor={C.textMuted}
           style={styles.input}
           autoFocus={autoFocus}

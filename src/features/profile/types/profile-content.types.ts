@@ -47,6 +47,34 @@ export type FavoriteWork = {
   isBlinded?: boolean
 }
 
+// Another user's favorites carry no review state of the viewer's own.
+export type OtherUserFavoriteWork = Omit<FavoriteWork, 'isReviewed' | 'rating'>
+
+export type OtherUserFavoriteWorksResponse = {
+  totalFavoriteWorksCount: number
+  result: PageResult<OtherUserFavoriteWork>
+}
+
+export type OtherUserLibraryWork = {
+  worksId: number
+  worksName: string
+  artistName: string
+  thumbnailUrl: string | null
+  worksType: string
+  genre: string
+  reviewId: number
+  rating: string
+  isAdultOnly?: boolean
+  isBlinded?: boolean
+}
+
+// A private library answers isPublic=false, a zero count and an empty page.
+export type OtherUserLibraryResponse = {
+  isPublic: boolean
+  totalReviewCount: number
+  result: PageResult<OtherUserLibraryWork>
+}
+
 export type FavoriteArtist = {
   artistId: number
   profileImageUrl: string | null
