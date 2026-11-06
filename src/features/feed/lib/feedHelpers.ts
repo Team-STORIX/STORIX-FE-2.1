@@ -47,5 +47,6 @@ export function invalidateAfterBlock(qc: QueryClient) {
     qc.invalidateQueries({ queryKey: ['feed', 'boards'] }),
     qc.invalidateQueries({ queryKey: ['topicroom'] }),
     qc.invalidateQueries({ queryKey: ['worksReviews'] }),
+    qc.invalidateQueries({ queryKey: ['profile', 'other-users'] }),
   ])
 }

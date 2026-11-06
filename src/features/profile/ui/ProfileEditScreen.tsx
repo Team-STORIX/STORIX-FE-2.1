@@ -13,13 +13,9 @@ import {
 } from '../../auth/api/nickname.api'
 import { NICKNAME_MESSAGES } from '../../auth/lib/nickname-validation'
 import type { ApiResponse } from '../../../lib/api/types'
-import {
-  updateLibraryVisibility,
-  updateProfileDescription,
-  updateProfileNickname,
-  uploadAndSetProfileImage,
-} from '../api'
+import { updateProfileDescription, updateProfileNickname, uploadAndSetProfileImage } from '../api'
 import { ME_QUERY_KEY, useMe } from '../hooks/useMe'
+import { useUpdateLibraryVisibility } from '../hooks/useUpdateLibraryVisibility'
 import { BioStep } from '../../onboarding/ui/BioStep'
 import { ProfileEditLibraryVisibilityField } from './ProfileEditLibraryVisibilityField'
 import { ProfileEditNicknameField } from './ProfileEditNicknameField'
@@ -63,7 +59,7 @@ export function ProfileEditScreen() {
   const [nicknameVerified, setNicknameVerified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [localProfileImageUri, setLocalProfileImageUri] = useState<string | undefined>()
-  const [isUpdatingLibraryVisibility, setIsUpdatingLibraryVisibility] = useState(false)
+  const updateLibraryVisibility = useUpdateLibraryVisibility()
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -115,29 +111,12 @@ export function ProfileEditScreen() {
 
   // The toggle saves on its own, like the notification switches, so it does not
   // go through the top-bar submit button.
-  const isLibraryPublic = me?.isLibraryPublic ?? true
-  const handleToggleLibraryVisibility = async () => {
-    if (!me || isUpdatingLibraryVisibility) return
-    const next = !isLibraryPublic
-    setIsUpdatingLibraryVisibility(true)
-    patchMe({ isLibraryPublic: next })
-    try {
-      const response = await updateLibraryVisibility(next)
-      if (!response.isSuccess) {
-        throw new Error(response.message || '서재 공개 설정 변경에 실패했어요.')
-      }
-      queryClient.setQueryData(ME_QUERY_KEY, (prev: typeof me | undefined) =>
-        prev ? { ...prev, isLibraryPublic: next } : prev,
-      )
-    } catch (error) {
-      patchMe({ isLibraryPublic: !next })
-      Alert.alert(
-        '오류',
-        error instanceof Error ? error.message : '서재 공개 설정 변경에 실패했어요.',
-      )
-    } finally {
-      setIsUpdatingLibraryVisibility(false)
-    }
+  const isLibraryPublic = me?.isLibraryPublic ?? false
+  const handleToggleLibraryVisibility = () => {
+    if (!me || updateLibraryVisibility.isPending) return
+    updateLibraryVisibility.mutate(!isLibraryPublic, {
+      onError: () => Alert.alert('오류', '서재 공개 설정 변경에 실패했어요.'),
+    })
   }
 
   const handleSubmit = async () => {
@@ -248,8 +227,8 @@ export function ProfileEditScreen() {
 
         <ProfileEditLibraryVisibilityField
           isPublic={isLibraryPublic}
-          disabled={isUpdatingLibraryVisibility}
-          onToggle={() => void handleToggleLibraryVisibility()}
+          disabled={updateLibraryVisibility.isPending}
+          onToggle={handleToggleLibraryVisibility}
         />
       </View>
     </ScrollView>

@@ -3,7 +3,7 @@ import { Image } from 'react-native'
 
 import { apiClient } from '../../../lib/api/axios-instance'
 import type { ApiResponse } from '../../../lib/api/types'
-import type { MeProfileResult } from '../../../types/profile'
+import type { MeProfileResult, ProfileSummary } from '../../../types/profile'
 
 export type GenreStatItem = {
   genre: string
@@ -20,10 +20,10 @@ export const getGenreStats = async (): Promise<ApiResponse<GenreStatItem[]>> => 
 export const DEFAULT_NICKNAME = '스토릭스 유저'
 
 // The backend can return null for nickName / profileDescription / profileImageUrl
-// on incomplete profiles, but MeProfileResult types the text fields as non-null
+// on incomplete profiles, but the profile types declare the text fields as non-null
 // strings. Normalize once here at the API boundary so every consumer (store + all
 // profile UI) receives safe values and no component calls .trim() on null.
-const normalizeMeProfile = (raw: MeProfileResult): MeProfileResult => {
+export const normalizeProfile = <T extends ProfileSummary>(raw: T): T => {
   const nickName = (raw.nickName ?? '').trim()
   return {
     ...raw,
@@ -38,6 +38,7 @@ const normalizeMeProfile = (raw: MeProfileResult): MeProfileResult => {
     topGenreScore: raw.topGenreScore ?? 0,
     remainingScore: raw.remainingScore ?? 0,
     progressPercentage: raw.progressPercentage ?? 0,
+    isLibraryPublic: raw.isLibraryPublic ?? true,
   }
 }
 
@@ -45,8 +46,17 @@ export const getMyProfile = async (): Promise<ApiResponse<MeProfileResult>> => {
   const res = await apiClient.get('/api/v2/profile/me')
   const data = res.data as ApiResponse<MeProfileResult>
   return data.result
-    ? { ...data, result: normalizeMeProfile(data.result) }
+    ? { ...data, result: normalizeProfile(data.result) }
     : data
+}
+
+// PUT /api/v1/profile/library/visibility — I can always use my own library either way.
+export const updateLibraryVisibility = async (isPublic: boolean): Promise<boolean> => {
+  const { data } = await apiClient.put<ApiResponse<boolean>>(
+    '/api/v1/profile/library/visibility',
+    { isPublic },
+  )
+  return data.result
 }
 
 export const updateProfileNickname = async (
@@ -63,14 +73,6 @@ export const updateProfileDescription = async (
 ): Promise<ApiResponse<string>> => {
   const res = await apiClient.post('/api/v1/profile/description', { profileDescription })
   return res.data as ApiResponse<string>
-}
-
-// PUT /api/v1/profile/library/visibility — 타 사용자에게 내 서재를 보여줄지.
-export const updateLibraryVisibility = async (
-  isPublic: boolean,
-): Promise<ApiResponse<boolean>> => {
-  const res = await apiClient.put('/api/v1/profile/library/visibility', { isPublic })
-  return res.data as ApiResponse<boolean>
 }
 
 export const updateProfileImage = async (

@@ -28,12 +28,12 @@ export type FeedBoardItem = {
     content: string
     likeCount: number
     replyCount: number
+    bookmarkCount?: number
     isSpoiler?: boolean
     spoilerScript?: string
     theme?: 'BIRTHDAY'
     isLiked: boolean
     isBookmarked?: boolean
-    bookmarkCount?: number
     isAdultOnly?: boolean
     isBlinded?: boolean
   }

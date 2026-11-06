@@ -28,10 +28,13 @@ export function FeedTopbar({
   onPressSearch,
   onPressAddTopicRoom,
 }: FeedTopbarProps) {
-  const actions = [
-    { icon: searchIcon, label: "토픽룸 검색", onPress: onPressSearch },
-    { icon: addTopicRoomIcon, label: "토픽룸 만들기", onPress: onPressAddTopicRoom },
-  ];
+  const actions =
+    activeTab === "writers"
+      ? [
+          { icon: searchIcon, label: "토픽룸 검색", onPress: onPressSearch },
+          { icon: addTopicRoomIcon, label: "토픽룸 만들기", onPress: onPressAddTopicRoom },
+        ]
+      : [{ icon: searchIcon, label: "피드 검색", onPress: onPressSearch }];
 
   return (
     <View style={styles.bar}>
@@ -50,24 +53,22 @@ export function FeedTopbar({
         ))}
       </View>
 
-      {activeTab === "writers" ? (
-        <View style={styles.actions}>
-          {actions.map(({ icon, label, onPress }) =>
-            onPress ? (
-              <Pressable
-                key={label}
-                onPress={onPress}
-                hitSlop={8}
-                style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-              >
-                <Image source={icon} style={styles.actionIcon} contentFit="contain" />
-              </Pressable>
-            ) : null,
-          )}
-        </View>
-      ) : null}
+      <View style={styles.actions}>
+        {actions.map(({ icon, label, onPress }) =>
+          onPress ? (
+            <Pressable
+              key={label}
+              onPress={onPress}
+              hitSlop={8}
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+            >
+              <Image source={icon} style={styles.actionIcon} contentFit="contain" />
+            </Pressable>
+          ) : null,
+        )}
+      </View>
     </View>
   );
 }
