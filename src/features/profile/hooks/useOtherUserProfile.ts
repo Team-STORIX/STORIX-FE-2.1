@@ -10,7 +10,6 @@ import {
   getOtherUserRatings,
 } from '../api/profile-other-user.api'
 import { getOtherUserProfileError } from '../lib/otherUserProfileError'
-import { useMe } from './useMe'
 
 export const otherUserQueryKey = (userId: number) => ['profile', 'other-users', userId] as const
 
@@ -18,84 +17,79 @@ export const otherUserQueryKey = (userId: number) => ['profile', 'other-users', 
 const retryOnce = (failureCount: number, error: unknown) =>
   getOtherUserProfileError(error) == null && failureCount < 1
 
-/**
- * Only another user's id may reach these endpoints; my own id answers 400.
- * Waits for my profile so the check is reliable.
- */
-function useCanQueryOtherUser(userId: number) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const myUserId = useMe().data?.userId
+const isValidUserId = (userId: number) => Number.isFinite(userId) && userId > 0
 
-  return (
-    isAuthenticated &&
-    Number.isFinite(userId) &&
-    userId > 0 &&
-    myUserId != null &&
-    userId !== myUserId
-  )
+/**
+ * Shared enable/retry policy for the /profile/other-users/{userId} family.
+ * My own id is not filtered here on purpose: the server answers it with
+ * 400 PROFILE_ERROR_002, which getOtherUserProfileError maps to 'self', and
+ * gating on /profile/me would leave every query pending forever if that call failed.
+ */
+function useOtherUserQueryPolicy(userId: number) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  return { enabled: isAuthenticated && isValidUserId(userId), retry: retryOnce }
+}
+
+function useOtherUserQuery<T>(
+  userId: number,
+  suffix: readonly unknown[],
+  queryFn: () => Promise<T>,
+  staleTime: number,
+) {
+  return useQuery({
+    queryKey: [...otherUserQueryKey(userId), ...suffix],
+    queryFn,
+    staleTime,
+    ...useOtherUserQueryPolicy(userId),
+  })
+}
+
+type PagedResult = { result: { last: boolean; empty: boolean } }
+
+function useOtherUserInfiniteQuery<T extends PagedResult>(
+  userId: number,
+  suffix: readonly unknown[],
+  queryFn: (page: number) => Promise<T>,
+) {
+  return useInfiniteQuery({
+    queryKey: [...otherUserQueryKey(userId), ...suffix],
+    queryFn: ({ pageParam }) => queryFn(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.result.last || lastPage.result.empty ? undefined : lastPageParam + 1,
+    ...useOtherUserQueryPolicy(userId),
+  })
 }
 
 export function useOtherUserProfile(userId: number) {
-  return useQuery({
-    queryKey: otherUserQueryKey(userId),
-    queryFn: () => getOtherUserProfile(userId),
-    enabled: useCanQueryOtherUser(userId),
-    staleTime: 60 * 1_000,
-    retry: retryOnce,
-  })
+  return useOtherUserQuery(userId, [], () => getOtherUserProfile(userId), 60 * 1_000)
 }
 
 export function useOtherUserGenreStats(userId: number) {
-  return useQuery({
-    queryKey: [...otherUserQueryKey(userId), 'genre-stats'],
-    queryFn: async () =>
-      (await getOtherUserGenreStats(userId)).filter((item) => item.score > 0),
-    enabled: useCanQueryOtherUser(userId),
-    staleTime: 5 * 60 * 1_000,
-    retry: retryOnce,
-  })
+  return useOtherUserQuery(
+    userId,
+    ['genre-stats'],
+    async () => (await getOtherUserGenreStats(userId)).filter((item) => item.score > 0),
+    5 * 60 * 1_000,
+  )
 }
 
 export function useOtherUserRatings(userId: number) {
-  return useQuery({
-    queryKey: [...otherUserQueryKey(userId), 'ratings'],
-    queryFn: () => getOtherUserRatings(userId),
-    enabled: useCanQueryOtherUser(userId),
-    staleTime: 60 * 1_000,
-    retry: retryOnce,
-  })
+  return useOtherUserQuery(userId, ['ratings'], () => getOtherUserRatings(userId), 60 * 1_000)
 }
 
 export function useOtherUserHashtags(userId: number) {
-  return useQuery({
-    queryKey: [...otherUserQueryKey(userId), 'hashtags'],
-    queryFn: () => getOtherUserHashtags(userId),
-    enabled: useCanQueryOtherUser(userId),
-    staleTime: 60 * 1_000,
-    retry: retryOnce,
-  })
+  return useOtherUserQuery(userId, ['hashtags'], () => getOtherUserHashtags(userId), 60 * 1_000)
 }
 
 export function useOtherUserLibrary(userId: number, sort: LibraryReviewSort = 'LATEST') {
-  return useInfiniteQuery({
-    queryKey: [...otherUserQueryKey(userId), 'library', sort],
-    queryFn: ({ pageParam }) => getOtherUserLibrary({ userId, sort, page: pageParam }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _pages, lastPageParam) =>
-      lastPage.result.last || lastPage.result.empty ? undefined : lastPageParam + 1,
-    enabled: useCanQueryOtherUser(userId),
-    retry: retryOnce,
-  })
+  return useOtherUserInfiniteQuery(userId, ['library', sort], (page) =>
+    getOtherUserLibrary({ userId, sort, page }),
+  )
 }
 
 export function useOtherUserFavoriteWorks(userId: number) {
-  return useInfiniteQuery({
-    queryKey: [...otherUserQueryKey(userId), 'favorite-works'],
-    queryFn: ({ pageParam }) => getOtherUserFavoriteWorks({ userId, page: pageParam }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _pages, lastPageParam) =>
-      lastPage.result.last || lastPage.result.empty ? undefined : lastPageParam + 1,
-    enabled: useCanQueryOtherUser(userId),
-    retry: retryOnce,
-  })
+  return useOtherUserInfiniteQuery(userId, ['favorite-works'], (page) =>
+    getOtherUserFavoriteWorks({ userId, page }),
+  )
 }

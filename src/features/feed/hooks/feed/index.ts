@@ -36,19 +36,27 @@ export function useBoardsByWorksId(worksId: number, sort: FeedSort = 'LATEST') {
   })
 }
 
+export const feedRecentKeywordsQueryKey = ['feed', 'search', 'recent'] as const
+
 // Kept under ['feed', 'boards'] so deleting a board or blocking a user refreshes results too.
 export function useSearchBoards(keyword: string) {
+  const qc = useQueryClient()
   return useInfiniteQuery({
     queryKey: ['feed', 'boards', 'search', keyword],
-    queryFn: ({ pageParam }) => searchBoards({ keyword, page: pageParam }),
+    queryFn: async ({ pageParam }) => {
+      const page = await searchBoards({ keyword, page: pageParam })
+      // The server records the keyword while answering the first page, so the
+      // recent list is refreshed right after that response: never before it,
+      // and not again for later pages.
+      if (pageParam === 0) void qc.invalidateQueries({ queryKey: feedRecentKeywordsQueryKey })
+      return page
+    },
     initialPageParam: 0,
     getNextPageParam: nextPageOf,
     enabled: keyword.length > 0,
     retry: false,
   })
 }
-
-export const feedRecentKeywordsQueryKey = ['feed', 'search', 'recent'] as const
 type FeedRecentKeywords = Awaited<ReturnType<typeof getFeedRecentKeywords>>
 
 export function useFeedRecentKeywords() {

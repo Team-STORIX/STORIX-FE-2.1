@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useQueryClient } from '@tanstack/react-query'
 import {
-  feedRecentKeywordsQueryKey,
   useDeleteAllFeedRecentKeywords,
   useDeleteFeedRecentKeyword,
   useFeedRecentKeywords,
@@ -26,7 +24,6 @@ function normalizeKeyword(raw?: string | string[]) {
 export function FeedSearchScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const qc = useQueryClient()
   const params = useLocalSearchParams<{ keyword?: string }>()
 
   const submittedKeyword = normalizeKeyword(params.keyword)
@@ -36,19 +33,13 @@ export function FeedSearchScreen() {
   const deleteRecentKeyword = useDeleteFeedRecentKeyword()
   const deleteAllRecentKeywords = useDeleteAllFeedRecentKeywords()
   const searchQuery = useSearchBoards(submittedKeyword)
-  const { renderItem, modals, extraData } = useFeedBoardList()
+  const { renderItem, modals } = useFeedBoardList()
 
   const items = searchQuery.data?.pages.flatMap((page) => page.content) ?? []
 
   useEffect(() => {
     setInputValue(submittedKeyword)
   }, [submittedKeyword])
-
-  // The server saves the keyword while answering the first page.
-  useEffect(() => {
-    if (!submittedKeyword || !searchQuery.isSuccess) return
-    void qc.invalidateQueries({ queryKey: feedRecentKeywordsQueryKey })
-  }, [qc, submittedKeyword, searchQuery.isSuccess])
 
   const submitKeyword = (raw: string) => {
     const keyword = normalizeKeyword(raw)
@@ -100,7 +91,6 @@ export function FeedSearchScreen() {
         <FlatList
           style={styles.fill}
           data={items}
-          extraData={extraData}
           keyExtractor={(item) => `board_${item.board.boardId}`}
           renderItem={renderItem}
           ListHeaderComponent={<View style={styles.listHeader} />}

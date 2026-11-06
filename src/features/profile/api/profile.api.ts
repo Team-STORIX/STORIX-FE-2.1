@@ -38,7 +38,8 @@ export const normalizeProfile = <T extends ProfileSummary>(raw: T): T => {
     topGenreScore: raw.topGenreScore ?? 0,
     remainingScore: raw.remainingScore ?? 0,
     progressPercentage: raw.progressPercentage ?? 0,
-    isLibraryPublic: raw.isLibraryPublic ?? true,
+    // A privacy flag must never read as "public" just because it was omitted.
+    isLibraryPublic: raw.isLibraryPublic ?? false,
   }
 }
 
