@@ -10,9 +10,11 @@ const findWritersButton = require('../../../../assets/icons/profile/find-writers
 
 type Props = {
   tab: ProfileLikesTab
+  /** The 찾아보기 button only makes sense for my own list. */
+  showFindButton?: boolean
 }
 
-export function ProfileLikesEmptyState({ tab }: Props) {
+export function ProfileLikesEmptyState({ tab, showFindButton = true }: Props) {
   const router = useRouter()
 
   const title =
@@ -24,18 +26,20 @@ export function ProfileLikesEmptyState({ tab }: Props) {
     <View style={styles.container}>
       <Image source={warningIcon} style={styles.warningIcon} contentFit="contain" />
       <Text style={styles.title}>{title}</Text>
-      <Pressable
-        onPress={() => router.push('/search')}
-        style={({ pressed }) => [pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={'\uac80\uc0c9\uc73c\ub85c \uc774\ub3d9'}
-      >
-        <Image
-          source={tab === 'works' ? findBooksButton : findWritersButton}
-          style={styles.buttonImage}
-          contentFit="contain"
-        />
-      </Pressable>
+      {showFindButton ? (
+        <Pressable
+          onPress={() => router.push('/search')}
+          style={({ pressed }) => [pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={'\uac80\uc0c9\uc73c\ub85c \uc774\ub3d9'}
+        >
+          <Image
+            source={tab === 'works' ? findBooksButton : findWritersButton}
+            style={styles.buttonImage}
+            contentFit="contain"
+          />
+        </Pressable>
+      ) : null}
     </View>
   )
 }

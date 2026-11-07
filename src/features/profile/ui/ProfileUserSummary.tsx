@@ -1,14 +1,20 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
-import type { MeProfileResult } from '../../../types/profile'
+import type { ProfileSummary } from '../../../types/profile'
 import { OfficialMark } from '../../../components/common/OfficialMark'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
 
 const nextArrowIcon = require('../../../../assets/icons/common/icon-arrow-gray.svg')
 const defaultProfileImage = require('../../../../assets/placeholders/profile-default.png')
 
-export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
+type Props = {
+  me: ProfileSummary
+  /** false on another user's profile: no edit arrow and no "write a bio" placeholder. */
+  editable?: boolean
+}
+
+export function ProfileUserSummary({ me, editable = true }: Props) {
   const router = useRouter()
   const hasBio = (me.profileDescription ?? '').trim().length > 0
 
@@ -34,20 +40,24 @@ export function ProfileUserSummary({ me }: { me: MeProfileResult }) {
             <Text style={styles.nickname} numberOfLines={1}>{me.nickName}</Text>
             <OfficialMark role={me.role} />
           </View>
-          <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>
-            {hasBio ? me.profileDescription : '한줄소개를 입력해보세요 !'}
-          </Text>
+          {hasBio || editable ? (
+            <Text style={[styles.bio, !hasBio && styles.bioPlaceholder]} numberOfLines={1}>
+              {hasBio ? me.profileDescription : '한줄소개를 입력해보세요 !'}
+            </Text>
+          ) : null}
         </View>
       </View>
 
-      <Pressable
-        onPress={() => router.push('/profile/fix')}
-        style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
-        accessibilityRole="button"
-        accessibilityLabel={'프로필 수정'}
-      >
-        <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
-      </Pressable>
+      {editable ? (
+        <Pressable
+          onPress={() => router.push('/profile/fix')}
+          style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={'프로필 수정'}
+        >
+          <Image source={nextArrowIcon} style={styles.editIcon} contentFit="contain" tintColor={Gray[500]} />
+        </Pressable>
+      ) : null}
     </View>
   )
 }

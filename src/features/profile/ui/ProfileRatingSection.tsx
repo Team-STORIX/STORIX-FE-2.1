@@ -3,16 +3,31 @@ import { StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Magenta, Typography } from '../../../theme'
 import { useProfileRatings } from '../hooks'
 import { getProfileRatingStats } from '../lib/ratingStats'
+import type { RatingCountsMap } from '../types'
 import { ProfileFindWorksEmptyState } from './ProfileFindWorksEmptyState'
 
 const MAX_HEIGHT = 120
 
+/** My own rating distribution, fetched from /profile/reader. */
 export function ProfileRatingSection() {
   const ratingsQuery = useProfileRatings()
+  return <ProfileRatingSectionView ratings={ratingsQuery.data} isError={ratingsQuery.isError} />
+}
 
+type ProfileRatingSectionViewProps = {
+  ratings: RatingCountsMap | undefined
+  isError?: boolean
+  isOwnProfile?: boolean
+}
+
+export function ProfileRatingSectionView({
+  ratings,
+  isError = false,
+  isOwnProfile = true,
+}: ProfileRatingSectionViewProps) {
   const { ratingData, maxCount, totalReviews, averageRating, mostGivenRating } = useMemo(
-    () => getProfileRatingStats(ratingsQuery.data),
-    [ratingsQuery.data],
+    () => getProfileRatingStats(ratings),
+    [ratings],
   )
 
   const getBarHeight = (count: number) => {
@@ -31,12 +46,15 @@ export function ProfileRatingSection() {
     <View style={styles.section}>
         <Text style={styles.title}>별점 분포</Text>
 
-        {ratingsQuery.isError ? (
+        {isError ? (
           <Text style={styles.errorText}>별점 분포를 불러오지 못했어요.</Text>
         ) : null}
 
         {totalReviews === 0 ? (
-          <ProfileFindWorksEmptyState message="아직 별점 분포가 없어요" />
+          <ProfileFindWorksEmptyState
+            message="아직 별점 분포가 없어요"
+            showFindWorksButton={isOwnProfile}
+          />
         ) : (
           <>
             <View style={styles.chartWrap}>

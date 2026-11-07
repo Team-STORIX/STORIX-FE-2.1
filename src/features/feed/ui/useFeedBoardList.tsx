@@ -9,7 +9,7 @@ import {
   toggleBoardLike,
   type FeedBoardItem,
 } from '../api/feed/readerBoard.api'
-import { useMe } from '../../profile'
+import { useMe, useOpenUserProfile } from '../../profile'
 import { blockUser } from '../../users/api/users.api'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
@@ -35,6 +35,7 @@ import {
  */
 export function useFeedBoardList() {
   const router = useRouter()
+  const openUserProfile = useOpenUserProfile()
   const qc = useQueryClient()
   const { data: me } = useMe()
   const currentUserId = me?.userId
@@ -155,11 +156,20 @@ export function useFeedBoardList() {
           onOpenBlock={isMine ? undefined : () => handleBlock(item)}
           onOpenDelete={isMine ? () => setDeleteBoardId(board.boardId) : undefined}
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
+          onPressAuthor={() => openUserProfile(profile.userId)}
           birthdayTheme={board.theme === 'BIRTHDAY'}
         />
       )
     },
-    [currentUserId, handleBlock, handleReport, handleToggleBookmark, handleToggleLike, router],
+    [
+      currentUserId,
+      handleBlock,
+      handleReport,
+      handleToggleBookmark,
+      handleToggleLike,
+      openUserProfile,
+      router,
+    ],
   )
 
   const modals = (

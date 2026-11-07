@@ -25,6 +25,8 @@ type BaseProps = {
   onOpenDelete: () => void
   onOpenReport: () => void
   onOpenBlock: () => void
+  /** Avatar / nickname tap opens the writer's profile. */
+  onPressAuthor?: () => void
 }
 
 type Props =
@@ -37,8 +39,18 @@ type Props =
   | (BaseProps & { variant: 'subReply' })
 
 export function FeedCommentItem(props: Props) {
-  const { myUserId, writerUserId, item, isMenuOpen, onToggleMenu, onToggleLike, onOpenDelete, onOpenReport, onOpenBlock } =
-    props
+  const {
+    myUserId,
+    writerUserId,
+    item,
+    isMenuOpen,
+    onToggleMenu,
+    onToggleLike,
+    onOpenDelete,
+    onOpenReport,
+    onOpenBlock,
+    onPressAuthor,
+  } = props
   const { reply, profile } = item
   const menuButtonRef = useRef<View | null>(null)
   const { width: screenWidth } = useWindowDimensions()
@@ -65,7 +77,13 @@ export function FeedCommentItem(props: Props) {
   const card = (
     <View style={[isReply ? styles.replyCard : styles.subReplyInner, isReplyTarget && styles.replyCardHighlighted]}>
       <View style={styles.header}>
-        <View style={styles.authorRow}>
+        <Pressable
+          style={({ pressed }) => [styles.authorRow, pressed && onPressAuthor && styles.pressed]}
+          onPress={onPressAuthor}
+          disabled={!onPressAuthor}
+          accessibilityRole={onPressAuthor ? 'button' : undefined}
+          accessibilityLabel={onPressAuthor ? `${profile.nickName} 프로필 보기` : undefined}
+        >
           <View style={styles.avatarWrap}>
             <Image
               source={profile.profileImageUrl ? { uri: profile.profileImageUrl } : defaultProfileImage}
@@ -83,7 +101,7 @@ export function FeedCommentItem(props: Props) {
             <Text style={styles.dot}>·</Text>
             <Text style={styles.time}>{formatCreatedAtLabel(reply.lastCreatedTime)}</Text>
           </View>
-        </View>
+        </Pressable>
 
         <View style={styles.menuWrap}>
           <Pressable

@@ -66,6 +66,8 @@ type FeedPostCardProps = {
   onOpenDelete?: () => void;
   onOpenBlock?: () => void;
   onPressCard?: () => void;
+  /** Avatar / nickname tap; omitted on previews where there is no real writer. */
+  onPressAuthor?: () => void;
   birthdayTheme?: boolean;
   birthdayPreview?: boolean;
   disableSpoilerMask?: boolean;
@@ -162,6 +164,7 @@ export function FeedPostCard({
   onOpenDelete,
   onOpenBlock,
   onPressCard,
+  onPressAuthor,
   birthdayTheme = false,
   birthdayPreview = false,
   disableSpoilerMask = false,
@@ -215,21 +218,32 @@ export function FeedPostCard({
       <View style={styles.cardContent}>
         {/* ── Profile row ───────────────────────────────────────── */}
         <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
-          <View style={styles.avatarWrap}>
-            <Image
-              source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          </View>
-
-          <View style={styles.authorMeta}>
-            <View style={styles.authorNameRow}>
-              <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
-              <OfficialMark role={role} />
+          <Pressable
+            style={({ pressed }) => [styles.authorPressable, pressed && onPressAuthor && styles.authorPressed]}
+            onPress={() => {
+              setMenuOpen(false);
+              onPressAuthor?.();
+            }}
+            disabled={!onPressAuthor}
+            accessibilityRole={onPressAuthor ? "button" : undefined}
+            accessibilityLabel={onPressAuthor ? `${nickName} 프로필 보기` : undefined}
+          >
+            <View style={styles.avatarWrap}>
+              <Image
+                source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+                style={styles.avatar}
+                contentFit="cover"
+              />
             </View>
-            {!!displayCreatedAt && <Text style={styles.timestamp}>{displayCreatedAt}</Text>}
-          </View>
+
+            <View style={styles.authorMeta}>
+              <View style={styles.authorNameRow}>
+                <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
+                <OfficialMark role={role} />
+              </View>
+              {!!displayCreatedAt && <Text style={styles.timestamp}>{displayCreatedAt}</Text>}
+            </View>
+          </Pressable>
 
           <Pressable
             ref={menuBtnRef}
@@ -516,6 +530,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     height: 41,
     paddingHorizontal: 16,
+  },
+  authorPressable: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  authorPressed: {
+    opacity: 0.7,
   },
   avatarWrap: {
     width: 40,

@@ -19,7 +19,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
-import { useMe } from '../../profile'
+import { useMe, useOpenUserProfile } from '../../profile'
 import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
 import {
   createReply,
@@ -93,6 +93,7 @@ export function FeedDetailScreen() {
 
   const { data: me } = useMe()
   const myUserId = me?.userId ?? null
+  const openUserProfile = useOpenUserProfile()
   const detailQuery = useBoardDetailInfinite(boardId ?? 0)
   const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(detailQuery.error)
 
@@ -461,6 +462,7 @@ export function FeedDetailScreen() {
               boardId={board.boardId}
               writerUserId={profile.userId}
               currentUserId={myUserId ?? undefined}
+              onPressAuthor={() => openUserProfile(profile.userId)}
               profileImageUrl={profile.profileImageUrl}
               nickName={profile.nickName}
               role={profile.role}
@@ -520,6 +522,7 @@ export function FeedDetailScreen() {
                     onOpenDelete={() => setDeleteTarget({ type: 'comment', replyId })}
                     onOpenReport={() => onReportReply(item)}
                     onOpenBlock={() => onBlockReply(item)}
+                    onPressAuthor={() => openUserProfile(item.reply.userId)}
                   />
 
                   {subReplies.map((subReply) => {
@@ -546,6 +549,7 @@ export function FeedDetailScreen() {
                           }
                           onOpenReport={() => onReportReply(subReply)}
                           onOpenBlock={() => onBlockReply(subReply)}
+                          onPressAuthor={() => openUserProfile(subReply.reply.userId)}
                         />
                       </View>
                     )
