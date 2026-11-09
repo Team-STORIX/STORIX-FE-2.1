@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useFavoriteWork } from '../../src/features/favorite'
-import { useMe } from '../../src/features/profile'
+import { useMe, useOpenUserProfile } from '../../src/features/profile'
 import {
   MyReviewSection,
   OtherReviewsSection,
@@ -74,6 +74,7 @@ export default function WorksDetailScreen() {
 
   const { data: meData } = useMe()
   const myNickname = meData?.nickName
+  const openUserProfile = useOpenUserProfile()
 
   const { isFavorite, isMutating, toggleFavorite, isLoading: favoriteLoading } =
     useFavoriteWork(worksId)
@@ -302,6 +303,7 @@ export default function WorksDetailScreen() {
                   isFetchingNextPage={reviewsQuery.isFetchingNextPage}
                   onPressDetail={goReviewDetail}
                   onPressLike={handleLikeReview}
+                  onPressUser={openUserProfile}
                   likingReviewId={
                     likeMutation.isPending && typeof likeMutation.variables === 'number'
                       ? likeMutation.variables

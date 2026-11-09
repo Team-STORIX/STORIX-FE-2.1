@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +19,8 @@ type Props = {
   isFetchingNextPage?: boolean
   onEndReached?: () => void
   onPressItem: (item: LibraryUiWork) => void
+  /** Scrolls with the list (another user's profile puts its header here). */
+  ListHeaderComponent?: ReactElement | null
 }
 
 export function LibraryWorksList({
@@ -26,10 +29,12 @@ export function LibraryWorksList({
   isFetchingNextPage = false,
   onEndReached,
   onPressItem,
+  ListHeaderComponent,
 }: Props) {
   return (
     <FlatList
       data={data}
+      ListHeaderComponent={ListHeaderComponent}
       keyExtractor={(item) => `library-work-${item.id}`}
       renderItem={({ item }) => (
         <Pressable

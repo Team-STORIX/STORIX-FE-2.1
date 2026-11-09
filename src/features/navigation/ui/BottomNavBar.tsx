@@ -20,8 +20,10 @@ const libraryInactiveIcon = require('../../../../assets/icons/navbar/library-ina
 const profileActiveIcon = require('../../../../assets/icons/navbar/profile-active.svg')
 const profileInactiveIcon = require('../../../../assets/icons/navbar/profile-inactive.svg')
 
+export type TabRouteName = 'index' | 'feed' | 'library' | 'profile'
+
 type NavItem = {
-  routeName: string
+  routeName: TabRouteName
   label: string
 }
 
@@ -47,35 +49,25 @@ function iconForRoute(routeName: string, active: boolean) {
   }
 }
 
+/** Tab bar driven by the Tabs navigator. */
 export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const [isPlusOpen, setIsPlusOpen] = useState(false)
-  const [showReviewSheet, setShowReviewSheet] = useState(false)
-
-  useEffect(() => {
-    setIsPlusOpen(false)
-  }, [state.index])
-
-  const barHeight = 80 + insets.bottom
-  // plusNavBottom: navWrap 안에서 사용 — container의 paddingBottom이 이미 insets.bottom을 처리함
-  const plusNavBottom = 50
-  // plusModalBottom: 모달(전체화면) 안에서 사용 — 직접 device bottom 기준으로 offset 필요
-  const plusModalBottom = 50 + insets.bottom
-  const menuBottom = 130 + insets.bottom
-
   const activeRouteName = state.routes[state.index]?.name
 
-  const mappedItems = useMemo(
-    () =>
-      NAV_ITEMS.map((item) => ({
-        ...item,
-        route: state.routes.find((route) => route.name === item.routeName),
-      })).filter((item) => item.route != null),
+  const routeNames = useMemo(
+    () => state.routes.map((route) => route.name as TabRouteName),
     [state.routes],
   )
 
-  const handleTabPress = (routeName: string) => {
+  const accessibilityLabels = useMemo(() => {
+    const labels: Partial<Record<TabRouteName, string>> = {}
+    for (const route of state.routes) {
+      const label = descriptors[route.key]?.options.tabBarAccessibilityLabel
+      if (label) labels[route.name as TabRouteName] = label
+    }
+    return labels
+  }, [descriptors, state.routes])
+
+  const handleTabPress = (routeName: TabRouteName) => {
     const route = state.routes.find((candidate) => candidate.name === routeName)
     if (!route) return
 
@@ -94,25 +86,71 @@ export function BottomNavBar({ state, descriptors, navigation }: BottomTabBarPro
     }
   }
 
+  return (
+    <BottomNavBarView
+      activeRouteName={activeRouteName}
+      routeNames={routeNames}
+      accessibilityLabels={accessibilityLabels}
+      onPressTab={handleTabPress}
+    />
+  )
+}
+
+type BottomNavBarViewProps = {
+  activeRouteName?: string
+  /** Tabs to render; defaults to all four. */
+  routeNames?: readonly string[]
+  accessibilityLabels?: Partial<Record<TabRouteName, string>>
+  onPressTab: (routeName: TabRouteName) => void
+}
+
+/**
+ * The visual tab bar without a navigator behind it, so a screen pushed on the
+ * root stack (e.g. another user's profile) can show the bar with a tab marked
+ * active while a back press still pops that screen.
+ */
+export function BottomNavBarView({
+  activeRouteName,
+  routeNames,
+  accessibilityLabels,
+  onPressTab,
+}: BottomNavBarViewProps) {
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+  const [isPlusOpen, setIsPlusOpen] = useState(false)
+  const [showReviewSheet, setShowReviewSheet] = useState(false)
+
+  useEffect(() => {
+    setIsPlusOpen(false)
+  }, [activeRouteName])
+
+  const barHeight = 80 + insets.bottom
+  // plusNavBottom: navWrap 안에서 사용 — container의 paddingBottom이 이미 insets.bottom을 처리함
+  const plusNavBottom = 50
+  // plusModalBottom: 모달(전체화면) 안에서 사용 — 직접 device bottom 기준으로 offset 필요
+  const plusModalBottom = 50 + insets.bottom
+  const menuBottom = 130 + insets.bottom
+
+  const mappedItems = useMemo(
+    () => NAV_ITEMS.filter((item) => routeNames == null || routeNames.includes(item.routeName)),
+    [routeNames],
+  )
+
   const handleFeedWritePress = () => {
     setIsPlusOpen(false)
     router.push('/feed/write' as never)
   }
 
-  const renderTabItem = (routeName: string, label: string) => {
-    const route = state.routes.find((candidate) => candidate.name === routeName)
-    if (!route) return null
-
-    const options = descriptors[route.key]?.options
+  const renderTabItem = (routeName: TabRouteName, label: string) => {
     const isFocused = activeRouteName === routeName
 
     return (
       <Pressable
         key={routeName}
         style={({ pressed }) => [styles.tabItem, pressed && styles.tabPressed]}
-        onPress={() => handleTabPress(routeName)}
+        onPress={() => onPressTab(routeName)}
         accessibilityRole="button"
-        accessibilityLabel={options?.tabBarAccessibilityLabel ?? label}
+        accessibilityLabel={accessibilityLabels?.[routeName] ?? label}
         accessibilityState={isFocused ? { selected: true } : {}}
       >
         <View style={styles.iconWrap}>

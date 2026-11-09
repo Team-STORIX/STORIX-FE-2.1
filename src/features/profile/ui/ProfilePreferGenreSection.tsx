@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SvgXml } from 'react-native-svg'
 import { useRouter } from 'expo-router'
 import { C, Gray, Typography } from '../../../theme'
+import type { GenreStatItem } from '../api/profile.api'
 import { useProfileGenreStats } from '../hooks/useProfileGenreStats'
 
 const findBooksButton = require('../../../../assets/icons/profile/find-books.svg')
@@ -109,10 +110,23 @@ function GenreBarItem({ genre, score }: { genre: string; score: number }) {
   )
 }
 
+/** My own genre scores, fetched from /profile/reader. */
 export function ProfilePreferGenreSection() {
   const router = useRouter()
   const { data: genres = [] } = useProfileGenreStats()
+  return <ProfilePreferGenreSectionView genres={genres} onPressFindWorks={() => router.push('/search')} />
+}
 
+type ProfilePreferGenreSectionViewProps = {
+  genres: GenreStatItem[]
+  /** Omit to hide the "find works" button in the empty state (another user's profile). */
+  onPressFindWorks?: () => void
+}
+
+export function ProfilePreferGenreSectionView({
+  genres,
+  onPressFindWorks,
+}: ProfilePreferGenreSectionViewProps) {
   const renderIconSection = () => {
     const top = genres.slice(0, 3)
 
@@ -148,14 +162,16 @@ export function ProfilePreferGenreSection() {
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>아직 선호 장르가 없어요</Text>
-          <Pressable
-            onPress={() => router.push('/search')}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="검색으로 이동"
-          >
-            <Image source={findBooksButton} style={styles.findButton} contentFit="contain" />
-          </Pressable>
+          {onPressFindWorks ? (
+            <Pressable
+              onPress={onPressFindWorks}
+              style={({ pressed }) => [pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="검색으로 이동"
+            >
+              <Image source={findBooksButton} style={styles.findButton} contentFit="contain" />
+            </Pressable>
+          ) : null}
         </View>
       )
     }

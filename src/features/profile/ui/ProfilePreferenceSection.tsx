@@ -4,24 +4,46 @@ import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { C, Gray, Typography } from "../../../theme";
 import { useProfileFavoriteWorksPreview } from "../hooks";
+import type { FavoriteWorkPreview } from "../types";
 import { ProfileFindWorksEmptyState } from "./ProfileFindWorksEmptyState";
 
 const nextArrowIcon = require("../../../../assets/icons/common/icon-arrow-gray.svg");
 
 const WORK_RENDER_LIMIT = 4;
 
+/** My own favourite works, fetched from /profile/reader. */
 export function ProfilePreferenceSection() {
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
   const worksQuery = useProfileFavoriteWorksPreview();
 
-  const works = useMemo(
-    () => worksQuery.data?.works.slice(0, WORK_RENDER_LIMIT) ?? [],
-    [worksQuery.data?.works],
+  return (
+    <ProfileFavoriteWorksSectionView
+      count={worksQuery.data?.count ?? 0}
+      works={worksQuery.data?.works ?? []}
+      onPressMore={() => router.push("/profile/likes")}
+    />
   );
+}
+
+type ProfileFavoriteWorksSectionViewProps = {
+  count: number;
+  works: FavoriteWorkPreview[];
+  /** Omit to hide the arrow. */
+  onPressMore?: () => void;
+  isOwnProfile?: boolean;
+};
+
+export function ProfileFavoriteWorksSectionView({
+  count: favoriteCount,
+  works: allWorks,
+  onPressMore,
+  isOwnProfile = true,
+}: ProfileFavoriteWorksSectionViewProps) {
+  const { width: screenWidth } = useWindowDimensions();
+
+  const works = useMemo(() => allWorks.slice(0, WORK_RENDER_LIMIT), [allWorks]);
 
   const emptySlots = Math.max(0, WORK_RENDER_LIMIT - works.length);
-  const favoriteCount = worksQuery.data?.count ?? 0;
 
   const itemWidth = Math.floor((screenWidth - 32 - 4 * 3) / 4);
   const thumbHeight = Math.round(itemWidth * (116 / 87));
@@ -35,11 +57,8 @@ export function ProfilePreferenceSection() {
             {favoriteCount > 0 ? <Text style={styles.count}>{favoriteCount}</Text> : null}
           </View>
 
-          {favoriteCount > 0 ? (
-            <Pressable
-              onPress={() => router.push("/profile/likes")}
-              accessibilityRole="button"
-            >
+          {favoriteCount > 0 && onPressMore ? (
+            <Pressable onPress={onPressMore} accessibilityRole="button">
               <Image
                 source={nextArrowIcon}
                 style={styles.moreIcon}
@@ -86,7 +105,10 @@ export function ProfilePreferenceSection() {
             </View>
           </View>
         ) : (
-          <ProfileFindWorksEmptyState message="아직 관심 작품이 없어요" />
+          <ProfileFindWorksEmptyState
+            message="아직 관심 작품이 없어요"
+            showFindWorksButton={isOwnProfile}
+          />
         )}
       </View>
     </View>

@@ -81,6 +81,17 @@ export const toggleBoardLike = async (boardId: number) => {
   return data.result
 }
 
+// PUT    /api/v1/feed/reader/board/{boardId}/bookmark  → 등록
+// DELETE /api/v1/feed/reader/board/{boardId}/bookmark  → 해제
+// Both are idempotent and echo the latest { isBookmarked, bookmarkCount }.
+export const setBoardBookmark = async (boardId: number, bookmarked: boolean) => {
+  const url = `/api/v1/feed/reader/board/${boardId}/bookmark`
+  const { data } = bookmarked
+    ? await apiClient.put<ApiResponse<{ isBookmarked: boolean; bookmarkCount: number }>>(url)
+    : await apiClient.delete<ApiResponse<{ isBookmarked: boolean; bookmarkCount: number }>>(url)
+  return data.result
+}
+
 // DELETE /api/v1/feed/reader/board/{boardId}
 export const deleteBoard = async (boardId: number) => {
   const res = await apiClient.delete(`/api/v1/feed/reader/board/${boardId}`)

@@ -8,6 +8,7 @@ import { FeedDeleteConfirmModal } from '../../feed/ui/FeedDeleteConfirmModal'
 import {
   deleteBoard,
   reportBoard,
+  setBoardBookmark,
   toggleBoardLike,
 } from '../../feed/api/feed/readerBoard.api'
 import type { ProfileActivityBoardItem as ActivityBoardItem } from '../api/profile-activity.api'
@@ -16,11 +17,15 @@ export function ProfileActivityBoardCard({
   item,
   currentUserId,
   likedMode = false,
+  bookmarkedMode = false,
   queryKey,
 }: {
   item: ActivityBoardItem
   currentUserId?: number
+  /** "좋아요" tab: un-liking drops the card from the list. */
   likedMode?: boolean
+  /** "북마크" tab: un-bookmarking drops the card from the list. */
+  bookmarkedMode?: boolean
   queryKey: readonly string[]
 }) {
   const router = useRouter()
@@ -87,6 +92,46 @@ export function ProfileActivityBoardCard({
     }
   }
 
+  const handleToggleBookmark = async () => {
+    const optimisticBookmarked = !(item.board.isBookmarked ?? false)
+    const optimisticCount = Math.max(
+      0,
+      (item.board.bookmarkCount ?? 0) + (optimisticBookmarked ? 1 : -1),
+    )
+
+    syncBoardItem(item.board.boardId, (target) =>
+      bookmarkedMode && !optimisticBookmarked
+        ? null
+        : {
+            ...target,
+            board: {
+              ...target.board,
+              isBookmarked: optimisticBookmarked,
+              bookmarkCount: optimisticCount,
+            },
+          },
+    )
+
+    try {
+      const result = await setBoardBookmark(item.board.boardId, optimisticBookmarked)
+      syncBoardItem(item.board.boardId, (target) =>
+        bookmarkedMode && !result.isBookmarked
+          ? null
+          : {
+              ...target,
+              board: {
+                ...target.board,
+                isBookmarked: result.isBookmarked,
+                bookmarkCount: result.bookmarkCount,
+              },
+            },
+      )
+      if (!bookmarkedMode) qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
+    } catch {
+      qc.invalidateQueries({ queryKey })
+    }
+  }
+
   const handleDelete = () => {
     setDeleteModalVisible(true)
   }
@@ -146,6 +191,9 @@ export function ProfileActivityBoardCard({
       likeCount={item.board.likeCount}
       replyCount={item.board.replyCount}
       onToggleLike={() => void handleToggleLike()}
+      isBookmarked={item.board.isBookmarked ?? false}
+      bookmarkCount={item.board.bookmarkCount ?? 0}
+      onToggleBookmark={() => void handleToggleBookmark()}
       onClickWorksArrow={
         worksId
           ? () => router.push(`/works/${worksId}` as const)

@@ -16,6 +16,8 @@ type Props = {
   item: WorksReviewItem
   onPressDetail: (reviewId: number) => void
   onPressLike: (reviewId: number) => void
+  /** Avatar / nickname tap; only wired when the review carries a userId. */
+  onPressUser?: (userId: number) => void
   isLiking?: boolean
 }
 
@@ -23,16 +25,26 @@ export function OtherReviewCard({
   item,
   onPressDetail,
   onPressLike,
+  onPressUser,
   isLiking = false,
 }: Props) {
   const isLiked = useLikesStore(
     (state) => !!state.likedIds[String(item.reviewId)],
   )
   const profileImageUrl = item.profileImageUrl?.trim()
+  const userId = item.userId
+  const handlePressUser =
+    onPressUser && typeof userId === 'number' ? () => onPressUser(userId) : undefined
 
   return (
     <View style={styles.card}>
-      <View style={styles.headerRow}>
+      <Pressable
+        style={({ pressed }) => [styles.headerRow, pressed && handlePressUser && styles.pressed]}
+        onPress={handlePressUser}
+        disabled={!handlePressUser}
+        accessibilityRole={handlePressUser ? 'button' : undefined}
+        accessibilityLabel={handlePressUser ? `${item.userName ?? '익명'} 프로필 보기` : undefined}
+      >
         <View style={styles.avatar}>
           <Image
             source={
@@ -50,7 +62,7 @@ export function OtherReviewCard({
           </Text>
           <OfficialMark role={item.role} />
         </View>
-      </View>
+      </Pressable>
 
       <Pressable
         style={({ pressed }) => [

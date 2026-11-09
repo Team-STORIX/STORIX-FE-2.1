@@ -13,6 +13,7 @@ import type {
   ProfileActivityReplyItem,
 } from '../api/profile-activity.api'
 import { useProfileActivityBoards } from '../hooks/useProfileActivityBoards'
+import { useProfileActivityBookmarks } from '../hooks/useProfileActivityBookmarks'
 import { useProfileActivityLikes } from '../hooks/useProfileActivityLikes'
 import { useProfileActivityReplies } from '../hooks/useProfileActivityReplies'
 import { ProfileActivityBoardCard } from './ProfileActivityBoardItem'
@@ -44,6 +45,7 @@ export function ProfileActivityContent({
   const boardsQuery = useProfileActivityBoards(activeTab === 'posts')
   const repliesQuery = useProfileActivityReplies(activeTab === 'comments')
   const likesQuery = useProfileActivityLikes(activeTab === 'likes')
+  const bookmarksQuery = useProfileActivityBookmarks(activeTab === 'bookmarks')
   const [openCommentMenuId, setOpenCommentMenuId] = useState<number | null>(null)
 
   const query =
@@ -51,7 +53,9 @@ export function ProfileActivityContent({
       ? boardsQuery
       : activeTab === 'comments'
         ? repliesQuery
-        : likesQuery
+        : activeTab === 'likes'
+          ? likesQuery
+          : bookmarksQuery
 
   const items = useMemo(
     () =>
@@ -59,8 +63,16 @@ export function ProfileActivityContent({
         ? repliesQuery.data?.pages.flatMap((page) => page.content) ?? []
         : activeTab === 'posts'
           ? boardsQuery.data?.pages.flatMap((page) => page.content) ?? []
-          : likesQuery.data?.pages.flatMap((page) => page.content) ?? [],
-    [activeTab, boardsQuery.data?.pages, likesQuery.data?.pages, repliesQuery.data?.pages],
+          : activeTab === 'likes'
+            ? likesQuery.data?.pages.flatMap((page) => page.content) ?? []
+            : bookmarksQuery.data?.pages.flatMap((page) => page.content) ?? [],
+    [
+      activeTab,
+      boardsQuery.data?.pages,
+      bookmarksQuery.data?.pages,
+      likesQuery.data?.pages,
+      repliesQuery.data?.pages,
+    ],
   )
 
   const handleChangeTab = (next: ProfileActivityTab) => {
@@ -168,10 +180,13 @@ function renderActivityItem(
       item={item}
       currentUserId={userId}
       likedMode={activeTab === 'likes'}
+      bookmarkedMode={activeTab === 'bookmarks'}
       queryKey={
         activeTab === 'posts'
           ? ['profile', 'activity', 'boards']
-          : ['profile', 'activity', 'likes']
+          : activeTab === 'likes'
+            ? ['profile', 'activity', 'likes']
+            : ['profile', 'activity', 'bookmarks']
       }
     />
   )
@@ -185,6 +200,8 @@ function getEmptyMessage(tab: ProfileActivityTab) {
       return '아직 작성한 댓글이 없어요'
     case 'likes':
       return '아직 좋아요한 글이 없어요'
+    case 'bookmarks':
+      return '아직 북마크한 글이 없어요'
     default:
       return '활동 내역이 없어요.'
   }

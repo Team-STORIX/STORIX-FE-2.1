@@ -4,18 +4,30 @@ import { C, Gray, Magenta, Typography } from '../../../theme'
 import { usePreferredHashtags } from '../hooks'
 import { ProfileFindWorksEmptyState } from './ProfileFindWorksEmptyState'
 
+/** My own hashtag ranking, fetched from /profile/reader. */
 export function ProfileHashtagSection() {
   const hashtagsQuery = usePreferredHashtags()
+  return <ProfileHashtagSectionView hashtags={hashtagsQuery.data} />
+}
 
+type ProfileHashtagSectionViewProps = {
+  hashtags: Record<number, string> | undefined
+  isOwnProfile?: boolean
+}
+
+export function ProfileHashtagSectionView({
+  hashtags,
+  isOwnProfile = true,
+}: ProfileHashtagSectionViewProps) {
   const ranks = useMemo(() => {
-    const raw = hashtagsQuery.data ?? {}
+    const raw = hashtags ?? {}
     return Object.fromEntries(
       Object.entries(raw).map(([rank, keyword]) => [
         Number(rank),
         keyword ? `#${keyword}` : '',
       ]),
     ) as Record<number, string>
-  }, [hashtagsQuery.data])
+  }, [hashtags])
 
   const hasAnyRank = useMemo(
     () => Object.values(ranks).some((value) => value.trim().length > 0),
@@ -27,7 +39,11 @@ export function ProfileHashtagSection() {
       <Text style={styles.title}>선호 해시태그</Text>
 
       {!hasAnyRank ? (
-        <ProfileFindWorksEmptyState message="아직 선호 해시태그가 없어요" centerText />
+        <ProfileFindWorksEmptyState
+          message="아직 선호 해시태그가 없어요"
+          centerText
+          showFindWorksButton={isOwnProfile}
+        />
       ) : (
         <View style={styles.canvas}>
           <Text

@@ -20,6 +20,8 @@ import { FeedMenuDropdown } from "./FeedMenuDropdown";
 const likeIcon = require("../../../../assets/icons/common/icon-like.svg");
 const likePinkIcon = require("../../../../assets/icons/common/icon-like-pink.svg");
 const commentIcon = require("../../../../assets/icons/common/icon-comment.svg");
+const bookmarkIcon = require("../../../../assets/icons/common/icon-bookmark.svg");
+const bookmarkPinkIcon = require("../../../../assets/icons/common/icon-bookmark-pink.svg");
 const menuIcon = require("../../../../assets/icons/common/menu-3dots.svg");
 const arrowSmallIcon = require("../../../../assets/icons/common/icon-arrow-forward-small.svg");
 const defaultProfileImage = require("../../../../assets/placeholders/profile-default.png");
@@ -56,11 +58,16 @@ type FeedPostCardProps = {
   likeCount: number;
   replyCount: number;
   onToggleLike: () => void;
+  isBookmarked?: boolean;
+  bookmarkCount?: number;
+  onToggleBookmark?: () => void;
   onClickWorksArrow?: () => void;
   onOpenReport?: () => void;
   onOpenDelete?: () => void;
   onOpenBlock?: () => void;
   onPressCard?: () => void;
+  /** Avatar / nickname tap; omitted on previews where there is no real writer. */
+  onPressAuthor?: () => void;
   birthdayTheme?: boolean;
   birthdayPreview?: boolean;
   disableSpoilerMask?: boolean;
@@ -149,11 +156,15 @@ export function FeedPostCard({
   likeCount,
   replyCount,
   onToggleLike,
+  isBookmarked = false,
+  bookmarkCount = 0,
+  onToggleBookmark,
   onClickWorksArrow,
   onOpenReport,
   onOpenDelete,
   onOpenBlock,
   onPressCard,
+  onPressAuthor,
   birthdayTheme = false,
   birthdayPreview = false,
   disableSpoilerMask = false,
@@ -207,21 +218,32 @@ export function FeedPostCard({
       <View style={styles.cardContent}>
         {/* ── Profile row ───────────────────────────────────────── */}
         <Pressable style={styles.profileRow} onPress={() => setMenuOpen(false)}>
-          <View style={styles.avatarWrap}>
-            <Image
-              source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          </View>
-
-          <View style={styles.authorMeta}>
-            <View style={styles.authorNameRow}>
-              <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
-              <OfficialMark role={role} />
+          <Pressable
+            style={({ pressed }) => [styles.authorPressable, pressed && onPressAuthor && styles.authorPressed]}
+            onPress={() => {
+              setMenuOpen(false);
+              onPressAuthor?.();
+            }}
+            disabled={!onPressAuthor}
+            accessibilityRole={onPressAuthor ? "button" : undefined}
+            accessibilityLabel={onPressAuthor ? `${nickName} 프로필 보기` : undefined}
+          >
+            <View style={styles.avatarWrap}>
+              <Image
+                source={profileImageUrl ? { uri: profileImageUrl } : defaultProfileImage}
+                style={styles.avatar}
+                contentFit="cover"
+              />
             </View>
-            {!!displayCreatedAt && <Text style={styles.timestamp}>{displayCreatedAt}</Text>}
-          </View>
+
+            <View style={styles.authorMeta}>
+              <View style={styles.authorNameRow}>
+                <Text style={styles.authorName} numberOfLines={1}>{nickName}</Text>
+                <OfficialMark role={role} />
+              </View>
+              {!!displayCreatedAt && <Text style={styles.timestamp}>{displayCreatedAt}</Text>}
+            </View>
+          </Pressable>
 
           <Pressable
             ref={menuBtnRef}
@@ -386,6 +408,32 @@ export function FeedPostCard({
               <Image source={commentIcon} style={styles.reactionIcon} contentFit="contain" />
               {replyCount > 0 && <Text style={styles.reactionCount}>{replyCount}</Text>}
             </View>
+
+            <Pressable
+              onPress={onToggleBookmark}
+              disabled={!onToggleBookmark}
+              style={[styles.reactionItem, styles.bookmarkItem]}
+              accessibilityLabel="북마크"
+              accessibilityState={{ selected: isBookmarked }}
+              hitSlop={8}
+            >
+              <Image
+                source={isBookmarked ? bookmarkPinkIcon : bookmarkIcon}
+                style={styles.reactionIcon}
+                contentFit="contain"
+              />
+              {bookmarkCount > 0 && (
+                <Text
+                  style={[
+                    styles.reactionCount,
+                    isBookmarked && styles.reactionCountLiked,
+                    birthdayLayout && styles.birthdayReactionCount,
+                  ]}
+                >
+                  {bookmarkCount}
+                </Text>
+              )}
+            </Pressable>
           </View>
         </View>
       </View>
@@ -482,6 +530,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     height: 41,
     paddingHorizontal: 16,
+  },
+  authorPressable: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  authorPressed: {
+    opacity: 0.7,
   },
   avatarWrap: {
     width: 40,
@@ -717,6 +774,10 @@ const styles = StyleSheet.create({
   },
   birthdayCommentItem: {
     marginLeft: 12,
+  },
+  // Pinned to the right edge of the row, inside the 16px padding.
+  bookmarkItem: {
+    marginLeft: "auto",
   },
   reactionIcon: {
     width: 24,

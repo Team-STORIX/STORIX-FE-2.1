@@ -1,14 +1,15 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   deleteBoard,
   reportBoard,
+  setBoardBookmark,
   toggleBoardLike,
   type FeedBoardItem,
 } from '../api/feed/readerBoard.api'
-import { useMe } from '../../profile'
+import { useMe, useOpenUserProfile } from '../../profile'
 import { blockUser } from '../../users/api/users.api'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedDeleteConfirmModal } from './FeedDeleteConfirmModal'
@@ -17,17 +18,24 @@ import {
   invalidateAfterBlock,
   sortedImageUrls,
   syncHomeBoardLike,
+  toggleBookmarkState,
   toggleLikeState,
+  updateFeedBoardsCache,
+  type BookmarkState,
   type LikeState,
 } from '../lib/feedHelpers'
 
 /**
- * Card rendering and per-board actions (like, report, block, delete) shared by
- * every list of feed boards. Render `modals` next to the list and pass
- * `extraData` to the FlatList so optimistic likes repaint.
+ * Card rendering and per-board actions (like, bookmark, report, block, delete)
+ * shared by every list of feed boards. Render `modals` next to the list.
+ *
+ * Optimistic like/bookmark state is written straight into the ['feed', 'boards']
+ * query cache, so the feed tab, the works filter and the search screen all show
+ * the same state for a board and a refetch simply replaces it with server data.
  */
 export function useFeedBoardList() {
   const router = useRouter()
+  const openUserProfile = useOpenUserProfile()
   const qc = useQueryClient()
   const { data: me } = useMe()
   const currentUserId = me?.userId
@@ -35,15 +43,11 @@ export function useFeedBoardList() {
   const { openReport, openBlock, modals: userActionModals } = useUserActionModals()
 
   // ── Optimistic like state ────────────────────────────────────────────────────
-  const likeOverrides = useRef<Map<number, LikeState>>(new Map())
-  const [likeVersion, forceUpdate] = useState(0)
-
   const handleToggleLike = useCallback(
     async (boardId: number, current: LikeState) => {
       const apply = (like: LikeState) => {
-        likeOverrides.current.set(boardId, like)
+        updateFeedBoardsCache(qc, boardId, (board) => ({ ...board, ...like }))
         syncHomeBoardLike(qc, boardId, like)
-        forceUpdate((n) => n + 1)
       }
       apply(toggleLikeState(current))
       try {
@@ -51,6 +55,25 @@ export function useFeedBoardList() {
         if (result != null) {
           apply(result)
           qc.invalidateQueries({ queryKey: ['profile', 'activity', 'likes'] })
+        }
+      } catch {
+        apply(current)
+      }
+    },
+    [qc],
+  )
+
+  // ── Optimistic bookmark state ────────────────────────────────────────────────
+  const handleToggleBookmark = useCallback(
+    async (boardId: number, current: BookmarkState) => {
+      const apply = (bookmark: BookmarkState) =>
+        updateFeedBoardsCache(qc, boardId, (board) => ({ ...board, ...bookmark }))
+      apply(toggleBookmarkState(current))
+      try {
+        const result = await setBoardBookmark(boardId, !current.isBookmarked)
+        if (result != null) {
+          apply(result)
+          qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
         }
       } catch {
         apply(current)
@@ -93,9 +116,10 @@ export function useFeedBoardList() {
   const renderItem = useCallback(
     ({ item }: { item: FeedBoardItem }) => {
       const { board, profile, works } = item
-      const like = likeOverrides.current.get(board.boardId) ?? {
-        isLiked: board.isLiked,
-        likeCount: board.likeCount,
+      const like: LikeState = { isLiked: board.isLiked, likeCount: board.likeCount }
+      const bookmark: BookmarkState = {
+        isBookmarked: board.isBookmarked ?? false,
+        bookmarkCount: board.bookmarkCount ?? 0,
       }
       const worksIdForNav =
         board.isWorksSelected && board.worksId != null && board.worksId > 0 ? board.worksId : null
@@ -122,6 +146,9 @@ export function useFeedBoardList() {
           likeCount={like.likeCount}
           replyCount={board.replyCount}
           onToggleLike={() => handleToggleLike(board.boardId, like)}
+          isBookmarked={bookmark.isBookmarked}
+          bookmarkCount={bookmark.bookmarkCount}
+          onToggleBookmark={() => handleToggleBookmark(board.boardId, bookmark)}
           onClickWorksArrow={
             worksIdForNav != null ? () => router.push(`/works/${worksIdForNav}` as const) : undefined
           }
@@ -129,11 +156,20 @@ export function useFeedBoardList() {
           onOpenBlock={isMine ? undefined : () => handleBlock(item)}
           onOpenDelete={isMine ? () => setDeleteBoardId(board.boardId) : undefined}
           onPressCard={() => router.push(`/feed/${board.boardId}` as never)}
+          onPressAuthor={() => openUserProfile(profile.userId)}
           birthdayTheme={board.theme === 'BIRTHDAY'}
         />
       )
     },
-    [currentUserId, handleBlock, handleReport, handleToggleLike, router],
+    [
+      currentUserId,
+      handleBlock,
+      handleReport,
+      handleToggleBookmark,
+      handleToggleLike,
+      openUserProfile,
+      router,
+    ],
   )
 
   const modals = (
@@ -148,5 +184,5 @@ export function useFeedBoardList() {
     </>
   )
 
-  return { renderItem, modals, extraData: likeVersion }
+  return { renderItem, modals }
 }

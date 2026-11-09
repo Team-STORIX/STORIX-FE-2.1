@@ -24,7 +24,7 @@ import {
   useNotificationSettings,
   usePushPermissionStatus,
 } from "../../src/features/notification";
-import { useProfileStore } from "../../src/features/profile";
+import { useOpenUserProfile, useProfileStore } from "../../src/features/profile";
 import {
   ChatBubble,
   ChatDateSeparator,
@@ -687,6 +687,15 @@ export default function TopicRoomScreen() {
     setReportSource(null);
   }, []);
 
+  const openUserProfile = useOpenUserProfile();
+  const handleOpenUserProfile = useCallback(
+    (target: TopicRoomActionTarget) => {
+      closeUserActions();
+      openUserProfile(target.userId);
+    },
+    [closeUserActions, openUserProfile],
+  );
+
   useEffect(
     () => () => {
       if (confirmOpenTimerRef.current) {
@@ -1046,6 +1055,7 @@ export default function TopicRoomScreen() {
         onClose={closeUserActions}
         onReport={handleOpenReportConfirm}
         onBlock={handleOpenBlockConfirm}
+        onPressProfile={handleOpenUserProfile}
       />
 
       <TopicRoomUserActionDropdown

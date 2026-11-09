@@ -47,7 +47,7 @@ export function FeedScreen() {
   const [tab, setTab] = useState<FeedTab>(sectionTab)
   const [pick, setPick] = useState('all')
   const [topicRoomPickerOpen, setTopicRoomPickerOpen] = useState(false)
-  const { renderItem, modals, extraData } = useFeedBoardList()
+  const { renderItem, modals } = useFeedBoardList()
   const { data: topicRoomUnreadStatus, refetch: refetchTopicRoomUnreadStatus } =
     useTopicRoomUnreadStatus()
 
@@ -152,7 +152,6 @@ export function FeedScreen() {
         ref={listRef}
         style={[styles.screen, { paddingTop: insets.top }]}
         data={items}
-        extraData={extraData}
         keyExtractor={(item) => `board_${item.board.boardId}`}
         renderItem={renderItem}
         ListHeaderComponent={

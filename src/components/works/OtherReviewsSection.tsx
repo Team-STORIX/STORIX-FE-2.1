@@ -11,6 +11,7 @@ type Props = {
   isFetchingNextPage?: boolean
   onPressDetail: (reviewId: number) => void
   onPressLike: (reviewId: number) => void
+  onPressUser?: (userId: number) => void
   likingReviewId?: number | null
 }
 
@@ -21,6 +22,7 @@ export function OtherReviewsSection({
   isFetchingNextPage = false,
   onPressDetail,
   onPressLike,
+  onPressUser,
   likingReviewId,
 }: Props) {
   return (
@@ -49,6 +51,7 @@ export function OtherReviewsSection({
           item={item}
           onPressDetail={onPressDetail}
           onPressLike={onPressLike}
+          onPressUser={onPressUser}
           isLiking={likingReviewId === item.reviewId}
         />
       ))}

@@ -19,7 +19,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 import { C, Gray, Magenta, Radius, Typography } from '../../../theme'
-import { useMe } from '../../profile'
+import { useMe, useOpenUserProfile } from '../../profile'
 import { isAlreadyReportedError, reportReply } from '../api/feed/readerReply.api'
 import {
   createReply,
@@ -28,7 +28,12 @@ import {
   toggleReplyLike,
   type ReplyItem,
 } from '../api/feed/readerBoardDetail.api'
-import { deleteBoard, reportBoard, toggleBoardLike } from '../api/feed/readerBoard.api'
+import {
+  deleteBoard,
+  reportBoard,
+  setBoardBookmark,
+  toggleBoardLike,
+} from '../api/feed/readerBoard.api'
 import { useBoardDetailInfinite } from '../hooks/feed'
 import { useLeaveOnAdultVerificationRequired } from '../../../lib/navigation/useLeaveOnAdultVerificationRequired'
 import { blockUser } from '../../users/api/users.api'
@@ -43,7 +48,9 @@ import {
   sortedImageUrls,
   syncHomeBoardLike,
   syncHomeBoardReplyCount,
+  toggleBookmarkState,
   toggleLikeState,
+  type BookmarkState,
   type LikeState,
 } from '../lib/feedHelpers'
 
@@ -86,6 +93,7 @@ export function FeedDetailScreen() {
 
   const { data: me } = useMe()
   const myUserId = me?.userId ?? null
+  const openUserProfile = useOpenUserProfile()
   const detailQuery = useBoardDetailInfinite(boardId ?? 0)
   const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(detailQuery.error)
 
@@ -99,6 +107,7 @@ export function FeedDetailScreen() {
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
   const [subRepliesMap, setSubRepliesMap] = useState<Record<number, ReplyItem[]>>({})
   const [postLikeOverride, setPostLikeOverride] = useState<LikeState | null>(null)
+  const [postBookmarkOverride, setPostBookmarkOverride] = useState<BookmarkState | null>(null)
   const [replyLikeOverrides, setReplyLikeOverrides] = useState<Record<number, LikeState>>({})
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -148,6 +157,10 @@ export function FeedDetailScreen() {
     isLiked: board?.isLiked ?? false,
     likeCount: board?.likeCount ?? 0,
   }
+  const effectivePostBookmark = postBookmarkOverride ?? {
+    isBookmarked: board?.isBookmarked ?? false,
+    bookmarkCount: board?.bookmarkCount ?? 0,
+  }
 
   // Deep link to a comment: load pages until it appears, then scroll to it once.
   useEffect(() => {
@@ -192,6 +205,19 @@ export function FeedDetailScreen() {
       apply({ isLiked: board.isLiked, likeCount: board.likeCount })
     }
   }, [board, boardId, effectivePostLike, qc])
+
+  // ── Bookmark ─────────────────────────────────────────────────────────────────
+  const onTogglePostBookmark = useCallback(async () => {
+    if (!boardId || !board) return
+    const current = effectivePostBookmark
+    setPostBookmarkOverride(toggleBookmarkState(current))
+    try {
+      setPostBookmarkOverride(await setBoardBookmark(boardId, !current.isBookmarked))
+      qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
+    } catch {
+      setPostBookmarkOverride(current)
+    }
+  }, [board, boardId, effectivePostBookmark, qc])
 
   const onToggleReplyLike = useCallback(
     async (replyId: number, current: LikeState) => {
@@ -436,6 +462,7 @@ export function FeedDetailScreen() {
               boardId={board.boardId}
               writerUserId={profile.userId}
               currentUserId={myUserId ?? undefined}
+              onPressAuthor={() => openUserProfile(profile.userId)}
               profileImageUrl={profile.profileImageUrl}
               nickName={profile.nickName}
               role={profile.role}
@@ -451,6 +478,9 @@ export function FeedDetailScreen() {
               likeCount={effectivePostLike.likeCount}
               replyCount={board.replyCount + replyCountDelta}
               onToggleLike={onTogglePostLike}
+              isBookmarked={effectivePostBookmark.isBookmarked}
+              bookmarkCount={effectivePostBookmark.bookmarkCount}
+              onToggleBookmark={onTogglePostBookmark}
               onClickWorksArrow={
                 board.isWorksSelected && board.worksId
                   ? () => router.push(`/works/${board.worksId}` as const)
@@ -492,6 +522,7 @@ export function FeedDetailScreen() {
                     onOpenDelete={() => setDeleteTarget({ type: 'comment', replyId })}
                     onOpenReport={() => onReportReply(item)}
                     onOpenBlock={() => onBlockReply(item)}
+                    onPressAuthor={() => openUserProfile(item.reply.userId)}
                   />
 
                   {subReplies.map((subReply) => {
@@ -518,6 +549,7 @@ export function FeedDetailScreen() {
                           }
                           onOpenReport={() => onReportReply(subReply)}
                           onOpenBlock={() => onBlockReply(subReply)}
+                          onPressAuthor={() => openUserProfile(subReply.reply.userId)}
                         />
                       </View>
                     )

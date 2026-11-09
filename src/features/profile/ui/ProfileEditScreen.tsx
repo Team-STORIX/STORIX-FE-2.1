@@ -15,7 +15,9 @@ import { NICKNAME_MESSAGES } from '../../auth/lib/nickname-validation'
 import type { ApiResponse } from '../../../lib/api/types'
 import { updateProfileDescription, updateProfileNickname, uploadAndSetProfileImage } from '../api'
 import { ME_QUERY_KEY, useMe } from '../hooks/useMe'
+import { useUpdateLibraryVisibility } from '../hooks/useUpdateLibraryVisibility'
 import { BioStep } from '../../onboarding/ui/BioStep'
+import { ProfileEditLibraryVisibilityField } from './ProfileEditLibraryVisibilityField'
 import { ProfileEditNicknameField } from './ProfileEditNicknameField'
 import { ProfileEditTopBar } from './ProfileEditTopBar'
 
@@ -57,6 +59,9 @@ export function ProfileEditScreen() {
   const [nicknameVerified, setNicknameVerified] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [localProfileImageUri, setLocalProfileImageUri] = useState<string | undefined>()
+  const [isLibraryPublic, setIsLibraryPublic] = useState(false)
+  const [initialIsLibraryPublic, setInitialIsLibraryPublic] = useState(false)
+  const updateLibraryVisibility = useUpdateLibraryVisibility()
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -64,22 +69,33 @@ export function ProfileEditScreen() {
     initRef.current = true
     const nextNickname = me.nickName ?? ''
     const nextBio = me.profileDescription ?? ''
+    const nextIsLibraryPublic = me.isLibraryPublic ?? false
     setNickname(nextNickname)
     setInitialNickname(nextNickname)
     setBioText(nextBio)
     setInitialBioText(nextBio)
+    setIsLibraryPublic(nextIsLibraryPublic)
+    setInitialIsLibraryPublic(nextIsLibraryPublic)
     setNicknameVerified(true)
   }, [me])
 
   const nicknameChanged = nickname !== initialNickname
   const bioChanged = bioText !== initialBioText
   const profileImageChanged = Boolean(localProfileImageUri)
+  const libraryVisibilityChanged = isLibraryPublic !== initialIsLibraryPublic
 
   const canSubmit = useMemo(() => {
     if (!nickname.trim()) return false
     if (nicknameChanged && !nicknameVerified) return false
-    return nicknameChanged || bioChanged || profileImageChanged
-  }, [bioChanged, nickname, nicknameChanged, nicknameVerified, profileImageChanged])
+    return nicknameChanged || bioChanged || profileImageChanged || libraryVisibilityChanged
+  }, [
+    bioChanged,
+    libraryVisibilityChanged,
+    nickname,
+    nicknameChanged,
+    nicknameVerified,
+    profileImageChanged,
+  ])
 
   const handleBack = () => {
     if ('canGoBack' in router && router.canGoBack()) {
@@ -104,6 +120,12 @@ export function ProfileEditScreen() {
 
     const uri = result.assets[0].uri
     setLocalProfileImageUri(uri)
+  }
+
+  // The toggle is a draft like the other fields: it is saved by the 완료 button.
+  const handleToggleLibraryVisibility = () => {
+    if (isSaving) return
+    setIsLibraryPublic((current) => !current)
   }
 
   const handleSubmit = async () => {
@@ -131,6 +153,14 @@ export function ProfileEditScreen() {
       if (localProfileImageUri) {
         await uploadAndSetProfileImage(localProfileImageUri)
         patchMe({ profileImageUrl: localProfileImageUri })
+      }
+
+      if (libraryVisibilityChanged) {
+        try {
+          await updateLibraryVisibility.mutateAsync(isLibraryPublic)
+        } catch {
+          throw new Error('서재 공개 설정 변경에 실패했어요.')
+        }
       }
 
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY })
@@ -211,6 +241,12 @@ export function ProfileEditScreen() {
           <View style={styles.fieldSpacer} />
           <BioStep value={bioText} onChange={setBioText} showHeader={false} />
         </View>
+
+        <ProfileEditLibraryVisibilityField
+          isPublic={isLibraryPublic}
+          disabled={isSaving}
+          onToggle={handleToggleLibraryVisibility}
+        />
       </View>
     </ScrollView>
   )

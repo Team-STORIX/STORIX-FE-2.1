@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMe } from "../../features/profile";
+import { useMe, useOpenUserProfile } from "../../features/profile";
 import { FeedDeleteConfirmModal } from "../../features/feed/ui/FeedDeleteConfirmModal";
 import { blockUser } from "../../features/users/api/users.api";
 import {
@@ -119,6 +119,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
   }, [data]);
 
   const { data: meData } = useMe();
+  const openUserProfile = useOpenUserProfile();
   const myUserId = typeof meData?.userId === "number" ? meData.userId : null;
   const isMine =
     ui.isMineFlag ||
@@ -365,6 +366,13 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
       >
         {/* User row */}
         <View style={styles.userRow}>
+          <Pressable
+            style={({ pressed }) => [styles.userPressable, pressed && ui.userId != null && styles.pressed]}
+            onPress={() => openUserProfile(ui.userId)}
+            disabled={ui.userId == null}
+            accessibilityRole={ui.userId != null ? "button" : undefined}
+            accessibilityLabel={ui.userId != null ? `${ui.userName} 프로필 보기` : undefined}
+          >
           <View style={styles.avatar}>
             <Image
               source={
@@ -387,6 +395,7 @@ export function ReviewDetailScreen({ reviewId, source, sourceWorksId }: Props) {
               <Text style={styles.userTime}>{relativeTime}</Text>
             ) : null}
           </View>
+          </Pressable>
 
           {canModerate ? (
             <Pressable
@@ -777,6 +786,13 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  userPressable: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   avatar: {
     width: 36,

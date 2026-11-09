@@ -25,6 +25,8 @@ type Props = {
   onClose: () => void;
   onReport: () => void;
   onBlock: () => void;
+  /** Avatar / nickname tap opens the user's profile. */
+  onPressProfile?: (target: TopicRoomActionTarget) => void;
 };
 
 /**
@@ -38,7 +40,10 @@ export function TopicRoomUserActionModal({
   onClose,
   onReport,
   onBlock,
+  onPressProfile,
 }: Props) {
+  const handlePressProfile =
+    onPressProfile && target ? () => onPressProfile(target) : undefined;
   return (
     <Modal
       visible={visible}
@@ -97,7 +102,16 @@ export function TopicRoomUserActionModal({
             </Pressable>
           </View>
 
-          <View style={styles.profileBlock}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.profileBlock,
+              pressed && handlePressProfile ? styles.pressed : null,
+            ]}
+            onPress={handlePressProfile}
+            disabled={!handlePressProfile}
+            accessibilityRole={handlePressProfile ? "button" : undefined}
+            accessibilityLabel={handlePressProfile ? "프로필 보기" : undefined}
+          >
             <Image
               source={
                 target?.profileImageUrl
@@ -110,7 +124,7 @@ export function TopicRoomUserActionModal({
             <Text style={styles.nickname} numberOfLines={1}>
               {target?.nickname || "익명"}
             </Text>
-          </View>
+          </Pressable>
         </View>
       </View>
     </Modal>
@@ -170,5 +184,8 @@ const styles = StyleSheet.create({
     ...Typography.body1Semibold,
     color: Gray[900],
     textAlign: "center",
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

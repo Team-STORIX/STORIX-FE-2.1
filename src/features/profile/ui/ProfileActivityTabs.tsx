@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { C, Gray, Typography } from '../../../theme'
 
-export type ProfileActivityTab = 'posts' | 'comments' | 'likes'
+export type ProfileActivityTab = 'posts' | 'comments' | 'likes' | 'bookmarks'
 
 const TAB_LABELS: Record<ProfileActivityTab, string> = {
   posts: '게시글',
   comments: '댓글',
   likes: '좋아요',
+  bookmarks: '북마크',
 }
 
 export function ProfileActivityTabs({
