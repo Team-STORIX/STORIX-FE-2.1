@@ -50,6 +50,7 @@ import {
   syncHomeBoardReplyCount,
   toggleBookmarkState,
   toggleLikeState,
+  updateFeedBoardsCache,
   type BookmarkState,
   type LikeState,
 } from '../lib/feedHelpers'
@@ -210,12 +211,19 @@ export function FeedDetailScreen() {
   const onTogglePostBookmark = useCallback(async () => {
     if (!boardId || !board) return
     const current = effectivePostBookmark
-    setPostBookmarkOverride(toggleBookmarkState(current))
+    const apply = (bookmark: BookmarkState) => {
+      setPostBookmarkOverride(bookmark)
+      updateFeedBoardsCache(qc, boardId, (cachedBoard) => ({
+        ...cachedBoard,
+        ...bookmark,
+      }))
+    }
+    apply(toggleBookmarkState(current))
     try {
-      setPostBookmarkOverride(await setBoardBookmark(boardId, !current.isBookmarked))
+      apply(await setBoardBookmark(boardId, !current.isBookmarked))
       qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
     } catch {
-      setPostBookmarkOverride(current)
+      apply(current)
     }
   }, [board, boardId, effectivePostBookmark, qc])
 
