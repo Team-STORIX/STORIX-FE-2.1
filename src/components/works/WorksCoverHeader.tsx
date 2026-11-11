@@ -102,7 +102,9 @@ export function WorksCoverHeader({ works }: { works: WorksDetail }) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    height: HERO_HEIGHT,
+    // minHeight so a two-line title pushes the hero taller instead of
+    // clipping the rating row under overflow: hidden.
+    minHeight: HERO_HEIGHT,
     position: "relative",
     overflow: "hidden",
     backgroundColor: "#F9F6F7",
