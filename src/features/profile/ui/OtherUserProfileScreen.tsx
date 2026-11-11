@@ -28,7 +28,7 @@ import { ProfilePreferGenreSectionView } from './ProfilePreferGenreSection'
 import { ProfileRatingSectionView } from './ProfileRatingSection'
 import { ProfileUserSummary } from './ProfileUserSummary'
 
-const lockIcon = require('../../../../assets/icons/profile/icon-lib-lock.svg')
+const lockIcon = require('../../../../assets/icons/profile/icon-lib-lock.png')
 
 // BottomNavBarView is absolutely positioned, so content keeps this much clear.
 const NAV_BAR_HEIGHT = 80
