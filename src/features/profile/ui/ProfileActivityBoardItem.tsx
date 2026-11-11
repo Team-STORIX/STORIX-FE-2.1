@@ -11,6 +11,7 @@ import {
   setBoardBookmark,
   toggleBoardLike,
 } from '../../feed/api/feed/readerBoard.api'
+import { updateFeedBoardsCache } from '../../feed/lib/feedHelpers'
 import type { ProfileActivityBoardItem as ActivityBoardItem } from '../api/profile-activity.api'
 
 export function ProfileActivityBoardCard({
@@ -93,11 +94,21 @@ export function ProfileActivityBoardCard({
   }
 
   const handleToggleBookmark = async () => {
+    const current = {
+      isBookmarked: item.board.isBookmarked ?? false,
+      bookmarkCount: item.board.bookmarkCount ?? 0,
+    }
     const optimisticBookmarked = !(item.board.isBookmarked ?? false)
     const optimisticCount = Math.max(
       0,
       (item.board.bookmarkCount ?? 0) + (optimisticBookmarked ? 1 : -1),
     )
+    const optimistic = {
+      isBookmarked: optimisticBookmarked,
+      bookmarkCount: optimisticCount,
+    }
+
+    updateFeedBoardsCache(qc, item.board.boardId, (board) => ({ ...board, ...optimistic }))
 
     syncBoardItem(item.board.boardId, (target) =>
       bookmarkedMode && !optimisticBookmarked
@@ -114,6 +125,7 @@ export function ProfileActivityBoardCard({
 
     try {
       const result = await setBoardBookmark(item.board.boardId, optimisticBookmarked)
+      updateFeedBoardsCache(qc, item.board.boardId, (board) => ({ ...board, ...result }))
       syncBoardItem(item.board.boardId, (target) =>
         bookmarkedMode && !result.isBookmarked
           ? null
@@ -128,6 +140,7 @@ export function ProfileActivityBoardCard({
       )
       if (!bookmarkedMode) qc.invalidateQueries({ queryKey: ['profile', 'activity', 'bookmarks'] })
     } catch {
+      updateFeedBoardsCache(qc, item.board.boardId, (board) => ({ ...board, ...current }))
       qc.invalidateQueries({ queryKey })
     }
   }
