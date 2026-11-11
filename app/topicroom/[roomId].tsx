@@ -254,6 +254,7 @@ export default function TopicRoomScreen() {
     status,
     messages: realtimeMsgs,
     sendMessage,
+    rejectionError: stompRejectionError,
   } = useTopicRoomStomp({
     roomId,
     enabled: isScreenFocused,
@@ -629,11 +630,15 @@ export default function TopicRoomScreen() {
   // Not a participant (push, deep link, or a stale list after leaving): the
   // room-scoped APIs answer 403 TOPIC_ROOM_ERROR_008, so hand over to the
   // preview, where the user can join again.
-  const isLeavingForAdultVerification =
-    useLeaveOnAdultVerificationRequired(historyErrorDetail);
+  // The socket can be refused for the same reasons after history loaded
+  // (verification expired, removed from the room), so it feeds the same checks.
+  const isLeavingForAdultVerification = useLeaveOnAdultVerificationRequired(
+    historyErrorDetail ?? stompRejectionError,
+  );
   const isNotMember =
     isTopicRoomNotMemberError(historyErrorDetail) ||
-    isTopicRoomNotMemberError(notificationSettingQuery.error);
+    isTopicRoomNotMemberError(notificationSettingQuery.error) ||
+    isTopicRoomNotMemberError(stompRejectionError);
   const redirectedToPreviewRef = useRef(false);
   useEffect(() => {
     if (!isNotMember || redirectedToPreviewRef.current) return;
