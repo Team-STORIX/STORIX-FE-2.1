@@ -8,7 +8,18 @@ import {
   isJwtExpiringSoon,
 } from '../../../lib/utils/jwt'
 import { useAuthStore } from '../../../store/auth.store'
+import {
+  ADULT_VERIFICATION_STATUS_QUERY_KEY,
+  useAdultVerificationStore,
+} from '../../../store/adultVerification.store'
+import { ADULT_VERIFICATION_REQUIRED_CODE } from '../../../lib/api/adultVerificationRequired'
+import { queryClient } from '../../../lib/query/queryClient'
 import { useProfileStore } from '../../profile/store/profile.store'
+import {
+  classifyStompRejection,
+  toRestLikeError,
+  type StompRejection,
+} from '../services/stompRejection'
 import {
   STORIX_STOMP_BROKER_URL,
   isIgnorableStompBody,
@@ -140,6 +151,9 @@ export const useTopicRoomStomp = (params: {
   const pendingSentRef = useRef<Array<{ tempId: string; text: string; at: number }>>([])
 
   const [status, setStatus] = useState<Status>('idle')
+  // Set when the server refused the connection for a reason reconnecting
+  // won't fix (FORBIDDEN / BAD_REQUEST). Cleared on the next connect attempt.
+  const [rejection, setRejection] = useState<StompRejection | null>(null)
   const [messages, setMessages] = useState<TopicRoomUiMsg[]>([])
   const [appIsActive, setAppIsActive] = useState(
     AppState.currentState === 'active',
@@ -321,6 +335,7 @@ export const useTopicRoomStomp = (params: {
     if (!canConnect) return
 
     setStatus('connecting')
+    setRejection(null)
 
     let cancelled = false
 
@@ -655,11 +670,10 @@ export const useTopicRoomStomp = (params: {
           // Strip Authorization so the token never reaches logs.
           const { Authorization: _auth, ...safeHeaders } = frame.headers ?? {}
           const messageHeader = frame.headers?.message
-          // Server rejects an expired/invalid token with STOMP ERROR
-          // message=UNAUTHORIZED then closes the socket (code 1002).
-          const isUnauthorized =
-            /UNAUTHORIZED/i.test(String(messageHeader ?? '')) ||
-            /UNAUTHORIZED/i.test(frame.body ?? '')
+          // Server rejects CONNECT/SUBSCRIBE with an ERROR frame whose message
+          // header says why, then closes the socket (code 1002).
+          const frameRejection = classifyStompRejection(messageHeader, frame.body)
+          const isUnauthorized = frameRejection.kind === 'unauthorized'
 
           if (__DEV__) {
             console.error('[STOMP_DIAG] stompError', {
@@ -721,6 +735,22 @@ export const useTopicRoomStomp = (params: {
                 void client.deactivate()
               }
             })()
+            return
+          }
+
+          if (frameRejection.kind === 'forbidden' || frameRejection.kind === 'badRequest') {
+            // Reconnecting gets the same answer, so stop the 3s auto-reconnect
+            // loop and let the screen act on it.
+            setRejection(frameRejection)
+            setStatus('error')
+            void client.deactivate()
+            if (frameRejection.code === ADULT_VERIFICATION_REQUIRED_CODE) {
+              // Same reaction as the REST interceptor for this code.
+              useAdultVerificationStore.getState().showPrompt('topicroom')
+              void queryClient.invalidateQueries({
+                queryKey: ADULT_VERIFICATION_STATUS_QUERY_KEY,
+              })
+            }
             return
           }
 
@@ -817,5 +847,12 @@ export const useTopicRoomStomp = (params: {
     [appendOptimisticMe, roomId],
   )
 
-  return { status, messages, sendMessage, disconnect, unsubscribe }
+  // Shaped like the REST error for the same code, so screens can reuse
+  // isTopicRoomNotMemberError / useLeaveOnAdultVerificationRequired.
+  const rejectionError = useMemo(
+    () => (rejection ? toRestLikeError(rejection) : null),
+    [rejection],
+  )
+
+  return { status, messages, sendMessage, disconnect, unsubscribe, rejectionError }
 }

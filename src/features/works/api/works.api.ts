@@ -12,6 +12,11 @@ const WorksDetailSchema = z.object({
   originalAuthor: z.string().nullable().optional(),
   genre: z.string().nullable().optional(),
   platforms: z.array(z.string()).optional(),
+  // Where each platform's page for this work lives (backend #355).
+  platformLinks: z
+    .array(z.object({ platform: z.string(), landingUrl: z.string().nullish() }))
+    .optional()
+    .catch(undefined),
   ageClassification: z.string().nullable().optional(),
   hasTopicRoom: z.boolean().optional(),
   avgRating: z

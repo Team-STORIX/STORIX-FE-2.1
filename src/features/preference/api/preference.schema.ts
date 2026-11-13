@@ -204,6 +204,8 @@ export const PreferenceResultWorkSchema = z
       .object({
         worksId: z.coerce.number(),
         worksName: z.string().catch(''),
+        // Display-ready credit (backend #361/#364); web-novel cover illustrators are already left out.
+        artistName: z.string().catch(''),
         author: z.string().catch(''),
         illustrator: z.string().catch(''),
         originalAuthor: z.string().catch(''),

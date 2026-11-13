@@ -33,6 +33,7 @@ const WORKS_TYPE_LABELS: Record<string, string> = {
 export type PreferenceWork = {
   id: number
   title: string
+  artistName?: string
   author?: string
   illustrator?: string
   originalAuthor?: string
@@ -97,13 +98,20 @@ function mapExplorationToWork(work: PreferenceExplorationWork): PreferenceWork {
   }
 }
 
-function mapResultToWork(work: PreferenceResultWork): PreferenceWork {
-  const worksType = getWorksTypeLabel(work.worksType)
+// Older responses lack artistName; compose it the way the screen used to.
+function resultArtistName(work: PreferenceResultWork) {
+  if (work.artistName) return work.artistName
   const illustrator =
     work.originalAuthor && work.illustrator === work.originalAuthor
       ? ''
       : work.illustrator
-  const authorLine = [work.originalAuthor, illustrator, worksType].filter(Boolean)
+  return [work.originalAuthor, illustrator].filter(Boolean).join(' · ')
+}
+
+function mapResultToWork(work: PreferenceResultWork): PreferenceWork {
+  const worksType = getWorksTypeLabel(work.worksType)
+  const artistName = resultArtistName(work)
+  const authorLine = [artistName, worksType].filter(Boolean)
 
   return {
     id: work.worksId,
@@ -114,6 +122,7 @@ function mapResultToWork(work: PreferenceResultWork): PreferenceWork {
     description: '',
     hashtags: [],
     meta: `${authorLine.join(' · ')} · ${work.genre}`,
+    artistName,
     author: work.author ?? '',
     illustrator: work.illustrator ?? '',
     originalAuthor: work.originalAuthor ?? '',

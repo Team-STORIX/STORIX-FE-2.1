@@ -12,10 +12,12 @@ import {
   useAdultVerificationStore,
 } from "../../store/adultVerification.store";
 import { queryClient } from "../query/queryClient";
+import { useNoticeStore } from "../../store/notice.store";
 import {
   getAdultVerificationContext,
   isAdultVerificationRequiredError,
 } from "./adultVerificationRequired";
+import { RATE_LIMITED_MESSAGE, isRateLimitedError } from "./rateLimit";
 // Shared refresh implementation, reused by the STOMP connect flow so both
 // transports rotate tokens identically. See lib/auth/refresh-token.ts.
 import { refreshAuthTokens } from "../auth/refresh-token";
@@ -168,6 +170,12 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => logResponse(response),
   async (error: AxiosError) => {
     logError(error);
+
+    // Request limit hit (backend #346). Tell the user once, centrally, so
+    // every screen's generic "failed" message isn't the only clue.
+    if (isRateLimitedError(error)) {
+      useNoticeStore.getState().showNotice(RATE_LIMITED_MESSAGE);
+    }
 
     // Adult-only content was requested without a valid verification. Surface
     // the shared prompt once and still reject so the caller can leave its

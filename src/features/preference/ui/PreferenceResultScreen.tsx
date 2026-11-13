@@ -64,13 +64,7 @@ function PreferenceResultListRow({ work }: { work: PreferenceWork }) {
       ? work.averageRating
       : 0;
 
-  const illustrator =
-    work.originalAuthor && work.illustrator === work.originalAuthor
-      ? ""
-      : work.illustrator;
-  const meta = [work.originalAuthor, illustrator, work.worksType]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = [work.artistName, work.worksType].filter(Boolean).join(" · ");
 
   return (
     <View style={styles.listRow}>

@@ -38,6 +38,7 @@ import {
   useMe,
 } from '../src/features/profile'
 import { TitleAchievementDetector } from '../src/features/profile/ui/TitleAchievementDetector'
+import { GlobalNoticeToast } from '../src/components/common/GlobalNoticeToast'
 import { queryClient } from '../src/lib/query/queryClient'
 import { refreshAuthTokens } from '../src/lib/auth/refresh-token'
 import { removeRefreshToken } from '../src/lib/storage/secure'
@@ -415,6 +416,7 @@ function RootLayoutNav({ appReady }: { appReady: boolean }) {
         {/* Works detail screen — header managed by Stack.Screen inside the screen */}
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
+      <GlobalNoticeToast />
     </ThemeProvider>
   )
 }

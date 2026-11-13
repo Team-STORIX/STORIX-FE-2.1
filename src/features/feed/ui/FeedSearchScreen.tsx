@@ -1,54 +1,63 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { C, Magenta } from "../../../theme";
+import { LibraryEmptyState } from "../../library/ui/LibraryEmptyState";
+import { LibrarySearchHeader } from "../../library/ui/LibrarySearchHeader";
+import { SearchRecentKeywordsSection } from "../../search/ui/SearchRecentKeywordsSection";
 import {
   useDeleteAllFeedRecentKeywords,
   useDeleteFeedRecentKeyword,
   useFeedRecentKeywords,
   useSearchBoards,
-} from '../hooks/feed'
-import { C, Magenta } from '../../../theme'
-import { LibraryEmptyState } from '../../library/ui/LibraryEmptyState'
-import { LibrarySearchHeader } from '../../library/ui/LibrarySearchHeader'
-import { SearchRecentKeywordsSection } from '../../search/ui/SearchRecentKeywordsSection'
-import { useFeedBoardList } from './useFeedBoardList'
+} from "../hooks/feed";
+import { useFeedBoardList } from "./useFeedBoardList";
 
-const SEARCH_PATH = '/feed/search'
+const SEARCH_PATH = "/feed/search";
 
 function normalizeKeyword(raw?: string | string[]) {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  return (value ?? '').trim()
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (value ?? "").trim();
 }
 
 export function FeedSearchScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const params = useLocalSearchParams<{ keyword?: string }>()
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ keyword?: string }>();
 
-  const submittedKeyword = normalizeKeyword(params.keyword)
-  const [inputValue, setInputValue] = useState(submittedKeyword)
+  const submittedKeyword = normalizeKeyword(params.keyword);
+  const [inputValue, setInputValue] = useState(submittedKeyword);
 
-  const recentKeywordsQuery = useFeedRecentKeywords()
-  const deleteRecentKeyword = useDeleteFeedRecentKeyword()
-  const deleteAllRecentKeywords = useDeleteAllFeedRecentKeywords()
-  const searchQuery = useSearchBoards(submittedKeyword)
-  const { renderItem, modals } = useFeedBoardList()
+  const recentKeywordsQuery = useFeedRecentKeywords();
+  const deleteRecentKeyword = useDeleteFeedRecentKeyword();
+  const deleteAllRecentKeywords = useDeleteAllFeedRecentKeywords();
+  const searchQuery = useSearchBoards(submittedKeyword);
+  const { renderItem, modals } = useFeedBoardList();
 
-  const items = searchQuery.data?.pages.flatMap((page) => page.content) ?? []
+  const items = searchQuery.data?.pages.flatMap((page) => page.content) ?? [];
 
   useEffect(() => {
-    setInputValue(submittedKeyword)
-  }, [submittedKeyword])
+    setInputValue(submittedKeyword);
+  }, [submittedKeyword]);
 
   const submitKeyword = (raw: string) => {
-    const keyword = normalizeKeyword(raw)
-    Keyboard.dismiss()
-    setInputValue(keyword)
+    const keyword = normalizeKeyword(raw);
+    Keyboard.dismiss();
+    setInputValue(keyword);
     router.replace(
-      (keyword ? `${SEARCH_PATH}?keyword=${encodeURIComponent(keyword)}` : SEARCH_PATH) as never,
-    )
-  }
+      (keyword
+        ? `${SEARCH_PATH}?keyword=${encodeURIComponent(keyword)}`
+        : SEARCH_PATH) as never,
+    );
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 20 }]}>
@@ -58,10 +67,10 @@ export function FeedSearchScreen() {
         onSubmit={() => submitKeyword(inputValue)}
         onBackPress={() => router.back()}
         autoFocus={!submittedKeyword}
-        placeholder="찾고 싶은 피드 게시글을 검색해 보세요"
+        placeholder="찾고 싶은 게시글을 검색해 보세요"
         onClearPress={() => {
-          setInputValue('')
-          if (submittedKeyword) router.replace(SEARCH_PATH as never)
+          setInputValue("");
+          if (submittedKeyword) router.replace(SEARCH_PATH as never);
         }}
       />
 
@@ -97,13 +106,17 @@ export function FeedSearchScreen() {
           ListFooterComponent={
             <View style={{ paddingBottom: insets.bottom + 24 }}>
               {searchQuery.isFetchingNextPage ? (
-                <ActivityIndicator size="small" color={Magenta[300]} style={styles.footerLoader} />
+                <ActivityIndicator
+                  size="small"
+                  color={Magenta[300]}
+                  style={styles.footerLoader}
+                />
               ) : null}
             </View>
           }
           onEndReached={() => {
             if (searchQuery.hasNextPage && !searchQuery.isFetchingNextPage) {
-              void searchQuery.fetchNextPage()
+              void searchQuery.fetchNextPage();
             }
           }}
           onEndReachedThreshold={0.4}
@@ -114,7 +127,7 @@ export function FeedSearchScreen() {
 
       {modals}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -132,8 +145,8 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   listHeader: {
     height: 16,
@@ -141,4 +154,4 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 16,
   },
-})
+});
